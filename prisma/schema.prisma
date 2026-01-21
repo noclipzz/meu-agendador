@@ -1,0 +1,47 @@
+// 1. Configuração da conexão
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 2. Nossas Tabelas
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  
+  services  Service[]
+  bookings  Booking[]
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Decimal
+  duration    Int
+  
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  
+  bookings    Booking[]
+}
+
+model Booking {
+  id        String   @id @default(uuid())
+  date      DateTime
+  customerName  String
+  customerPhone String?
+  
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+  
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id])
+}
