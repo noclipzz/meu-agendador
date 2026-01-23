@@ -9,26 +9,24 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { date } = body; // Recebe a data que o cliente clicou (ex: 2026-01-22)
+    const { date, companyId } = body; // <--- Agora pedimos o ID da empresa
 
-    // Converte a string para data real
+    if (!companyId) return NextResponse.json({ error: "Empresa não informada" }, { status: 400 });
+
     const dataBusca = new Date(date);
 
-    // Busca agendamentos APENAS daquele dia (do começo ao fim do dia)
     const agendamentos = await prisma.booking.findMany({
       where: {
+        companyId: companyId, // <--- Só busca agendamentos DESSA empresa
         date: {
-          gte: startOfDay(dataBusca), // Maior ou igual ao inicio do dia
-          lte: endOfDay(dataBusca),   // Menor ou igual ao fim do dia
+          gte: startOfDay(dataBusca),
+          lte: endOfDay(dataBusca),
         }
       }
     });
 
-    // Extrai apenas as horas dos agendamentos (ex: ["10:00", "14:30"])
     const horariosOcupados = agendamentos.map(booking => {
-        // Ajuste simples para pegar a hora formatada HH:mm
         const data = new Date(booking.date);
-        // Pega a hora e adiciona um zero na frente se precisar (ex: 9 vira 09)
         const hora = data.getHours().toString().padStart(2, '0');
         const minuto = data.getMinutes().toString().padStart(2, '0');
         return `${hora}:${minuto}`;

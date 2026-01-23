@@ -45,7 +45,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   // 2. Verifica horários ocupados
   useEffect(() => {
-    if (!servicoSelecionado) return;
+    if (!servicoSelecionado || !empresa) return; // Garante que a empresa carregou
     
     async function verificarDisponibilidade() {
         setHorarioSelecionado(null);
@@ -53,16 +53,20 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         try {
             const response = await fetch('/api/verificar', {
                 method: 'POST',
-                body: JSON.stringify({ date: dataSelecionada })
+                // ADICIONEI O COMPANYID AQUI EMBAIXO:
+                body: JSON.stringify({ 
+                    date: dataSelecionada,
+                    companyId: empresa.id 
+                })
             });
             const data = await response.json();
             if (data.horariosOcupados) setHorariosOcupados(data.horariosOcupados);
         } catch (error) { console.error("Erro ao verificar"); }
     }
     verificarDisponibilidade();
-  }, [dataSelecionada, servicoSelecionado]);
+  }, [dataSelecionada, servicoSelecionado, empresa]); // Adicionei empresa nas dependencias
 
-  // 3. Salva o agendamento
+  // // 3. Salva o agendamento
   async function finalizarAgendamento() {
     if (!nomeCliente || !telefoneCliente || !horarioSelecionado) return alert("Preencha tudo!");
 
@@ -70,17 +74,25 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     const [hora, minuto] = horarioSelecionado.split(':');
     dataFinal.setHours(parseInt(hora), parseInt(minuto));
 
-    await fetch('/api/agendar', {
+    const res = await fetch('/api/agendar', {
         method: 'POST',
         body: JSON.stringify({
           serviceId: servicoSelecionado.id,
-          companyId: empresa.id, // ID da empresa atual
+          companyId: empresa.id,
           date: dataFinal,
           name: nomeCliente,
           phone: telefoneCliente
         })
     });
-    setAgendamentoConcluido(true);
+
+    if (res.ok) {
+        setAgendamentoConcluido(true);
+    } else {
+        alert("Ops! Esse horário acabou de ser ocupado por outra pessoa.");
+        // Recarrega os horários para bloquear o que foi roubado
+        setHorarioSelecionado(null);
+        // Aqui você poderia chamar a verificação de novo
+    }
   }
 
   const dataBonita = format(dataSelecionada, "dd 'de' MMMM", { locale: ptBR });
