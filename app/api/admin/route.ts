@@ -1,31 +1,32 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { auth } from '@clerk/nextjs/server'; // <--- Importante
+import { auth } from '@clerk/nextjs/server';
 
-const prisma = new PrismaClient();
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
+// 1. BUSCAR (GET) - Com filtro de empresa (Segurança)
 export async function GET() {
   try {
-    // 1. Descobre quem é o usuário logado
     const { userId } = auth();
     
     if (!userId) {
         return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // 2. Descobre qual empresa pertence a esse usuário
+    // Descobre a empresa do usuário logado
     const myCompany = await prisma.company.findFirst({
         where: { ownerId: userId }
     });
 
     if (!myCompany) {
-        // Se ele não tem empresa, retorna lista vazia (o frontend vai mandar ele criar)
         return NextResponse.json([]);
     }
 
-    // 3. Busca agendamentos SÓ DESSA empresa
+    // Busca agendamentos SÓ dessa empresa
     const bookings = await prisma.booking.findMany({
-      where: { companyId: myCompany.id }, // <--- O FILTRO MÁGICO
+      where: { companyId: myCompany.id },
       orderBy: { date: 'asc' },
       include: { service: true }
     });
@@ -33,5 +34,21 @@ export async function GET() {
     return NextResponse.json(bookings);
   } catch (error) {
     return NextResponse.json({ error: "Erro ao buscar agenda" }, { status: 500 });
+  }
+}
+
+// 2. DELETAR (DELETE) - A função que estava faltando!
+export async function DELETE(req: Request) {
+  try {
+    const { id } = await req.json(); // Recebe o ID para apagar
+    
+    await prisma.booking.delete({
+      where: { id: id }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao deletar:", error);
+    return NextResponse.json({ error: "Erro ao deletar" }, { status: 500 });
   }
 }

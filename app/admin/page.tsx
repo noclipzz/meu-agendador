@@ -10,20 +10,24 @@ export default function PainelAdmin() {
   const [agendamentos, setAgendamentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Função para carregar
-  async function carregarAgenda() {
-    try {
-      const resposta = await fetch('/api/admin');
-      const dados = await resposta.json();
-      setAgendamentos(dados);
-    } catch (error) {
-      console.error("Erro", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Busca os dados ao abrir a tela
   useEffect(() => {
+    async function carregarAgenda() {
+      try {
+        const resposta = await fetch('/api/admin');
+        const dados = await resposta.json();
+        // Se a API retornar erro ou vazio, garante que seja um array
+        if (Array.isArray(dados)) {
+            setAgendamentos(dados);
+        } else {
+            setAgendamentos([]);
+        }
+      } catch (error) {
+        console.error("Erro", error);
+      } finally {
+        setLoading(false);
+      }
+    }
     carregarAgenda();
   }, []);
 
@@ -32,15 +36,19 @@ export default function PainelAdmin() {
     if(!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
 
     try {
+        // 1. Manda apagar no banco
         const res = await fetch('/api/admin', {
             method: 'DELETE',
             body: JSON.stringify({ id })
         });
 
         if (res.ok) {
-            // A MÁGICA: Removemos o item da lista visualmente na hora
-            setAgendamentos((atual) => atual.filter((item) => item.id !== id));
-            alert("Agendamento cancelado!");
+            // 2. A MÁGICA: Apaga da TELA imediatamente
+            // Filtra a lista mantendo apenas os agendamentos que NÃO são o que acabamos de apagar
+            setAgendamentos((listaAtual) => listaAtual.filter((item) => item.id !== id));
+            
+            // Pequeno delay para o alerta não travar a remoção visual
+            setTimeout(() => alert("Agendamento cancelado!"), 100);
         } else {
             alert("Erro ao cancelar no servidor.");
         }
@@ -92,11 +100,10 @@ export default function PainelAdmin() {
               </div>
               <div className="text-gray-500">{item.customerPhone}</div>
               
-              {/* BOTÃO DELETAR */}
               <div className="text-right">
                 <button 
                     onClick={() => cancelarAgendamento(item.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition font-medium"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition font-medium border border-transparent hover:border-red-200"
                 >
                     Cancelar
                 </button>
