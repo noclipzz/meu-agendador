@@ -3,84 +3,109 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { UserButton, useUser } from "@clerk/nextjs";
 
 export default function PainelAdmin() {
+  const { user } = useUser();
   const [agendamentos, setAgendamentos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Busca os dados assim que a tela abre
-  useEffect(() => {
-    async function carregarAgenda() {
-      try {
-        const resposta = await fetch('/api/admin');
-        const dados = await resposta.json();
-        setAgendamentos(dados);
-      } catch (error) {
-        console.error("Erro", error);
-      } finally {
-        setLoading(false);
-      }
+  // Função para carregar
+  async function carregarAgenda() {
+    try {
+      const resposta = await fetch('/api/admin');
+      const dados = await resposta.json();
+      setAgendamentos(dados);
+    } catch (error) {
+      console.error("Erro", error);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     carregarAgenda();
   }, []);
 
+  // --- FUNÇÃO DELETAR ---
+  async function cancelarAgendamento(id: string) {
+    if(!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
+
+    try {
+        await fetch('/api/admin', {
+            method: 'DELETE',
+            body: JSON.stringify({ id })
+        });
+        // Recarrega a lista sem precisar dar F5
+        carregarAgenda();
+        alert("Agendamento cancelado!");
+    } catch (error) {
+        alert("Erro ao cancelar.");
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-4xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Painel do Profissional</h1>
-          <div className="bg-white px-4 py-2 rounded-lg shadow text-sm">
-            Total de Agendamentos: <strong>{agendamentos.length}</strong>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm p-4 px-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">Painel Administrativo</h1>
+          <p className="text-sm text-gray-500">Olá, {user?.firstName} 👋</p>
+        </div>
+        <UserButton showName />
+      </header>
+
+      <main className="max-w-5xl mx-auto p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-700">Agenda do Dia</h2>
+          <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm font-bold">
+            Total: {agendamentos.length}
           </div>
         </div>
 
-        {loading && <p className="text-center text-gray-500">Carregando agenda...</p>}
+        {loading && <p className="text-center text-gray-500 py-10">Carregando...</p>}
 
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {/* Cabeçalho da Tabela */}
-          <div className="grid grid-cols-4 bg-gray-50 p-4 border-b font-bold text-gray-600">
-            <div>Data e Hora</div>
+        <div className="bg-white rounded-xl shadow border overflow-hidden">
+          <div className="grid grid-cols-5 bg-gray-50 p-4 border-b text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <div>Horário</div>
             <div>Cliente</div>
             <div>Serviço</div>
             <div>Contato</div>
+            <div className="text-right">Ações</div>
           </div>
 
-          {/* Lista de Agendamentos */}
           {agendamentos.map((item) => (
-            <div key={item.id} className="grid grid-cols-4 p-4 border-b hover:bg-gray-50 transition items-center">
+            <div key={item.id} className="grid grid-cols-5 p-4 border-b hover:bg-gray-50 transition items-center text-sm">
+              <div className="font-bold text-gray-800">
+                {format(new Date(item.date), "dd/MMM", { locale: ptBR })} <br/>
+                <span className="text-blue-600 text-lg">{format(new Date(item.date), "HH:mm")}</span>
+              </div>
+              <div className="font-medium text-gray-900">{item.customerName}</div>
+              <div>
+                <span className="bg-gray-100 text-gray-700 py-1 px-2 rounded text-xs border">
+                  {item.service.name}
+                </span>
+              </div>
+              <div className="text-gray-500">{item.customerPhone}</div>
               
-              {/* Coluna 1: Data */}
-              <div className="text-blue-600 font-bold">
-                {format(new Date(item.date), "dd/MM 'às' HH:mm", { locale: ptBR })}
+              {/* BOTÃO DELETAR */}
+              <div className="text-right">
+                <button 
+                    onClick={() => cancelarAgendamento(item.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition font-medium"
+                >
+                    Cancelar
+                </button>
               </div>
-
-              {/* Coluna 2: Nome */}
-              <div className="font-medium text-gray-800">
-                {item.customerName}
-              </div>
-
-              {/* Coluna 3: Serviço */}
-              <div className="text-sm bg-blue-100 text-blue-800 py-1 px-3 rounded-full w-fit">
-                {item.service.name}
-              </div>
-
-              {/* Coluna 4: Telefone */}
-              <div className="text-gray-500 text-sm">
-                {item.customerPhone}
-              </div>
-
             </div>
           ))}
 
           {!loading && agendamentos.length === 0 && (
-            <div className="p-10 text-center text-gray-400">
-              Nenhum agendamento encontrado.
+            <div className="p-12 text-center text-gray-400 flex flex-col items-center">
+              <p>Nenhum agendamento encontrado.</p>
             </div>
           )}
         </div>
-
-      </div>
+      </main>
     </div>
   );
 }
