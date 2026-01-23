@@ -27,20 +27,25 @@ export default function PainelAdmin() {
     carregarAgenda();
   }, []);
 
-  // --- FUNÇÃO DELETAR ---
+  // --- FUNÇÃO DELETAR CORRIGIDA ---
   async function cancelarAgendamento(id: string) {
     if(!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
 
     try {
-        await fetch('/api/admin', {
+        const res = await fetch('/api/admin', {
             method: 'DELETE',
             body: JSON.stringify({ id })
         });
-        // Recarrega a lista sem precisar dar F5
-        carregarAgenda();
-        alert("Agendamento cancelado!");
+
+        if (res.ok) {
+            // A MÁGICA: Removemos o item da lista visualmente na hora
+            setAgendamentos((atual) => atual.filter((item) => item.id !== id));
+            alert("Agendamento cancelado!");
+        } else {
+            alert("Erro ao cancelar no servidor.");
+        }
     } catch (error) {
-        alert("Erro ao cancelar.");
+        alert("Erro de conexão.");
     }
   }
 

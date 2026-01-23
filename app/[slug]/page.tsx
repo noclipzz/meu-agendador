@@ -43,9 +43,9 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     carregarDados();
   }, [params.slug]);
 
-  // 2. Verifica horários ocupados
+  // 2. Verifica horários ocupados sempre que muda a data ou serviço
   useEffect(() => {
-    if (!servicoSelecionado || !empresa) return; // Garante que a empresa carregou
+    if (!servicoSelecionado || !empresa) return;
     
     async function verificarDisponibilidade() {
         setHorarioSelecionado(null);
@@ -53,7 +53,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         try {
             const response = await fetch('/api/verificar', {
                 method: 'POST',
-                // ADICIONEI O COMPANYID AQUI EMBAIXO:
                 body: JSON.stringify({ 
                     date: dataSelecionada,
                     companyId: empresa.id 
@@ -64,11 +63,11 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         } catch (error) { console.error("Erro ao verificar"); }
     }
     verificarDisponibilidade();
-  }, [dataSelecionada, servicoSelecionado, empresa]); // Adicionei empresa nas dependencias
+  }, [dataSelecionada, servicoSelecionado, empresa]);
 
-  // // 3. Salva o agendamento
+  // 3. Salva o agendamento
   async function finalizarAgendamento() {
-    if (!nomeCliente || !telefoneCliente || !horarioSelecionado) return alert("Preencha tudo!");
+    if (!nomeCliente || !telefoneCliente || !horarioSelecionado) return alert("Preencha todos os dados!");
 
     const dataFinal = new Date(dataSelecionada);
     const [hora, minuto] = horarioSelecionado.split(':');
@@ -89,9 +88,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         setAgendamentoConcluido(true);
     } else {
         alert("Ops! Esse horário acabou de ser ocupado por outra pessoa.");
-        // Recarrega os horários para bloquear o que foi roubado
         setHorarioSelecionado(null);
-        // Aqui você poderia chamar a verificação de novo
+        // O ideal aqui seria chamar verificarDisponibilidade() novamente
     }
   }
 
@@ -144,18 +142,35 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             </div>
 
             <div className="w-full mb-6">
-                <h3 className="font-bold text-gray-700 mb-2 text-center">Horários para {dataBonita}:</h3>
+                <h3 className="font-bold text-gray-700 mb-2 text-center">
+                    Horários disponíveis:
+                </h3>
+                
                 <div className="grid grid-cols-4 gap-2">
-                    {horariosDisponiveis.map((horario) => {
-                        const ocupado = horariosOcupados.includes(horario);
-                        return (
-                            <button key={horario} disabled={ocupado} onClick={() => setHorarioSelecionado(horario)}
-                                className={`py-1 px-2 rounded-md text-sm font-medium transition ${ocupado ? "bg-red-100 text-red-300 line-through cursor-not-allowed" : horarioSelecionado === horario ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+                    {horariosDisponiveis
+                        // FILTRO MÁGICO: Remove os horários ocupados da lista
+                        .filter((horario) => !horariosOcupados.includes(horario))
+                        .map((horario) => (
+                            <button 
+                                key={horario} 
+                                onClick={() => setHorarioSelecionado(horario)}
+                                className={`py-1 px-2 rounded-md text-sm font-medium transition 
+                                    ${horarioSelecionado === horario 
+                                        ? "bg-blue-600 text-white shadow-lg scale-105" 
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    }`}
+                            >
                                 {horario}
                             </button>
-                        )
-                    })}
+                    ))}
                 </div>
+
+                {/* Mensagem se o dia estiver lotado */}
+                {horariosDisponiveis.filter(h => !horariosOcupados.includes(h)).length === 0 && (
+                    <p className="text-red-500 text-center text-sm mt-4 bg-red-50 p-2 rounded">
+                        Sem horários livres nesta data.
+                    </p>
+                )}
             </div>
 
             {horarioSelecionado && (
