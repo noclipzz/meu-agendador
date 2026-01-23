@@ -10,22 +10,28 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { serviceId, companyId, date, name, phone } = body;
 
-    // 1. A TRAVA DE SEGURANÇA: Verifica se já existe agendamento neste horário e empresa
+    // 1. LIMPEZA DE TEMPO: Zera segundos e milissegundos
+    // Isso garante que 10:00:05 vire 10:00:00
+    const dataLimpa = new Date(date);
+    dataLimpa.setSeconds(0);
+    dataLimpa.setMilliseconds(0);
+
+    // 2. VERIFICAÇÃO RIGOROSA
     const conflito = await prisma.booking.findFirst({
         where: {
-            companyId: companyId, // Na mesma empresa
-            date: new Date(date)  // No mesmo horário exato
+            companyId: companyId,
+            date: dataLimpa // Busca pela data exata limpa
         }
     });
 
     if (conflito) {
-        return NextResponse.json({ error: "Este horário acabou de ser ocupado!" }, { status: 409 });
+        return NextResponse.json({ error: "Horário indisponível." }, { status: 409 });
     }
 
-    // 2. Se passou, salva no banco
+    // 3. SALVA O DADO LIMPO
     const booking = await prisma.booking.create({
       data: {
-        date: new Date(date),
+        date: dataLimpa, // Salva sem segundos
         customerName: name,
         customerPhone: phone,
         serviceId: serviceId,
@@ -35,7 +41,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, booking });
   } catch (error) {
-    console.error("Erro ao agendar:", error);
-    return NextResponse.json({ error: "Erro ao agendar" }, { status: 500 });
+    console.error("Erro no agendamento:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
