@@ -1,4 +1,5 @@
 datasource db {
+  provider = "postgresql"  // <--- ESSA LINHA ESTAVA FALTANDO
   url      = env("DATABASE_URL")
 }
 
