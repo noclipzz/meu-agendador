@@ -4,7 +4,9 @@ import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-04-10" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
+    apiVersion: '2024-12-18.acacia' as any 
+});
 
 export async function POST(req: Request) {
   const body = await req.text();

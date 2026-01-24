@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 const prisma = new PrismaClient();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10', // Ou a versão mais recente que ele sugerir
+  apiVersion: '2024-12-18.acacia' as any, // O 'as any' manda o TypeScript calar a boca
 });
 
 export async function POST(req: Request) {
