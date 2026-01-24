@@ -5,19 +5,19 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json(); // <--- AQUI definimos 'body'
+    
     console.log("Criando empresa para:", body.ownerId);
 
     if (!body.ownerId) return NextResponse.json({ error: "Sem ID" }, { status: 400 });
 
-    // 1. TRAVA DE SEGURANÇA: Busca QUALQUER empresa desse dono
+    // 1. TRAVA DE SEGURANÇA
     const jaTem = await prisma.company.count({
         where: { ownerId: body.ownerId }
     });
 
     if (jaTem > 0) {
-        console.log("❌ BLOQUEADO: Já tem empresa.");
-        return NextResponse.json({ error: "Limite de 1 empresa por conta atingido." }, { status: 400 });
+        return NextResponse.json({ error: "Limite atingido." }, { status: 400 });
     }
     
     // 2. Cria a empresa
@@ -30,15 +30,14 @@ export async function POST(req: Request) {
       }
     });
 
-    // 3. CRIA A ASSINATURA AUTOMATICAMENTE (Para não ficar fantasma no Master)
-    // Dá 7 dias grátis por padrão
+    // 3. CRIA A ASSINATURA (Aqui estava o erro antes, o 'body' sumia)
     const hoje = new Date();
-    const validade = new Date(hoje.setDate(hoje.getDate() + 7));
+    const validade = new Date(hoje.setDate(hoje.getDate() + 30));
 
     await prisma.subscription.create({
         data: {
-            userId: body.ownerId,
-            plan: "TRIAL",
+            userId: body.ownerId, // Agora o 'body' funciona aqui
+            plan: "PADRAO",
             expiresAt: validade
         }
     });
@@ -48,20 +47,5 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Erro ao criar" }, { status: 500 });
-  
   }
-
-    // 3. CRIA A ASSINATURA AUTOMATICAMENTE (30 DIAS PADRÃO)
-    const hoje = new Date();
-    const validade = new Date(hoje.setDate(hoje.getDate() + 30)); // <--- MUDADO PARA 30
-
-    await prisma.subscription.create({
-        data: {
-            userId: body.ownerId,
-            plan: "PADRAO", // Ou o nome do plano escolhido
-            expiresAt: validade
-        }
-    });
-
-    return NextResponse.json(company);
 }
