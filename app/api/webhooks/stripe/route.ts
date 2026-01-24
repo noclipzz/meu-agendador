@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const subscriptionId = session.subscription as string;
     
     // Recupera detalhes da assinatura no Stripe para saber a validade
-    const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId);
+    const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId) as any;
     
     // A mágica: userId vem do metadata que enviamos no checkout
     // Se for invoice.payment_succeeded, o metadata pode estar no customer
