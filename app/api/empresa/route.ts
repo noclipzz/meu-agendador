@@ -1,44 +1,67 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
-// Essa parte evita que o Prisma abra 1000 conexões e trave seu PC
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // 1. Vamos ver no terminal o que está chegando
-    console.log("--- TENTATIVA DE CRIAÇÃO ---");
-    console.log("Dados recebidos:", body);
+    console.log("Criando empresa para:", body.ownerId);
 
-    if (!body.ownerId) {
-        console.log("❌ ERRO: O ID do dono (ownerId) veio vazio.");
-        return NextResponse.json({ error: "Usuário não identificado" }, { status: 400 });
+    if (!body.ownerId) return NextResponse.json({ error: "Sem ID" }, { status: 400 });
+
+    // 1. TRAVA DE SEGURANÇA: Busca QUALQUER empresa desse dono
+    const jaTem = await prisma.company.count({
+        where: { ownerId: body.ownerId }
+    });
+
+    if (jaTem > 0) {
+        console.log("❌ BLOQUEADO: Já tem empresa.");
+        return NextResponse.json({ error: "Limite de 1 empresa por conta atingido." }, { status: 400 });
     }
     
-    // 2. Tenta criar
+    // 2. Cria a empresa
     const company = await prisma.company.create({
       data: {
         name: body.name,
         slug: body.slug,
         ownerId: body.ownerId,
-        services: {
-            create: [
-                { name: "Atendimento Padrão", price: 100, duration: 60 }
-            ]
-        }
+        services: { create: [{ name: "Atendimento Padrão", price: 100, duration: 60 }] }
       }
     });
 
-    console.log("✅ Sucesso! Empresa criada:", company.name);
+    // 3. CRIA A ASSINATURA AUTOMATICAMENTE (Para não ficar fantasma no Master)
+    // Dá 7 dias grátis por padrão
+    const hoje = new Date();
+    const validade = new Date(hoje.setDate(hoje.getDate() + 7));
+
+    await prisma.subscription.create({
+        data: {
+            userId: body.ownerId,
+            plan: "TRIAL",
+            expiresAt: validade
+        }
+    });
+
     return NextResponse.json(company);
 
   } catch (error) {
-    // 3. SE DER ERRO, VAI APARECER AQUI
-    console.error("❌ ERRO CRÍTICO DO PRISMA:", error);
-    return NextResponse.json({ error: "Erro ao criar empresa" }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Erro ao criar" }, { status: 500 });
+  
   }
+
+    // 3. CRIA A ASSINATURA AUTOMATICAMENTE (30 DIAS PADRÃO)
+    const hoje = new Date();
+    const validade = new Date(hoje.setDate(hoje.getDate() + 30)); // <--- MUDADO PARA 30
+
+    await prisma.subscription.create({
+        data: {
+            userId: body.ownerId,
+            plan: "PADRAO", // Ou o nome do plano escolhido
+            expiresAt: validade
+        }
+    });
+
+    return NextResponse.json(company);
 }

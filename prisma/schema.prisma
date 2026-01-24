@@ -1,7 +1,5 @@
-// 1. Configuração da conexão
 datasource db {
   provider = "postgresql"
-  // Cole sua senha do Neon direto aqui dentro das aspas:
   url      = "postgresql://neondb_owner:npg_SGXyn7KaYJC5@ep-raspy-dew-ahcfmesi-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
@@ -9,38 +7,92 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// 2. Nossas Tabelas
-
+// EMPRESA
 model Company {
   id        String   @id @default(uuid())
   name      String
-  slug      String   @unique // Ex: consultorio-yan
-  ownerId   String   // <--- NOVO: O ID do usuário do Clerk que é dono disso
+  slug      String   @unique
+  ownerId   String
   createdAt DateTime @default(now())
   
-  services  Service[]
+  // Configurações
+  logoUrl     String?  @default("")
+  openTime    String   @default("09:00")
+  closeTime   String   @default("18:00")
+  lunchStart  String   @default("12:00")
+  lunchEnd    String   @default("13:00")
+  interval    Int      @default(30)
+  workDays    String   @default("1,2,3,4,5")
+  monthlyGoal Decimal  @default(5000)
+
+  services      Service[]
+  bookings      Booking[]
+  professionals Professional[]
+  teamMembers   TeamMember[] // <--- RELAÇÃO NOVA
+}
+
+// MEMBROS DA EQUIPE (LOGIN)
+model TeamMember {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      String   @default("MEMBER")
+  
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+}
+
+// PROFISSIONAIS (AGENDA)
+model Professional {
+  id        String   @id @default(uuid())
+  name      String
+  photoUrl  String?
+  phone     String?
+  
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  
   bookings  Booking[]
 }
 
-// (O restante do arquivo continua igual)
+// SERVIÇOS
 model Service {
   id          String   @id @default(uuid())
   name        String
   description String?
   price       Decimal
   duration    Int
+  
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id])
+  
   bookings    Booking[]
 }
 
+// AGENDAMENTOS
 model Booking {
-  id        String   @id @default(uuid())
-  date      DateTime
+  id            String   @id @default(uuid())
+  date          DateTime
   customerName  String
   customerPhone String?
-  serviceId String
-  service   Service @relation(fields: [serviceId], references: [id])
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id])
+  userId        String?
+  
+  serviceId     String
+  service       Service @relation(fields: [serviceId], references: [id])
+  
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+
+  companyId     String
+  company       Company @relation(fields: [companyId], references: [id])
+}
+
+// ASSINATURAS
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  plan      String   
+  status    String   @default("ACTIVE")
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
