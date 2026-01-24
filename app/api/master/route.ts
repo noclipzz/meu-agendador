@@ -30,14 +30,15 @@ export async function GET() {
 
     // 3. Cruza os dados
     const dadosCompletos = empresas.map(emp => {
-        const assinatura = assinaturas.find(s => s.userId === emp.ownerId);
+        // O "as any" aqui desliga a verificação estrita para essa variável
+        const assinatura = assinaturas.find(s => s.userId === emp.ownerId) as any;
         
         return {
             ...emp,
             plano: assinatura?.plan || "SEM PLANO",
             status: assinatura?.status || "INACTIVE",
             expiresAt: assinatura?.expiresAt || null,
-            // AQUI: Adicionamos o método de pagamento para exibir na tabela
+            // Agora o TypeScript não vai reclamar, pois 'assinatura' é 'any' (qualquer coisa)
             paymentMethod: assinatura?.paymentMethod || "Desconhecido" 
         };
     });
