@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 
 const prisma = new PrismaClient();
 
-// SEU ID REAL AQUI
+// SEU ID REAL
 const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh"; 
 
 // BUSCAR TUDO (GET)
@@ -17,7 +17,7 @@ export async function GET() {
         return NextResponse.json({ error: "Acesso Negado" }, { status: 403 });
     }
 
-    // 1. Busca todas as empresas
+    // 1. Busca todas as empresas e conta os agendamentos
     const empresas = await prisma.company.findMany({
       include: { 
         _count: { select: { bookings: true } } 
@@ -36,13 +36,16 @@ export async function GET() {
             ...emp,
             plano: assinatura?.plan || "SEM PLANO",
             status: assinatura?.status || "INACTIVE",
-            expiresAt: assinatura?.expiresAt || null
+            expiresAt: assinatura?.expiresAt || null,
+            // AQUI: Adicionamos o método de pagamento para exibir na tabela
+            paymentMethod: assinatura?.paymentMethod || "Desconhecido" 
         };
     });
 
     return NextResponse.json(dadosCompletos);
 
   } catch (error) {
+    console.error("Erro na API Master:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
@@ -68,8 +71,12 @@ export async function DELETE(req: Request) {
     // 3. Apaga profissionais
     await prisma.professional.deleteMany({ where: { companyId } });
     
-    // 4. Apaga membros da equipe
-    await prisma.teamMember.deleteMany({ where: { companyId } });
+    // 4. Apaga membros da equipe (dentro de try/catch caso a tabela não exista ainda)
+    try {
+        await prisma.teamMember.deleteMany({ where: { companyId } });
+    } catch (e) {
+        // Ignora se não tiver membros
+    }
 
     // 5. Apaga a empresa
     await prisma.company.delete({ where: { id: companyId } });

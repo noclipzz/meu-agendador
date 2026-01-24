@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"  // <--- ESSA LINHA ESTAVA FALTANDO
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  // SENHA CHUMBADA PARA FUNCIONAR LOCALMENTE:
+  url      = "postgresql://neondb_owner:npg_SGXyn7KaYJC5@ep-raspy-dew-ahcfmesi-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 }
 
 generator client {
@@ -28,10 +29,10 @@ model Company {
   services      Service[]
   bookings      Booking[]
   professionals Professional[]
-  teamMembers   TeamMember[] // <--- RELAÇÃO NOVA
+  teamMembers   TeamMember[]
 }
 
-// MEMBROS DA EQUIPE (LOGIN)
+// MEMBROS DA EQUIPE
 model TeamMember {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -41,7 +42,7 @@ model TeamMember {
   company   Company  @relation(fields: [companyId], references: [id])
 }
 
-// PROFISSIONAIS (AGENDA)
+// PROFISSIONAIS
 model Professional {
   id        String   @id @default(uuid())
   name      String
@@ -90,9 +91,16 @@ model Booking {
 model Subscription {
   id        String   @id @default(uuid())
   userId    String   @unique
-  plan      String   
-  status    String   @default("ACTIVE")
-  expiresAt DateTime?
+  plan      String   // INDIVIDUAL, PREMIUM, MASTER
+  status    String   @default("INACTIVE") // ACTIVE, CANCELED, PAST_DUE
+  
+  // DADOS DO STRIPE
+  stripeCustomerId     String?   @unique // ID do cliente no Stripe
+  stripeSubscriptionId String?   @unique // ID da assinatura recorrente
+  stripePriceId        String?             // Qual plano ele paga
+  expiresAt            DateTime?           // Data da próxima cobrança/vencimento
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+

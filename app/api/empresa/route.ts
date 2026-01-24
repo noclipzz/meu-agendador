@@ -5,22 +5,30 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json(); // <--- AQUI definimos 'body'
-    
-    console.log("Criando empresa para:", body.ownerId);
+    const body = await req.json();
+    console.log("--- TENTATIVA DE CRIAÇÃO ---");
 
     if (!body.ownerId) return NextResponse.json({ error: "Sem ID" }, { status: 400 });
 
-    // 1. TRAVA DE SEGURANÇA
+    // 1. TRAVA: Verifica se já tem empresa
     const jaTem = await prisma.company.count({
         where: { ownerId: body.ownerId }
     });
 
     if (jaTem > 0) {
-        return NextResponse.json({ error: "Limite atingido." }, { status: 400 });
+        return NextResponse.json({ error: "Você já possui uma empresa." }, { status: 400 });
     }
     
-    // 2. Cria a empresa
+    // 2. VERIFICA O SLUG (LINK)
+    const slugEmUso = await prisma.company.findUnique({
+        where: { slug: body.slug }
+    });
+
+    if (slugEmUso) {
+        return NextResponse.json({ error: "Este link já está em uso por outra pessoa." }, { status: 409 });
+    }
+
+    // 3. Cria a empresa
     const company = await prisma.company.create({
       data: {
         name: body.name,
@@ -30,14 +38,21 @@ export async function POST(req: Request) {
       }
     });
 
-    // 3. CRIA A ASSINATURA (Aqui estava o erro antes, o 'body' sumia)
+    // 4. CRIA OU ATUALIZA A ASSINATURA (Correção aqui!)
+    // Usamos 'upsert' para não quebrar se já existir um registro velho
     const hoje = new Date();
     const validade = new Date(hoje.setDate(hoje.getDate() + 30));
 
-    await prisma.subscription.create({
-        data: {
-            userId: body.ownerId, // Agora o 'body' funciona aqui
+    await prisma.subscription.upsert({
+        where: { userId: body.ownerId },
+        update: { 
+            status: "ACTIVE", 
+            expiresAt: validade 
+        },
+        create: {
+            userId: body.ownerId,
             plan: "PADRAO",
+            status: "ACTIVE",
             expiresAt: validade
         }
     });
@@ -45,7 +60,7 @@ export async function POST(req: Request) {
     return NextResponse.json(company);
 
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Erro ao criar" }, { status: 500 });
+    console.error("Erro na API:", error);
+    return NextResponse.json({ error: "Erro interno no servidor." }, { status: 500 });
   }
 }
