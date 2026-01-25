@@ -25,7 +25,7 @@ model Company {
   interval    Int      @default(30)
   workDays    String   @default("1,2,3,4,5")
   monthlyGoal Decimal  @default(5000)
-
+  whatsappMessage String? @default("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.")
   services      Service[]
   bookings      Booking[]
   professionals Professional[]

@@ -1,45 +1,47 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
-// BUSCAR
 export async function GET() {
-  const { userId } = auth();
-  if (!userId) return NextResponse.json({}, { status: 401 });
-
-  const company = await prisma.company.findFirst({ where: { ownerId: userId } });
-  return NextResponse.json(company);
+  try {
+    const config = await prisma.company.findFirst();
+    return NextResponse.json(config);
+  } catch (error) {
+    return NextResponse.json({ error: "Erro" }, { status: 500 });
+  }
 }
 
-// SALVAR
 export async function POST(req: Request) {
   try {
-    const { userId } = auth();
-    if (!userId) return NextResponse.json({}, { status: 401 });
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     const body = await req.json();
+    const config = await prisma.company.findFirst();
 
-    const company = await prisma.company.findFirst({ where: { ownerId: userId } });
-    if (!company) return NextResponse.json({ error: "Empresa não achada" }, { status: 404 });
+    const data = {
+      openTime: body.openTime,
+      closeTime: body.closeTime,
+      lunchStart: body.lunchStart,
+      lunchEnd: body.lunchEnd,
+      logoUrl: body.logoUrl,
+      monthlyGoal: Number(body.monthlyGoal) || 0,
+      workDays: body.workDays,
+      interval: Number(body.interval) || 30,
+      whatsappMessage: body.whatsappMessage // Campo crucial
+    };
 
-    await prisma.company.update({
-        where: { id: company.id },
-        data: {
-            openTime: body.openTime,
-            closeTime: body.closeTime,
-            interval: body.interval,
-            workDays: body.workDays,
-            logoUrl: body.logoUrl,
-            lunchStart: body.lunchStart,
-            lunchEnd: body.lunchEnd,
-            monthlyGoal: body.monthlyGoal // <--- ADICIONE ISSO
-        }
-    });
-
-    return NextResponse.json({ success: true });
+    if (config) {
+      const res = await prisma.company.update({ where: { id: config.id }, data });
+      return NextResponse.json(res);
+    } else {
+      const res = await prisma.company.create({ data });
+      return NextResponse.json(res);
+    }
   } catch (error) {
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    console.error(error);
+    return new NextResponse("Erro Interno", { status: 500 });
   }
 }
