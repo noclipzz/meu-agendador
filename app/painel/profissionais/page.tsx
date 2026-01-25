@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trash2, UserPlus, Phone, User, X, Save, Pencil } from "lucide-react";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../../hooks/useTheme";
 
 // Paleta de cores para escolher
 const PALETA_CORES = [

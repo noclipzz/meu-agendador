@@ -2,41 +2,40 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { startOfDay, endOfDay } from 'date-fns';
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { date, companyId } = body;
+    const { date, companyId, professionalId } = body;
 
-    if (!companyId) return NextResponse.json({ error: "Empresa faltou" }, { status: 400 });
+    if (!companyId || !professionalId) {
+        return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
+    }
 
     const dataBusca = new Date(date);
 
-    // Busca tudo do dia
+    // Busca agendamentos do dia para aquele profissional
     const agendamentos = await prisma.booking.findMany({
       where: {
         companyId: companyId,
-        date: {
-          gte: startOfDay(dataBusca),
-          lte: endOfDay(dataBusca),
+        professionalId: professionalId,
+        date: { 
+          gte: startOfDay(dataBusca), 
+          lte: endOfDay(dataBusca) 
         }
+      },
+      // IMPORTANTE: Inclui os dados do serviço para sabermos a duração
+      include: {
+        service: true
       }
     });
 
-    // Formata para "HH:mm" (ex: "10:00")
-    const horariosOcupados = agendamentos.map(booking => {
-        // Truque para garantir o fuso horário correto
-        const data = new Date(booking.date);
-        const hora = data.getHours().toString().padStart(2, '0');
-        const minuto = data.getMinutes().toString().padStart(2, '0');
-        return `${hora}:${minuto}`;
-    });
-
-    return NextResponse.json({ horariosOcupados });
+    // Retorna a lista completa de agendamentos
+    return NextResponse.json({ agendamentos });
+    
   } catch (error) {
-    return NextResponse.json({ error: "Erro" }, { status: 500 });
+    console.error("Erro ao verificar:", error);
+    return NextResponse.json({ error: "Erro ao verificar disponibilidade" }, { status: 500 });
   }
 }
