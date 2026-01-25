@@ -37,7 +37,7 @@ export default function NovoNegocio() {
             
             if (!dadosPag.active) {
                 // SE NÃO PAGOU -> MANDA PROS PLANOS
-                router.push('/planos');
+                router.push('/');
             } else {
                 // SE PASSOU NOS DOIS TESTES -> LIBERA A TELA
                 setVerificando(false);

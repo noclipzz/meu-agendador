@@ -48,7 +48,7 @@ model Professional {
   name      String
   photoUrl  String?
   phone     String?
-  
+  color     String   @default("#3b82f6")
   companyId String
   company   Company  @relation(fields: [companyId], references: [id])
   

@@ -1,5 +1,7 @@
 "use client";
 
+import { AgendaProvider, useAgenda } from "@/contexts/AgendaContext"; // Importa o Provider
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
@@ -9,9 +11,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   const menuItems = [
-    { name: "Agenda", path: "/admin", icon: <Calendar size={20} /> },
-    { name: "Equipe", path: "/admin/profissionais", icon: <Users size={20} /> },
-    { name: "Configurações", path: "/admin/config", icon: <Settings size={20} /> },
+    { name: "Agenda", path: "/painel", icon: <Calendar size={20} /> },
+    { name: "Equipe", path: "/painel/profissionais", icon: <Users size={20} /> },
+    { name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
   ];
 
   return (

@@ -65,15 +65,19 @@ export async function POST(req: Request) {
   }
 }
 
-// ROTA GET para verificar status (usada no frontend)
+// ROTA GET para verificar status
 export async function GET() {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ active: false });
   
     const sub = await prisma.subscription.findUnique({ where: { userId } });
     
-    // Verifica se está ativo e se a data de expiração ainda é válida
+    // Verifica se status é ATIVO e se a data de expiração ainda não passou
     const isActive = sub?.status === "ACTIVE" && sub.expiresAt && new Date(sub.expiresAt) > new Date();
     
-    return NextResponse.json({ active: !!isActive, plan: sub?.plan });
+    return NextResponse.json({ 
+        active: !!isActive, 
+        plan: sub?.plan, 
+        status: sub?.status // <--- NOVO: Retorna o status ("ACTIVE", "CANCELED", etc)
+    });
 }

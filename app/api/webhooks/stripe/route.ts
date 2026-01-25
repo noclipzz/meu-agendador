@@ -4,9 +4,7 @@ import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
-    apiVersion: '2024-12-18.acacia' as any 
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -21,27 +19,27 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (error) {
+    console.error("Webhook signature verification failed.", error);
     return new NextResponse("Webhook Error", { status: 400 });
   }
 
-  const session = event.data.object as Stripe.Checkout.Session;
+  // --- LÓGICA DE ATUALIZAÇÃO ---
 
-  // 1. QUANDO O PAGAMENTO É CONFIRMADO OU RENOVADO
+  // QUANDO O PAGAMENTO É CONFIRMADO (Cria ou Renova)
   if (event.type === "checkout.session.completed" || event.type === "invoice.payment_succeeded") {
-    
+    const session = event.data.object as any;
     const subscriptionId = session.subscription as string;
     
-    // Recupera detalhes da assinatura no Stripe para saber a validade
-    const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId) as any;
+    // Pega os detalhes completos da assinatura no Stripe
+    const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId);
     
-    // A mágica: userId vem do metadata que enviamos no checkout
-    // Se for invoice.payment_succeeded, o metadata pode estar no customer
-    let userId = session.metadata?.userId;
+    // Tenta achar o userId pelo metadata
+    let userId = session.metadata?.clerkUserId;
 
-    if(!userId) {
-        // Tenta buscar pelo customer id no nosso banco se não vier no metadata
-        const dbSub = await prisma.subscription.findFirst({ where: { stripeCustomerId: session.customer as string }});
-        userId = dbSub?.userId;
+    if (!userId) {
+        // Se não achar, busca pelo ID do cliente no nosso banco
+        const customer = await stripe.customers.retrieve(session.customer as string) as Stripe.Customer;
+        userId = customer.metadata.clerkUserId;
     }
 
     if (userId) {
@@ -49,27 +47,34 @@ export async function POST(req: Request) {
             where: { userId: userId },
             data: {
                 stripeSubscriptionId: subscriptionId,
-                status: "ACTIVE",
-                plan: session.metadata?.plan || undefined, // Atualiza plano se disponível
-                // Define a validade baseada no Stripe (fim do período atual)
+                status: "ACTIVE", // Ativa a conta
+                plan: session.metadata?.plan || undefined,
                 expiresAt: new Date(subscriptionDetails.current_period_end * 1000)
             }
         });
+        console.log(`✅ Assinatura ATIVADA para usuário: ${userId}`);
     }
   }
 
-  // 2. QUANDO O CLIENTE CANCELA OU O PAGAMENTO FALHA
+  // QUANDO O CLIENTE CANCELA OU O PAGAMENTO FALHA (O MAIS IMPORTANTE)
   if (event.type === "customer.subscription.deleted" || event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
       
-      // Se status não for active, bloqueia no banco
+      // Se o status no Stripe não for mais 'active' (pode ser 'canceled', 'unpaid', etc)
       if (subscription.status !== 'active') {
-          const dbSub = await prisma.subscription.findFirst({ where: { stripeSubscriptionId: subscription.id }});
+          // Acha a assinatura no nosso banco pelo ID da assinatura do Stripe
+          const dbSub = await prisma.subscription.findFirst({ 
+              where: { stripeSubscriptionId: subscription.id }
+          });
+          
           if(dbSub) {
               await prisma.subscription.update({
                   where: { id: dbSub.id },
-                  data: { status: subscription.status } // ex: 'canceled', 'unpaid'
+                  data: { 
+                      status: "CANCELED" // Marca como cancelado
+                  }
               });
+              console.log(`❌ Assinatura CANCELADA para usuário: ${dbSub.userId}`);
           }
       }
   }

@@ -5,7 +5,7 @@ import { auth } from '@clerk/nextjs/server';
 const prisma = new PrismaClient();
 
 // SEU ID REAL
-const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh"; 
+const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
 
 // BUSCAR TUDO (GET)
 export async function GET() {
