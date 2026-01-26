@@ -63,23 +63,34 @@ export async function GET() {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ active: false });
       
-        const sub = await prisma.subscription.findUnique({ where: { userId } });
-        
-        // CORREÇÃO PROFISSIONAL:
-        // Só consideramos ativo se o status for "ACTIVE" E a data de expiração for válida.
-        // Se estiver "INACTIVE", "CANCELED" ou sem data, retornamos active: false.
-        const isActive = 
-            sub?.status === "ACTIVE" && 
-            sub?.expiresAt && 
-            new Date(sub.expiresAt) > new Date();
-        
-        return NextResponse.json({ 
-            active: !!isActive, 
-            // Se não estiver ativo, não enviamos o plano para o frontend, 
-            // assim o botão "Gerenciar" não aparece por engano.
-            plan: isActive ? sub?.plan : null, 
-            status: sub?.status || "INACTIVE"
+        // 1. Verifica se o usuário logado é um DONO de empresa
+        const subDono = await prisma.subscription.findUnique({ where: { userId } });
+        if (subDono?.status === "ACTIVE" && subDono.expiresAt && new Date(subDono.expiresAt) > new Date()) {
+            return NextResponse.json({ active: true, plan: subDono.plan, role: "ADMIN" });
+        }
+
+        // 2. Se não for dono, verifica se ele é um PROFISSIONAL vinculado
+        const profissional = await prisma.professional.findUnique({
+            where: { userId },
+            include: { company: true }
         });
+
+        if (profissional) {
+            // Busca a assinatura do DONO da empresa onde esse profissional trabalha
+            const subPatrao = await prisma.subscription.findUnique({
+                where: { userId: profissional.company.ownerId }
+            });
+
+            const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
+            
+            return NextResponse.json({ 
+                active: !!isActive, 
+                plan: subPatrao?.plan,
+                role: "PROFESSIONAL" 
+            });
+        }
+        
+        return NextResponse.json({ active: false });
     } catch (error) {
         return NextResponse.json({ active: false });
     }

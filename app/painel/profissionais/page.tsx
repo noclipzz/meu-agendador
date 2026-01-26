@@ -1,132 +1,228 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, UserPlus, Phone, User, X, Save, Pencil } from "lucide-react";
-import { useTheme } from "../../../hooks/useTheme";
+import { Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Palette, Phone, ShieldCheck, Copy, Check } from "lucide-react"; 
+import { toast } from "sonner";
+import { useAgenda } from "../../../contexts/AgendaContext";
 
-// Paleta de cores para escolher
-const PALETA_CORES = [
-  "#3b82f6", "#22c55e", "#a855f7", "#f97316", "#ec4899", "#14b8a6", "#ef4444", "#eab308",
-];
-
-export default function Equipe() {
-  const { theme } = useTheme();
+export default function GestaoEquipe() {
+  const { setRefreshKey } = useAgenda();
   const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  
   const [profissionais, setProfissionais] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ id: "", name: "", phone: "", photoUrl: "", color: PALETA_CORES[0] });
+  const [modalAberto, setModalAberto] = useState(false);
 
-  useEffect(() => { carregar(); }, []);
+  // FORMULÁRIO
+  const [form, setForm] = useState({ 
+    id: "", 
+    name: "", 
+    phone: "", 
+    color: "#3b82f6", 
+    userId: "" // ID do Clerk do funcionário para vincular login
+  });
 
-  async function carregar() {
+  useEffect(() => { carregarDados(); }, []);
+
+  async function carregarDados() {
     try {
         const res = await fetch('/api/painel/profissionais');
         const data = await res.json();
         if (Array.isArray(data)) setProfissionais(data);
-    } catch (e) { console.error(e); } 
-    finally { setLoading(false); }
+    } catch(e) { 
+        console.error(e);
+        toast.error("Erro ao carregar lista de profissionais.");
+    } finally { 
+        setLoading(false); 
+    }
   }
 
-  function abrirCriar() {
-      const coresUsadas = profissionais.map(p => p.color);
-      const primeiraCorLivre = PALETA_CORES.find(c => !coresUsadas.includes(c)) || PALETA_CORES[0];
-      setForm({ id: "", name: "", phone: "", photoUrl: "", color: primeiraCorLivre });
-      setIsModalOpen(true);
-  }
-
-  function abrirEditar(pro: any) {
-      setForm({ id: pro.id, name: pro.name, phone: pro.phone || "", photoUrl: pro.photoUrl || "", color: pro.color || PALETA_CORES[0] });
-      setIsModalOpen(true);
-  }
-
-  async function salvar() {
-    if(!form.name) return alert("Nome é obrigatório");
-    setSaving(true);
+  async function salvarProfissional() {
+    if(!form.name) return toast.error("O nome é obrigatório.");
+    
+    setSalvando(true);
+    const method = form.id ? 'PUT' : 'POST';
+    
     try {
-        const method = form.id ? 'PUT' : 'POST';
-        const res = await fetch('/api/painel/profissionais', { 
-            method: method, body: JSON.stringify(form) 
+        const res = await fetch('/api/painel/profissionais', {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(form)
         });
-        if (res.ok) { setIsModalOpen(false); carregar(); } 
-        else { alert("Erro ao salvar."); }
-    } catch (error) { alert("Erro de conexão."); }
-    finally { setSaving(false); }
+
+        const data = await res.json();
+
+        if (res.ok) {
+            toast.success(form.id ? "Dados atualizados!" : "Profissional adicionado!");
+            fecharModal();
+            carregarDados();
+            // Avisa a agenda para atualizar as cores e nomes
+            if (setRefreshKey) setRefreshKey((prev: number) => prev + 1);
+        } else {
+            // EXIBE O ERRO DE LIMITE DO PLANO (1, 5 ou 15) vindo da API
+            toast.error(data.error || "Erro ao salvar profissional.");
+        }
+    } catch (error) {
+        toast.error("Erro de conexão com o servidor.");
+    } finally {
+        setSalvando(false);
+    }
   }
 
-  async function deletar(id: string) {
-    if(!confirm("Remover?")) return;
-    await fetch('/api/painel/profissionais', { method: 'DELETE', body: JSON.stringify({ id }) });
-    setProfissionais(prev => prev.filter(p => p.id !== id));
+  async function deletar(id: string, nome: string) {
+    toast(`Remover ${nome} da equipe?`, {
+        action: {
+            label: "Confirmar",
+            onClick: async () => {
+                const res = await fetch('/api/painel/profissionais', { 
+                    method: 'DELETE', 
+                    body: JSON.stringify({ id }) 
+                });
+                if (res.ok) {
+                    setProfissionais(prev => prev.filter(p => p.id !== id));
+                    toast.success("Removido com sucesso.");
+                    if (setRefreshKey) setRefreshKey((prev: number) => prev + 1);
+                }
+            }
+        }
+    });
   }
+
+  function prepararEdicao(p: any) {
+      setForm({
+          id: p.id,
+          name: p.name,
+          phone: p.phone || "",
+          color: p.color || "#3b82f6",
+          userId: p.userId || ""
+      });
+      setModalAberto(true);
+  }
+
+  function fecharModal() {
+      setModalAberto(false);
+      setForm({ id: "", name: "", phone: "", color: "#3b82f6", userId: "" });
+  }
+
+  if (loading) return (
+    <div className="h-96 w-full flex items-center justify-center">
+        <Loader2 className="animate-spin text-blue-600" size={32}/>
+    </div>
+  );
 
   return (
-    <div className={`max-w-6xl mx-auto p-6 ${theme}`}>
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-8 pb-20">
+      {/* HEADER TIPO SaaS PRO */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
         <div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><User size={28} className="text-blue-600" /> Gestão de Equipe</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Gerencie quem atende no seu negócio.</p>
+            <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight flex items-center gap-2">
+                <ShieldCheck className="text-blue-600" size={32}/> Gestão de Equipe
+            </h1>
+            <p className="text-gray-500 text-sm font-medium">Cadastre profissionais e vincule contas de acesso.</p>
         </div>
-        <button onClick={abrirCriar} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700">
-            <UserPlus size={20} /> Novo
+        <button 
+            onClick={() => setModalAberto(true)} 
+            className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
+        >
+            <Plus size={20}/> Novo Profissional
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {profissionais.map(pro => (
-            <div key={pro.id} className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border dark:border-gray-700 flex flex-col items-center text-center relative group" style={{ borderTop: `4px solid ${pro.color}` }}>
-                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button onClick={() => abrirEditar(pro)} className="p-1 bg-white dark:bg-gray-700 rounded shadow-sm border dark:border-gray-600"><Pencil size={16} className="text-blue-500"/></button>
-                    <button onClick={() => deletar(pro.id)} className="p-1 bg-white dark:bg-gray-700 rounded shadow-sm border dark:border-gray-600"><Trash2 size={16} className="text-red-500"/></button>
+      {/* LISTA DE CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
+        {profissionais.map(p => (
+            <div key={p.id} className="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] border-2 border-transparent hover:border-blue-500 transition-all shadow-sm group">
+                <div className="flex justify-between items-start mb-4">
+                    <div 
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
+                        style={{ backgroundColor: p.color }}
+                    >
+                        {p.name.charAt(0)}
+                    </div>
+                    <div className="flex gap-1">
+                        <button onClick={() => prepararEdicao(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition">
+                            <Pencil size={18}/>
+                        </button>
+                        <button onClick={() => deletar(p.id, p.name)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition">
+                            <Trash2 size={18}/>
+                        </button>
+                    </div>
                 </div>
-                <div className="w-20 h-20 mb-3 rounded-full overflow-hidden border-2 border-gray-100 dark:border-gray-700">
-                    {pro.photoUrl ? <img src={pro.photoUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><User className="text-gray-400 dark:text-gray-500"/></div>}
+                
+                <h3 className="text-xl font-bold dark:text-white">{p.name}</h3>
+                <div className="mt-4 space-y-3">
+                    <p className="text-sm text-gray-500 flex items-center gap-2 font-bold">
+                        <Phone size={14} className="text-blue-500"/> {p.phone || "Sem telefone"}
+                    </p>
+                    
+                    {/* INDICADOR DE VÍNCULO DE CONTA */}
+                    <div className={`text-[10px] p-2.5 rounded-xl font-black flex items-center justify-between gap-2 ${p.userId ? 'bg-green-50 text-green-600 dark:bg-green-900/20' : 'bg-gray-100 text-gray-400 dark:bg-gray-900'}`}>
+                        <span className="flex items-center gap-1.5 uppercase tracking-tighter">
+                            <UserCircle size={14}/> {p.userId ? "Conta Vinculada" : "Sem acesso ao painel"}
+                        </span>
+                        {p.userId && <Check size={12} />}
+                    </div>
                 </div>
-                <h3 className="font-bold text-gray-800 dark:text-white text-lg" style={{ color: pro.color }}>{pro.name}</h3>
-                <div className="mt-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full flex items-center gap-2"><Phone size={12} /> {pro.phone || "N/A"}</div>
             </div>
         ))}
-        {profissionais.length === 0 && !loading && <div className="col-span-3 text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 text-gray-400">Nenhum profissional cadastrado.</div>}
+
+        {profissionais.length === 0 && (
+            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[3rem]">
+                <Users size={48} className="mx-auto text-gray-300 mb-4"/>
+                <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Nenhum profissional cadastrado</p>
+            </div>
+        )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white dark:bg-gray-800 w-full max-w-md p-6 rounded-2xl shadow-2xl relative text-gray-800 dark:text-white">
-                <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4"><X size={24} /></button>
-                <h3 className="text-xl font-bold mb-4">{form.id ? "Editar" : "Novo"} Profissional</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-xs font-bold uppercase">Nome</label>
-                        <input className="w-full border dark:border-gray-600 p-3 rounded-lg mt-1 bg-transparent" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold uppercase">Telefone</label>
-                        <input className="w-full border dark:border-gray-600 p-3 rounded-lg mt-1 bg-transparent" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold uppercase">Foto (URL)</label>
-                        <input className="w-full border dark:border-gray-600 p-3 rounded-lg mt-1 bg-transparent" value={form.photoUrl} onChange={e => setForm({...form, photoUrl: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase">Cor da Agenda</label>
-                      <div className="flex gap-2 mt-2">
-                          {PALETA_CORES.map(cor => {
-                              const usada = profissionais.some(p => p.color === cor && p.id !== form.id);
-                              return (
-                                <button key={cor} disabled={usada} onClick={() => setForm({...form, color: cor})}
-                                    className={`w-8 h-8 rounded-full transition-transform border-2 dark:border-gray-700 ${usada ? 'opacity-20 cursor-not-allowed' : 'hover:scale-110'} ${form.color === cor ? 'ring-2 ring-offset-2 dark:ring-offset-gray-800' : ''}`}
-                                    style={{ backgroundColor: cor, ringColor: cor }}
-                                />
-                              )
-                          })}
+      {/* MODAL ADICIONAR/EDITAR */}
+      {modalAberto && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95 duration-200">
+                  <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24}/></button>
+                  <h2 className="text-3xl font-black mb-8 dark:text-white tracking-tighter">{form.id ? "Editar Profissional" : "Novo Membro"}</h2>
+                  
+                  <div className="space-y-5">
+                      <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-widest">Nome Completo</label>
+                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({...form, name: e.target.value})}/>
                       </div>
+
+                      <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-widest">Telefone de Contato</label>
+                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}/>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-[2rem] border border-blue-100 dark:border-blue-900/50">
+                          <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase ml-2 mb-1 block tracking-widest">Vincular Conta (ID do Clerk)</label>
+                          <input className="w-full border-2 border-blue-200 dark:border-gray-700 p-4 rounded-xl bg-white dark:bg-gray-950 outline-none focus:border-blue-500 font-mono text-[11px] font-bold dark:text-white" placeholder="user_2pX..." value={form.userId} onChange={e => setForm({...form, userId: e.target.value})}/>
+                          <p className="text-[9px] text-blue-400 mt-2 px-2 font-medium">O funcionário deve te passar este ID no perfil dele para ver a própria agenda.</p>
+                      </div>
+
+                      <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-3 block tracking-widest">Cor de Identificação</label>
+                          <div className="flex justify-between px-2">
+                              {["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#111827"].map(c => (
+                                  <button 
+                                    key={c} 
+                                    type="button"
+                                    onClick={() => setForm({...form, color: c})}
+                                    className={`w-9 h-9 rounded-full border-4 transition-all ${form.color === c ? 'border-white ring-2 ring-blue-500 scale-125 z-10' : 'border-transparent opacity-60'}`}
+                                    style={{ backgroundColor: c }}
+                                  />
+                              ))}
+                          </div>
+                      </div>
+
+                      <button 
+                        onClick={salvarProfissional} 
+                        disabled={salvando}
+                        className="w-full mt-4 bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                      >
+                          {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20}/> Salvar Dados</>}
+                      </button>
                   </div>
-                    <button onClick={salvar} disabled={saving} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 flex justify-center items-center gap-2">
-                        {saving ? "Salvando..." : <><Save size={18} /> {form.id ? "Atualizar" : "Salvar"}</>}
-                    </button>
-                </div>
-            </div>
-        </div>
+              </div>
+          </div>
       )}
     </div>
   );

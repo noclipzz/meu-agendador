@@ -7,15 +7,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// EMPRESA
+// --- EMPRESA (SaaS Multi-tenant) ---
 model Company {
-  id              String         @id @default(cuid())
-  name            String
-  slug            String         @unique
-  ownerId         String         @unique
-  createdAt       DateTime       @default(now())
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  ownerId           String         @unique
+  createdAt         DateTime       @default(now())
   
-  // Configurações
+  // Configurações e Branding
   logoUrl           String?        @default("")
   openTime          String         @default("09:00")
   closeTime         String         @default("18:00")
@@ -25,41 +25,45 @@ model Company {
   workDays          String         @default("1,2,3,4,5")
   monthlyGoal       Decimal        @default(5000)
   whatsappMessage   String?        @default("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.")
-  notificationEmail String?        // CAMPO NOVO
-  
-  services        Service[]
-  bookings        Booking[]
-  professionals   Professional[]
-  teamMembers     TeamMember[]
-  clients         Client[]       
-
+  notificationEmail String?        
+  instagramUrl      String?        @default("")
+  facebookUrl       String?        @default("")
+   
+  // Relações (onDelete: Cascade garante que se a empresa for deletada, tudo dela suma)
+  services          Service[]
+  bookings          Booking[]
+  professionals     Professional[]
+  teamMembers       TeamMember[]
+  clients           Client[]       
 }
 
-// MEMBROS DA EQUIPE
+// --- MEMBROS DA EQUIPE (Acesso Administrativo) ---
 model TeamMember {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  role      String   @default("MEMBER")
+  id          String   @id @default(cuid())
+  clerkUserId String?  @unique
+  email       String   @unique
+  role        String   @default("PROFESSIONAL") // ADMIN ou PROFESSIONAL
   
-  companyId String
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// PROFISSIONAIS
+// --- PROFISSIONAIS (Executores) ---
 model Professional {
   id        String   @id @default(cuid())
   name      String
   photoUrl  String?
   phone     String?
   color     String   @default("#3b82f6")
+  userId    String?  @unique // ID do Clerk para login do profissional
   
   companyId String
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings  Booking[]
 }
 
-// SERVIÇOS
+// --- SERVIÇOS ---
 model Service {
   id          String   @id @default(cuid())
   name        String
@@ -68,12 +72,12 @@ model Service {
   duration    Int
   
   companyId   String
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[]
 }
 
-// AGENDAMENTOS
+// --- AGENDAMENTOS E EVENTOS ---
 model Booking {
   id              String   @id @default(cuid())
   date            DateTime
@@ -81,26 +85,30 @@ model Booking {
   customerPhone   String?
   userId          String?
   
+  type            String   @default("CLIENTE") // CLIENTE ou EVENTO
+  location        String?  // Local para o tipo EVENTO
+
   // Relação com Cliente (Opcional para agendamentos avulsos)
   clientId        String?
   client          Client?  @relation(fields: [clientId], references: [id])
   
-  serviceId       String
-  service         Service  @relation(fields: [serviceId], references: [id])
+  // Opcionais para permitir a criação de EVENTOS sem serviço/profissional
+  serviceId       String?
+  service         Service? @relation(fields: [serviceId], references: [id])
   
   professionalId  String?
   professional    Professional? @relation(fields: [professionalId], references: [id])
 
   companyId       String
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// ASSINATURAS
+// --- ASSINATURAS (Stripe) ---
 model Subscription {
   id                   String    @id @default(cuid())
   userId               String    @unique
-  plan                 String?   // INDIVIDUAL, PREMIUM, MASTER (Opcional no início)
-  status               String    @default("INACTIVE") // ACTIVE, CANCELED, PAST_DUE
+  plan                 String?   // INDIVIDUAL, PREMIUM, MASTER
+  status               String    @default("INACTIVE") 
   
   stripeCustomerId     String?   @unique 
   stripeSubscriptionId String?   @unique 
@@ -111,8 +119,7 @@ model Subscription {
   updatedAt            DateTime  @updatedAt
 }
 
-// CLIENTES (CRM)
-
+// --- CLIENTES (CRM) ---
 model Client {
   id          String    @id @default(cuid())
   name        String
@@ -125,10 +132,10 @@ model Client {
   address     String?
   city        String?
   notes       String?
-  status      String    @default("ATIVO") // ATIVO ou INATIVO
+  status      String    @default("ATIVO")
   
   companyId   String
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[] 
   createdAt   DateTime  @default(now())

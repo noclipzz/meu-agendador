@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Save, Loader2, UploadCloud, Moon, Sun, Pencil, X, MessageSquare, Building2, Mail } from "lucide-react"; 
+import { Trash2, Plus, Save, Loader2, UploadCloud, Moon, Sun, Pencil, X, MessageSquare, Building2, Mail, Clock, Instagram, Facebook } from "lucide-react"; 
 import { useTheme } from "../../../hooks/useTheme";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
@@ -17,6 +17,8 @@ export default function Configuracoes() {
   // --- CAMPOS GERAIS ---
   const [name, setName] = useState(""); 
   const [notificationEmail, setNotificationEmail] = useState(""); 
+  const [instagramUrl, setInstagramUrl] = useState(""); // ADICIONADO
+  const [facebookUrl, setFacebookUrl] = useState("");   // ADICIONADO
   const [logoUrl, setLogoUrl] = useState("");
   const [openTime, setOpenTime] = useState("09:00");
   const [closeTime, setCloseTime] = useState("18:00");
@@ -44,6 +46,8 @@ export default function Configuracoes() {
             setIdEmpresa(dataConfig.id);
             setName(dataConfig.name || ""); 
             setNotificationEmail(dataConfig.notificationEmail || "");
+            setInstagramUrl(dataConfig.instagramUrl || ""); // CARREGA INSTAGRAM
+            setFacebookUrl(dataConfig.facebookUrl || "");   // CARREGA FACEBOOK
             setLogoUrl(dataConfig.logoUrl || "");
             setOpenTime(dataConfig.openTime || "09:00");
             setCloseTime(dataConfig.closeTime || "18:00");
@@ -85,6 +89,8 @@ export default function Configuracoes() {
             body: JSON.stringify({
                 name,
                 notificationEmail,
+                instagramUrl, // SALVA INSTAGRAM
+                facebookUrl,  // SALVA FACEBOOK
                 openTime, 
                 closeTime, 
                 lunchStart, 
@@ -99,12 +105,11 @@ export default function Configuracoes() {
         
         if (res.ok) {
             toast.success("Configurações salvas!");
-            // Uso seguro do context para evitar erros de undefined
             if (context && typeof context.setRefreshKey === 'function') {
                 context.setRefreshKey((prev: number) => prev + 1);
             }
         } else {
-            toast.error("Erro ao salvar. Verifique se o banco de dados está atualizado.");
+            toast.error("Erro ao salvar. Verifique o banco de dados.");
         }
     } catch (error) {
         toast.error("Erro de conexão.");
@@ -117,7 +122,12 @@ export default function Configuracoes() {
   }
 
   function prepararEdicao(servico: any) {
-    setServiceForm({ id: servico.id, name: servico.name, price: servico.price, duration: String(servico.duration) });
+    setServiceForm({ 
+        id: servico.id, 
+        name: servico.name, 
+        price: servico.price, 
+        duration: String(servico.duration) 
+    });
     toast.info(`Editando: ${servico.name}`);
   }
 
@@ -125,7 +135,6 @@ export default function Configuracoes() {
     if(!serviceForm.name || !serviceForm.price) return toast.warning("Preencha nome e preço.");
     const method = serviceForm.id ? 'PUT' : 'POST';
     try {
-        // CORREÇÃO: Removido o erro de sintaxe 'method: body:'
         const res = await fetch('/api/painel/servicos', { 
             method: method, 
             body: JSON.stringify(serviceForm) 
@@ -165,7 +174,7 @@ export default function Configuracoes() {
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20 p-4">
+    <div className="max-w-4xl mx-auto space-y-8 pb-20 p-4 font-sans">
       
       <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex justify-between items-center text-sm">
         <span className="text-blue-800 font-bold">ID para Suporte Técnico:</span>
@@ -203,6 +212,33 @@ export default function Configuracoes() {
                 </div>
             </div>
 
+            {/* --- ADICIONADO: SEÇÃO DE REDES SOCIAIS --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1">
+                        <Instagram size={14} className="text-pink-500"/> Link do Instagram
+                    </label>
+                    <input 
+                        className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 outline-none focus:ring-2 ring-blue-500 font-bold" 
+                        placeholder="https://instagram.com/seu-perfil" 
+                        value={instagramUrl} 
+                        onChange={e => setInstagramUrl(e.target.value)} 
+                    />
+                </div>
+
+                <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1">
+                        <Facebook size={14} className="text-blue-600"/> Link do Facebook
+                    </label>
+                    <input 
+                        className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 outline-none focus:ring-2 ring-blue-500 font-bold" 
+                        placeholder="https://facebook.com/sua-pagina" 
+                        value={facebookUrl} 
+                        onChange={e => setFacebookUrl(e.target.value)} 
+                    />
+                </div>
+            </div>
+
             <div className="border-t dark:border-gray-700 pt-6">
                 <label className="text-xs font-bold text-gray-500 uppercase mb-3 block">Logo da Empresa</label>
                 <div className="flex items-center gap-6">
@@ -220,10 +256,10 @@ export default function Configuracoes() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t dark:border-gray-700">
-            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Meta Mensal (R$)</label><input type="number" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900" value={monthlyGoal} onChange={e => setMonthlyGoal(e.target.value)} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Tempo Atendimento</label><select className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-900" value={interval} onChange={e => setInterval(Number(e.target.value))}><option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option></select></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Abre às</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900" value={openTime} onChange={e => setOpenTime(e.target.value)} /></div>
-            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Fecha às</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900" value={closeTime} onChange={e => setCloseTime(e.target.value)} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Meta Mensal (R$)</label><input type="number" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900 font-bold" value={monthlyGoal} onChange={e => setMonthlyGoal(e.target.value)} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Tempo Atendimento</label><select className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-900 font-bold" value={interval} onChange={e => setInterval(Number(e.target.value))}><option value={15}>15 min</option><option value={30}>30 min</option><option value={45}>45 min</option><option value={60}>1 hora</option></select></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Abre às</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900 font-bold" value={openTime} onChange={e => setOpenTime(e.target.value)} /></div>
+            <div><label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Fecha às</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full bg-white dark:bg-gray-900 font-bold" value={closeTime} onChange={e => setCloseTime(e.target.value)} /></div>
             <div className="col-span-2 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border dark:border-gray-700"><p className="text-xs font-bold text-gray-500 uppercase mb-3">Horário de Pausa (Almoço)</p><div className="flex gap-4"><div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Início</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-800" value={lunchStart} onChange={e => setLunchStart(e.target.value)} /></div><div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Fim</label><input type="time" className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-800" value={lunchEnd} onChange={e => setLunchEnd(e.target.value)} /></div></div></div>
         </div>
         
@@ -232,28 +268,52 @@ export default function Configuracoes() {
         <div className="mt-8 border-t dark:border-gray-700 pt-6 flex items-center justify-between">
             <div>
                  <h3 className="font-bold text-sm text-gray-700 dark:text-gray-200">Mensagem do WhatsApp</h3>
-                 <p className="text-xs text-gray-500">Personalize o texto automático.</p>
+                 <p className="text-xs text-gray-500 uppercase font-bold text-[10px]">Texto automático.</p>
             </div>
             <button onClick={() => setModalWhatsappOpen(true)} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition">Editar lembrete automático</button>
         </div>
 
-        <div className="border-t dark:border-gray-700 pt-6 mt-6 flex items-center justify-between">
+        <div className="border-t dark:border-gray-700 pt-6 mt-6 flex items-center justify-between text-gray-700 dark:text-gray-200">
             <div className="flex items-center gap-3">
                 <Moon className="text-gray-500"/>
-                <div><p className="font-bold">Modo Noturno</p><p className="text-xs text-gray-400">Aparência escura.</p></div>
+                <div><p className="font-bold">Modo Noturno</p><p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">Aparência escura.</p></div>
             </div>
             <button onClick={toggleTheme} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'}`}><span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : 'translate-x-1'}`}/></button>
         </div>
 
-        <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg hover:scale-[1.02] transition active:scale-95"><Save size={18} /> Salvar Alterações</button>
+        <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2"><Save size={18} /> Salvar Alterações</button>
       </div>
 
       {/* BLOCO 2: SERVIÇOS */}
       <div className="bg-white dark:bg-gray-800/50 p-8 rounded-xl shadow-sm border dark:border-gray-700">
         <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">✂️ Meus Serviços</h2>
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border dark:border-gray-700 items-end">
-            <div className="flex-1 w-full"><label className="text-xs text-gray-400 mb-1 block">Nome</label><input placeholder="Ex: Clareamento" className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-800 font-bold" value={serviceForm.name} onChange={e => setServiceForm({...serviceForm, name: e.target.value})} /></div>
-            <div className="w-24"><label className="text-xs text-gray-400 mb-1 block">Preço</label><input type="number" placeholder="0.00" className="border dark:border-gray-700 p-2 rounded w-full text-sm bg-white dark:bg-gray-800 font-bold" value={serviceForm.price} onChange={e => setServiceForm({...serviceForm, price: e.target.value})} /></div>
+        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gray-50 dark:bg-gray-900 p-4 rounded-3xl border dark:border-gray-700 items-end">
+            <div className="flex-1 w-full">
+                <label className="text-xs text-gray-400 mb-1 block">Nome</label>
+                <input placeholder="Ex: Clareamento" className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-800 font-bold" value={serviceForm.name} onChange={e => setServiceForm({...serviceForm, name: e.target.value})} />
+            </div>
+            <div className="w-full md:w-24">
+                <label className="text-xs text-gray-400 mb-1 block">Preço</label>
+                <input type="number" placeholder="0.00" className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-800 font-bold" value={serviceForm.price} onChange={e => setServiceForm({...serviceForm, price: e.target.value})} />
+            </div>
+            
+            {/* ADIÇÃO: CAMPO DE DURAÇÃO */}
+            <div className="w-full md:w-32">
+                <label className="text-xs text-gray-400 mb-1 block">Duração</label>
+                <select 
+                    className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-800 font-bold" 
+                    value={serviceForm.duration} 
+                    onChange={e => setServiceForm({...serviceForm, duration: e.target.value})}
+                >
+                    <option value="15">15 min</option>
+                    <option value="30">30 min</option>
+                    <option value="45">45 min</option>
+                    <option value="60">1 hora</option>
+                    <option value="90">1h 30min</option>
+                    <option value="120">2 horas</option>
+                </select>
+            </div>
+
             <button onClick={salvarServico} className={`text-white px-4 py-2 rounded h-[38px] flex items-center gap-2 font-bold shadow-sm transition ${serviceForm.id ? 'bg-yellow-500' : 'bg-green-600'}`}>
                 {serviceForm.id ? <Save size={18}/> : <Plus size={18}/>} {serviceForm.id ? "Atualizar" : "Add"}
             </button>
@@ -263,7 +323,12 @@ export default function Configuracoes() {
         <div className="space-y-3">
             {services.map(serv => (
                 <div key={serv.id} className="flex justify-between items-center p-4 border dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900/50 shadow-sm group hover:border-blue-500 transition-all">
-                    <div><h3 className="font-bold">{serv.name}</h3><p className="text-xs text-gray-500">⏱ {serv.duration} min</p></div>
+                    <div>
+                        <h3 className="font-bold text-gray-800 dark:text-gray-100">{serv.name}</h3>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 font-bold uppercase tracking-tighter">
+                            <Clock size={12}/> {serv.duration} min
+                        </p>
+                    </div>
                     <div className="flex items-center gap-2">
                         <span className="font-bold text-blue-600 mr-2">R$ {serv.price}</span>
                         <button onClick={() => prepararEdicao(serv)} className="text-gray-400 hover:text-blue-600 transition"><Pencil size={18} /></button>
