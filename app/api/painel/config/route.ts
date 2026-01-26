@@ -6,10 +6,17 @@ const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const config = await prisma.company.findFirst();
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+    // BUSCA A EMPRESA VINCULADA AO USUÁRIO LOGADO
+    const config = await prisma.company.findFirst({
+      where: { ownerId: userId }
+    });
+    
     return NextResponse.json(config);
   } catch (error) {
-    return NextResponse.json({ error: "Erro" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar empresa" }, { status: 500 });
   }
 }
 
@@ -19,29 +26,36 @@ export async function POST(req: Request) {
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     const body = await req.json();
-    const config = await prisma.company.findFirst();
+    
+    // Verifica se ele já tem uma empresa
+    const existingConfig = await prisma.company.findFirst({
+      where: { ownerId: userId }
+    });
 
     const data = {
-      openTime: body.openTime,
-      closeTime: body.closeTime,
-      lunchStart: body.lunchStart,
-      lunchEnd: body.lunchEnd,
-      logoUrl: body.logoUrl,
+      name: body.name,
+      ownerId: userId, // Vínculo essencial
+      slug: body.name.toLowerCase().replace(/ /g, "-") + "-" + Math.floor(Math.random() * 1000),
+      openTime: body.openTime || "09:00",
+      closeTime: body.closeTime || "18:00",
+      lunchStart: body.lunchStart || "12:00",
+      lunchEnd: body.lunchEnd || "13:00",
+      logoUrl: body.logoUrl || "",
       monthlyGoal: Number(body.monthlyGoal) || 0,
-      workDays: body.workDays,
-      interval: Number(body.interval) || 30,
-      whatsappMessage: body.whatsappMessage // Campo crucial
+      whatsappMessage: body.whatsappMessage || "Olá {nome}, seu agendamento está confirmado!"
     };
 
-    if (config) {
-      const res = await prisma.company.update({ where: { id: config.id }, data });
-      return NextResponse.json(res);
+    if (existingConfig) {
+      const updated = await prisma.company.update({
+        where: { id: existingConfig.id },
+        data,
+      });
+      return NextResponse.json(updated);
     } else {
-      const res = await prisma.company.create({ data });
-      return NextResponse.json(res);
+      const created = await prisma.company.create({ data });
+      return NextResponse.json(created);
     }
   } catch (error) {
-    console.error(error);
-    return new NextResponse("Erro Interno", { status: 500 });
+    return new NextResponse("Erro ao salvar", { status: 500 });
   }
 }

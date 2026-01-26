@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../contexts/AgendaContext";
 
@@ -80,7 +80,7 @@ export default function PainelDashboard() {
       const dadosConfig = await resConfig.json();
       if (dadosConfig) {
         setMetaMensal(Number(dadosConfig.monthlyGoal) || 5000);
-        setEmpresaInfo({ name: dadosConfig.name || "", logo: dadosConfig.logoUrl || "" });
+        setEmpresaInfo({ name: dadosConfig.name || "Minha Empresa", logo: dadosConfig.logoUrl || "" });
         setMsgWhatsapp(dadosConfig.whatsappMessage || "");
       }
       const dadosPro = await resPro.json();
@@ -96,45 +96,29 @@ export default function PainelDashboard() {
   function iniciarEdicao() {
       const data = new Date(agendamentoSelecionado.date);
       setEditForm({
-          id: agendamentoSelecionado.id,
-          customerName: agendamentoSelecionado.customerName,
-          customerPhone: agendamentoSelecionado.customerPhone,
-          serviceId: agendamentoSelecionado.serviceId,
-          professionalId: agendamentoSelecionado.professionalId,
-          dataPura: format(data, "yyyy-MM-dd"),
+          id: agendamentoSelecionado.id, customerName: agendamentoSelecionado.customerName,
+          customerPhone: agendamentoSelecionado.customerPhone, serviceId: agendamentoSelecionado.serviceId,
+          professionalId: agendamentoSelecionado.professionalId, dataPura: format(data, "yyyy-MM-dd"),
           horaPura: format(data, "HH:mm")
       });
       setIsEditing(true);
   }
 
-  // --- VALIDAÇÃO DE DATA PASSADA ADICIONADA AQUI ---
   async function salvarAlteracoesAgendamento() {
       try {
           const novaData = new Date(`${editForm.dataPura}T${editForm.horaPura}:00`);
-          
-          // BLOQUEIO RADICAL: Compara com o horário exato de agora
-          if (isBefore(novaData, new Date())) {
-              return toast.error("❌ Erro: Você escolheu um horário que já passou!");
-          }
+          if (isBefore(novaData, new Date())) return toast.error("Não é possível agendar para o passado!");
 
           const res = await fetch('/api/painel', {
               method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...editForm, date: novaData.toISOString() })
           });
-
           if (res.ok) {
               toast.success("Agendamento atualizado!");
-              setIsEditing(false); 
-              setAgendamentoSelecionado(null);
+              setIsEditing(false); setAgendamentoSelecionado(null);
               carregarDados();
-          } else {
-              const erro = await res.json();
-              toast.error(erro.error || "Erro ao salvar.");
           }
-      } catch (error) { 
-          toast.error("Erro de conexão."); 
-      }
+      } catch (error) { toast.error("Erro ao salvar."); }
   }
 
   async function cancelar(id: string, nome: string) {
@@ -179,6 +163,7 @@ export default function PainelDashboard() {
                             .reduce((acc, item) => acc + Number(item.service.price), 0);
   const porcentagemMeta = metaMensal > 0 ? Math.min(100, Math.round((faturamentoTotal / metaMensal) * 100)) : 0;
 
+  // --- RENDER GRID (VISÃO MÊS/SEMANA CORRIGIDA) ---
   const renderGrid = (dias: Date[]) => (
     <div className="grid grid-cols-7 bg-gray-200 dark:bg-gray-700 gap-px h-full overflow-y-auto">
         {dias.map((dia) => {
@@ -188,24 +173,49 @@ export default function PainelDashboard() {
             const diaSemanaCurto = format(dia, 'EEE', { locale: ptBR }).replace('.', '').toUpperCase();
 
             return (
-                <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }}
-                     className={`bg-white dark:bg-gray-800 p-2 min-h-[120px] cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}>
-                    <div className="flex justify-between items-center mb-2 border-b dark:border-gray-700 pb-1">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-black text-gray-400">{diaSemanaCurto}</span>
-                            <span className={`text-sm font-bold flex items-center justify-center rounded-full w-6 h-6 ${isSameDay(dia, new Date()) ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-200'}`}>
+                <div 
+                    key={dia.toString()} 
+                    onClick={() => { setDataAtual(dia); setView('day'); }}
+                    // CORREÇÃO: Altura fixa (h-[150px]) e overflow-hidden para não vazar
+                    className={`bg-white dark:bg-gray-800 p-1.5 h-[150px] flex flex-col cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}
+                >
+                    {/* Cabeçalho da Célula (Fixo no topo) */}
+                    <div className="flex justify-between items-center mb-1 border-b dark:border-gray-700 pb-1 flex-shrink-0">
+                        <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-black text-gray-400">{diaSemanaCurto}</span>
+                            <span className={`text-xs font-bold flex items-center justify-center rounded-full w-5 h-5 ${isSameDay(dia, new Date()) ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-200'}`}>
                                 {format(dia, 'd')}
                             </span>
                         </div>
-                        {faturamento > 0 && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1 rounded">R${faturamento}</span>}
+                        {faturamento > 0 && <span className="text-[9px] font-black text-green-600 bg-green-50 px-1 rounded">R${faturamento}</span>}
                     </div>
-                    <div className="space-y-1">
-                        {ags.slice(0, 4).map(ag => (
-                            <div key={ag.id} className="text-[9px] px-1.5 py-0.5 rounded truncate bg-blue-500 text-white font-medium">
-                                {format(new Date(ag.date), "HH:mm")} {ag.customerName}
-                            </div>
-                        ))}
+
+                    {/* CORREÇÃO: Container de agendamentos com Scroll Interno */}
+                    <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+                        {ags.map(ag => {
+                            const pro = profissionais.find(p => p.id === ag.professionalId);
+                            const corProfissional = pro ? pro.color : '#3b82f6';
+                            
+                            return (
+                                <div 
+                                    key={ag.id} 
+                                    className="text-[9px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight"
+                                    style={{ backgroundColor: corProfissional }}
+                                >
+                                    {format(new Date(ag.date), "HH:mm")} {ag.customerName}
+                                </div>
+                            )
+                        })}
                     </div>
+
+                    {/* Indicador de quantidade total (Fixo no rodapé) */}
+                    {ags.length > 0 && (
+                        <div className="pt-0.5 border-t dark:border-gray-700 mt-0.5 flex-shrink-0">
+                            <p className="text-[8px] text-gray-400 text-center font-black uppercase">
+                                {ags.length} {ags.length === 1 ? 'atendimento' : 'atendimentos'}
+                            </p>
+                        </div>
+                    )}
                 </div>
             );
         })}
@@ -264,7 +274,7 @@ export default function PainelDashboard() {
       tituloCalendario = format(dataAtual, "dd 'de' MMMM", { locale: ptBR });
   }
 
-  if (loading) return <div className="p-20 text-center text-gray-400">Carregando...</div>;
+  if (loading) return <div className="p-20 text-center text-gray-400 font-bold">Carregando Agenda...</div>;
 
   return (
     <div className="h-screen flex flex-col p-4 gap-4 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900">
@@ -288,7 +298,7 @@ export default function PainelDashboard() {
           </div>
       </div>
 
-      {/* CONTROLES */}
+      {/* FILTROS */}
       <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700 shadow-sm w-full md:w-auto">
                   {['month', 'week', 'day'].map((v) => (
@@ -301,14 +311,14 @@ export default function PainelDashboard() {
                 <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-3 py-1.5 flex-1 shadow-sm">
                     <Search size={16} className="text-gray-400 mr-2" /><input type="text" placeholder="Buscar cliente..." className="bg-transparent outline-none text-sm w-full" value={busca} onChange={(e) => setBusca(e.target.value)}/>
                 </div>
-                <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 text-sm shadow-sm" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
+                <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 text-sm shadow-sm outline-none" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
                     <option value="todos">Todos Profissionais</option>
                     {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
             </div>
       </div>
 
-      {/* CALENDARIO */}
+      {/* ÁREA DA AGENDA */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 flex flex-col flex-1 overflow-hidden shadow-sm">
           <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
               <div className="flex items-center gap-2 mx-auto">
@@ -322,62 +332,55 @@ export default function PainelDashboard() {
           </div>
       </div>
 
-      {/* MODAL EDITAR */}
+      {/* MODAL EDITAR / DETALHES */}
       {agendamentoSelecionado && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
             <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative">
                 <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400"><X /></button>
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center"><Calendar size={32} className="text-blue-500" /></div>
+                        <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500"><Calendar size={32} /></div>
                         <div>
-                            {isEditing ? <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full" value={editForm.customerName} onChange={e => setEditForm({...editForm, customerName: e.target.value})} /> : <h2 className="text-2xl font-bold">{agendamentoSelecionado.customerName}</h2>}
-                            <p className="text-gray-500 text-sm">{isEditing ? "Editando agendamento" : "Detalhes"}</p>
+                            {isEditing ? <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({...editForm, customerName: e.target.value})} /> : <h2 className="text-2xl font-bold">{agendamentoSelecionado.customerName}</h2>}
+                            <p className="text-gray-500 text-sm">{isEditing ? "Editando agendamento" : "Detalhes do agendamento"}</p>
                         </div>
                     </div>
-                    {!isEditing && <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 rounded-full text-blue-600"><Pencil size={20} /></button>}
+                    {!isEditing && <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition"><Pencil size={20} /></button>}
                 </div>
                 <div className="space-y-4">
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Serviço</p>
-                        {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border" value={editForm.serviceId} onChange={e => setEditForm({...editForm, serviceId: e.target.value})}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select> : <p className="font-bold">{agendamentoSelecionado.service.name}</p>}
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Serviço</p>
+                        {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceId} onChange={e => setEditForm({...editForm, serviceId: e.target.value})}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select> : <p className="font-bold">{agendamentoSelecionado.service.name}</p>}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Data</p>
-                            {isEditing ? (
-                                <input 
-                                    type="date" 
-                                    className="w-full bg-white dark:bg-gray-900 p-1 rounded" 
-                                    // BLOQUEIO VISUAL: Não deixa selecionar antes de hoje
-                                    min={format(new Date(), "yyyy-MM-dd")}
-                                    value={editForm.dataPura} 
-                                    onChange={e => setEditForm({...editForm, dataPura: e.target.value})} 
-                                />
-                            ) : (
-                                <p className="font-bold">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>
-                            )}
+                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Data</p>
+                            {isEditing ? <input type="date" min={format(new Date(), "yyyy-MM-dd")} className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.dataPura} onChange={e => setEditForm({...editForm, dataPura: e.target.value})} /> : <p className="font-bold">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>}
                         </div>
                         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Horário</p>
-                            {isEditing ? <input type="time" className="w-full bg-white dark:bg-gray-900 p-1 rounded" value={editForm.horaPura} onChange={e => setEditForm({...editForm, horaPura: e.target.value})} /> : <p className="font-bold">{format(new Date(agendamentoSelecionado.date), "HH:mm")}</p>}
+                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Horário</p>
+                            {isEditing ? <input type="time" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.horaPura} onChange={e => setEditForm({...editForm, horaPura: e.target.value})} /> : <p className="font-bold">{format(new Date(agendamentoSelecionado.date), "HH:mm")}h</p>}
                         </div>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Profissional</p>
-                        {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border" value={editForm.professionalId} onChange={e => setEditForm({...editForm, professionalId: e.target.value})}>{profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : <p className="font-bold">{profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || 'N/A'}</p>}
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Profissional</p>
+                        {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({...editForm, professionalId: e.target.value})}>{profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : <p className="font-bold">{profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || 'N/A'}</p>}
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest text-green-600">Telefone Cliente</p>
+                        {isEditing ? <input className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.customerPhone} onChange={e => setEditForm({...editForm, customerPhone: e.target.value})} /> : <p className="font-bold">{formatarTelefone(agendamentoSelecionado.customerPhone)}</p>}
                     </div>
                 </div>
                 <div className="mt-8 flex gap-4">
                     {isEditing ? (
                         <>
-                            <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl">Cancelar</button>
-                            <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"><Save size={18}/> Salvar</button>
+                            <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                            <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition"><Save size={18}/> Salvar</button>
                         </>
                     ) : (
                         <>
-                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg"><Phone size={18} /> WhatsApp</a>
-                            <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl">Cancelar</button>
+                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition"><Phone size={18} /> WhatsApp</a>
+                            <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition">Cancelar</button>
                         </>
                     )}
                 </div>

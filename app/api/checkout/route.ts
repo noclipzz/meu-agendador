@@ -4,21 +4,19 @@ import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as any, // O 'as any' manda o TypeScript calar a boca
+  apiVersion: '2024-12-18.acacia' as any,
 });
 
 export async function POST(req: Request) {
   try {
-    const { userId } = auth();
-    const user = await currentUser(); // Pega email do usuário
+    const { userId } = await auth(); // Adicionado await
+    const user = await currentUser();
     
     if (!userId || !user) return NextResponse.json({}, { status: 401 });
 
     const { plan } = await req.json();
 
-    // 1. Identificar qual preço do Stripe usar
     let priceId = "";
     switch (plan) {
         case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
@@ -26,35 +24,30 @@ export async function POST(req: Request) {
         case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
     }
 
-    // 2. Verificar se o usuário já tem um Customer ID no nosso banco
     let subscription = await prisma.subscription.findUnique({ where: { userId } });
-    
     let stripeCustomerId = subscription?.stripeCustomerId;
 
-    // Se não tiver, cria um Cliente no Stripe
     if (!stripeCustomerId) {
         const customer = await stripe.customers.create({
             email: user.emailAddresses[0].emailAddress,
-            metadata: { userId: userId } // Importante para o Webhook saber quem é
+            metadata: { userId: userId } 
         });
         stripeCustomerId = customer.id;
         
-        // Salva o ID no nosso banco
         await prisma.subscription.upsert({
             where: { userId },
             update: { stripeCustomerId },
-            create: { userId, plan: "PENDENTE", stripeCustomerId }
+            create: { userId, plan: plan, stripeCustomerId, status: "INACTIVE" }
         });
     }
 
-    // 3. Criar a Sessão de Checkout
     const session = await stripe.checkout.sessions.create({
         customer: stripeCustomerId,
         line_items: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription', // MODO ASSINATURA (Renovação automática)
-        success_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/novo-negocio?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/planos?canceled=true`,
-        metadata: { userId: userId, plan: plan }
+        mode: 'subscription',
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel?success=true`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
+        metadata: { userId: userId, plan: plan } // Enviando como 'userId'
     });
 
     return NextResponse.json({ url: session.url });
@@ -65,19 +58,22 @@ export async function POST(req: Request) {
   }
 }
 
-// ROTA GET para verificar status
 export async function GET() {
-    const { userId } = auth();
-    if (!userId) return NextResponse.json({ active: false });
-  
-    const sub = await prisma.subscription.findUnique({ where: { userId } });
-    
-    // Verifica se status é ATIVO e se a data de expiração ainda não passou
-    const isActive = sub?.status === "ACTIVE" && sub.expiresAt && new Date(sub.expiresAt) > new Date();
-    
-    return NextResponse.json({ 
-        active: !!isActive, 
-        plan: sub?.plan, 
-        status: sub?.status // <--- NOVO: Retorna o status ("ACTIVE", "CANCELED", etc)
-    });
+    try {
+        const { userId } = await auth();
+        if (!userId) return NextResponse.json({ active: false });
+      
+        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        
+        // Regra: Ativo se status for ACTIVE e não estiver vencido
+        const isActive = sub?.status === "ACTIVE" && sub.expiresAt && new Date(sub.expiresAt) > new Date();
+        
+        return NextResponse.json({ 
+            active: !!isActive, 
+            plan: sub?.plan, 
+            status: sub?.status 
+        });
+    } catch {
+        return NextResponse.json({ active: false });
+    }
 }

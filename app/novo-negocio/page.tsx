@@ -1,137 +1,63 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Building2, ArrowRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function NovoNegocio() {
-  const { user, isLoaded } = useUser();
-  const router = useRouter();
-  
-  const [nome, setNome] = useState("");
-  const [slug, setSlug] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [verificando, setVerificando] = useState(true); // Estado de carregamento inicial
+    const [nome, setNome] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
-  // VERIFICAÇÃO DE SEGURANÇA (Porteiro)
-  useEffect(() => {
-    async function verificarStatus() {
-        if (!isLoaded || !user) return;
+    async function criarEmpresa() {
+        if (!nome) return toast.error("Digite o nome da sua empresa.");
+        setLoading(true);
 
         try {
-            // 1. Verifica se já tem empresa criada
-            // Usamos a rota de config que busca pelo ID do dono
-            const resEmpresa = await fetch('/api/painel/config');
-            const dadosEmpresa = await resEmpresa.json();
+            const res = await fetch('/api/painel/config', {
+                method: 'POST',
+                body: JSON.stringify({ name: nome })
+            });
 
-            if (dadosEmpresa && dadosEmpresa.id) {
-                // SE JÁ TEM EMPRESA -> MANDA PRO PAINEL
-                router.push('/painel');
-                return; 
-            }
-
-            // 2. Verifica se tem assinatura (Pagamento)
-            const resPag = await fetch('/api/checkout');
-            const dadosPag = await resPag.json();
-            
-            if (!dadosPag.active) {
-                // SE NÃO PAGOU -> MANDA PROS PLANOS
-                router.push('/');
+            if (res.ok) {
+                toast.success("Empresa configurada com sucesso!");
+                router.push('/painel'); // Agora sim vai pro painel
             } else {
-                // SE PASSOU NOS DOIS TESTES -> LIBERA A TELA
-                setVerificando(false);
+                toast.error("Erro ao criar empresa.");
             }
-
-        } catch (error) {
-            console.error("Erro de verificação:", error);
+        } catch (e) {
+            toast.error("Erro de conexão.");
+        } finally {
+            setLoading(false);
         }
     }
 
-    verificarStatus();
-  }, [isLoaded, user, router]);
-
-  async function criarEmpresa() {
-    if (!nome || !slug) return alert("Preencha tudo!");
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/empresa', {
-        method: 'POST',
-        body: JSON.stringify({ 
-            name: nome, 
-            slug: slug, 
-            ownerId: user?.id 
-        })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("Negócio criado com sucesso!");
-        router.push("/painel");
-      } else {
-        alert(data.error || "Erro ao criar.");
-      }
-    } catch (error) {
-        alert("Erro de conexão");
-    } finally {
-        setLoading(false);
-    }
-  }
-
-  // TELA DE CARREGAMENTO (Enquanto decide para onde mandar o usuário)
-  if (verificando) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-500 gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={48} />
-            <p>Verificando sua conta...</p>
-        </div>
-      );
-  }
-
-  // FORMULÁRIO DE CRIAÇÃO (Só aparece se não tiver empresa e tiver pago)
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md animate-in zoom-in">
-        <h1 className="text-2xl font-bold mb-2">Bem-vindo, {user?.firstName}!</h1>
-        <p className="text-gray-500 mb-6">Sua assinatura está ativa. Vamos configurar seu negócio.</p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Nome do Negócio</label>
-            <input 
-                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition" 
-                placeholder="Ex: Consultório Dr. Yan"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Link Personalizado</label>
-            <div className="flex items-center">
-                <span className="bg-gray-200 p-3 border border-r-0 rounded-l-lg text-gray-500 text-sm">nodigital.app/</span>
-                <input 
-                    className="w-full border p-3 rounded-r-lg focus:ring-2 focus:ring-blue-500 outline-none transition" 
-                    placeholder="dr-yan"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s/g, '-').replace(/[^a-z0-9-]/g, ''))}
-                />
+    return (
+        <div className="h-screen w-full flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
+            <div className="max-w-md w-full bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-2xl border dark:border-gray-800 text-center">
+                <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-blue-500/20">
+                    <Building2 size={40} />
+                </div>
+                <h1 className="text-3xl font-black mb-2 dark:text-white">Bem-vindo(a)!</h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">Para começar a agendar, precisamos dar um nome ao seu novo negócio.</p>
+                
+                <div className="space-y-4">
+                    <input 
+                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 dark:text-white font-bold transition-all"
+                        placeholder="Nome da sua Empresa (ex: Studio VIP)"
+                        value={nome}
+                        onChange={(e) => setNome(e.target.value)}
+                    />
+                    <button 
+                        onClick={criarEmpresa}
+                        disabled={loading}
+                        className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"
+                    >
+                        {loading ? <Loader2 className="animate-spin" /> : <>Configurar meu Painel <ArrowRight size={20}/></>}
+                    </button>
+                </div>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Apenas letras minúsculas e traços.</p>
-          </div>
-
-          <button 
-            onClick={criarEmpresa}
-            disabled={loading}
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition flex justify-center items-center gap-2"
-          >
-            {loading && <Loader2 className="animate-spin" size={18} />}
-            {loading ? "Criando..." : "Criar Painel"}
-          </button>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

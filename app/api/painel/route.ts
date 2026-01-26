@@ -8,13 +8,26 @@ const prisma = new PrismaClient();
 // BUSCAR AGENDAMENTOS
 export async function GET() {
   try {
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+    // 1. Primeiro descobre qual é a empresa desse usuário
+    const userCompany = await prisma.company.findFirst({
+      where: { ownerId: userId }
+    });
+
+    if (!userCompany) return NextResponse.json([]);
+
+    // 2. Busca agendamentos APENAS dessa empresa
     const bookings = await prisma.booking.findMany({
-      include: { service: true },
+      where: { companyId: userCompany.id }, // FILTRO DE ISOLAMENTO
+      include: { service: true, professional: true },
       orderBy: { date: 'asc' }
     });
+
     return NextResponse.json(bookings);
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar" }, { status: 500 });
+    return NextResponse.json({ error: "Erro" }, { status: 500 });
   }
 }
 

@@ -1,41 +1,28 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { serviceId, companyId, date, name, phone, professionalId } = body; // <--- RECEBE ID
+    const { clientId, serviceId, professionalId, companyId, date, name, phone } = body;
 
-    // ... (limpeza de data igual) ...
-    const dataLimpa = new Date(date);
-    dataLimpa.setSeconds(0); dataLimpa.setMilliseconds(0);
-
-    // VERIFICA SE *ESSE* PROFISSIONAL ESTÁ LIVRE
-    const conflito = await prisma.booking.findFirst({
-        where: {
-            companyId: companyId,
-            professionalId: professionalId, // <--- TRAVA SÓ PARA ELE
-            date: dataLimpa
-        }
-    });
-
-    if (conflito) return NextResponse.json({ error: "Horário ocupado." }, { status: 409 });
-
-    const booking = await prisma.booking.create({
+    const newBooking = await prisma.booking.create({
       data: {
-        date: dataLimpa,
+        date: new Date(date),
         customerName: name,
         customerPhone: phone,
         serviceId: serviceId,
+        professionalId: professionalId,
         companyId: companyId,
-        professionalId: professionalId // <--- SALVA COM ELE
-      },
+        // Garante que vincula ao ID do cliente fixo
+        clientId: clientId || null 
+      }
     });
 
-    return NextResponse.json({ success: true, booking });
-  } catch (error) { return NextResponse.json({ error: "Erro" }, { status: 500 }); }
+    return NextResponse.json(newBooking);
+  } catch (error) {
+    return new NextResponse("Erro", { status: 500 });
+  }
 }
