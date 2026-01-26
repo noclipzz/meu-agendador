@@ -32,6 +32,7 @@ model Company {
   professionals   Professional[]
   teamMembers     TeamMember[]
   clients         Client[]       
+
 }
 
 // MEMBROS DA EQUIPE
@@ -41,7 +42,7 @@ model TeamMember {
   role      String   @default("MEMBER")
   
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 // PROFISSIONAIS
@@ -53,7 +54,7 @@ model Professional {
   color     String   @default("#3b82f6")
   
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings  Booking[]
 }
@@ -67,7 +68,7 @@ model Service {
   duration    Int
   
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[]
 }
@@ -91,7 +92,7 @@ model Booking {
   professional    Professional? @relation(fields: [professionalId], references: [id])
 
   companyId       String
-  company         Company @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 // ASSINATURAS
@@ -127,7 +128,7 @@ model Client {
   status      String    @default("ATIVO") // ATIVO ou INATIVO
   
   companyId   String
-  company     Company   @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[] 
   createdAt   DateTime  @default(now())

@@ -23,6 +23,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [termoBusca, setTermoBusca] = useState("");
   
+  // NOVO: Estado para impedir múltiplos cliques
+  const [salvando, setSalvando] = useState(false);
+
   const [services, setServices] = useState<any[]>([]);
   const [profissionais, setProfissionais] = useState<any[]>([]);
   const [clientesCadastrados, setClientesCadastrados] = useState<any[]>([]);
@@ -37,42 +40,35 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     professionalId: "" 
   });
 
-  // --- LÓGICA DE PROTEÇÃO E REDIRECIONAMENTO ---
+  // --- LÓGICA DE PROTEÇÃO E REDIRECIONAMENTO (SaaS) ---
   useEffect(() => {
     if (!isLoaded || !user) return;
 
     async function verificarStatus() {
         try {
-            // 1. Verifica Assinatura (Através da sua API de checkout)
             const resPag = await fetch('/api/checkout');
             const dadosPag = await resPag.json();
             
-            // Se não tiver assinatura ativa, volta para a landing page ou preços
             if (!dadosPag.active) { 
-    console.log("REDIRECIONADO: Assinatura inativa");
-    // CORREÇÃO: Agora ele te joga direto na âncora #planos da página inicial
-    router.push('/#planos'); 
-    return; 
-}
+                console.log("REDIRECIONADO: Assinatura inativa");
+                router.push('/#planos'); 
+                return; 
+            }
 
-            // 2. Busca Empresa vinculada ao OwnerID (através do seu Clerk ID)
             const resEmpresa = await fetch('/api/painel/config');
             const dadosEmpresa = await resEmpresa.json();
 
-            // Caso tenha assinatura MAS não tenha empresa, manda para criar em /novo-negocio
             if (!dadosEmpresa || !dadosEmpresa.id) { 
-                console.log("Empresa não encontrada: Redirecionando para criação");
                 if (pathname !== '/novo-negocio') {
                     router.push('/novo-negocio');
                 }
                 return; 
             }
             
-            // Se chegou aqui, ele tem tudo: libera o painel e salva o ID da empresa dele
             setCompanyId(dadosEmpresa.id);
             setVerificando(false);
         } catch (error) { 
-            console.error("Erro crítico na verificação:", error);
+            console.error("Erro crítica na verificação:", error);
             router.push('/'); 
         }
     }
@@ -80,7 +76,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     verificarStatus();
   }, [router, user, isLoaded, setCompanyId, pathname]);
 
-  // Carrega dados para o modal de agendamento
   useEffect(() => {
     if(isModalOpen && companyId) {
         fetch('/api/painel/servicos').then(r => r.json()).then(setServices);
@@ -100,26 +95,37 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         toast.error("❌ Erro: Não é possível agendar um horário que já passou.");
         return;
     }
-    
-    const res = await fetch('/api/agendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            ...novo,
-            companyId: companyId,
-            date: dataFinal, 
-            name: novo.nome, 
-            phone: novo.phone,
-        })
-    });
 
-    if(res.ok) {
-        toast.success("Agendado com sucesso!");
-        setIsModalOpen(false);
-        setNovo({ clientId: "", nome: "", phone: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
-        if (refreshAgenda) refreshAgenda();
-    } else {
-        toast.error("Erro ao agendar.");
+    // TRAVA O PROCESSO AQUI
+    setSalvando(true);
+    
+    try {
+        const res = await fetch('/api/agendar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...novo,
+                companyId: companyId,
+                date: dataFinal, 
+                name: novo.nome, 
+                phone: novo.phone,
+            })
+        });
+
+        if(res.ok) {
+            toast.success("Agendado com sucesso!");
+            setIsModalOpen(false);
+            setNovo({ clientId: "", nome: "", phone: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
+            if (refreshAgenda) refreshAgenda();
+        } else {
+            const errorData = await res.json();
+            toast.error(errorData.error || "Erro ao agendar.");
+        }
+    } catch (error) {
+        toast.error("Erro de conexão com o servidor.");
+    } finally {
+        // LIBERA O BOTÃO
+        setSalvando(false);
     }
   }
 
@@ -202,13 +208,20 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
 
-                        <button onClick={salvarAgendamento} className="w-full bg-green-600 text-white p-5 rounded-2xl font-black text-lg hover:bg-green-700 shadow-xl transition active:scale-95">Confirmar Agendamento</button>
+                        {/* BOTÃO COM TRAVA DE MULTI-CLIQUE */}
+                        <button 
+                            onClick={salvarAgendamento} 
+                            disabled={salvando}
+                            className={`w-full p-5 rounded-2xl font-black text-lg shadow-xl transition flex items-center justify-center gap-2 ${salvando ? 'bg-gray-400 cursor-not-allowed opacity-70' : 'bg-green-600 hover:bg-green-700 text-white active:scale-95'}`}
+                        >
+                            {salvando ? <Loader2 className="animate-spin" /> : "Confirmar Agendamento"}
+                        </button>
                     </div>
                 </div>
             </div>
         )}
 
-        {/* MODAL DE BUSCA DE CLIENTES (PROFISSIONAL) */}
+        {/* MODAL DE BUSCA DE CLIENTES */}
         {isSearchModalOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[60] p-4">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
@@ -236,7 +249,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   );
 }
 
-// O WRAPPER FINAL (CORRIGIDO)
 export default function PainelLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AgendaProvider>
