@@ -12,19 +12,20 @@ model Company {
   id              String         @id @default(cuid())
   name            String
   slug            String         @unique
-  ownerId         String
+  ownerId         String         @unique
   createdAt       DateTime       @default(now())
   
   // Configurações
-  logoUrl         String?        @default("")
-  openTime        String         @default("09:00")
-  closeTime       String         @default("18:00")
-  lunchStart      String         @default("12:00")
-  lunchEnd        String         @default("13:00")
-  interval        Int            @default(30)
-  workDays        String         @default("1,2,3,4,5")
-  monthlyGoal     Decimal        @default(5000)
-  whatsappMessage String?        @default("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.")
+  logoUrl           String?        @default("")
+  openTime          String         @default("09:00")
+  closeTime         String         @default("18:00")
+  lunchStart        String         @default("12:00")
+  lunchEnd          String         @default("13:00")
+  interval          Int            @default(30)
+  workDays          String         @default("1,2,3,4,5")
+  monthlyGoal       Decimal        @default(5000)
+  whatsappMessage   String?        @default("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.")
+  notificationEmail String?        // CAMPO NOVO
   
   services        Service[]
   bookings        Booking[]

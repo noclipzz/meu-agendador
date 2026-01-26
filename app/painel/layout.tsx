@@ -49,10 +49,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             
             // Se não tiver assinatura ativa, volta para a landing page ou preços
             if (!dadosPag.active) { 
-                console.log("Acesso negado: Sem assinatura ativa");
-                router.push('/'); 
-                return; 
-            }
+    console.log("REDIRECIONADO: Assinatura inativa");
+    // CORREÇÃO: Agora ele te joga direto na âncora #planos da página inicial
+    router.push('/#planos'); 
+    return; 
+}
 
             // 2. Busca Empresa vinculada ao OwnerID (através do seu Clerk ID)
             const resEmpresa = await fetch('/api/painel/config');

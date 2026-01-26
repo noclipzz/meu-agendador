@@ -65,15 +65,22 @@ export async function GET() {
       
         const sub = await prisma.subscription.findUnique({ where: { userId } });
         
-        // Regra: Ativo se status for ACTIVE e não estiver vencido
-        const isActive = sub?.status === "ACTIVE" && sub.expiresAt && new Date(sub.expiresAt) > new Date();
+        // CORREÇÃO PROFISSIONAL:
+        // Só consideramos ativo se o status for "ACTIVE" E a data de expiração for válida.
+        // Se estiver "INACTIVE", "CANCELED" ou sem data, retornamos active: false.
+        const isActive = 
+            sub?.status === "ACTIVE" && 
+            sub?.expiresAt && 
+            new Date(sub.expiresAt) > new Date();
         
         return NextResponse.json({ 
             active: !!isActive, 
-            plan: sub?.plan, 
-            status: sub?.status 
+            // Se não estiver ativo, não enviamos o plano para o frontend, 
+            // assim o botão "Gerenciar" não aparece por engano.
+            plan: isActive ? sub?.plan : null, 
+            status: sub?.status || "INACTIVE"
         });
-    } catch {
+    } catch (error) {
         return NextResponse.json({ active: false });
     }
 }
