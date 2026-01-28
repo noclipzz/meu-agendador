@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 
 // Função para transformar "Studio VIP" em "studio-vip" (Link Profissional)
 function gerarSlug(text: string) {
+  if (!text) return "empresa-" + Math.floor(Math.random() * 1000);
   return text
     .toString()
     .normalize('NFD')
@@ -34,7 +35,8 @@ export async function GET() {
     
     return NextResponse.json(config);
   } catch (error) {
-    return NextResponse.json({ error: "Erro" }, { status: 500 });
+    console.error("ERRO_GET_CONFIG:", error);
+    return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 });
   }
 }
 
@@ -45,55 +47,63 @@ export async function POST(req: Request) {
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     const body = await req.json();
+    
+    // 1. Validação do Nome
+    if (!body.name) {
+        return NextResponse.json({ error: "O nome da empresa é obrigatório." }, { status: 400 });
+    }
+
     const slugDesejado = gerarSlug(body.name);
 
-    // 1. Validação de Link Único (Slug)
+    // 2. Validação de Link Único (Slug)
     const empresaComMesmoSlug = await prisma.company.findUnique({
       where: { slug: slugDesejado }
     });
 
-    // Se já existir esse link e não for da empresa do usuário atual, bloqueia
     if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
       return NextResponse.json(
-        { error: "Este nome de empresa já está em uso por outro usuário. Escolha um nome diferente para o seu link." }, 
+        { error: "Este nome de empresa já está em uso. Escolha outro para o seu link." }, 
         { status: 400 }
       );
     }
 
-    // 2. Busca se o usuário já tem uma empresa cadastrada
+    // 3. Busca se o usuário já tem uma empresa cadastrada
     const existingConfig = await prisma.company.findFirst({
       where: { ownerId: userId }
     });
 
-    // 3. Monta o objeto com TODAS as suas funções atuais preservadas
-    const data = {
+    // 4. Organiza os dados garantindo valores padrão (evita erro de 'undefined')
+    const dataToSave = {
       name: body.name,
       slug: slugDesejado,
-      notificationEmail: body.notificationEmail,
-      instagramUrl: body.instagramUrl, 
-      facebookUrl: body.facebookUrl,   
-      openTime: body.openTime,
-      closeTime: body.closeTime,
-      lunchStart: body.lunchStart,
-      lunchEnd: body.lunchEnd,
-      logoUrl: body.logoUrl,
-      monthlyGoal: Number(body.monthlyGoal) || 0,
-      workDays: body.workDays,
-      interval: Number(body.interval) || 30,
-      whatsappMessage: body.whatsappMessage
+      notificationEmail: body.notificationEmail || null,
+      instagramUrl: body.instagramUrl || "", 
+      facebookUrl: body.facebookUrl || "",   
+      openTime: body.openTime || "09:00",
+      closeTime: body.closeTime || "18:00",
+      lunchStart: body.lunchStart || "12:00",
+      lunchEnd: body.lunchEnd || "13:00",
+      logoUrl: body.logoUrl || "",
+      monthlyGoal: body.monthlyGoal ? Number(body.monthlyGoal) : 5000,
+      workDays: body.workDays || "1,2,3,4,5",
+      interval: body.interval ? Number(body.interval) : 30,
+      whatsappMessage: body.whatsappMessage || "Olá {nome}, seu agendamento está confirmado para {dia} às {hora}."
     };
 
     if (existingConfig) {
       // Atualiza a empresa existente
       const updated = await prisma.company.update({
         where: { id: existingConfig.id },
-        data,
+        data: dataToSave,
       });
       return NextResponse.json(updated);
     } else {
-      // Cria a empresa pela primeira vez
+      // --- CORREÇÃO: Criar empresa incluindo o ownerId obrigatório ---
       const created = await prisma.company.create({ 
-        data 
+        data: {
+            ...dataToSave,
+            ownerId: userId // VINCULA AO SEU USUÁRIO DO CLERK
+        } 
       });
       return NextResponse.json(created);
     }

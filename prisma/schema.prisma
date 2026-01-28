@@ -29,15 +29,17 @@ model Company {
   instagramUrl      String?        @default("")
   facebookUrl       String?        @default("")
    
-  // Relações (onDelete: Cascade garante que se a empresa for deletada, tudo dela suma)
+  // Relações
   services          Service[]
   bookings          Booking[]
   professionals     Professional[]
   teamMembers       TeamMember[]
   clients           Client[]       
+  expenses          Expense[]      
+  invoices          Invoice[]      // ADICIONADO: Relação com Faturas/Cobranças
 }
 
-// --- MEMBROS DA EQUIPE (Acesso Administrativo) ---
+// --- MEMBROS DA EQUIPE ---
 model TeamMember {
   id          String   @id @default(cuid())
   clerkUserId String?  @unique
@@ -48,17 +50,17 @@ model TeamMember {
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// --- PROFISSIONAIS (Executores) ---
+// --- PROFISSIONAIS ---
 model Professional {
   id        String   @id @default(cuid())
   name      String
   photoUrl  String?
   phone     String?
   color     String   @default("#3b82f6")
-  userId    String?  @unique // ID do Clerk para login do profissional
+  userId    String?  @unique 
   
   companyId String
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings  Booking[]
 }
@@ -70,11 +72,50 @@ model Service {
   description String?
   price       Decimal
   duration    Int
+  commission  Int      @default(0) 
   
   companyId   String
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[]
+}
+
+// --- DESPESAS (CONTAS A PAGAR) ---
+model Expense {
+  id          String   @id @default(cuid())
+  description String
+  value       Decimal
+  category    String   
+  frequency   String   @default("ONCE") 
+  date        DateTime @default(now())
+
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+// --- FATURAS E COBRANÇAS (CONTAS A RECEBER) ---
+model Invoice {
+  id            String    @id @default(cuid())
+  description   String
+  value         Decimal
+  method        String?   // PIX, BOLETO, CARTAO, DINHEIRO, FATURADO
+  status        String    @default("PENDENTE") // PENDENTE, PAGO, VENCIDO, CANCELADO
+  
+  dueDate       DateTime  // Data de vencimento da cobrança
+  paidAt        DateTime? // Data em que o pagamento foi confirmado
+  
+  // Vínculos
+  bookingId     String?   @unique
+  booking       Booking?  @relation(fields: [bookingId], references: [id])
+  
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 // --- AGENDAMENTOS E EVENTOS ---
@@ -86,13 +127,14 @@ model Booking {
   userId          String?
   
   type            String   @default("CLIENTE") // CLIENTE ou EVENTO
-  location        String?  // Local para o tipo EVENTO
+  location        String?  
 
-  // Relação com Cliente (Opcional para agendamentos avulsos)
+  status          String   @default("PENDENTE") // PENDENTE, CONFIRMADO, CONCLUIDO, CANCELADO
+  reminderSent    Boolean  @default(false)      
+
   clientId        String?
   client          Client?  @relation(fields: [clientId], references: [id])
   
-  // Opcionais para permitir a criação de EVENTOS sem serviço/profissional
   serviceId       String?
   service         Service? @relation(fields: [serviceId], references: [id])
   
@@ -101,13 +143,15 @@ model Booking {
 
   companyId       String
   company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  invoice         Invoice? // ADICIONADO: Relação com a Fatura gerada
 }
 
 // --- ASSINATURAS (Stripe) ---
 model Subscription {
   id                   String    @id @default(cuid())
   userId               String    @unique
-  plan                 String?   // INDIVIDUAL, PREMIUM, MASTER
+  plan                 String?   
   status               String    @default("INACTIVE") 
   
   stripeCustomerId     String?   @unique 
@@ -138,5 +182,17 @@ model Client {
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[] 
+  attachments Attachment[]
+  invoices    Invoice[] // ADICIONADO: Histórico financeiro do cliente
   createdAt   DateTime  @default(now())
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String   // Ex: image/png, application/pdf
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

@@ -11,13 +11,24 @@ export async function GET() {
     if (!userId) return NextResponse.json([], { status: 401 });
 
     const company = await prisma.company.findFirst({ 
-      where: { ownerId: userId }, 
-      include: { professionals: true } 
+      where: { ownerId: userId }
     });
 
-    return NextResponse.json(company?.professionals || []);
+    if (!company) return NextResponse.json([]);
+
+    const profissionais = await prisma.professional.findMany({
+      where: { companyId: company.id },
+      include: { 
+        bookings: {
+          where: { status: "CONFIRMADO" }, // Só conta para comissão o que foi confirmado
+          include: { service: true }
+        }
+      }
+    });
+
+    return NextResponse.json(profissionais);
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao listar" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar equipe" }, { status: 500 });
   }
 }
 

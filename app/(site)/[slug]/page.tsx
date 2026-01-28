@@ -5,7 +5,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Loader2, X, Phone, Building2 } from "lucide-react";
+import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -30,7 +30,7 @@ function gerarHorarios(
 
   const blocosOcupados = agendamentosExistentes.map(ag => {
     const inicioAg = new Date(ag.date).getHours() * 60 + new Date(ag.date).getMinutes();
-    const fimAg = inicioAg + ag.service.duration;
+    const fimAg = inicioAg + (ag.service?.duration || 30);
     return { inicio: inicioAg, fim: fimAg };
   });
 
@@ -104,7 +104,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     verificarOcupados();
   }, [dataSelecionada, profissionalSelecionado, servicoSelecionado, empresa]);
 
-  // 3. Gera os horários livres (CORRIGIDO PARA LER O INTERVALO DO BANCO)
+  // 3. Gera os horários livres
   useEffect(() => {
     if (empresa && servicoSelecionado) {
         const diaSemana = dataSelecionada.getDay().toString();
@@ -119,7 +119,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             empresa.closeTime, 
             empresa.lunchStart || "12:00",
             empresa.lunchEnd || "13:00",
-            empresa.interval || 30, // <--- AQUI: Usa a configuração do banco ou 30 min padrão
+            empresa.interval || 30,
             servicoSelecionado.duration,
             agendamentosDoDia
         );
@@ -143,77 +143,190 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           professionalId: profissionalSelecionado.id,
           date: dataFinal,
           name: nomeCliente,
-          phone: telefoneCliente
+          phone: telefoneCliente,
+          type: "CLIENTE"
         })
     });
 
     if (res.ok) {
         setAgendamentoConcluido(true);
     } else {
-        alert("Ops! Esse horário foi ocupado. Por favor, escolha outro.");
+        const err = await res.json();
+        alert(err.error || "Ops! Este horário não está mais disponível.");
         setHorarioSelecionado(null);
-        // Força recarregar os ocupados
-        const event = new Event('refreshOcupados');
-        window.dispatchEvent(event);
     }
   }
 
   const dataBonita = format(dataSelecionada, "dd 'de' MMMM", { locale: ptBR });
 
-  if (loading) return <div className="h-screen flex items-center justify-center">Carregando...</div>;
-  if (!empresa) return <div className="h-screen flex items-center justify-center text-red-500">Empresa não encontrada.</div>;
+  if (loading) return (
+    <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-blue-600 mb-2" size={40}/>
+        <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Carregando Agenda...</p>
+    </div>
+  );
+  
+  if (!empresa) return <div className="h-screen flex items-center justify-center text-red-500 font-bold">Empresa não encontrada ou link expirado.</div>;
 
   if (agendamentoConcluido) {
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-sm w-full animate-in zoom-in">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Confirmado!</h2>
-            <p className="text-gray-600 mb-1">Agendado com <strong>{profissionalSelecionado?.name}</strong></p>
-            <p className="text-sm text-gray-400 mb-8">{dataBonita} às {horarioSelecionado}</p>
-            <button onClick={() => window.location.reload()} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">Novo Agendamento</button>
+          <div className="bg-white p-10 rounded-[3rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in duration-300 border border-gray-100">
+            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">✓</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Tudo certo!</h2>
+            <p className="text-gray-500 mb-1 font-medium">Agendado com <strong>{profissionalSelecionado?.name}</strong></p>
+            <p className="text-sm text-blue-600 font-bold mb-8 uppercase tracking-tighter">{dataBonita} às {horarioSelecionado}h</p>
+            <button onClick={() => window.location.reload()} className="w-full bg-gray-900 text-white font-black py-4 rounded-2xl hover:bg-black transition shadow-lg">Novo Agendamento</button>
           </div>
         </div>
       );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4 font-sans">
-      <div className="text-center mb-8 animate-in slide-in-from-top-4 duration-500">
-        {empresa.logoUrl ? <img src={empresa.logoUrl} alt={empresa.name} className="w-24 h-24 object-cover rounded-full mx-auto shadow-lg border-4 border-white mb-4" /> : <div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4 shadow-lg border-4 border-white">{empresa.name.substring(0,2).toUpperCase()}</div>}
-        <h1 className="text-3xl font-extrabold text-gray-900">{empresa.name}</h1>
-        <p className="text-gray-500 mt-1">Agendamento Online</p>
-      </div>
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[400px]">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 font-sans">
+      
+      {/* CABEÇALHO DA PÁGINA */}
+      <div className="text-center mb-10 animate-in slide-in-from-top-4 duration-700">
+        <div className="relative inline-block mb-4">
+            {empresa.logoUrl ? (
+                <img src={empresa.logoUrl} alt={empresa.name} className="w-28 h-28 object-cover rounded-[2.5rem] mx-auto shadow-2xl border-4 border-white" />
+            ) : (
+                <div className="w-24 h-24 bg-blue-600 text-white rounded-[2rem] flex items-center justify-center text-4xl font-black mx-auto shadow-xl border-4 border-white">
+                    {empresa.name.substring(0,1).toUpperCase()}
+                </div>
+            )}
+        </div>
         
+        <h1 className="text-4xl font-black text-gray-900 tracking-tighter">{empresa.name}</h1>
+        <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Agendamento Online</p>
+
+        {/* --- BOTÕES DE REDES SOCIAIS ADICIONADOS --- */}
+        <div className="flex justify-center gap-3 mt-6">
+            {empresa.instagramUrl && (
+                <a 
+                    href={empresa.instagramUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-3 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 text-white rounded-2xl hover:scale-110 active:scale-95 transition shadow-lg"
+                    title="Visitar Instagram"
+                >
+                    <Instagram size={20} />
+                </a>
+            )}
+            {empresa.facebookUrl && (
+                <a 
+                    href={empresa.facebookUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-3 bg-blue-600 text-white rounded-2xl hover:scale-110 active:scale-95 transition shadow-lg"
+                    title="Visitar Facebook"
+                >
+                    <Facebook size={20} />
+                </a>
+            )}
+        </div>
+      </div>
+
+      {/* FLUXO DE AGENDAMENTO */}
+      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all">
+        
+        {/* PASSO 1: SERVIÇOS */}
         {!servicoSelecionado && (
-          <div className="p-6 animate-in fade-in">
-            <h2 className="text-lg font-bold text-gray-700 mb-4 px-2">Selecione o Serviço</h2>
-            <div className="space-y-3">{services.map(s => <button key={s.id} onClick={() => setServicoSelecionado(s)} className="w-full text-left bg-gray-50 p-5 rounded-2xl border hover:border-blue-500 flex justify-between"><div><h3 className="font-bold">{s.name}</h3><p className="text-sm text-gray-400">⏱ {s.duration} min</p></div><span className="font-bold text-blue-600">R$ {Number(s.price)}</span></button>)}</div>
-          </div>
-        )}
-
-        {servicoSelecionado && !profissionalSelecionado && (
-          <div className="p-6 animate-in fade-in"><button onClick={() => setServicoSelecionado(null)}>← Voltar</button><h2 className="font-bold my-4">Escolha o Profissional</h2>
-            <div className="space-y-3">{profissionais.map(p => <button key={p.id} onClick={() => setProfissionalSelecionado(p)} className="w-full text-left bg-gray-50 p-4 rounded-2xl flex items-center gap-4">{p.photoUrl && <img src={p.photoUrl} className="w-10 h-10 rounded-full"/>}{p.name}</button>)}</div>
-          </div>
-        )}
-
-        {servicoSelecionado && profissionalSelecionado && (
-          <div className="p-6 animate-in fade-in">
-            <button onClick={() => setProfissionalSelecionado(null)}>← Voltar</button>
-            <div className="my-4"><Calendar onChange={setDataSelecionada} value={dataSelecionada} minDate={new Date()} locale="pt-BR" className="w-full border-none !bg-transparent custom-calendar" /></div>
-            <h3 className="font-bold mb-2">Horários Disponíveis</h3>
-            <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                {horariosDisponiveis.map(h => (
-                    <button key={h} onClick={() => setHorarioSelecionado(h)} className={`p-2 rounded ${horarioSelecionado === h ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>{h}</button>
+          <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                <Building2 size={20} className="text-blue-600"/> Selecione o Serviço
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+                {services.map(s => (
+                    <button key={s.id} onClick={() => setServicoSelecionado(s)} className="w-full text-left bg-gray-50 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 hover:bg-white flex justify-between items-center transition-all group">
+                        <div className="space-y-1">
+                            <h3 className="font-black text-gray-800 group-hover:text-blue-600 transition">{s.name}</h3>
+                            <p className="text-xs text-gray-400 font-bold flex items-center gap-1 uppercase tracking-tighter">
+                                <Clock size={12}/> {s.duration} min
+                            </p>
+                        </div>
+                        <span className="font-black text-blue-600 bg-blue-50 px-4 py-2 rounded-xl text-sm">R$ {Number(s.price)}</span>
+                    </button>
                 ))}
             </div>
-            {horariosDisponiveis.length === 0 && <p className="text-center text-gray-400 py-4 bg-gray-50 rounded-xl mt-2">Agenda lotada ou fechada.</p>}
-            {horarioSelecionado && (<div className="mt-4 space-y-2"><input placeholder="Nome" className="w-full border p-2 rounded" value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} /><input placeholder="Telefone" className="w-full border p-2 rounded" value={telefoneCliente} onChange={e => setTelefoneCliente(e.target.value)} /><button onClick={finalizar} className="w-full bg-green-500 text-white p-3 rounded">Confirmar</button></div>)}
+          </div>
+        )}
+
+        {/* PASSO 2: PROFISSIONAL */}
+        {servicoSelecionado && !profissionalSelecionado && (
+          <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            <button onClick={() => setServicoSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
+            <h2 className="text-xl font-black text-gray-900 mb-6">Com quem você deseja agendar?</h2>
+            <div className="grid grid-cols-1 gap-4">
+                {profissionais.map(p => (
+                    <button key={p.id} onClick={() => setProfissionalSelecionado(p)} className="w-full text-left bg-gray-50 p-5 rounded-[2rem] border-2 border-transparent hover:border-blue-500 flex items-center gap-5 transition-all group">
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md border-2 border-white group-hover:scale-105 transition-transform">
+                            {p.photoUrl ? <img src={p.photoUrl} className="w-full h-full object-cover"/> : <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xl">{p.name.charAt(0)}</div>}
+                        </div>
+                        <div>
+                            <p className="font-black text-gray-800 group-hover:text-blue-600 transition">{p.name}</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Profissional Especialista</p>
+                        </div>
+                    </button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 3: CALENDÁRIO E HORÁRIOS */}
+        {servicoSelecionado && profissionalSelecionado && (
+          <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            <button onClick={() => setProfissionalSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
+            
+            <div className="mb-8 p-4 bg-gray-50 rounded-[2rem]">
+                <Calendar 
+                    onChange={setDataSelecionada} 
+                    value={dataSelecionada} 
+                    minDate={new Date()} 
+                    locale="pt-BR" 
+                    className="w-full border-none !bg-transparent custom-calendar font-bold" 
+                />
+            </div>
+
+            <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest flex items-center gap-2">
+                <Clock size={16} className="text-blue-600"/> Horários para {format(dataSelecionada, 'dd/MM')}
+            </h3>
+            
+            <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar mb-8">
+                {horariosDisponiveis.map(h => (
+                    <button key={h} onClick={() => setHorarioSelecionado(h)} className={`py-3 rounded-2xl font-bold text-sm transition-all ${horarioSelecionado === h ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        {h}
+                    </button>
+                ))}
+            </div>
+
+            {horariosDisponiveis.length === 0 && (
+                <div className="text-center py-10 bg-red-50 rounded-[2rem] border border-red-100 mb-8">
+                    <p className="text-red-600 font-bold text-sm">Não há horários para este dia.</p>
+                </div>
+            )}
+
+            {/* FORMULÁRIO FINAL */}
+            {horarioSelecionado && (
+                <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 border-t pt-8">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Seu Nome</label>
+                        <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="Nome completo" value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
+                        <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(e.target.value)} />
+                    </div>
+                    <button onClick={finalizar} className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95">Finalizar Agendamento</button>
+                </div>
+            )}
           </div>
         )}
       </div>
+
+      <footer className="mt-12 text-gray-400 text-center">
+          <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>
+      </footer>
     </div>
   );
 }

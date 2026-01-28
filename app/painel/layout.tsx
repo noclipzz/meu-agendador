@@ -5,11 +5,29 @@ import Link from "next/link";
 import Image from "next/image";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, Search, Check, MapPin, Trash2 } from "lucide-react";
+import { Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, Search, Check, MapPin, Trash2, BarChart3 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
 import { toast } from "sonner";
 import { isBefore } from "date-fns";
+
+// --- HELPER: MÁSCARA DE TELEFONE (ADICIONADO) ---
+const formatarTelefoneInput = (value: string) => {
+  if (!value) return "";
+  value = value.replace(/\D/g, ""); // Remove tudo que não é dígito
+  if (value.length > 11) value = value.substring(0, 11); // Limita a 11 dígitos
+  // Adiciona parênteses e traço conforme digita
+  if (value.length > 10) {
+    value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
+  } else if (value.length > 6) {
+    value = value.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+  } else if (value.length > 2) {
+    value = value.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
+  } else {
+    value = value.replace(/^(\d*)/, "($1");
+  }
+  return value;
+};
 
 function PainelConteudo({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
@@ -25,7 +43,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   const [termoBusca, setTermoBusca] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  // Tipo de Agendamento
   const [tipoAgendamento, setTipoAgendamento] = useState<"CLIENTE" | "EVENTO">("CLIENTE");
 
   const [services, setServices] = useState<any[]>([]);
@@ -43,7 +60,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     professionalId: "" 
   });
 
-  // CORREÇÃO 1: Limpar campos ao trocar de aba (Agendamento <-> Evento)
   useEffect(() => {
     setNovo({
       clientId: "",
@@ -90,51 +106,71 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   }, [isModalOpen, companyId]);
 
   async function salvarAgendamento() {
-    if(!novo.nome || !novo.date || !novo.time || !companyId) {
-        toast.error("Preencha o nome, data e horário.");
+    // 1. Validação básica antes de tentar enviar
+    if(!novo.nome || !novo.date || !novo.time) {
+        toast.error("Por favor, preencha o nome, a data e o horário.");
         return;
     }
 
     if (tipoAgendamento === "CLIENTE" && (!novo.serviceId || !novo.professionalId)) {
-        toast.error("Selecione o serviço e o profissional.");
+        toast.error("Selecione um serviço e um profissional.");
         return;
     }
 
-    const dataFinal = new Date(`${novo.date}T${novo.time}`);
-    if (isBefore(dataFinal, new Date())) {
-        toast.error("❌ Horário já passou.");
+    // 2. Montagem da data com segurança (evita 'Invalid Date')
+    const dataString = `${novo.date}T${novo.time}:00`;
+    const dataFinal = new Date(dataString);
+
+    if (isNaN(dataFinal.getTime())) {
+        toast.error("Formato de data ou hora inválido.");
+        return;
+    }
+    
+    // 3. Trava de horário passado (com margem de 5 min)
+    if (isBefore(dataFinal, subMinutes(new Date(), 5))) {
+        toast.error("❌ Erro: O horário selecionado já passou.");
         return;
     }
 
     setSalvando(true);
+
     try {
+        // 4. Envio dos dados (Mapeando os nomes corretamente para a API)
         const res = await fetch('/api/agendar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                ...novo, 
-                type: tipoAgendamento, 
-                location: novo.local,
-                name: novo.nome,
-                phone: novo.phone,
-                companyId 
+            body: JSON.stringify({
+                name: novo.nome,        // Mapeado
+                phone: novo.phone,      // Mapeado
+                date: dataFinal.toISOString(),
+                serviceId: tipoAgendamento === "CLIENTE" ? novo.serviceId : null,
+                professionalId: tipoAgendamento === "CLIENTE" ? novo.professionalId : null,
+                clientId: novo.clientId || null,
+                type: tipoAgendamento,
+                location: novo.local || null,
+                companyId: companyId
             })
         });
 
-        if(res.ok) {
+        const data = await res.json();
+
+        if (res.ok) {
             toast.success(tipoAgendamento === "CLIENTE" ? "Agendado!" : "Evento criado!");
             setIsModalOpen(false);
+            setNovo({ clientId: "", nome: "", phone: "", local: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
             if (refreshAgenda) refreshAgenda();
         } else {
-            const err = await res.json();
-            toast.error(err.error || "Erro ao salvar.");
+            toast.error(data.error || "Erro ao salvar agendamento.");
         }
-    } catch (error) { toast.error("Erro de conexão."); } 
-    finally { setSalvando(false); }
+    } catch (error) {
+        toast.error("Erro de conexão com o servidor.");
+    } finally {
+        setSalvando(false);
+    }
   }
 
   const clientesFiltrados = clientesCadastrados.filter(c => 
-    c.name.toLowerCase().includes(termoBusca.toLowerCase()) || c.phone?.includes(termoBusca)
+    c.name.toLowerCase().includes(termoBusca.toLowerCase()) || c.phone?.replace(/\D/g, '').includes(termoBusca.replace(/\D/g, ''))
   );
 
   const menuItems = [
@@ -143,6 +179,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   ];
   if (userRole === "ADMIN") {
     menuItems.push(
+        { name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20}/> },
         { name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20}/> },
         { name: "Configurações", path: "/painel/config", icon: <Settings size={20}/> }
     );
@@ -170,7 +207,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
                 <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                     
-                    {/* BOTÃO X CORRIGIDO (Formatação e Posição) */}
+                    {/* BOTÃO X CORRIGIDO */}
                     <button 
                         onClick={() => setIsModalOpen(false)} 
                         className="absolute top-6 right-6 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all z-[60]"
@@ -229,7 +266,13 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                         value={novo.nome} 
                                         onChange={e => setNovo({...novo, nome: e.target.value, clientId: e.target.value === "" ? "" : novo.clientId})}
                                     />
-                                    <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Telefone" value={novo.phone} onChange={e => setNovo({...novo, phone: e.target.value})}/>
+                                    {/* CAMPO TELEFONE COM MÁSCARA (AQUI) */}
+                                    <input 
+                                        className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" 
+                                        placeholder="(00) 00000-0000" 
+                                        value={formatarTelefoneInput(novo.phone)} 
+                                        onChange={e => setNovo({...novo, phone: e.target.value})}
+                                    />
                                 </div>
                             </>
                         ) : (
@@ -281,7 +324,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         {/* MODAL DE BUSCA DE CLIENTES */}
         {isSearchModalOpen && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[70] p-4">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
                     <div className="flex justify-between items-center mb-4 dark:text-white">
                         <h3 className="font-black text-xl ml-2">Buscar Cliente</h3>
                         <button onClick={() => setIsSearchModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition"><X/></button>

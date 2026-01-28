@@ -26,7 +26,8 @@ export async function POST(req: Request) {
         data: {
             name: body.name,
             price: parseFloat(body.price),
-            duration: parseInt(body.duration), // Garante que é número
+            duration: parseInt(body.duration),
+            commission: parseInt(body.commission || '0'), // SALVA A COMISSÃO
             companyId: company.id
         }
     });
@@ -42,7 +43,8 @@ export async function PUT(req: Request) {
         data: {
             name: body.name,
             price: parseFloat(body.price),
-            duration: parseInt(body.duration)
+            duration: parseInt(body.duration),
+            commission: parseInt(body.commission || '0') // ATUALIZA A COMISSÃO
         }
     });
     return NextResponse.json(updated);

@@ -1,7 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Palette, Phone, ShieldCheck, Copy, Check } from "lucide-react"; 
+import { 
+  Trash2, 
+  Plus, 
+  Save, 
+  Loader2, 
+  Pencil, 
+  X, 
+  UserCircle, 
+  Phone, 
+  ShieldCheck, 
+  Check,
+  Users,
+  DollarSign,
+  TrendingUp,
+  History,
+  Wallet,
+  Star,
+  ExternalLink,
+  Calendar,
+  Clock
+} from "lucide-react"; 
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -12,6 +34,7 @@ export default function GestaoEquipe() {
   
   const [profissionais, setProfissionais] = useState<any[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
+  const [proSelecionado, setProSelecionado] = useState<any>(null); // Estado para a Ficha Horizontal
 
   // FORMULÁRIO
   const [form, setForm] = useState({ 
@@ -19,7 +42,7 @@ export default function GestaoEquipe() {
     name: "", 
     phone: "", 
     color: "#3b82f6", 
-    userId: "" // ID do Clerk do funcionário para vincular login
+    userId: "" 
   });
 
   useEffect(() => { carregarDados(); }, []);
@@ -36,6 +59,26 @@ export default function GestaoEquipe() {
         setLoading(false); 
     }
   }
+
+  // --- CÁLCULO DE COMISSÃO E PRODUÇÃO ---
+  const calcularMetricas = (pro: any) => {
+    // Filtra apenas agendamentos confirmados
+    const confirmados = pro.bookings?.filter((b: any) => b.status === "CONFIRMADO") || [];
+    
+    const totalGeral = confirmados.reduce((acc: number, b: any) => acc + Number(b.service?.price || 0), 0);
+    
+    const totalComissao = confirmados.reduce((acc: number, b: any) => {
+        const preco = Number(b.service?.price || 0);
+        const porc = Number(b.service?.commission || 0);
+        return acc + (preco * (porc / 100));
+    }, 0);
+
+    return { 
+        totalGeral, 
+        totalComissao, 
+        atendimentos: confirmados.length 
+    };
+  };
 
   async function salvarProfissional() {
     if(!form.name) return toast.error("O nome é obrigatório.");
@@ -56,10 +99,8 @@ export default function GestaoEquipe() {
             toast.success(form.id ? "Dados atualizados!" : "Profissional adicionado!");
             fecharModal();
             carregarDados();
-            // Avisa a agenda para atualizar as cores e nomes
             if (setRefreshKey) setRefreshKey((prev: number) => prev + 1);
         } else {
-            // EXIBE O ERRO DE LIMITE DO PLANO (1, 5 ou 15) vindo da API
             toast.error(data.error || "Erro ao salvar profissional.");
         }
     } catch (error) {
@@ -88,7 +129,8 @@ export default function GestaoEquipe() {
     });
   }
 
-  function prepararEdicao(p: any) {
+  function prepararEdicao(e: React.MouseEvent, p: any) {
+      e.stopPropagation(); // Impede abrir a ficha ao clicar no lápis
       setForm({
           id: p.id,
           name: p.name,
@@ -105,20 +147,21 @@ export default function GestaoEquipe() {
   }
 
   if (loading) return (
-    <div className="h-96 w-full flex items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={32}/>
+    <div className="h-screen w-full flex flex-col items-center justify-center">
+        <Loader2 className="animate-spin text-blue-600 mb-2" size={32}/>
+        <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">Sincronizando Equipe...</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* HEADER TIPO SaaS PRO */}
+    <div className="space-y-8 pb-20 px-2 font-sans">
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
         <div>
             <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight flex items-center gap-2">
                 <ShieldCheck className="text-blue-600" size={32}/> Gestão de Equipe
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Cadastre profissionais e vincule contas de acesso.</p>
+            <p className="text-gray-500 text-sm font-medium">Gerencie o time e acompanhe a performance individual.</p>
         </div>
         <button 
             onClick={() => setModalAberto(true)} 
@@ -130,41 +173,39 @@ export default function GestaoEquipe() {
 
       {/* LISTA DE CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
-        {profissionais.map(p => (
-            <div key={p.id} className="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] border-2 border-transparent hover:border-blue-500 transition-all shadow-sm group">
-                <div className="flex justify-between items-start mb-4">
-                    <div 
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
-                        style={{ backgroundColor: p.color }}
-                    >
-                        {p.name.charAt(0)}
+        {profissionais.map(p => {
+            const { totalGeral, atendimentos } = calcularMetricas(p);
+            return (
+                <div 
+                    key={p.id} 
+                    onClick={() => setProSelecionado(p)}
+                    className="bg-white dark:bg-gray-800 p-6 rounded-[2.5rem] border-2 border-transparent hover:border-blue-500 transition-all shadow-sm group cursor-pointer relative"
+                >
+                    <div className="flex justify-between items-start mb-6">
+                        <div 
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
+                            style={{ backgroundColor: p.color }}
+                        >
+                            {p.name.charAt(0)}
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Produção</p>
+                            <p className="font-black text-blue-600">R$ {totalGeral.toLocaleString()}</p>
+                        </div>
                     </div>
-                    <div className="flex gap-1">
-                        <button onClick={() => prepararEdicao(p)} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition">
-                            <Pencil size={18}/>
-                        </button>
-                        <button onClick={() => deletar(p.id, p.name)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition">
-                            <Trash2 size={18}/>
-                        </button>
-                    </div>
-                </div>
-                
-                <h3 className="text-xl font-bold dark:text-white">{p.name}</h3>
-                <div className="mt-4 space-y-3">
-                    <p className="text-sm text-gray-500 flex items-center gap-2 font-bold">
-                        <Phone size={14} className="text-blue-500"/> {p.phone || "Sem telefone"}
-                    </p>
                     
-                    {/* INDICADOR DE VÍNCULO DE CONTA */}
-                    <div className={`text-[10px] p-2.5 rounded-xl font-black flex items-center justify-between gap-2 ${p.userId ? 'bg-green-50 text-green-600 dark:bg-green-900/20' : 'bg-gray-100 text-gray-400 dark:bg-gray-900'}`}>
-                        <span className="flex items-center gap-1.5 uppercase tracking-tighter">
-                            <UserCircle size={14}/> {p.userId ? "Conta Vinculada" : "Sem acesso ao painel"}
-                        </span>
-                        {p.userId && <Check size={12} />}
+                    <h3 className="text-xl font-bold dark:text-white group-hover:text-blue-600 transition">{p.name}</h3>
+                    
+                    <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
+                        <span>{atendimentos} atendimentos</span>
+                        <div className="flex gap-2">
+                            <button onClick={(e) => prepararEdicao(e, p)} className="text-gray-400 hover:text-blue-500 transition"><Pencil size={16}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); deletar(p.id, p.name); }} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16}/></button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        ))}
+            )
+        })}
 
         {profissionais.length === 0 && (
             <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[3rem]">
@@ -174,50 +215,152 @@ export default function GestaoEquipe() {
         )}
       </div>
 
-      {/* MODAL ADICIONAR/EDITAR */}
+      {/* FICHA DO PROFISSIONAL (HORIZONTAL PRO) */}
+      {proSelecionado && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+            <div className="bg-white dark:bg-gray-950 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                
+                {/* HEADER DA FICHA */}
+                <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+                    <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl" style={{ backgroundColor: proSelecionado.color }}>
+                            {proSelecionado.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
+                            <div className="flex gap-4 mt-1">
+                                <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14}/> {proSelecionado.phone || "Sem telefone"}</span>
+                                <span className="text-gray-400 font-bold flex items-center gap-1 text-sm"><Check size={14} className="text-green-500"/> Profissional Ativo</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20}/></button>
+                        <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20}/></button>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                    <div className="grid grid-cols-12 gap-8">
+                        
+                        {/* COLUNA ESQUERDA: PERFORMANCE */}
+                        <div className="col-span-12 lg:col-span-8 space-y-8">
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800">
+                                    <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Total Produzido</p>
+                                    <p className="text-2xl font-black text-blue-600">R$ {calcularMetricas(proSelecionado).totalGeral.toLocaleString()}</p>
+                                </div>
+                                <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-[2rem] border border-green-100 dark:border-green-800">
+                                    <p className="text-[10px] font-black text-green-400 uppercase mb-1">Comissão Acumulada</p>
+                                    <p className="text-2xl font-black text-green-600">R$ {calcularMetricas(proSelecionado).totalComissao.toLocaleString()}</p>
+                                </div>
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Atendimentos</p>
+                                    <p className="text-2xl font-black dark:text-white">{calcularMetricas(proSelecionado).atendimentos}</p>
+                                </div>
+                            </div>
+
+                            <section>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+                                    <History size={16}/> Histórico de Atendimentos Realizados
+                                </h4>
+                                <div className="space-y-3">
+                                    {proSelecionado.bookings?.filter((b: any) => b.status === "CONFIRMADO").length > 0 ? (
+                                        proSelecionado.bookings.filter((b: any) => b.status === "CONFIRMADO").map((b: any) => (
+                                            <div key={b.id} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] flex justify-between items-center border border-transparent hover:border-blue-500 transition-all">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm"><Star size={20} className="text-yellow-500" /></div>
+                                                    <div>
+                                                        <p className="font-black text-sm uppercase dark:text-white">{b.service?.name}</p>
+                                                        <div className="flex gap-4 text-[10px] font-bold text-gray-400 uppercase mt-1">
+                                                            <span className="flex items-center gap-1"><Calendar size={12}/> {format(new Date(b.date), "dd/MM/yyyy")}</span>
+                                                            <span className="flex items-center gap-1"><Clock size={12}/> {format(new Date(b.date), "HH:mm")}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-base dark:text-white">R$ {b.service?.price}</p>
+                                                    <p className="text-[10px] font-black text-green-600">COMISSÃO: R$ {(Number(b.service?.price) * Number(b.service?.commission) / 100).toFixed(2)}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-[2rem] opacity-40 italic text-sm">
+                                            Nenhum atendimento confirmado no histórico.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        </div>
+
+                        {/* COLUNA DIREITA: DADOS TÉCNICOS */}
+                        <div className="col-span-12 lg:col-span-4 space-y-6">
+                            <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
+                                <h4 className="font-black text-xs uppercase tracking-widest mb-6 text-gray-400">Configurações de Acesso</h4>
+                                <div className="space-y-5">
+                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
+                                        <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Status de Login</label>
+                                        <div className="flex items-center gap-2">
+                                            {proSelecionado.userId ? (
+                                                <><Check size={16} className="text-green-500"/><span className="text-sm font-bold text-green-600 uppercase">Vinculado</span></>
+                                            ) : (
+                                                <><X size={16} className="text-red-500"/><span className="text-sm font-bold text-red-500 uppercase">Não Vinculado</span></>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
+                                        <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">ID do Clerk (Login)</label>
+                                        <code className="text-[10px] font-mono text-blue-500 break-all">{proSelecionado.userId || "NENHUM ID CADASTRADO"}</code>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => { if(confirm("Deseja realmente remover?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }}
+                                    className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition"
+                                >
+                                    Excluir da Equipe
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* MODAL ADICIONAR/EDITAR (MANTIDO) */}
       {modalAberto && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-              <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+              <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
                   <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24}/></button>
-                  <h2 className="text-3xl font-black mb-8 dark:text-white tracking-tighter">{form.id ? "Editar Profissional" : "Novo Membro"}</h2>
+                  <h2 className="text-3xl font-black mb-8 dark:text-white tracking-tighter">{form.id ? "Editar Membro" : "Novo Profissional"}</h2>
                   
                   <div className="space-y-5">
                       <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-widest">Nome Completo</label>
-                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({...form, name: e.target.value})}/>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome Completo</label>
+                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({...form, name: e.target.value})}/>
                       </div>
 
                       <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-widest">Telefone de Contato</label>
-                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}/>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">WhatsApp</label>
+                          <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}/>
                       </div>
 
                       <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-[2rem] border border-blue-100 dark:border-blue-900/50">
                           <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase ml-2 mb-1 block tracking-widest">Vincular Conta (ID do Clerk)</label>
-                          <input className="w-full border-2 border-blue-200 dark:border-gray-700 p-4 rounded-xl bg-white dark:bg-gray-950 outline-none focus:border-blue-500 font-mono text-[11px] font-bold dark:text-white" placeholder="user_2pX..." value={form.userId} onChange={e => setForm({...form, userId: e.target.value})}/>
-                          <p className="text-[9px] text-blue-400 mt-2 px-2 font-medium">O funcionário deve te passar este ID no perfil dele para ver a própria agenda.</p>
+                          <input className="w-full border-2 border-blue-200 dark:border-gray-700 p-4 rounded-xl bg-white dark:bg-gray-950 outline-none focus:border-blue-500 font-mono text-[11px] font-bold dark:text-white" placeholder="user_..." value={form.userId} onChange={e => setForm({...form, userId: e.target.value})}/>
                       </div>
 
                       <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-3 block tracking-widest">Cor de Identificação</label>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-3 block">Cor na Agenda</label>
                           <div className="flex justify-between px-2">
                               {["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#111827"].map(c => (
-                                  <button 
-                                    key={c} 
-                                    type="button"
-                                    onClick={() => setForm({...form, color: c})}
-                                    className={`w-9 h-9 rounded-full border-4 transition-all ${form.color === c ? 'border-white ring-2 ring-blue-500 scale-125 z-10' : 'border-transparent opacity-60'}`}
-                                    style={{ backgroundColor: c }}
-                                  />
+                                  <button key={c} type="button" onClick={() => setForm({...form, color: c})} className={`w-9 h-9 rounded-full border-4 transition-all ${form.color === c ? 'border-white ring-2 ring-blue-500 scale-125 z-10' : 'border-transparent opacity-60'}`} style={{ backgroundColor: c }} />
                               ))}
                           </div>
                       </div>
 
-                      <button 
-                        onClick={salvarProfissional} 
-                        disabled={salvando}
-                        className="w-full mt-4 bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-                      >
+                      <button onClick={salvarProfissional} disabled={salvando} className="w-full mt-4 bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
                           {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20}/> Salvar Dados</>}
                       </button>
                   </div>
