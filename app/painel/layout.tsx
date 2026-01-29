@@ -9,9 +9,10 @@ import { Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, Se
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
 import { toast } from "sonner";
-import { isBefore } from "date-fns";
+// CORREÇÃO AQUI: Importando ambas as funções do date-fns corretamente
+import { isBefore, subMinutes } from "date-fns";
 
-// --- HELPER: MÁSCARA DE TELEFONE (ADICIONADO) ---
+// --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
   if (!value) return "";
   value = value.replace(/\D/g, ""); // Remove tudo que não é dígito
@@ -127,6 +128,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     }
     
     // 3. Trava de horário passado (com margem de 5 min)
+    // Agora subMinutes está definido corretamente nos imports
     if (isBefore(dataFinal, subMinutes(new Date(), 5))) {
         toast.error("❌ Erro: O horário selecionado já passou.");
         return;
@@ -207,7 +209,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
                 <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                     
-                    {/* BOTÃO X CORRIGIDO */}
                     <button 
                         onClick={() => setIsModalOpen(false)} 
                         className="absolute top-6 right-6 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all z-[60]"
@@ -266,7 +267,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                         value={novo.nome} 
                                         onChange={e => setNovo({...novo, nome: e.target.value, clientId: e.target.value === "" ? "" : novo.clientId})}
                                     />
-                                    {/* CAMPO TELEFONE COM MÁSCARA (AQUI) */}
                                     <input 
                                         className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" 
                                         placeholder="(00) 00000-0000" 

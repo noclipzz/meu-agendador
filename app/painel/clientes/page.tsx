@@ -15,6 +15,11 @@ export default function ClientesPage() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [busca, setBusca] = useState("");
     const [loading, setLoading] = useState(true);
+    
+    // loadingDetalhes agora serve para indicar se estamos baixando os dados extras (financeiro/anexos)
+    // mas não bloqueará a visualização da ficha básica.
+    const [loadingDetalhes, setLoadingDetalhes] = useState(false); 
+    
     const [salvandoAnexo, setSalvandoAnexo] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
@@ -43,6 +48,40 @@ export default function ClientesPage() {
         setLoading(false);
     }
 
+    // --- MUDANÇA AQUI: RECEBE O OBJETO INTEIRO DO CLIENTE ---
+    async function abrirFichaCliente(clienteBasico: any) {
+        // 1. Abre o modal IMEDIATAMENTE com os dados que já temos (Nome, Tel, Status)
+        setClienteSelecionado(clienteBasico);
+        setAbaAtiva("DADOS");
+        
+        // 2. Inicia o carregamento dos detalhes (Financeiro, Histórico, Anexos) em background
+        setLoadingDetalhes(true);
+
+        try {
+            const res = await fetch(`/api/clientes/${clienteBasico.id}`);
+            if (res.ok) {
+                const dadosCompletos = await res.json();
+                
+                // 3. Atualiza o cliente selecionado mesclando os dados novos
+                // Usamos o prev para garantir que se o usuário já digitou algo (ex: nota), não perca, 
+                // embora neste caso seja visualização.
+                setClienteSelecionado((prev: any) => {
+                    // Só atualiza se o modal ainda estiver aberto no mesmo cliente
+                    if (prev && prev.id === clienteBasico.id) {
+                        return { ...prev, ...dadosCompletos };
+                    }
+                    return prev;
+                });
+            } else {
+                toast.error("Não foi possível carregar o histórico financeiro completo.");
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingDetalhes(false);
+        }
+    }
+
     async function salvarCliente() {
         if(!form.name) return toast.error("Nome obrigatório");
         const method = form.id ? 'PUT' : 'POST';
@@ -54,7 +93,9 @@ export default function ClientesPage() {
             const clienteSalvo = await res.json();
             if (form.id) {
                 setClientes(prev => prev.map(c => c.id === form.id ? clienteSalvo : c));
-                if (clienteSelecionado?.id === form.id) setClienteSelecionado(clienteSalvo);
+                if (clienteSelecionado?.id === form.id) {
+                    setClienteSelecionado((prev: any) => ({...prev, ...clienteSalvo}));
+                }
             } else {
                 setClientes(prev => [...prev, clienteSalvo]);
             }
@@ -76,8 +117,8 @@ export default function ClientesPage() {
 
         if (res.ok) {
             const atualizado = await res.json();
-            setClienteSelecionado(atualizado);
-            setClientes(prev => prev.map(c => c.id === atualizado.id ? atualizado : c));
+            setClienteSelecionado((prev: any) => ({...prev, notes: novaStringNotas}));
+            setClientes(prev => prev.map(c => c.id === atualizado.id ? {...c, notes: novaStringNotas} : c));
             setNovaObs(""); setMostrarInputObs(false);
             toast.success("Observação adicionada!");
         }
@@ -106,7 +147,7 @@ export default function ClientesPage() {
     async function executarExclusao() {
         if (!confirmarExclusao) return;
         const { id, tipo } = confirmarExclusao;
-        const url = tipo === 'CLIENTE' ? '/api/clientes' : '/api/clientes/anexos';
+        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : '/api/clientes/anexos'; 
         const res = await fetch(url, { method: 'DELETE', body: JSON.stringify({ id }) });
         if (res.ok) {
             if (tipo === 'CLIENTE') {
@@ -141,7 +182,8 @@ export default function ClientesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
                 {filtrados.map(c => (
-                    <div key={c.id} onClick={() => { setClienteSelecionado(c); setAbaAtiva("DADOS"); }} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
+                    // MUDANÇA: Passamos o objeto 'c' inteiro, não só o ID
+                    <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
                         <div className="flex justify-between mb-4">
                             <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600">{c.name.charAt(0)}</div>
                             <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${c.status === 'ATIVO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{c.status}</span>
@@ -187,7 +229,6 @@ export default function ClientesPage() {
                                 <div className="grid grid-cols-12 gap-8">
                                     <div className="col-span-12 lg:col-span-8 space-y-8">
                                         <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14}/> Documentação</h4>
-                                            {/* GRID AJUSTADO PARA O E-MAIL NÃO CORTAR (grid-cols-12) */}
                                             <div className="grid grid-cols-12 gap-4">
                                                 <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cpf || "---"}</p></div>
                                                 <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.rg || "---"}</p></div>
@@ -211,19 +252,27 @@ export default function ClientesPage() {
                                     <div className="col-span-12 lg:col-span-4 bg-gray-50 dark:bg-white/5 rounded-[2.5rem] p-6 border dark:border-gray-800">
                                         <h4 className="text-sm font-black mb-6 uppercase text-blue-600 flex items-center gap-2"><History size={18}/> Últimas Visitas</h4>
                                         <div className="space-y-4">
-                                            {clienteSelecionado.bookings?.map((b: any) => (
-                                                <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border dark:border-gray-800 flex justify-between items-center group hover:border-blue-500 transition-all">
-                                                    <div>
-                                                        <p className="font-black text-sm dark:text-white uppercase leading-none mb-1">{b.service?.name}</p>
-                                                        {/* ADICIONADO NOME DO PROFISSIONAL NO HISTÓRICO */}
-                                                        <p className="text-[9px] font-black text-blue-500 uppercase flex items-center gap-1 mb-1">
-                                                            <UserCircle size={10}/> Prof: {b.professional?.name || 'Não informado'}
-                                                        </p>
-                                                        <p className="text-[10px] font-bold text-gray-400">{format(new Date(b.date), "dd/MM/yy 'às' HH:mm")}</p>
-                                                    </div>
-                                                    <span className="font-black text-green-600 text-sm">R$ {b.service?.price}</span>
-                                                </div>
-                                            ))}
+                                            {loadingDetalhes && !clienteSelecionado.bookings ? (
+                                                <div className="text-center py-4"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2"/> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando histórico...</p></div>
+                                            ) : (
+                                                <>
+                                                    {clienteSelecionado.bookings?.map((b: any) => (
+                                                        <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border dark:border-gray-800 flex justify-between items-center group hover:border-blue-500 transition-all">
+                                                            <div>
+                                                                <p className="font-black text-sm dark:text-white uppercase leading-none mb-1">{b.service?.name || "Serviço"}</p>
+                                                                <p className="text-[9px] font-black text-blue-500 uppercase flex items-center gap-1 mb-1">
+                                                                    <UserCircle size={10}/> Prof: {b.professional?.name || 'Não informado'}
+                                                                </p>
+                                                                <p className="text-[10px] font-bold text-gray-400">{format(new Date(b.date), "dd/MM/yy 'às' HH:mm")}</p>
+                                                            </div>
+                                                            <span className="font-black text-green-600 text-sm">R$ {b.service?.price}</span>
+                                                        </div>
+                                                    ))}
+                                                    {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (
+                                                        <p className="text-center text-xs text-gray-400">Nenhuma visita.</p>
+                                                    )}
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -231,31 +280,44 @@ export default function ClientesPage() {
 
                             {abaAtiva === "FINANCEIRO" && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <div className="p-8 bg-green-50 dark:bg-green-900/10 rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center"><p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p><p className="text-3xl font-black text-green-600">R$ {clienteSelecionado.invoices?.filter((i:any) => i.status === "PAGO").reduce((acc:any, cur:any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                        <div className="p-8 bg-red-50 dark:bg-red-900/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center"><p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p><p className="text-3xl font-black text-red-600">R$ {clienteSelecionado.invoices?.filter((i:any) => i.status === "PENDENTE").reduce((acc:any, cur:any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                        <div className="p-8 bg-blue-50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p><p className="text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc:any, cur:any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2 ml-2"><Receipt size={18}/> Detalhamento Financeiro</h4>
-                                        {clienteSelecionado.invoices?.map((inv: any) => (
-                                            <div key={inv.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2rem] flex justify-between items-center hover:border-green-500 transition-all shadow-sm">
-                                                <div className="flex items-center gap-5">
-                                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                        {inv.method === 'PIX' ? <QrCode size={24}/> : inv.method === 'CARTAO' ? <CreditCard size={24}/> : <Banknote size={24}/>}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`font-black text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
-                                                </div>
+                                    
+                                    {/* MUDANÇA AQUI: O Loading só aparece se estiver na aba FINANCEIRO e ainda estiver carregando */}
+                                    {loadingDetalhes ? (
+                                        <div className="flex flex-col items-center justify-center py-20">
+                                            <div className="bg-white dark:bg-gray-900 shadow-xl rounded-full px-8 py-4 flex items-center gap-3 border dark:border-gray-800">
+                                                <Loader2 className="animate-spin text-blue-600" size={24}/>
+                                                <span className="font-black text-xs uppercase tracking-widest text-gray-500">Carregando Ficha Financeira...</span>
                                             </div>
-                                        )) || <p className="text-center py-20 opacity-30 italic">Sem faturamentos registrados.</p>}
-                                    </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <div className="p-8 bg-green-50 dark:bg-green-900/10 rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center"><p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p><p className="text-3xl font-black text-green-600">R$ {clienteSelecionado.invoices?.filter((i:any) => i.status === "PAGO").reduce((acc:any, cur:any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-8 bg-red-50 dark:bg-red-900/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center"><p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p><p className="text-3xl font-black text-red-600">R$ {clienteSelecionado.invoices?.filter((i:any) => i.status === "PENDENTE").reduce((acc:any, cur:any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-8 bg-blue-50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p><p className="text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc:any, cur:any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2 ml-2"><Receipt size={18}/> Detalhamento Financeiro</h4>
+                                                {clienteSelecionado.invoices?.map((inv: any) => (
+                                                    <div key={inv.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2rem] flex justify-between items-center hover:border-green-500 transition-all shadow-sm">
+                                                        <div className="flex items-center gap-5">
+                                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                                {inv.method === 'PIX' ? <QrCode size={24}/> : inv.method === 'CARTAO' ? <CreditCard size={24}/> : <Banknote size={24}/>}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className={`font-black text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
+                                                        </div>
+                                                    </div>
+                                                )) || <p className="text-center py-20 opacity-30 italic">Sem faturamentos registrados.</p>}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -267,17 +329,21 @@ export default function ClientesPage() {
                                             <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo}/>
                                         </label>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {clienteSelecionado.attachments?.map((file: any) => (
-                                            <div key={file.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center">{file.type.includes('image') ? <ImageIcon size={24}/> : <FileText size={24}/>}</div>
-                                                    <div><p className="font-black text-sm uppercase dark:text-white truncate max-w-[150px]">{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
+                                    {loadingDetalhes && !clienteSelecionado.attachments ? (
+                                        <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2"/> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {clienteSelecionado.attachments?.map((file: any) => (
+                                                <div key={file.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center">{file.type.includes('image') ? <ImageIcon size={24}/> : <FileText size={24}/>}</div>
+                                                        <div><p className="font-black text-sm uppercase dark:text-white truncate max-w-[150px]">{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
+                                                    </div>
+                                                    <div className="flex gap-2"><a href={file.url} target="_blank" className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={18}/></a><button onClick={() => setConfirmarExclusao({id: file.id, tipo: 'ANEXO'})} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={18}/></button></div>
                                                 </div>
-                                                <div className="flex gap-2"><a href={file.url} target="_blank" className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={18}/></a><button onClick={() => setConfirmarExclusao({id: file.id, tipo: 'ANEXO'})} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={18}/></button></div>
-                                            </div>
-                                        )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
-                                    </div>
+                                            )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -285,10 +351,10 @@ export default function ClientesPage() {
                         {/* RODAPÉ ESTILIZADO */}
                         <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex justify-between items-center">
                             <div className="flex gap-8">
-                                <div><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0)}</p></div>
+                                <div><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0) || "0"}</p></div>
                                 <div className="border-l dark:border-gray-800 pl-8"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Frequência</p><p className="font-black text-2xl text-blue-600">{clienteSelecionado.bookings?.length || 0}x</p></div>
                             </div>
-                            <div className="text-right"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[9px] text-gray-500 mt-1 uppercase font-bold">Registro: {format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy")}</p></div>
+                            <div className="text-right"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[9px] text-gray-500 mt-1 uppercase font-bold">Registro: {clienteSelecionado.createdAt ? format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy") : "---"}</p></div>
                         </div>
                     </div>
                 </div>
