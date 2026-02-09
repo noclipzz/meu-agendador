@@ -9,15 +9,14 @@ import { Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, Se
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
 import { toast } from "sonner";
-// CORREÇÃO AQUI: Importando ambas as funções do date-fns corretamente
-import { isBefore, subMinutes } from "date-fns";
+// --- CORREÇÃO: ADICIONADOS IMPORTS PARA CÁLCULO DE TEMPO ---
+import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-fns";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
   if (!value) return "";
-  value = value.replace(/\D/g, ""); // Remove tudo que não é dígito
-  if (value.length > 11) value = value.substring(0, 11); // Limita a 11 dígitos
-  // Adiciona parênteses e traço conforme digita
+  value = value.replace(/\D/g, ""); 
+  if (value.length > 11) value = value.substring(0, 11); 
   if (value.length > 10) {
     value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
   } else if (value.length > 6) {
@@ -107,7 +106,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   }, [isModalOpen, companyId]);
 
   async function salvarAgendamento() {
-    // 1. Validação básica antes de tentar enviar
+    // 1. Validação básica
     if(!novo.nome || !novo.date || !novo.time) {
         toast.error("Por favor, preencha o nome, a data e o horário.");
         return;
@@ -118,7 +117,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // 2. Montagem da data com segurança (evita 'Invalid Date')
+    // 2. Montagem da data
     const dataString = `${novo.date}T${novo.time}:00`;
     const dataFinal = new Date(dataString);
 
@@ -127,8 +126,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         return;
     }
     
-    // 3. Trava de horário passado (com margem de 5 min)
-    // Agora subMinutes está definido corretamente nos imports
+    // 3. Trava de horário passado
     if (isBefore(dataFinal, subMinutes(new Date(), 5))) {
         toast.error("❌ Erro: O horário selecionado já passou.");
         return;
@@ -137,13 +135,52 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     setSalvando(true);
 
     try {
-        // 4. Envio dos dados (Mapeando os nomes corretamente para a API)
+        // --- NOVO BLOCO: VERIFICAÇÃO DE CONFLITO DE HORÁRIO ---
+        if (tipoAgendamento === "CLIENTE") {
+            // 1. Descobre a duração do serviço selecionado
+            const servicoSelecionado = services.find(s => s.id === novo.serviceId);
+            const duracaoMinutos = servicoSelecionado?.duration || 30;
+
+            // 2. Busca os agendamentos existentes para verificar colisão
+            // Nota: Idealmente a API aceitaria filtros, mas vamos buscar e filtrar aqui
+            const resCheck = await fetch('/api/painel');
+            const agendamentosExistentes = await resCheck.json();
+
+            if (Array.isArray(agendamentosExistentes)) {
+                const conflito = agendamentosExistentes.find((ag: any) => {
+                    // Ignora cancelados
+                    if (ag.status === "CANCELADO") return false;
+                    // Só verifica o mesmo profissional
+                    if (ag.professionalId !== novo.professionalId) return false;
+
+                    const inicioExistente = new Date(ag.date);
+                    const fimExistente = addMinutes(inicioExistente, ag.service?.duration || 30);
+
+                    const inicioNovo = dataFinal;
+                    const fimNovo = addMinutes(dataFinal, duracaoMinutos);
+
+                    return areIntervalsOverlapping(
+                        { start: inicioNovo, end: fimNovo },
+                        { start: inicioExistente, end: fimExistente }
+                    );
+                });
+
+                if (conflito) {
+                    toast.error(`⚠️ Horário Indisponível! O profissional já estará atendendo ${conflito.customerName}.`);
+                    setSalvando(false);
+                    return; // PARE TUDO
+                }
+            }
+        }
+        // --- FIM DA VERIFICAÇÃO ---
+
+        // 4. Envio dos dados
         const res = await fetch('/api/agendar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name: novo.nome,        // Mapeado
-                phone: novo.phone,      // Mapeado
+                name: novo.nome,
+                phone: novo.phone,
                 date: dataFinal.toISOString(),
                 serviceId: tipoAgendamento === "CLIENTE" ? novo.serviceId : null,
                 professionalId: tipoAgendamento === "CLIENTE" ? novo.professionalId : null,
@@ -157,7 +194,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         const data = await res.json();
 
         if (res.ok) {
-            toast.success(tipoAgendamento === "CLIENTE" ? "Agendado!" : "Evento criado!");
+            toast.success(tipoAgendamento === "CLIENTE" ? "Agendado com sucesso!" : "Evento criado!");
             setIsModalOpen(false);
             setNovo({ clientId: "", nome: "", phone: "", local: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
             if (refreshAgenda) refreshAgenda();

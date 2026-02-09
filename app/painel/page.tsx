@@ -1,22 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../contexts/AgendaContext";
 
 // --- HELPERS ---
-const formatarTelefone = (telefone: string | null | undefined) => {
-  if (!telefone) return "";
-  const n = telefone.replace(/\D/g, "");
-  if (n.length === 11) return n.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-  if (n.length === 10) return n.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-  return telefone;
-};
-
 const calcularLayoutVisual = (agendamentos: any[]) => {
     if (!agendamentos.length) return [];
     const sorted = [...agendamentos].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -75,6 +67,7 @@ export default function PainelDashboard() {
   const [metaMensal, setMetaMensal] = useState(5000);
 
   useEffect(() => {
+    // Atualiza a linha do tempo a cada minuto
     const intervalo = setInterval(() => setAgora(new Date()), 60000);
     return () => clearInterval(intervalo);
   }, []);
@@ -101,6 +94,42 @@ export default function PainelDashboard() {
   }
 
   useEffect(() => { carregarDados(); }, [refreshKey]);
+
+  // --- NOVA FUNÇÃO: VERIFICAR CONFLITO DE HORÁRIO ---
+  function verificarConflito(novoAgendamento: any): boolean {
+    const inicioNovo = new Date(novoAgendamento.date);
+    const servico = servicosDisponiveis.find(s => s.id === novoAgendamento.serviceId);
+    if (!servico) return false; // Se não achar serviço, deixa passar (evento manual)
+    
+    const fimNovo = addMinutes(inicioNovo, servico.duration);
+    
+    // Filtra agendamentos do MESMO profissional no MESMO dia
+    const conflitos = agendamentos.filter(ag => {
+        // Ignora o próprio agendamento que estamos editando
+        if (ag.id === novoAgendamento.id) return false;
+        
+        // Se for outro profissional, não tem conflito
+        if (ag.professionalId !== novoAgendamento.professionalId) return false;
+
+        // Se o status for cancelado, não conta
+        if (ag.status === "CANCELADO") return false;
+
+        const inicioExistente = new Date(ag.date);
+        const fimExistente = addMinutes(inicioExistente, ag.service?.duration || 30);
+
+        return areIntervalsOverlapping(
+            { start: inicioNovo, end: fimNovo },
+            { start: inicioExistente, end: fimExistente }
+        );
+    });
+
+    if (conflitos.length > 0) {
+        const conflito = conflitos[0];
+        toast.error(`Choque de horário! ${conflito.customerName} já está agendado das ${format(new Date(conflito.date), 'HH:mm')} às ${format(addMinutes(new Date(conflito.date), conflito.service?.duration || 30), 'HH:mm')}.`);
+        return true;
+    }
+    return false;
+  }
 
   async function finalizarCheckout() {
       if (!agendamentoSelecionado.clientId) {
@@ -159,6 +188,17 @@ export default function PainelDashboard() {
       try {
           const novaData = new Date(`${editForm.dataPura}T${editForm.horaPura}:00`);
           if (isBefore(novaData, new Date())) return toast.error("Não é possível agendar para o passado!");
+
+          // VALIDAR CONFLITO ANTES DE SALVAR
+          const temConflito = verificarConflito({
+              id: editForm.id,
+              date: novaData,
+              serviceId: editForm.serviceId,
+              professionalId: editForm.professionalId
+          });
+
+          if (temConflito) return; // Para a execução aqui
+
           const res = await fetch('/api/painel', { 
               method: 'PUT', 
               headers: { 'Content-Type': 'application/json' },
@@ -237,10 +277,12 @@ export default function PainelDashboard() {
       const PIXELS_POR_HORA = 80;
       const agsDoDia = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dataAtual));
       const agsProcessados = calcularLayoutVisual(agsDoDia);
-      const isToday = isSameDay(dataAtual, agora);
+      const isToday = isSameDay(dataAtual, new Date());
+      // Cálculo corrigido da linha do tempo
       const topLinha = (getHours(agora) * 60 + getMinutes(agora)) / 60 * PIXELS_POR_HORA;
+      
       return (
-        <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans">
+        <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative">
             <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                 {horas.map(h => (
                     <div key={h} className="flex border-b dark:border-gray-700 h-[80px]">
@@ -248,6 +290,15 @@ export default function PainelDashboard() {
                         <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
                     </div>
                 ))}
+                
+                {/* LINHA DO TEMPO ATUAL (CORRIGIDA) */}
+                {isToday && (
+                    <div className="absolute left-16 right-0 z-30 flex items-center pointer-events-none" style={{ top: `${topLinha}px` }}>
+                         <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-sm"></div>
+                         <div className="h-[2px] w-full bg-red-500 shadow-sm opacity-80"></div>
+                    </div>
+                )}
+
                 {agsProcessados.map(ag => {
                     const data = new Date(ag.date);
                     const pro = profissionais.find(p => p.id === ag.professionalId);
@@ -279,7 +330,6 @@ export default function PainelDashboard() {
                         </button>
                     )
                 })}
-                {isToday && <div className="absolute left-16 right-0 border-t-2 border-red-500 z-50 flex items-center pointer-events-none" style={{ top: `${topLinha}px` }}><div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-sm"></div></div>}
             </div>
         </div>
       )

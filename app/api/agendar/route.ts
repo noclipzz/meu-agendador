@@ -1,99 +1,143 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { isBefore, addMinutes, subMinutes } from "date-fns";
+import { Resend } from "resend";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const prisma = new PrismaClient();
-
-// Função para garantir a formatação (xx) xxxxx-xxxx no banco de dados
-function formatarTelefone(telefone: string | null | undefined) {
-  if (!telefone) return null;
-  const apenasNumeros = telefone.replace(/\D/g, "");
-  
-  if (apenasNumeros.length === 11) {
-    return apenasNumeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-  } else if (apenasNumeros.length === 10) {
-    return apenasNumeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-  }
-  return telefone;
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { 
-      clientId, 
-      serviceId, 
-      professionalId, 
-      companyId, 
-      date, 
-      name, 
-      phone, 
-      type,     
-      location  
+        name, 
+        phone, 
+        email, 
+        date, 
+        serviceId, 
+        professionalId, 
+        companyId, 
+        type, 
+        location,
+        clientId 
     } = body;
-    
-    const startTime = new Date(date);
-    const tipo = type || "CLIENTE";
-    const telefoneFormatado = formatarTelefone(phone);
 
-    // 1. Validação de horário passado com margem de 5 minutos (evita erro de fuso horário)
-    const agoraComMargem = subMinutes(new Date(), 5);
-    if (isBefore(startTime, agoraComMargem)) {
-      return NextResponse.json({ error: "❌ Este horário já passou no relógio do sistema." }, { status: 400 });
+    // 1. Validações Básicas
+    if (!date || !companyId) {
+        return new NextResponse("Dados incompletos", { status: 400 });
     }
 
-    // --- LÓGICA PARA AGENDAMENTO DE CLIENTE ---
-    if (tipo === "CLIENTE") {
-        if (!serviceId || !professionalId) {
-            return NextResponse.json({ error: "Serviço e Profissional são obrigatórios." }, { status: 400 });
-        }
+    // 2. Busca dados auxiliares
+    const [service, professional, company] = await Promise.all([
+        serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
+        professionalId ? prisma.professional.findUnique({ where: { id: professionalId } }) : null,
+        prisma.company.findUnique({ where: { id: companyId } })
+    ]);
 
-        const service = await prisma.service.findUnique({
-            where: { id: serviceId }
-        });
+    let finalClientId = clientId;
 
-        if (!service) return NextResponse.json({ error: "Serviço não encontrado" }, { status: 404 });
+    // 3. Lógica de Cliente (Cria ou Atualiza se for público)
+    if (!finalClientId) {
+        const phoneClean = phone?.replace(/\D/g, "") || "";
+        let existingClient = null;
         
-        const durationInMinutes = Number(service.duration) || 30;
-        const endTime = addMinutes(startTime, durationInMinutes);
+        if (phoneClean) {
+            existingClient = await prisma.client.findFirst({
+                where: { companyId, phone: { contains: phoneClean } }
+            });
+        }
 
-        // Verificação de conflito de horário para o profissional
-        const conflito = await prisma.booking.findFirst({
-            where: {
-                professionalId: professionalId,
-                companyId: companyId,
-                type: "CLIENTE",
-                date: startTime // Verifica se o profissional já começa algo nesse minuto exato
+        if (existingClient) {
+            finalClientId = existingClient.id;
+            if (email && !existingClient.email) {
+                await prisma.client.update({ where: { id: existingClient.id }, data: { email } });
             }
-        });
-
-        if (conflito) {
-            return NextResponse.json({ 
-                error: "⚠️ Este profissional já tem um agendamento neste horário." 
-            }, { status: 409 });
+        } else {
+            const newClient = await prisma.client.create({
+                data: { name, phone, email, companyId }
+            });
+            finalClientId = newClient.id;
         }
     }
 
-    // 2. Cria o registro no banco (CLIENTE ou EVENTO)
-    const newBooking = await prisma.booking.create({
-      data: {
-        date: startTime,
-        customerName: name,
-        customerPhone: telefoneFormatado, // Salva formatado bonitinho
-        type: tipo,
-        location: location || null,
-        // Campos nulos se for evento
-        serviceId: tipo === "CLIENTE" ? serviceId : null,
-        professionalId: tipo === "CLIENTE" ? professionalId : null,
-        companyId: companyId,
-        clientId: tipo === "CLIENTE" ? (clientId || null) : null,
-        status: "PENDENTE"
-      }
+    // 4. Cria o Agendamento (AGORA COMO PENDENTE)
+    const booking = await prisma.booking.create({
+        data: {
+            date: new Date(date),
+            companyId,
+            clientId: finalClientId,
+            serviceId: serviceId || null,
+            professionalId: professionalId || null,
+            customerName: name,
+            customerPhone: phone,
+            type: type || "CLIENTE",
+            location: location || null,
+            
+            // --- ALTERAÇÃO AQUI: STATUS INICIAL PENDENTE ---
+            status: "PENDENTE" 
+        }
     });
 
-    return NextResponse.json(newBooking);
+    // 5. ENVIO DE E-MAILS (RESEND)
+    const dataFormatada = format(new Date(date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
+    const nomeServico = service?.name || "Atendimento";
+    const nomeProfissional = professional?.name || "Profissional da Equipe";
+    const nomeEmpresa = company?.name || "NOHUD Agenda";
+
+    // A) E-mail para o CLIENTE (Avisando que está PENDENTE)
+    if (email) {
+        try {
+            await resend.emails.send({
+                from: `${nomeEmpresa} <onboarding@resend.dev>`,
+                to: email,
+                subject: `⏳ Solicitação de Agendamento: ${dataFormatada}`, // Assunto mudou para Solicitação
+                html: `
+                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
+                        <h2 style="color: #d97706;">Olá, ${name}!</h2>
+                        <p>Recebemos sua solicitação de agendamento.</p>
+                        <p><strong>Status atual:</strong> <span style="background: #fffbeb; color: #b45309; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Aguardando Confirmação</span></p>
+                        
+                        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p><strong>📅 Data:</strong> ${dataFormatada}</p>
+                            <p><strong>💇 Serviço:</strong> ${nomeServico}</p>
+                            <p><strong>👨‍⚕️ Profissional:</strong> ${nomeProfissional}</p>
+                            <p><strong>📍 Local:</strong> ${company?.name}</p>
+                        </div>
+                        <p style="font-size: 12px; color: #666;">Você receberá uma nova notificação assim que confirmarmos.</p>
+                    </div>
+                `
+            });
+        } catch (error) {
+            console.error("Erro ao enviar e-mail para cliente:", error);
+        }
+    }
+
+    // B) E-mail para a EMPRESA/ADMIN (Alerta para APROVAR)
+    if (company?.notificationEmail) {
+        try {
+            await resend.emails.send({
+                from: `Sistema NOHUD <onboarding@resend.dev>`,
+                to: company.notificationEmail,
+                subject: `🔔 Novo Agendamento Pendente: ${name}`,
+                html: `
+                    <p>Você tem uma nova solicitação de agendamento!</p>
+                    <p><strong>Cliente:</strong> ${name} (${phone})</p>
+                    <p><strong>Serviço:</strong> ${nomeServico}</p>
+                    <p><strong>Data:</strong> ${dataFormatada}</p>
+                    <br/>
+                    <a href="https://seu-sistema.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel para Confirmar</a>
+                `
+            });
+        } catch (error) {
+            console.error("Erro ao enviar e-mail para admin:", error);
+        }
+    }
+
+    return NextResponse.json(booking);
+
   } catch (error) {
     console.error("ERRO_AGENDAR:", error);
-    return NextResponse.json({ error: "Erro interno ao salvar no banco." }, { status: 500 });
+    return new NextResponse("Erro interno ao agendar", { status: 500 });
   }
 }

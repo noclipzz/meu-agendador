@@ -16,8 +16,7 @@ export default function ClientesPage() {
     const [busca, setBusca] = useState("");
     const [loading, setLoading] = useState(true);
     
-    // loadingDetalhes agora serve para indicar se estamos baixando os dados extras (financeiro/anexos)
-    // mas não bloqueará a visualização da ficha básica.
+    // loadingDetalhes serve para indicar se estamos baixando os dados extras (financeiro/anexos)
     const [loadingDetalhes, setLoadingDetalhes] = useState(false); 
     
     const [salvandoAnexo, setSalvandoAnexo] = useState(false);
@@ -48,13 +47,12 @@ export default function ClientesPage() {
         setLoading(false);
     }
 
-    // --- MUDANÇA AQUI: RECEBE O OBJETO INTEIRO DO CLIENTE ---
     async function abrirFichaCliente(clienteBasico: any) {
-        // 1. Abre o modal IMEDIATAMENTE com os dados que já temos (Nome, Tel, Status)
+        // 1. Abre o modal IMEDIATAMENTE com os dados que já temos
         setClienteSelecionado(clienteBasico);
         setAbaAtiva("DADOS");
         
-        // 2. Inicia o carregamento dos detalhes (Financeiro, Histórico, Anexos) em background
+        // 2. Inicia o carregamento dos detalhes em background
         setLoadingDetalhes(true);
 
         try {
@@ -63,17 +61,14 @@ export default function ClientesPage() {
                 const dadosCompletos = await res.json();
                 
                 // 3. Atualiza o cliente selecionado mesclando os dados novos
-                // Usamos o prev para garantir que se o usuário já digitou algo (ex: nota), não perca, 
-                // embora neste caso seja visualização.
                 setClienteSelecionado((prev: any) => {
-                    // Só atualiza se o modal ainda estiver aberto no mesmo cliente
                     if (prev && prev.id === clienteBasico.id) {
                         return { ...prev, ...dadosCompletos };
                     }
                     return prev;
                 });
             } else {
-                toast.error("Não foi possível carregar o histórico financeiro completo.");
+                toast.error("Não foi possível carregar o histórico completo.");
             }
         } catch (error) {
             console.error(error);
@@ -182,7 +177,6 @@ export default function ClientesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
                 {filtrados.map(c => (
-                    // MUDANÇA: Passamos o objeto 'c' inteiro, não só o ID
                     <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
                         <div className="flex justify-between mb-4">
                             <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600">{c.name.charAt(0)}</div>
@@ -281,7 +275,6 @@ export default function ClientesPage() {
                             {abaAtiva === "FINANCEIRO" && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     
-                                    {/* MUDANÇA AQUI: O Loading só aparece se estiver na aba FINANCEIRO e ainda estiver carregando */}
                                     {loadingDetalhes ? (
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <div className="bg-white dark:bg-gray-900 shadow-xl rounded-full px-8 py-4 flex items-center gap-3 border dark:border-gray-800">
@@ -306,7 +299,10 @@ export default function ClientesPage() {
                                                             </div>
                                                             <div>
                                                                 <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
-                                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
+                                                                {/* ALTERAÇÃO: Ocultar Vencimento se estiver PAGO */}
+                                                                {inv.status !== 'PAGO' && (
+                                                                    <p className="text-[10px] font-bold text-red-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
