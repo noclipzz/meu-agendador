@@ -1,54 +1,85 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { auth } from '@clerk/nextjs/server';
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
+// LISTAR SERVIÇOS (COM OS PRODUTOS QUE CONSOME)
 export async function GET() {
-  try {
-    const { userId } = await auth();
-    const company = await prisma.company.findFirst({ where: { ownerId: userId } });
-    if (!company) return NextResponse.json([]);
-    const services = await prisma.service.findMany({ where: { companyId: company.id } });
-    return NextResponse.json(services);
-  } catch (error) { return NextResponse.json([], { status: 500 }); }
+  const { userId } = auth();
+  if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+
+  const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+  if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+
+  const services = await prisma.service.findMany({
+    where: { companyId: company.id },
+    orderBy: { name: 'asc' },
+    include: {
+        products: {
+            include: { product: true } // Inclui os detalhes do produto (nome, unidade)
+        }
+    }
+  });
+
+  return NextResponse.json(services);
 }
 
+// CRIAR/ATUALIZAR SERVIÇO
 export async function POST(req: Request) {
-  try {
-    const { userId } = await auth();
-    const body = await req.json();
-    const company = await prisma.company.findFirst({ where: { ownerId: userId } });
-    
-    if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+  const { userId } = auth();
+  const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+  const body = await req.json();
 
-    const service = await prisma.service.create({
-        data: {
-            name: body.name,
-            price: parseFloat(body.price),
-            duration: parseInt(body.duration),
-            commission: parseInt(body.commission || '0'), // SALVA A COMISSÃO
-            companyId: company.id
-        }
-    });
-    return NextResponse.json(service);
-  } catch (error) { return NextResponse.json({ error: "Erro interno" }, { status: 500 }); }
-}
+  const { id, name, price, duration, commission, products } = body;
 
-export async function PUT(req: Request) {
-  try {
-    const body = await req.json();
-    const updated = await prisma.service.update({
-        where: { id: body.id },
-        data: {
-            name: body.name,
-            price: parseFloat(body.price),
-            duration: parseInt(body.duration),
-            commission: parseInt(body.commission || '0') // ATUALIZA A COMISSÃO
-        }
-    });
-    return NextResponse.json(updated);
-  } catch(e) { return NextResponse.json({error: "Erro"}, {status: 500}) }
+  // Prepara os dados dos produtos vinculados
+  // products deve ser um array: [{ productId: "...", amount: 50 }, ...]
+  const productLinks = products?.map((p: any) => ({
+      product: { connect: { id: p.productId } },
+      amount: Number(p.amount)
+  }));
+
+  if (id) {
+      // ATUALIZAR
+      // Primeiro removemos os vínculos antigos para recriar (mais simples que atualizar um a um)
+      await prisma.serviceProduct.deleteMany({ where: { serviceId: id } });
+
+      const updated = await prisma.service.update({
+          where: { id },
+          data: {
+              name,
+              price: Number(price),
+              duration: Number(duration),
+              commission: Number(commission),
+              products: {
+                  create: productLinks.map((p:any) => ({
+                      productId: p.product.connect.id,
+                      amount: p.amount
+                  }))
+              }
+          }
+      });
+      return NextResponse.json(updated);
+  } else {
+      // CRIAR
+      const created = await prisma.service.create({
+          data: {
+              name,
+              price: Number(price),
+              duration: Number(duration),
+              commission: Number(commission),
+              companyId: company!.id,
+              products: {
+                  create: productLinks.map((p:any) => ({
+                      productId: p.product.connect.id,
+                      amount: p.amount
+                  }))
+              }
+          }
+      });
+      return NextResponse.json(created);
+  }
 }
 
 export async function DELETE(req: Request) {

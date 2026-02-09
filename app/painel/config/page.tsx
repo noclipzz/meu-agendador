@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Plus, Save, Loader2, UploadCloud, Moon, Sun, Pencil, X, MessageSquare, Building2, Mail, Clock, Instagram, Facebook, Percent } from "lucide-react"; 
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X } from "lucide-react"; 
 import { useTheme } from "../../../hooks/useTheme";
 import { toast } from "sonner";
-// CORREÇÃO DEFINITIVA DO CAMINHO:
 import { useAgenda } from "../../../contexts/AgendaContext"; 
 
 export default function Configuracoes() {
@@ -33,16 +32,6 @@ export default function Configuracoes() {
   const [whatsappMessage, setWhatsappMessage] = useState("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.");
   const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
 
-  // Serviços - Estado atualizado com 'commission'
-  const [services, setServices] = useState<any[]>([]);
-  const [serviceForm, setServiceForm] = useState({ 
-    id: "", 
-    name: "", 
-    price: "", 
-    duration: "30", 
-    commission: "0" // ADICIONADO
-  });
-
   useEffect(() => { carregarTudo(); }, []);
 
   async function carregarTudo() {
@@ -65,9 +54,6 @@ export default function Configuracoes() {
             if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
             if (dataConfig.whatsappMessage) setWhatsappMessage(dataConfig.whatsappMessage);
         }
-        const resServ = await fetch('/api/painel/servicos');
-        const dataServ = await resServ.json();
-        if(Array.isArray(dataServ)) setServices(dataServ);
     } catch(e) { console.error(e) } 
     finally { setLoading(false); }
   }
@@ -115,50 +101,6 @@ export default function Configuracoes() {
   async function salvarMensagemWhatsapp() {
       await salvarConfig();
       setModalWhatsappOpen(false);
-  }
-
-  function prepararEdicao(servico: any) {
-    setServiceForm({ 
-        id: servico.id, 
-        name: servico.name, 
-        price: servico.price, 
-        duration: String(servico.duration),
-        commission: String(servico.commission || '0') // CARREGA A COMISSÃO
-    });
-    toast.info(`Editando: ${servico.name}`);
-  }
-
-  async function salvarServico() {
-    if(!serviceForm.name || !serviceForm.price) return toast.warning("Preencha nome e preço.");
-    const method = serviceForm.id ? 'PUT' : 'POST';
-    try {
-        const res = await fetch('/api/painel/servicos', { 
-            method: method, 
-            body: JSON.stringify(serviceForm) 
-        });
-        
-        if(res.ok) { 
-            setServiceForm({ id: "", name: "", price: "", duration: "30", commission: "0" }); 
-            carregarTudo(); 
-            toast.success("Serviço salvo!");
-        }
-    } catch (e) { toast.error("Erro de conexão."); }
-  }
-
-  async function deletarServico(id: string, nome: string) {
-    toast(`Excluir o serviço "${nome}"?`, {
-        action: {
-            label: "Excluir",
-            onClick: async () => {
-                const res = await fetch('/api/painel/servicos', { method: 'DELETE', body: JSON.stringify({ id }) });
-                if (res.ok) {
-                    setServices(prev => prev.filter(s => s.id !== id));
-                    toast.success("Serviço excluído.");
-                }
-            }
-        },
-        cancel: { label: "Cancelar" }
-    });
   }
 
   const toggleDay = (day: string) => {
@@ -278,63 +220,6 @@ export default function Configuracoes() {
         </div>
 
         <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2"><Save size={18} /> Salvar Alterações</button>
-      </div>
-
-      {/* BLOCO 2: SERVIÇOS (REFORMULADO) */}
-      <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">✂️ Meus Serviços</h2>
-        <div className="flex flex-wrap md:flex-nowrap gap-4 mb-8 bg-gray-50 dark:bg-gray-800 p-4 rounded-3xl border dark:border-gray-700 items-end">
-            <div className="flex-1 min-w-[200px]">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome do Serviço</label>
-                <input placeholder="Ex: Clareamento" className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-900 font-bold dark:text-white" value={serviceForm.name} onChange={e => setServiceForm({...serviceForm, name: e.target.value})} />
-            </div>
-            <div className="w-24">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Preço</label>
-                <input type="number" placeholder="0.00" className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-900 font-bold dark:text-white" value={serviceForm.price} onChange={e => setServiceForm({...serviceForm, price: e.target.value})} />
-            </div>
-            
-            <div className="w-32">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Duração</label>
-                <select className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-900 font-bold dark:text-white" value={serviceForm.duration} onChange={e => setServiceForm({...serviceForm, duration: e.target.value})}>
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="45">45 min</option>
-                    <option value="60">1 hora</option>
-                    <option value="90">1h 30m</option>
-                    <option value="120">2 horas</option>
-                </select>
-            </div>
-
-            {/* NOVO CAMPO: COMISSÃO (%) */}
-            <div className="w-24">
-                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1"><Percent size={10}/> Comis.</label>
-                <input type="number" placeholder="0" className="border dark:border-gray-700 p-4 rounded-2xl w-full text-sm bg-white dark:bg-gray-900 font-bold dark:text-white" value={serviceForm.commission} onChange={e => setServiceForm({...serviceForm, commission: e.target.value})} />
-            </div>
-
-            <button onClick={salvarServico} className={`text-white px-6 py-4 rounded-2xl h-[56px] flex items-center gap-2 font-black shadow-sm transition ${serviceForm.id ? 'bg-yellow-500' : 'bg-green-600 hover:bg-green-700'}`}>
-                {serviceForm.id ? <Save size={18}/> : <Plus size={18}/>} {serviceForm.id ? "Salvar" : "Add"}
-            </button>
-            {serviceForm.id && <button onClick={() => setServiceForm({ id: "", name: "", price: "", duration: "30", commission: "0" })} className="text-gray-400 p-2 h-[56px] dark:hover:text-white transition"><X size={24}/></button>}
-        </div>
-
-        <div className="space-y-3">
-            {services.map(serv => (
-                <div key={serv.id} className="flex justify-between items-center p-5 border dark:border-gray-700 rounded-[2rem] bg-white dark:bg-gray-800 shadow-sm group hover:border-blue-500 transition-all">
-                    <div>
-                        <h3 className="font-black text-gray-800 dark:text-white text-lg">{serv.name}</h3>
-                        <div className="flex gap-3 mt-1">
-                            <p className="text-[10px] text-gray-400 flex items-center gap-1 font-black uppercase tracking-widest"><Clock size={12}/> {serv.duration} min</p>
-                            <p className="text-[10px] text-blue-500 flex items-center gap-1 font-black uppercase tracking-widest"><Percent size={12}/> {serv.commission || 0}% Comis.</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="font-black text-blue-600 mr-4 dark:text-blue-400">R$ {serv.price}</span>
-                        <button onClick={() => prepararEdicao(serv)} className="text-gray-400 hover:text-blue-600 transition p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl"><Pencil size={18} /></button>
-                        <button onClick={() => deletarServico(serv.id, serv.name)} className="text-gray-400 hover:text-red-600 transition p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl"><Trash2 size={18} /></button>
-                    </div>
-                </div>
-            ))}
-        </div>
       </div>
 
        {modalWhatsappOpen && (

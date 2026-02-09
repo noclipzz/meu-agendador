@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
-import { startOfMonth, endOfMonth, subMonths, format, isSameDay, isBefore, startOfDay } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, eachMonthOfInterval, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const prisma = new PrismaClient();
@@ -9,114 +9,159 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    const company = await prisma.company.findFirst({ 
-        where: { 
-            OR: [
-                { ownerId: userId },
-                { professionals: { some: { userId: userId } } }
-            ]
-        } 
+    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+
+    const hoje = new Date();
+    const inicioMes = startOfMonth(hoje);
+    const fimMes = endOfMonth(hoje);
+    const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
+    const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
+
+    // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES) ---
+    // Gera um array com os últimos 6 meses
+    const mesesGrafico = eachMonthOfInterval({
+        start: subMonths(hoje, 5),
+        end: hoje
     });
-    
-    if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-    const agora = new Date();
+    // Calcula as somas de cada mês em paralelo
+    const fluxoCaixa = await Promise.all(mesesGrafico.map(async (data) => {
+        const inicio = startOfMonth(data);
+        const fim = endOfMonth(data);
 
-    const [bookings, allExpenses] = await Promise.all([
-      prisma.booking.findMany({
-        where: { companyId: company.id, status: "CONFIRMADO", type: "CLIENTE" },
-        include: { service: true, professional: true }
-      }),
-      prisma.expense.findMany({
-        where: { companyId: company.id }
-      })
+        // 1. Soma Entradas (Faturas com status PAGO)
+        const receitas = await prisma.invoice.aggregate({
+            _sum: { value: true },
+            where: { 
+                companyId: company.id, 
+                status: 'PAGO', 
+                paidAt: { gte: inicio, lte: fim } 
+            }
+        });
+
+        // 2. Soma Saídas (Despesas)
+        const despesas = await prisma.expense.aggregate({
+            _sum: { value: true },
+            where: { 
+                companyId: company.id, 
+                date: { gte: inicio, lte: fim } 
+            }
+        });
+
+        return {
+            mes: format(data, 'MMM', { locale: ptBR }).toUpperCase(),
+            receita: Number(receitas._sum.value || 0),
+            despesa: Number(despesas._sum.value || 0)
+        };
+    }));
+    // ---------------------------------------------
+
+    // Consultas Paralelas (Performance) para o restante da página
+    const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
+        // 1. Receitas do Mês Atual (PAGO)
+        prisma.invoice.findMany({
+            where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } }
+        }),
+        // 2. Despesas do Mês Atual
+        prisma.expense.findMany({
+            where: { companyId: company.id, date: { gte: inicioMes, lte: fimMes } }
+        }),
+        // 3. Receitas Mês Anterior (Para comparar crescimento)
+        prisma.invoice.findMany({
+            where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior } }
+        }),
+        // 4. Ranking Serviços (Top 5)
+        prisma.booking.groupBy({
+            by: ['serviceId'],
+            where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 5
+        }),
+        // 5. Ranking Profissionais (Top 5)
+        prisma.booking.groupBy({
+            by: ['professionalId'],
+            where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } },
+            take: 5
+        }),
+        // 6. Todas as Despesas (Para listagem)
+        prisma.expense.findMany({
+            where: { companyId: company.id },
+            orderBy: { date: 'desc' },
+            take: 20
+        }),
+        // 7. BOLETOS VENCIDOS
+        prisma.invoice.findMany({
+            where: { 
+                companyId: company.id, 
+                status: "PENDENTE", 
+                dueDate: { lt: startOfDay(hoje) } // Vencimento menor que hoje
+            },
+            include: { client: true },
+            orderBy: { dueDate: 'asc' }
+        }),
+        // 8. BOLETOS A VENCER/EM ABERTO
+        prisma.invoice.findMany({
+            where: { 
+                companyId: company.id, 
+                status: "PENDENTE", 
+                dueDate: { gte: startOfDay(hoje) } // Vencimento maior ou igual a hoje
+            },
+            include: { client: true },
+            orderBy: { dueDate: 'asc' }
+        })
     ]);
 
-    const fluxoCaixa = [];
-    for (let i = 5; i >= 0; i--) {
-        const dataRef = subMonths(agora, i);
-        const inicioMes = startOfMonth(dataRef);
-        const fimMes = endOfMonth(dataRef);
-        
-        const receitaMes = bookings
-            .filter(b => new Date(b.date) >= inicioMes && new Date(b.date) <= fimMes)
-            .reduce((acc, curr) => acc + Number(curr.service?.price || 0), 0);
-
-        const despesaMes = (allExpenses || []).reduce((total, exp) => {
-            const dataExp = startOfDay(new Date(exp.date));
-            const valor = Number(exp.value || 0);
-
-            if (isBefore(dataExp, fimMes) || isSameDay(dataExp, inicioMes)) {
-                if (exp.frequency === "ONCE" || !exp.frequency) {
-                    if (dataExp >= inicioMes && dataExp <= fimMes) return total + valor;
-                }
-                if (exp.frequency === "MONTHLY") return total + valor;
-                if (exp.frequency === "WEEKLY") return total + (valor * 4);
-                if (exp.frequency === "YEARLY") {
-                    if (dataExp.getMonth() === dataRef.getMonth()) return total + valor;
-                }
-            }
-            return total;
-        }, 0);
-
-        fluxoCaixa.push({
-            mes: format(dataRef, "MMM", { locale: ptBR }).toUpperCase().replace('.', ''),
-            receita: receitaMes,
-            despesa: despesaMes,
-            lucro: receitaMes - despesaMes
-        });
+    // Cálculos de Totais
+    const totalReceita = receitasMes.reduce((acc, i) => acc + Number(i.value), 0);
+    const totalDespesa = despesasMes.reduce((acc, i) => acc + Number(i.value), 0);
+    const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i) => acc + Number(i.value), 0);
+    
+    // Cálculo Crescimento
+    let crescimento = 0;
+    if (totalReceitaAnterior > 0) {
+        crescimento = ((totalReceita - totalReceitaAnterior) / totalReceitaAnterior) * 100;
+    } else if (totalReceita > 0) {
+        crescimento = 100;
     }
 
-    const faturamentoBruto = fluxoCaixa[5].receita;
-    const totalDespesas = fluxoCaixa[5].despesa;
-    const mesAtualInicio = startOfMonth(agora);
-    
-    const comissoesPagar = bookings
-        .filter(b => new Date(b.date) >= mesAtualInicio)
-        .reduce((acc, b) => {
-            const preco = Number(b.service?.price || 0);
-            const porc = Number(b.service?.commission || 0);
-            return acc + (preco * (porc / 100));
-        }, 0);
+    // Processamento de Rankings (Busca nomes)
+    const rankingServicos = await Promise.all(rankingServicosRaw.map(async (item) => {
+        if(!item.serviceId) return null;
+        const s = await prisma.service.findUnique({ where: { id: item.serviceId } });
+        return s ? { name: s.name, count: item._count.id, receita: Number(s.price) * item._count.id } : null;
+    })).then(r => r.filter(Boolean));
 
-    const rankingProsMap = new Map();
-    bookings.forEach(b => {
-        if (!b.professional) return;
-        const current = rankingProsMap.get(b.professional.name) || { 
-            name: b.professional.name, receita: 0, color: b.professional.color 
-        };
-        current.receita += Number(b.service?.price || 0);
-        rankingProsMap.set(b.professional.name, current);
-    });
+    const rankingProfissionais = await Promise.all(rankingProfissionaisRaw.map(async (item) => {
+        if(!item.professionalId) return null;
+        const p = await prisma.professional.findUnique({ where: { id: item.professionalId } });
+        return p ? { name: p.name, count: item._count.id, receita: 0, color: p.color } : null;
+    })).then(r => r.filter(Boolean));
 
-    const rankingServicosMap = new Map();
-    bookings.forEach(b => {
-        if (!b.service) return;
-        const current = rankingServicosMap.get(b.service.name) || { name: b.service.name, receita: 0, count: 0 };
-        current.receita += Number(b.service.price || 0);
-        current.count += 1;
-        rankingServicosMap.set(b.service.name, current);
-    });
-
+    // Retorno Final
     return NextResponse.json({
         resumo: {
-            bruto: faturamentoBruto,
-            despesas: totalDespesas,
-            comissoes: comissoesPagar,
-            liquido: faturamentoBruto - totalDespesas - comissoesPagar,
-            crescimento: fluxoCaixa[4].receita > 0 ? Math.round(((faturamentoBruto / fluxoCaixa[4].receita) - 1) * 100) : 0,
-            taxaOcupacao: 0
+            bruto: totalReceita,
+            despesas: totalDespesa,
+            liquido: totalReceita - totalDespesa,
+            crescimento: Math.round(crescimento),
+            comissoes: 0 
         },
-        fluxoCaixa,
-        rankingProfissionais: Array.from(rankingProsMap.values()).sort((a, b) => b.receita - a.receita),
-        rankingServicos: Array.from(rankingServicosMap.values()).sort((a, b) => b.receita - a.receita),
-        allExpenses: allExpenses || []
+        fluxoCaixa, // Array com os últimos 6 meses preenchidos
+        rankingServicos,
+        rankingProfissionais,
+        allExpenses,
+        boletosVencidos,
+        boletosAbertos
     });
 
   } catch (error) {
-    console.error("ERRO_FINANCEIRO:", error);
-    return NextResponse.json({ error: "Erro ao carregar dados" }, { status: 500 });
+    console.error(error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

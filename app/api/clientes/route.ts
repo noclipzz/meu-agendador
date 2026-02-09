@@ -4,22 +4,36 @@ import { auth } from "@clerk/nextjs/server";
 
 const prisma = new PrismaClient();
 
-// BUSCAR CLIENTES (APENAS DA EMPRESA DO USUÁRIO LOGADO)
+// FUNÇÃO AUXILIAR: Descobre o ID da empresa (seja Dono ou Funcionário)
+async function getCompanyId(userId: string) {
+    // 1. Tenta achar como DONO
+    const companyOwner = await prisma.company.findUnique({
+        where: { ownerId: userId },
+        select: { id: true }
+    });
+    if (companyOwner) return companyOwner.id;
+
+    // 2. Se não for dono, tenta achar como MEMBRO DA EQUIPE
+    const teamMember = await prisma.teamMember.findUnique({
+        where: { clerkUserId: userId },
+        select: { companyId: true }
+    });
+    if (teamMember) return teamMember.companyId;
+
+    return null;
+}
+
+// GET: LISTAR CLIENTES (Admin + Profissionais)
 export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
-    // 1. Localiza a empresa que pertence ao usuário logado
-    const userCompany = await prisma.company.findFirst({
-      where: { ownerId: userId }
-    });
+    const companyId = await getCompanyId(userId);
+    if (!companyId) return NextResponse.json([]); // Retorna lista vazia se não tiver empresa vinculada
 
-    if (!userCompany) return NextResponse.json([]);
-
-    // 2. Busca clientes vinculados APENAS a essa empresa
     const clients = await prisma.client.findMany({
-      where: { companyId: userCompany.id },
+      where: { companyId },
       orderBy: { name: 'asc' },
       include: { 
         bookings: { 
@@ -27,7 +41,8 @@ export async function GET() {
             service: true,
             professional: true 
           },
-          orderBy: { date: 'desc' }
+          orderBy: { date: 'desc' },
+          take: 5 // Traz apenas os 5 últimos para não pesar a listagem
         } 
       }
     });
@@ -39,26 +54,35 @@ export async function GET() {
   }
 }
 
-// CADASTRAR NOVO CLIENTE (VINCULADO À EMPRESA DO DONO)
+// POST: CADASTRAR NOVO CLIENTE (Admin + Profissionais)
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
-    // 1. Localiza a empresa do usuário logado
-    const userCompany = await prisma.company.findFirst({
-      where: { ownerId: userId }
-    });
-
-    if (!userCompany) return new NextResponse("Empresa não encontrada para este usuário", { status: 404 });
+    const companyId = await getCompanyId(userId);
+    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
 
     const body = await req.json();
 
+    // Verifica se já existe cliente com esse telefone na empresa (evita duplicidade)
+    if (body.phone) {
+        const existing = await prisma.client.findFirst({
+            where: { 
+                companyId, 
+                phone: body.phone 
+            }
+        });
+        if (existing) {
+            return NextResponse.json({ error: "Já existe um cliente com este telefone." }, { status: 400 });
+        }
+    }
+
     const client = await prisma.client.create({
-      data: { 
-        name: body.name, 
-        phone: body.phone, 
-        email: body.email, 
+      data: {
+        name: body.name,
+        phone: body.phone,
+        email: body.email,
         cpf: body.cpf,
         rg: body.rg,
         birthDate: body.birthDate,
@@ -67,7 +91,7 @@ export async function POST(req: Request) {
         city: body.city,
         notes: body.notes,
         status: body.status || "ATIVO",
-        companyId: userCompany.id // Vincula obrigatoriamente à empresa do dono
+        companyId: companyId
       }
     });
     
@@ -78,45 +102,67 @@ export async function POST(req: Request) {
   }
 }
 
-// ATUALIZAR CLIENTE (COM VALIDAÇÃO DE SEGURANÇA)
+// PUT: ATUALIZAR CLIENTE (Admin + Profissionais)
 export async function PUT(req: Request) {
-  try {
-    const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
-
-    // 1. Localiza a empresa do usuário logado
-    const userCompany = await prisma.company.findFirst({
-      where: { ownerId: userId }
-    });
-
-    if (!userCompany) return new NextResponse("Não autorizado", { status: 401 });
-
-    const body = await req.json();
-
-    // 2. Atualiza garantindo que o cliente pertence à empresa do usuário (Proteção extra)
-    const updated = await prisma.client.update({
-      where: { 
-        id: body.id,
-        companyId: userCompany.id // Só atualiza se o cliente for "dele"
-      },
-      data: { 
-        name: body.name, 
-        phone: body.phone, 
-        email: body.email, 
-        cpf: body.cpf,
-        rg: body.rg,
-        birthDate: body.birthDate,
-        cep: body.cep,
-        address: body.address,
-        city: body.city,
-        notes: body.notes,
-        status: body.status
-      }
-    });
-
-    return NextResponse.json(updated);
-  } catch (error) { 
-    console.error("ERRO_PUT_CLIENTE:", error);
-    return new NextResponse("Erro ao atualizar cliente", { status: 500 }); 
+    try {
+      const { userId } = await auth();
+      if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+  
+      const companyId = await getCompanyId(userId);
+      if (!companyId) return new NextResponse("Não autorizado", { status: 401 });
+  
+      const body = await req.json();
+      const { id, ...data } = body;
+  
+      // Garante que só atualiza clientes da MESMA empresa
+      const updated = await prisma.client.update({
+        where: { 
+            id,
+            companyId // Trava de segurança
+        },
+        data: {
+            name: data.name,
+            phone: data.phone,
+            email: data.email,
+            cpf: data.cpf,
+            rg: data.rg,
+            birthDate: data.birthDate,
+            cep: data.cep,
+            address: data.address,
+            city: data.city,
+            notes: data.notes,
+            status: data.status
+        }
+      });
+  
+      return NextResponse.json(updated);
+    } catch (error) { 
+      console.error("ERRO_PUT_CLIENTE:", error);
+      return new NextResponse("Erro ao atualizar", { status: 500 }); 
+    }
   }
+
+// DELETE: EXCLUIR CLIENTE (Admin + Profissionais)
+export async function DELETE(req: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+        const companyId = await getCompanyId(userId);
+        if (!companyId) return new NextResponse("Não autorizado", { status: 401 });
+
+        const body = await req.json();
+
+        await prisma.client.delete({
+            where: { 
+                id: body.id,
+                companyId // Trava de segurança
+            }
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("ERRO_DELETE_CLIENTE:", error);
+        return new NextResponse("Erro ao excluir", { status: 500 });
+    }
 }

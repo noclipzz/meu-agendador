@@ -5,11 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
-import { Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, Search, Check, MapPin, Trash2, BarChart3 } from "lucide-react";
+import { 
+  Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon, 
+  Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase, 
+  LayoutDashboard 
+} from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
 import { toast } from "sonner";
-// --- CORREÇÃO: ADICIONADOS IMPORTS PARA CÁLCULO DE TEMPO ---
 import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-fns";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
@@ -73,14 +76,34 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     });
   }, [tipoAgendamento]);
 
-  useEffect(() => {
+useEffect(() => {
     if (!isLoaded || !user) return;
+    
     async function verificarStatus() {
         try {
+            // 1. Tenta Sincronizar/Identificar quem é o usuário
+            const resSync = await fetch('/api/sync');
+            
+            if (resSync.ok) {
+                const dadosUser = await resSync.json();
+                
+                // SE FOR FUNCIONÁRIO (PROFESSIONAL), LIBERA O ACESSO DIRETO
+                if (dadosUser.role === "PROFESSIONAL") {
+                    setCompanyId(dadosUser.companyId);
+                    setUserRole("PROFESSIONAL");
+                    setVerificando(false);
+                    return; // Para por aqui e libera a tela
+                }
+            }
+
+            // 2. Se for DONO, verifica o pagamento
             const resPag = await fetch('/api/checkout');
             const dadosPag = await resPag.json();
+            
+            // Se o dono não pagou, manda pros planos
             if (!dadosPag.active) { router.push('/#planos'); return; }
 
+            // 3. Carrega configurações da empresa do dono
             const resEmpresa = await fetch('/api/painel/config');
             const dadosEmpresa = await resEmpresa.json();
 
@@ -92,7 +115,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 if (pathname !== '/novo-negocio') router.push('/novo-negocio');
                 return; 
             }
-        } catch (error) { router.push('/'); }
+        } catch (error) { 
+            console.error("Erro fatal de verificação", error);
+            router.push('/'); 
+        }
     }
     verificarStatus();
   }, [router, user, isLoaded, setCompanyId, pathname]);
@@ -106,7 +132,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
   }, [isModalOpen, companyId]);
 
   async function salvarAgendamento() {
-    // 1. Validação básica
     if(!novo.nome || !novo.date || !novo.time) {
         toast.error("Por favor, preencha o nome, a data e o horário.");
         return;
@@ -117,7 +142,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // 2. Montagem da data
     const dataString = `${novo.date}T${novo.time}:00`;
     const dataFinal = new Date(dataString);
 
@@ -126,7 +150,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         return;
     }
     
-    // 3. Trava de horário passado
     if (isBefore(dataFinal, subMinutes(new Date(), 5))) {
         toast.error("❌ Erro: O horário selecionado já passou.");
         return;
@@ -135,22 +158,16 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     setSalvando(true);
 
     try {
-        // --- NOVO BLOCO: VERIFICAÇÃO DE CONFLITO DE HORÁRIO ---
         if (tipoAgendamento === "CLIENTE") {
-            // 1. Descobre a duração do serviço selecionado
             const servicoSelecionado = services.find(s => s.id === novo.serviceId);
             const duracaoMinutos = servicoSelecionado?.duration || 30;
 
-            // 2. Busca os agendamentos existentes para verificar colisão
-            // Nota: Idealmente a API aceitaria filtros, mas vamos buscar e filtrar aqui
             const resCheck = await fetch('/api/painel');
             const agendamentosExistentes = await resCheck.json();
 
             if (Array.isArray(agendamentosExistentes)) {
                 const conflito = agendamentosExistentes.find((ag: any) => {
-                    // Ignora cancelados
                     if (ag.status === "CANCELADO") return false;
-                    // Só verifica o mesmo profissional
                     if (ag.professionalId !== novo.professionalId) return false;
 
                     const inicioExistente = new Date(ag.date);
@@ -168,13 +185,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 if (conflito) {
                     toast.error(`⚠️ Horário Indisponível! O profissional já estará atendendo ${conflito.customerName}.`);
                     setSalvando(false);
-                    return; // PARE TUDO
+                    return; 
                 }
             }
         }
-        // --- FIM DA VERIFICAÇÃO ---
 
-        // 4. Envio dos dados
         const res = await fetch('/api/agendar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -216,9 +231,15 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     { name: "Agenda", path: "/painel", icon: <Calendar size={20}/> },
     { name: "Clientes", path: "/painel/clientes", icon: <Users size={20}/> },
   ];
+  
   if (userRole === "ADMIN") {
+    // --- DASHBOARD NO TOPO ---
+    menuItems.unshift({ name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20}/> });
+    
     menuItems.push(
         { name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20}/> },
+        { name: "Estoque", path: "/painel/estoque", icon: <Package size={20}/> },
+        { name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20}/> },
         { name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20}/> },
         { name: "Configurações", path: "/painel/config", icon: <Settings size={20}/> }
     );
@@ -232,18 +253,21 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`min-h-screen flex flex-col md:flex-row font-sans ${theme}`}>
-      <aside className="w-full md:w-64 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-20">
+      
+      {/* --- SIDEBAR: ADICIONADO 'print:hidden' PARA SUMIR NA IMPRESSÃO --- */}
+      <aside className="w-full md:w-64 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-20 print:hidden">
         <div className="p-6 border-b dark:border-gray-800 flex justify-between items-center"><Link href="/" className="flex items-center gap-2"><Image src="/nohud-logo.png" alt="NOHUD" width={32} height={32}/><span className="text-xl font-bold dark:text-white">NOHUD</span></Link></div>
         <nav className="flex-1 p-4 space-y-2">{menuItems.map(item => (<Link key={item.path} href={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}>{item.icon} {item.name}</Link>))}</nav>
         <div className="p-4"><button onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"><PlusCircle size={20}/> Novo Agendamento</button></div>
         <div className="p-4 border-t dark:border-gray-800 hidden md:block"><UserButton showName/><div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div></div>
       </aside>
 
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen relative bg-gray-100 dark:bg-gray-900">
+      {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white">
         {children}
 
         {isModalOpen && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
                 <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                     
                     <button 
@@ -360,7 +384,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
         {/* MODAL DE BUSCA DE CLIENTES */}
         {isSearchModalOpen && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[70] p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[70] p-4 print:hidden">
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
                     <div className="flex justify-between items-center mb-4 dark:text-white">
                         <h3 className="font-black text-xl ml-2">Buscar Cliente</h3>

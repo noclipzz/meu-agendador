@@ -35,7 +35,7 @@ function AuthButton() {
       const data = await res.json();
 
       if (data.active) {
-        router.push('/painel');
+        router.push('/painel/dashboard');
       } else {
         // Se não tiver assinatura ativa, joga para a âncora de planos
         router.push('/#planos');
@@ -305,7 +305,7 @@ export default function LandingPage() {
       <PlanosSection />
 
       <footer className="py-16 px-4 bg-gray-950 text-gray-600 text-center text-xs font-black uppercase tracking-widest">
-        <p>© 2026 NOHUD Agendamentos • Inteligência em Gestão.</p>
+        <p>© 2026 NOHUD • Inteligência em Gestão.</p>
       </footer>
     </div>
   );

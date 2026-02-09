@@ -204,9 +204,12 @@ export default function ClientesPage() {
                                     </div>
                                 </div>
                             </div>
+                            {/* BOTÕES DE AÇÃO: EDITAR, EXCLUIR, FECHAR */}
                             <div className="flex gap-3">
-                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20}/></button>
-                                <button onClick={() => setClienteSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20}/></button>
+                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm" title="Editar"><Pencil size={20}/></button>
+                                {/* BOTÃO DE EXCLUIR ADICIONADO AQUI */}
+                                <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm" title="Excluir"><Trash2 size={20}/></button>
+                                <button onClick={() => setClienteSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm" title="Fechar"><X size={20}/></button>
                             </div>
                         </div>
 
@@ -299,7 +302,6 @@ export default function ClientesPage() {
                                                             </div>
                                                             <div>
                                                                 <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
-                                                                {/* ALTERAÇÃO: Ocultar Vencimento se estiver PAGO */}
                                                                 {inv.status !== 'PAGO' && (
                                                                     <p className="text-[10px] font-bold text-red-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
                                                                 )}

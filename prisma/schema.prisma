@@ -36,7 +36,8 @@ model Company {
   teamMembers       TeamMember[]
   clients           Client[]       
   expenses          Expense[]      
-  invoices          Invoice[]      // ADICIONADO: Relação com Faturas/Cobranças
+  invoices          Invoice[]
+  products          Product[]      // Estoque da empresa
 }
 
 // --- MEMBROS DA EQUIPE ---
@@ -78,6 +79,9 @@ model Service {
   company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[]
+  
+  // Produtos consumidos por este serviço (Receita)
+  products    ServiceProduct[] 
 }
 
 // --- DESPESAS (CONTAS A PAGAR) ---
@@ -144,7 +148,7 @@ model Booking {
   companyId       String
   company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  invoice         Invoice? // ADICIONADO: Relação com a Fatura gerada
+  invoice         Invoice?
 }
 
 // --- ASSINATURAS (Stripe) ---
@@ -183,7 +187,7 @@ model Client {
   
   bookings    Booking[] 
   attachments Attachment[]
-  invoices    Invoice[] // ADICIONADO: Histórico financeiro do cliente
+  invoices    Invoice[]
   createdAt   DateTime  @default(now())
 }
 
@@ -195,4 +199,64 @@ model Attachment {
   clientId  String
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+}
+
+// --- NOVO: ESTOQUE AVANÇADO (COM LOTES) ---
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  // quantity agora é a SOMA de todos os lotes (cache para performance)
+  quantity    Decimal   @default(0) 
+  unit        String    @default("UN") 
+  minStock    Decimal   @default(5) 
+  costPrice   Decimal?  @default(0)
+  
+  // Removemos expiryDate daqui, pois agora cada lote tem a sua
+  
+  companyId   String
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  batches        ProductBatch[] // <--- NOVOS LOTES
+  usedInServices ServiceProduct[] 
+  logs           StockLog[] 
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// NOVA TABELA: LOTES DE PRODUTO
+model ProductBatch {
+  id         String    @id @default(cuid())
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity   Decimal   // Quantidade neste lote específico
+  expiryDate DateTime? // Validade deste lote específico
+  createdAt  DateTime  @default(now())
+}
+
+model StockLog {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  quantity  Decimal  
+  oldStock  Decimal  
+  newStock  Decimal  
+  type      String   // "ENTRADA", "SAIDA", "AJUSTE", "VENDA"
+  reason    String?  
+  
+  createdAt DateTime @default(now())
+}
+
+// Mantenha o ServiceProduct igual...
+model ServiceProduct {
+  id          String  @id @default(cuid())
+  serviceId   String
+  service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  amount      Decimal 
+  @@unique([serviceId, productId])
 }

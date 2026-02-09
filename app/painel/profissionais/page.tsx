@@ -2,25 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { 
-  Trash2, 
-  Plus, 
-  Save, 
-  Loader2, 
-  Pencil, 
-  X, 
-  UserCircle, 
-  Phone, 
-  ShieldCheck, 
-  Check,
-  Users,
-  DollarSign,
-  TrendingUp,
-  History,
-  Wallet,
-  Star,
-  ExternalLink,
-  Calendar,
-  Clock
+  Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
+  Users, History, Star, Calendar, Clock, Mail
 } from "lucide-react"; 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,15 +17,15 @@ export default function GestaoEquipe() {
   
   const [profissionais, setProfissionais] = useState<any[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
-  const [proSelecionado, setProSelecionado] = useState<any>(null); // Estado para a Ficha Horizontal
+  const [proSelecionado, setProSelecionado] = useState<any>(null);
 
   // FORMULÁRIO
   const [form, setForm] = useState({ 
     id: "", 
     name: "", 
+    email: "", // NOVO CAMPO EMAIL
     phone: "", 
-    color: "#3b82f6", 
-    userId: "" 
+    color: "#3b82f6"
   });
 
   useEffect(() => { carregarDados(); }, []);
@@ -60,9 +43,8 @@ export default function GestaoEquipe() {
     }
   }
 
-  // --- CÁLCULO DE COMISSÃO E PRODUÇÃO ---
+  // --- CÁLCULO DE COMISSÃO ---
   const calcularMetricas = (pro: any) => {
-    // Filtra apenas agendamentos confirmados
     const confirmados = pro.bookings?.filter((b: any) => b.status === "CONFIRMADO") || [];
     
     const totalGeral = confirmados.reduce((acc: number, b: any) => acc + Number(b.service?.price || 0), 0);
@@ -73,11 +55,7 @@ export default function GestaoEquipe() {
         return acc + (preco * (porc / 100));
     }, 0);
 
-    return { 
-        totalGeral, 
-        totalComissao, 
-        atendimentos: confirmados.length 
-    };
+    return { totalGeral, totalComissao, atendimentos: confirmados.length };
   };
 
   async function salvarProfissional() {
@@ -96,7 +74,7 @@ export default function GestaoEquipe() {
         const data = await res.json();
 
         if (res.ok) {
-            toast.success(form.id ? "Dados atualizados!" : "Profissional adicionado!");
+            toast.success(form.id ? "Dados atualizados!" : "Profissional adicionado e convite criado!");
             fecharModal();
             carregarDados();
             if (setRefreshKey) setRefreshKey((prev: number) => prev + 1);
@@ -130,20 +108,20 @@ export default function GestaoEquipe() {
   }
 
   function prepararEdicao(e: React.MouseEvent, p: any) {
-      e.stopPropagation(); // Impede abrir a ficha ao clicar no lápis
+      e.stopPropagation();
       setForm({
           id: p.id,
           name: p.name,
+          email: p.email || "", // Carrega e-mail se disponível (pode precisar ajustar o GET da API para trazer o email do TeamMember)
           phone: p.phone || "",
-          color: p.color || "#3b82f6",
-          userId: p.userId || ""
+          color: p.color || "#3b82f6"
       });
       setModalAberto(true);
   }
 
   function fecharModal() {
       setModalAberto(false);
-      setForm({ id: "", name: "", phone: "", color: "#3b82f6", userId: "" });
+      setForm({ id: "", name: "", email: "", phone: "", color: "#3b82f6" });
   }
 
   if (loading) return (
@@ -161,7 +139,7 @@ export default function GestaoEquipe() {
             <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight flex items-center gap-2">
                 <ShieldCheck className="text-blue-600" size={32}/> Gestão de Equipe
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Gerencie o time e acompanhe a performance individual.</p>
+            <p className="text-gray-500 text-sm font-medium">Cadastre seus colaboradores para liberar o acesso ao sistema.</p>
         </div>
         <button 
             onClick={() => setModalAberto(true)} 
@@ -218,7 +196,7 @@ export default function GestaoEquipe() {
       {/* FICHA DO PROFISSIONAL (HORIZONTAL PRO) */}
       {proSelecionado && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-            <div className="bg-white dark:bg-gray-950 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
                 
                 {/* HEADER DA FICHA */}
                 <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
@@ -305,13 +283,13 @@ export default function GestaoEquipe() {
                                             {proSelecionado.userId ? (
                                                 <><Check size={16} className="text-green-500"/><span className="text-sm font-bold text-green-600 uppercase">Vinculado</span></>
                                             ) : (
-                                                <><X size={16} className="text-red-500"/><span className="text-sm font-bold text-red-500 uppercase">Não Vinculado</span></>
+                                                <><X size={16} className="text-red-500"/><span className="text-sm font-bold text-red-500 uppercase">Aguardando Login</span></>
                                             )}
                                         </div>
                                     </div>
                                     <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
                                         <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">ID do Clerk (Login)</label>
-                                        <code className="text-[10px] font-mono text-blue-500 break-all">{proSelecionado.userId || "NENHUM ID CADASTRADO"}</code>
+                                        <code className="text-[10px] font-mono text-blue-500 break-all">{proSelecionado.userId || "PENDENTE"}</code>
                                     </div>
                                 </div>
                                 <button 
@@ -328,7 +306,7 @@ export default function GestaoEquipe() {
         </div>
       )}
 
-      {/* MODAL ADICIONAR/EDITAR (MANTIDO) */}
+      {/* MODAL ADICIONAR/EDITAR (CORRIGIDO) */}
       {modalAberto && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
               <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
@@ -341,14 +319,16 @@ export default function GestaoEquipe() {
                           <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({...form, name: e.target.value})}/>
                       </div>
 
+                      {/* NOVO CAMPO: E-MAIL PARA LOGIN */}
+                      <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1"><Mail size={12}/> E-mail para Login (Obrigatório)</label>
+                          <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="funcionario@gmail.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} disabled={!!form.id} />
+                          {form.id && <p className="text-[9px] text-gray-400 ml-2 mt-1">O e-mail não pode ser alterado após o cadastro.</p>}
+                      </div>
+
                       <div>
                           <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">WhatsApp</label>
                           <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}/>
-                      </div>
-
-                      <div className="bg-blue-50 dark:bg-blue-900/10 p-5 rounded-[2rem] border border-blue-100 dark:border-blue-900/50">
-                          <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase ml-2 mb-1 block tracking-widest">Vincular Conta (ID do Clerk)</label>
-                          <input className="w-full border-2 border-blue-200 dark:border-gray-700 p-4 rounded-xl bg-white dark:bg-gray-950 outline-none focus:border-blue-500 font-mono text-[11px] font-bold dark:text-white" placeholder="user_..." value={form.userId} onChange={e => setForm({...form, userId: e.target.value})}/>
                       </div>
 
                       <div>

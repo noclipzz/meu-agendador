@@ -67,7 +67,6 @@ export default function PainelDashboard() {
   const [metaMensal, setMetaMensal] = useState(5000);
 
   useEffect(() => {
-    // Atualiza a linha do tempo a cada minuto
     const intervalo = setInterval(() => setAgora(new Date()), 60000);
     return () => clearInterval(intervalo);
   }, []);
@@ -95,23 +94,27 @@ export default function PainelDashboard() {
 
   useEffect(() => { carregarDados(); }, [refreshKey]);
 
-  // --- NOVA FUNÇÃO: VERIFICAR CONFLITO DE HORÁRIO ---
+  // POLLING (Atualização Automática)
+  useEffect(() => {
+    const intervaloSincronia = setInterval(() => {
+       if (!isEditing && !modalCheckout && !agendamentoSelecionado) {
+           carregarDados();
+       }
+    }, 10000); 
+
+    return () => clearInterval(intervaloSincronia);
+  }, [isEditing, modalCheckout, agendamentoSelecionado]);
+
   function verificarConflito(novoAgendamento: any): boolean {
     const inicioNovo = new Date(novoAgendamento.date);
     const servico = servicosDisponiveis.find(s => s.id === novoAgendamento.serviceId);
-    if (!servico) return false; // Se não achar serviço, deixa passar (evento manual)
+    if (!servico) return false; 
     
     const fimNovo = addMinutes(inicioNovo, servico.duration);
     
-    // Filtra agendamentos do MESMO profissional no MESMO dia
     const conflitos = agendamentos.filter(ag => {
-        // Ignora o próprio agendamento que estamos editando
         if (ag.id === novoAgendamento.id) return false;
-        
-        // Se for outro profissional, não tem conflito
         if (ag.professionalId !== novoAgendamento.professionalId) return false;
-
-        // Se o status for cancelado, não conta
         if (ag.status === "CANCELADO") return false;
 
         const inicioExistente = new Date(ag.date);
@@ -125,7 +128,7 @@ export default function PainelDashboard() {
 
     if (conflitos.length > 0) {
         const conflito = conflitos[0];
-        toast.error(`Choque de horário! ${conflito.customerName} já está agendado das ${format(new Date(conflito.date), 'HH:mm')} às ${format(addMinutes(new Date(conflito.date), conflito.service?.duration || 30), 'HH:mm')}.`);
+        toast.error(`Choque de horário! ${conflito.customerName} já está agendado neste período.`);
         return true;
     }
     return false;
@@ -189,7 +192,6 @@ export default function PainelDashboard() {
           const novaData = new Date(`${editForm.dataPura}T${editForm.horaPura}:00`);
           if (isBefore(novaData, new Date())) return toast.error("Não é possível agendar para o passado!");
 
-          // VALIDAR CONFLITO ANTES DE SALVAR
           const temConflito = verificarConflito({
               id: editForm.id,
               date: novaData,
@@ -197,7 +199,7 @@ export default function PainelDashboard() {
               professionalId: editForm.professionalId
           });
 
-          if (temConflito) return; // Para a execução aqui
+          if (temConflito) return; 
 
           const res = await fetch('/api/painel', { 
               method: 'PUT', 
@@ -237,21 +239,29 @@ export default function PainelDashboard() {
       else setDataAtual(addDays(dataAtual, direcao));
   };
 
-  const faturamentoTotal = agendamentosFiltrados.filter(a => isSameMonth(new Date(a.date), dataAtual)).reduce((acc, item) => acc + Number(item.service?.price || 0), 0);
+  // --- CORREÇÃO AQUI: Faturamento só soma se status for CONCLUIDO ---
+  const faturamentoTotal = agendamentosFiltrados
+    .filter(a => isSameMonth(new Date(a.date), dataAtual) && a.status === "CONCLUIDO")
+    .reduce((acc, item) => acc + Number(item.service?.price || 0), 0);
+
   const porcentagemMeta = metaMensal > 0 ? Math.min(100, Math.round((faturamentoTotal / metaMensal) * 100)) : 0;
 
   const renderGrid = (dias: Date[]) => (
     <div className="grid grid-cols-7 bg-gray-200 dark:bg-gray-700 gap-px h-full overflow-y-auto">
         {dias.map((dia) => {
             const ags = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dia));
-            const faturamento = ags.reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
+            // Faturamento do dia também só soma se CONCLUIDO
+            const faturamentoDia = ags
+                .filter(a => a.status === "CONCLUIDO")
+                .reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
+            
             const ehMes = isSameMonth(dia, dataAtual);
             const diaSemanaCurto = format(dia, 'EEE', { locale: ptBR }).replace('.', '').toUpperCase();
             return (
                 <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1.5 h-[150px] flex flex-col cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}>
                     <div className="flex justify-between items-center mb-1 border-b dark:border-gray-700 pb-1 flex-shrink-0">
                         <div className="flex items-center gap-1"><span className="text-[9px] font-black text-gray-400">{diaSemanaCurto}</span><span className={`text-xs font-bold flex items-center justify-center rounded-full w-5 h-5 ${isSameDay(dia, new Date()) ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span></div>
-                        {faturamento > 0 && <span className="text-[9px] font-black text-green-600 bg-green-50 px-1 rounded">R${faturamento}</span>}
+                        {faturamentoDia > 0 && <span className="text-[9px] font-black text-green-600 bg-green-50 px-1 rounded">R${faturamentoDia}</span>}
                     </div>
                     <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
                         {ags.map(ag => {
@@ -291,7 +301,6 @@ export default function PainelDashboard() {
                     </div>
                 ))}
                 
-                {/* LINHA DO TEMPO ATUAL (CORRIGIDA) */}
                 {isToday && (
                     <div className="absolute left-16 right-0 z-30 flex items-center pointer-events-none" style={{ top: `${topLinha}px` }}>
                          <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-sm"></div>
