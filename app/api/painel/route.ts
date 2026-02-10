@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { isBefore } from "date-fns";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // --- BUSCAR AGENDAMENTOS (FILTRADO POR CARGO) ---
 export async function GET() {
@@ -34,7 +34,7 @@ export async function GET() {
     if (professionalAccount) {
       // É PROFISSIONAL: Busca apenas os agendamentos vinculados ao ID dele
       const bookings = await prisma.booking.findMany({
-        where: { 
+        where: {
           companyId: professionalAccount.companyId,
           professionalId: professionalAccount.id // FILTRO DE EQUIPE
         },
@@ -159,7 +159,7 @@ export async function DELETE(req: Request) {
     if (!agendamento) return new NextResponse("Não encontrado", { status: 404 });
 
     if (agendamento.company.ownerId !== userId && agendamento.professional?.userId !== userId) {
-        return new NextResponse("Sem permissão", { status: 403 });
+      return new NextResponse("Sem permissão", { status: 403 });
     }
 
     await prisma.booking.delete({ where: { id } });

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // --- LISTAR PROFISSIONAIS ---
 export async function GET() {
@@ -16,18 +16,18 @@ export async function GET() {
     // 1. Tenta como Dono
     const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
     if (ownerCompany) {
-        companyId = ownerCompany.id;
+      companyId = ownerCompany.id;
     } else {
-        // 2. Tenta como Funcionário
-        const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-        if (member) companyId = member.companyId;
+      // 2. Tenta como Funcionário
+      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+      if (member) companyId = member.companyId;
     }
 
     if (!companyId) return NextResponse.json([]);
 
     const profissionais = await prisma.professional.findMany({
       where: { companyId },
-      include: { 
+      include: {
         bookings: {
           where: { status: "CONFIRMADO" },
           include: { service: true }
@@ -49,13 +49,13 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { name, email, phone, photoUrl, color } = body;
-    
+
     // 1. Apenas o dono pode adicionar equipe
-    const company = await prisma.company.findUnique({ 
+    const company = await prisma.company.findUnique({
       where: { ownerId: userId },
       include: { professionals: true }
     });
-    
+
     if (!company) return NextResponse.json({ error: "Apenas o dono pode gerenciar a equipe." }, { status: 403 });
 
     // 2. BUSCA O PLANO ATUAL
@@ -68,10 +68,10 @@ export async function POST(req: Request) {
     // REGRA DO PLANO INDIVIDUAL:
     // Se for Individual e já tiver 1 (que deve ser o dono), bloqueia tudo.
     if (plano === "INDIVIDUAL" && qtdAtual >= 1) {
-       return NextResponse.json(
-         { error: "Seu plano é INDIVIDUAL. Para adicionar outros funcionários, faça upgrade para PREMIUM ou MASTER." }, 
-         { status: 403 }
-       );
+      return NextResponse.json(
+        { error: "Seu plano é INDIVIDUAL. Para adicionar outros funcionários, faça upgrade para PREMIUM ou MASTER." },
+        { status: 403 }
+      );
     }
 
     // Regras dos outros planos
@@ -84,36 +84,37 @@ export async function POST(req: Request) {
 
     // 4. TRANSAÇÃO: Cria Membro e Profissional
     const result = await prisma.$transaction(async (tx) => {
-        
-        // Se informou E-mail, cria o acesso no TeamMember (Login)
-        if (email) {
-            const existingMember = await tx.teamMember.findUnique({ where: { email } });
-            if (existingMember) {
-                throw new Error("Este e-mail já está na equipe.");
-            }
 
-            await tx.teamMember.create({
-                data: {
-                    email: email,
-                    role: "PROFESSIONAL",
-                    companyId: company.id,
-                    clerkUserId: null 
-                }
-            });
+      // Se informou E-mail, cria o acesso no TeamMember (Login)
+      if (email) {
+        const existingMember = await tx.teamMember.findUnique({ where: { email } });
+        if (existingMember) {
+          throw new Error("Este e-mail já está na equipe.");
         }
 
-        // Cria o Profissional na Agenda
-        const professional = await tx.professional.create({
-            data: {
-                name,
-                phone,
-                photoUrl,
-                color: color || "#3b82f6",
-                companyId: company.id
-            }
+        await tx.teamMember.create({
+          data: {
+            email: email,
+            role: "PROFESSIONAL",
+            companyId: company.id,
+            clerkUserId: null
+          }
         });
+      }
 
-        return professional;
+      // Cria o Profissional na Agenda
+      const professional = await tx.professional.create({
+        data: {
+          name,
+          phone,
+          email, // Salva o email agora!
+          photoUrl,
+          color: color || "#3b82f6",
+          companyId: company.id
+        }
+      });
+
+      return professional;
     });
 
     return NextResponse.json(result);
@@ -128,44 +129,73 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { userId } = await auth();
-    const company = await prisma.company.findUnique({ where: { ownerId: userId || "" } });
-    
+    const company = await prisma.company.findUnique({
+      where: { ownerId: userId || "" },
+      include: { teamMembers: true }
+    });
+
     if (!company) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
     const body = await req.json();
-    
-    await prisma.professional.delete({ 
-      where: { id: body.id, companyId: company.id } 
+
+    // 1. Busca o profissional para obter e-mails/vínculos se houver
+    const profissional = await prisma.professional.findUnique({
+      where: { id: body.id, companyId: company.id }
+    });
+
+    if (!profissional) return NextResponse.json({ error: "Profissional não encontrado" }, { status: 404 });
+
+    // 2. Tenta encontrar e deletar o TeamMember associado
+    // Verifica por userId (se já logou) OU por email (se foi convidado mas não logou)
+
+    // Deleta se tiver userId vinculado
+    if (profissional.userId) {
+      await prisma.teamMember.deleteMany({
+        where: { clerkUserId: profissional.userId, companyId: company.id }
+      });
+    }
+
+    // Deleta se tiver email vinculado (mesmo sem userId)
+    if (profissional.email) {
+      await prisma.teamMember.deleteMany({
+        where: { email: profissional.email, companyId: company.id }
+      });
+    }
+
+    // 3. Deleta o Profissional
+    await prisma.professional.delete({
+      where: { id: body.id }
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Erro ao deletar:", error);
     return NextResponse.json({ error: "Erro ao deletar" }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
-    try {
-        const { userId } = await auth();
-        if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-        
-        const body = await req.json();
-        
-        // Atualiza apenas dados visuais do profissional
-        const updated = await prisma.professional.update({
-            where: { id: body.id },
-            data: {
-                name: body.name,
-                phone: body.phone,
-                color: body.color
-            }
-        });
-        
-        // Se tiver alteração de e-mail, teria que buscar o TeamMember e atualizar lá também
-        // Por simplicidade, mantemos a edição apenas dos dados da agenda aqui.
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-        return NextResponse.json(updated);
-    } catch(e) {
-        return NextResponse.json({error: "Erro ao atualizar"}, {status: 500});
-    }
+    const body = await req.json();
+
+    // Atualiza apenas dados visuais do profissional
+    const updated = await prisma.professional.update({
+      where: { id: body.id },
+      data: {
+        name: body.name,
+        phone: body.phone,
+        color: body.color
+      }
+    });
+
+    // Se tiver alteração de e-mail, teria que buscar o TeamMember e atualizar lá também
+    // Por simplicidade, mantemos a edição apenas dos dados da agenda aqui.
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    return NextResponse.json({ error: "Erro ao atualizar" }, { status: 500 });
+  }
 }

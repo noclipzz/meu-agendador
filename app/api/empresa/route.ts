@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function POST(req: Request) {
   try {
@@ -12,20 +12,20 @@ export async function POST(req: Request) {
 
     // 1. TRAVA: Verifica se já tem empresa
     const jaTem = await prisma.company.count({
-        where: { ownerId: body.ownerId }
+      where: { ownerId: body.ownerId }
     });
 
     if (jaTem > 0) {
-        return NextResponse.json({ error: "Você já possui uma empresa." }, { status: 400 });
+      return NextResponse.json({ error: "Você já possui uma empresa." }, { status: 400 });
     }
-    
+
     // 2. VERIFICA O SLUG (LINK)
     const slugEmUso = await prisma.company.findUnique({
-        where: { slug: body.slug }
+      where: { slug: body.slug }
     });
 
     if (slugEmUso) {
-        return NextResponse.json({ error: "Este link já está em uso por outra pessoa." }, { status: 409 });
+      return NextResponse.json({ error: "Este link já está em uso por outra pessoa." }, { status: 409 });
     }
 
     // 3. Cria a empresa
@@ -44,17 +44,17 @@ export async function POST(req: Request) {
     const validade = new Date(hoje.setDate(hoje.getDate() + 30));
 
     await prisma.subscription.upsert({
-        where: { userId: body.ownerId },
-        update: { 
-            status: "ACTIVE", 
-            expiresAt: validade 
-        },
-        create: {
-            userId: body.ownerId,
-            plan: "PADRAO",
-            status: "ACTIVE",
-            expiresAt: validade
-        }
+      where: { userId: body.ownerId },
+      update: {
+        status: "ACTIVE",
+        expiresAt: validade
+      },
+      create: {
+        userId: body.ownerId,
+        plan: "PADRAO",
+        status: "ACTIVE",
+        expiresAt: validade
+      }
     });
 
     return NextResponse.json(company);

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // GET: Buscar UM cliente específico pelo ID com TODO o histórico
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     // 2. Busca o cliente com todos os relacionamentos (Financeiro e Agenda)
     const client = await prisma.client.findFirst({
-      where: { 
+      where: {
         id: clienteId,
         companyId: userCompany.id // Garante que o cliente é desta empresa
       },
@@ -59,30 +59,30 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 // DELETE: Excluir um cliente
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-    try {
-        const { userId } = await auth();
-        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+  try {
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
-        const clienteId = params.id;
+    const clienteId = params.id;
 
-        const userCompany = await prisma.company.findFirst({
-            where: { ownerId: userId }
-        });
+    const userCompany = await prisma.company.findFirst({
+      where: { ownerId: userId }
+    });
 
-        if (!userCompany) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userCompany) return new NextResponse("Não autorizado", { status: 401 });
 
-        // Deleta garantindo que pertence à empresa
-        await prisma.client.delete({
-            where: { 
-                id: clienteId,
-                companyId: userCompany.id 
-            }
-        });
+    // Deleta garantindo que pertence à empresa
+    await prisma.client.delete({
+      where: {
+        id: clienteId,
+        companyId: userCompany.id
+      }
+    });
 
-        return new NextResponse(null, { status: 204 });
+    return new NextResponse(null, { status: 204 });
 
-    } catch (error) {
-        console.error("ERRO_DELETE_CLIENTE:", error);
-        return new NextResponse("Erro ao excluir cliente", { status: 500 });
-    }
+  } catch (error) {
+    console.error("ERRO_DELETE_CLIENTE:", error);
+    return new NextResponse("Erro ao excluir cliente", { status: 500 });
+  }
 }

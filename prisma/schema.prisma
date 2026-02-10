@@ -57,6 +57,7 @@ model Professional {
   name      String
   photoUrl  String?
   phone     String?
+  email     String?  // <-- Adicionado para vínculo com TeamMember
   color     String   @default("#3b82f6")
   userId    String?  @unique 
   

@@ -3,12 +3,16 @@
 import { useState, useEffect } from "react";
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, Star, Zap, Crown, Building2, Loader2, Edit, Calendar, Users, DollarSign, Menu, X, LogIn, LayoutDashboard, Copy } from 'lucide-react';
+import {
+  Check, Star, Zap, Crown, Building2, Loader2, Edit, Calendar, Users,
+  DollarSign, Menu, X, LogIn, LayoutDashboard, Copy, ArrowRight,
+  Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown
+} from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { toast } from "sonner";
 
-// --- BOTÃO INTELIGENTE CORRIGIDO ---
+// --- BOTÃO INTELIGENTE (AUTH) ---
 function AuthButton() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
@@ -16,7 +20,6 @@ function AuthButton() {
   const [subStatus, setSubStatus] = useState({ active: false, plan: null });
   const [verificando, setVerificando] = useState(true);
 
-  // Verifica a assinatura real no banco ao carregar
   useEffect(() => {
     if (isSignedIn) {
       fetch('/api/checkout')
@@ -33,11 +36,9 @@ function AuthButton() {
     try {
       const res = await fetch('/api/checkout');
       const data = await res.json();
-
       if (data.active) {
         router.push('/painel/dashboard');
       } else {
-        // Se não tiver assinatura ativa, joga para a âncora de planos
         router.push('/#planos');
         toast.info("Escolha um plano para liberar seu acesso.");
       }
@@ -53,259 +54,431 @@ function AuthButton() {
   if (isSignedIn) {
     return (
       <div className="flex items-center gap-4">
-        {/* Se tem assinatura ativa, mostra o botão de destaque */}
         {subStatus.active ? (
-            <button 
-                onClick={handleAcessarPainel} 
-                disabled={loading}
-                className="bg-blue-600 px-5 py-2.5 rounded-xl hover:bg-blue-700 transition flex items-center gap-2 text-sm font-black text-white shadow-lg"
-            >
-                {loading ? <Loader2 size={16} className="animate-spin" /> : <LayoutDashboard size={18} />} 
-                Acessar Painel
-            </button>
+          <button
+            onClick={handleAcessarPainel}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full transition flex items-center gap-2 text-sm font-bold shadow-lg shadow-blue-500/20 active:scale-95"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <LayoutDashboard size={18} />}
+            Acessar Painel
+          </button>
         ) : (
-            /* Se NÃO tem assinatura ativa (Profissional ou Inativo), mostra o perfil com ID */
-            <div className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-2xl border border-white/10">
-                <UserButton afterSignOutUrl="/">
-                    <UserButton.MenuItems>
-                        <UserButton.Action 
-                            label="Copiar meu ID de Acesso" 
-                            labelIcon={<Copy size={14}/>} 
-                            onClick={() => {
-                                navigator.clipboard.writeText(user?.id || "");
-                                toast.success("ID copiado! Envie para o administrador.");
-                            }} 
-                        />
-                    </UserButton.MenuItems>
-                </UserButton>
-                <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter">Conectado</span>
-                    <span className="text-sm font-bold text-white leading-none">{user?.firstName}</span>
-                </div>
+          <div className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-full border border-white/10 backdrop-blur-md">
+            <UserButton afterSignOutUrl="/">
+              <UserButton.MenuItems>
+                <UserButton.Action
+                  label="Copiar ID"
+                  labelIcon={<Copy size={14} />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(user?.id || "");
+                    toast.success("ID copiado!");
+                  }}
+                />
+              </UserButton.MenuItems>
+            </UserButton>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Olá, {user?.firstName}</span>
             </div>
+          </div>
         )}
       </div>
     );
   }
 
   return (
-    <Link href="/sign-in" className="bg-white text-blue-600 px-6 py-2.5 rounded-xl hover:bg-gray-100 transition text-sm font-black shadow-xl">
+    <Link href="/sign-in" className="bg-white text-gray-900 px-6 py-2.5 rounded-full hover:bg-gray-100 transition text-sm font-bold shadow-xl active:scale-95">
       Entrar
     </Link>
   );
 }
 
-// --- COMPONENTE INTERNO DE PLANOS CORRIGIDO ---
+// --- SEÇÃO DE PLANOS ---
 function PlanosSection() {
-    const { user, isLoaded } = useUser();
-    const router = useRouter();
-    const [assinatura, setAssinatura] = useState({ active: false, plan: null as string | null, status: null as string | null });
-    const [loading, setLoading] = useState<string | null>(null);
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const [assinatura, setAssinatura] = useState({ active: false, plan: null as string | null, status: null as string | null });
+  const [loading, setLoading] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!isLoaded || !user) return; 
-        async function verificarAssinatura() {
-            try {
-                const res = await fetch('/api/checkout');
-                const data = await res.json();
-                setAssinatura(data);
-            } catch (error) {}
-        }
-        verificarAssinatura();
-    }, [user, isLoaded]);
-
-    async function assinar(plano: string) {
-        if (!user) {
-            return router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.origin)}`);
-        }
-        setLoading(plano);
-        try {
-            const res = await fetch('/api/checkout', { method: 'POST', body: JSON.stringify({ plan: plano }) });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
-            else toast.error("Erro ao iniciar pagamento.");
-        } catch (error) {
-            toast.error("Erro de conexão.");
-        } finally {
-            setLoading(null);
-        }
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    async function verificarAssinatura() {
+      try {
+        const res = await fetch('/api/checkout');
+        const data = await res.json();
+        setAssinatura(data);
+      } catch (error) { }
     }
+    verificarAssinatura();
+  }, [user, isLoaded]);
 
-    async function gerenciarAssinatura() {
-        setLoading('gerenciar');
-        try {
-            const res = await fetch('/api/portal', { method: 'POST' });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
-            else toast.error("Erro ao abrir portal.");
-        } catch {
-            toast.error("Erro de conexão.");
-        } finally {
-            setLoading(null);
-        }
+  async function assinar(plano: string) {
+    if (!user) {
+      return router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.origin + '/#planos')}`);
     }
+    setLoading(plano);
+    try {
+      const res = await fetch('/api/checkout', { method: 'POST', body: JSON.stringify({ plan: plano }) });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else toast.error("Erro ao iniciar pagamento.");
+    } catch (error) {
+      toast.error("Erro de conexão.");
+    } finally {
+      setLoading(null);
+    }
+  }
 
-    // Lógica para decidir qual botão mostrar em cada card
-    const BotaoAcao = ({ plano, label, className }: any) => {
-        // CORREÇÃO: Só mostra Gerenciar se a assinatura estiver ATIVA de verdade
-        const estaAtivoNestePlano = assinatura.active && assinatura.plan === plano;
+  async function gerenciarAssinatura() {
+    setLoading('gerenciar');
+    try {
+      const res = await fetch('/api/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else toast.error("Erro ao abrir portal.");
+    } catch {
+      toast.error("Erro de conexão.");
+    } finally {
+      setLoading(null);
+    }
+  }
 
-        if (estaAtivoNestePlano) {
-            return (
-                <button onClick={gerenciarAssinatura} disabled={!!loading} className="w-full py-3 rounded-xl font-black bg-green-600 text-white hover:bg-green-700 transition flex justify-center items-center gap-2">
-                    {loading === 'gerenciar' ? <Loader2 className="animate-spin" /> : <><Edit size={16} /> Gerenciar Plano</>}
-                </button>
-            );
-        }
-
-        return (
-            <button onClick={() => assinar(plano)} disabled={!!loading} className={`w-full py-3 rounded-xl font-black transition flex justify-center items-center gap-2 ${className}`}>
-                {loading === plano ? <Loader2 className="animate-spin" /> : label}
-            </button>
-        );
-    };
+  const PlanCard = ({ title, price, description, features, planKey, popular = false, icon: Icon, colorClass, btnColor }: any) => {
+    const isCurrentPlan = assinatura.active && assinatura.plan === planKey;
 
     return (
-      <section id="planos" className="py-20 px-4 bg-gradient-to-b from-gray-900 to-gray-800">
-        <div className="container mx-auto text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Planos flexíveis para o seu sucesso</h2>
-          <p className="text-gray-400 mt-4 font-medium">Escolha o plano que acompanha o seu crescimento.</p>
+      <div className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${popular ? 'bg-gray-900 text-white ring-4 ring-blue-500 shadow-xl scale-105 z-10' : 'bg-white text-gray-800 border border-gray-100 shadow-lg'}`}>
+        {popular && <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-[2rem] uppercase tracking-widest">Mais Escolhido</div>}
+
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${popular ? 'bg-white/10 text-blue-400' : 'bg-gray-50 text-gray-600'}`}>
+          <Icon size={28} />
         </div>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            
-            {/* INDIVIDUAL */}
-            <div className={`bg-white text-gray-800 rounded-[2.5rem] p-8 flex flex-col shadow-xl relative transition-all duration-300 hover:scale-105 ${assinatura.active && assinatura.plan === 'INDIVIDUAL' ? 'ring-4 ring-green-500' : ''}`}>
-                <div className="mb-4 bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm"><Star size={24} /></div>
-                <h3 className="text-xl font-black text-gray-900">Individual</h3>
-                <p className="text-gray-500 text-sm mt-2 font-medium">Para quem trabalha sozinho.</p>
-                <div className="my-6"><span className="text-4xl font-black text-gray-900">R$ 35</span><span className="text-gray-400 text-sm font-bold">/mês</span></div>
-                <ul className="space-y-3 mb-8 flex-1"><li className="flex gap-2 text-sm text-gray-600 font-bold"><Check size={18} className="text-green-500"/> 1 Usuário</li></ul>
-                <BotaoAcao plano="INDIVIDUAL" label="Escolher Plano" className="bg-gray-900 text-white hover:bg-black" />
-            </div>
 
-            {/* PREMIUM */}
-            <div className={`bg-blue-600 text-white rounded-[2.5rem] p-8 flex flex-col transform md:-translate-y-4 shadow-2xl relative transition-all duration-300 hover:scale-105 ${assinatura.active && assinatura.plan === 'PREMIUM' ? 'ring-4 ring-yellow-400' : ''}`}>
-                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[10px] font-black px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest">Popular</div>
-                <div className="mb-4 bg-white/20 w-12 h-12 rounded-2xl flex items-center justify-center"><Zap size={24} /></div>
-                <h3 className="text-xl font-black">Premium</h3>
-                <p className="text-blue-100 text-sm mt-2 font-medium">Pequenas equipes.</p>
-                <div className="my-6"><span className="text-4xl font-black">R$ 65</span><span className="text-blue-200 text-sm font-bold">/mês</span></div>
-                <ul className="space-y-3 mb-8 flex-1"><li className="flex gap-2 text-sm text-white font-bold"><Check size={18} className="text-yellow-400"/> Até 5 Usuários</li></ul>
-                <BotaoAcao plano="PREMIUM" label="Assinar Premium" className="bg-white text-blue-600 hover:bg-blue-50" />
-            </div>
+        <h3 className="text-xl font-black tracking-tight">{title}</h3>
+        <p className={`text-sm font-medium mt-2 ${popular ? 'text-gray-400' : 'text-gray-500'}`}>{description}</p>
 
-            {/* MASTER */}
-            <div className={`bg-gray-900 text-white rounded-[2.5rem] p-8 flex flex-col shadow-xl relative transition-all duration-300 hover:scale-105 ${assinatura.active && assinatura.plan === 'MASTER' ? 'ring-4 ring-purple-500' : ''}`}>
-                <div className="mb-4 bg-white/10 w-12 h-12 rounded-2xl flex items-center justify-center text-purple-400"><Crown size={24} /></div>
-                <h3 className="text-xl font-black">Master</h3>
-                <p className="text-gray-400 text-sm mt-2 font-medium">Clínicas em expansão.</p>
-                <div className="my-6"><span className="text-4xl font-black">R$ 99</span><span className="text-gray-500 text-sm font-bold">/mês</span></div>
-                <ul className="space-y-3 mb-8 flex-1"><li className="flex gap-2 text-sm text-gray-300 font-bold"><Check size={18} className="text-purple-500"/> Até 15 Usuários</li></ul>
-                <BotaoAcao plano="MASTER" label="Escolher Master" className="bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/20" />
-            </div>
-
-            {/* ENTERPRISE */}
-            <div className="bg-white/5 border border-white/10 text-white rounded-[2.5rem] p-8 flex flex-col shadow-xl transition-all duration-300 hover:scale-105">
-                <div className="mb-4 bg-white/5 w-12 h-12 rounded-2xl flex items-center justify-center text-gray-400"><Building2 size={24} /></div>
-                <h3 className="text-xl font-black">Enterprise</h3>
-                <p className="text-gray-500 text-sm mt-2 font-medium">Redes e Franquias.</p>
-                <div className="my-6"><span className="text-3xl font-black">Sob Medida</span></div>
-                <ul className="space-y-3 mb-8 flex-1"><li className="flex gap-2 text-sm text-gray-500 font-bold"><Check size={18} className="text-gray-600"/> Ilimitado</li></ul>
-                <Link href="https://wa.me/..." target="_blank" className="w-full mt-auto py-4 rounded-xl font-black border-2 border-white/10 hover:bg-white hover:text-black transition text-center uppercase text-xs tracking-widest">Fale Conosco</Link>
-            </div>
+        <div className="my-8">
+          <span className="text-4xl font-black">R$ {price}</span>
+          <span className={`text-sm font-bold ml-1 ${popular ? 'text-gray-500' : 'text-gray-400'}`}>/mês</span>
         </div>
-      </section>
-    );
+
+        <ul className="space-y-4 mb-8 flex-1">
+          {features.map((feat: string, i: number) => (
+            <li key={i} className="flex gap-3 text-sm font-medium items-start">
+              <Check size={18} className={`flex-shrink-0 mt-0.5 ${popular ? 'text-blue-500' : 'text-green-500'}`} />
+              <span className={popular ? 'text-gray-300' : 'text-gray-600'}>{feat}</span>
+            </li>
+          ))}
+        </ul>
+
+        {isCurrentPlan ? (
+          <button onClick={gerenciarAssinatura} disabled={!!loading} className="w-full py-4 rounded-xl font-bold bg-green-500 text-white hover:bg-green-600 transition flex justify-center items-center gap-2">
+            {loading === 'gerenciar' ? <Loader2 className="animate-spin" /> : <><Edit size={16} /> Gerenciar Assinatura</>}
+          </button>
+        ) : (
+          <button
+            onClick={() => assinar(planKey)}
+            disabled={!!loading}
+            className={`w-full py-4 rounded-xl font-bold transition flex justify-center items-center gap-2 ${btnColor || (popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-black text-white')}`}
+          >
+            {loading === planKey ? <Loader2 className="animate-spin" /> : 'Começar Agora'}
+          </button>
+        )}
+      </div>
+    )
+  };
+
+  return (
+    <section id="planos" className="py-24 px-4 bg-gray-50">
+      <div className="container mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">Investimento que se paga</h2>
+          <p className="text-lg text-gray-500 font-medium">Escolha o plano ideal para o tamanho do seu negócio. Cancele a qualquer momento.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-start">
+          <PlanCard
+            title="Individual"
+            price="35"
+            description="Perfeito para profissionais autônomos."
+            planKey="INDIVIDUAL"
+            icon={Star}
+            features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail"]}
+          />
+
+          <PlanCard
+            title="Premium"
+            price="65"
+            description="Para pequenas clínicas e estúdios."
+            planKey="PREMIUM"
+            popular={true}
+            icon={Zap}
+            features={["Até 5 Profissionais", "Gestão Financeira", "Controle de Comissão", "Relatórios Básicos", "Tudo do Individual"]}
+          />
+
+          <PlanCard
+            title="Master"
+            price="99"
+            description="Para negócios em expansão acelerada."
+            planKey="MASTER"
+            icon={Crown}
+            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque"]}
+            btnColor="bg-purple-600 hover:bg-purple-700 text-white"
+          />
+
+          <div className="relative flex flex-col p-8 rounded-[2rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-gray-50 text-gray-400"><Building2 size={28} /></div>
+            <h3 className="text-xl font-black tracking-tight">Enterprise</h3>
+            <p className="text-sm font-medium mt-2 text-gray-500">Para franquias e grandes redes.</p>
+            <div className="my-8"><span className="text-2xl font-black">Sob Medida</span></div>
+            <ul className="space-y-4 mb-8 flex-1">
+              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">API Dedicada</span></li>
+              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de Conta</span></li>
+              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Whitelabel (Sua Marca)</span></li>
+            </ul>
+            <Link href="https://wa.me/5511999999999" target="_blank" className="w-full py-4 rounded-xl font-bold border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-// --- COMPONENTE PRINCIPAL DA LANDING PAGE ---
+// --- FAQ ---
+function FAQSection() {
+  const items = [
+    { q: "Preciso instalar algo no computador?", a: "Não! O NOHUD é 100% online. Você acessa pelo navegador do seu computador, tablet ou celular, de onde estiver." },
+    { q: "Os lembretes são enviados automaticamente?", a: "Sim. Assim que você confirma um agendamento, seu cliente recebe um e-mail com todos os detalhes. Você não precisa fazer nada manual." },
+    { q: "Posso cancelar quando quiser?", a: "Com certeza. Sem fidelidade, sem multas. Você tem total liberdade sobre sua assinatura." },
+    { q: "Consigo gerenciar as comissões da equipe?", a: "Sim! O NOHUD calcula automaticamente as comissões com base nos serviços realizados por cada profissional." }
+  ];
+
+  return (
+    <section className="py-24 px-4 bg-white">
+      <div className="container mx-auto max-w-3xl">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">Perguntas Frequentes</h2>
+          <p className="text-gray-500">Tire suas dúvidas e veja como é simples começar.</p>
+        </div>
+        <div className="space-y-4">
+          {items.map((item, i) => (
+            <div key={i} className="border border-gray-100 rounded-2xl p-6 hover:bg-gray-50 transition">
+              <h3 className="font-bold text-lg text-gray-900 flex gap-2 items-center"><HelpCircle size={18} className="text-blue-500" /> {item.q}</h3>
+              <p className="text-gray-600 mt-2 ml-7 leading-relaxed">{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- COMPONENTE PRINCIPAL ---
 export default function LandingPage() {
   const [menuAberto, setMenuAberto] = useState(false);
 
   return (
-    <div className="bg-white text-gray-800 font-sans scroll-smooth">
-      
-      <header className="relative bg-gray-950 text-white px-4 overflow-hidden border-b border-white/5">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-gray-950 to-black opacity-90"></div>
-        
-        <nav className="container mx-auto flex justify-between items-center py-6 relative z-20">
-            <Link href="/" className="flex items-center gap-3">
-                <Image src="/nohud-logo.png" alt="NOHUD Logo" width={36} height={36} />
-                <span className="text-2xl font-black tracking-tighter text-white">NOHUD</span>
-            </Link>
-            
-            <div className="hidden md:flex gap-8 items-center">
-                <a href="#funcionalidades" className="text-sm font-bold text-gray-400 hover:text-white transition">Funcionalidades</a>
-                <a href="#planos" className="text-sm font-bold text-gray-400 hover:text-white transition">Preços</a>
-                <AuthButton />
+    <div className="bg-white text-gray-800 font-sans scroll-smooth selection:bg-blue-100 selection:text-blue-900">
+
+      {/* NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+        <nav className="container mx-auto flex justify-between items-center py-4 px-4">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="bg-blue-600 text-white p-1.5 rounded-lg group-hover:rotate-3 transition duration-300">
+              <LayoutDashboard size={20} />
             </div>
-            <button className="md:hidden p-2 bg-white/5 rounded-lg" onClick={() => setMenuAberto(!menuAberto)}>{menuAberto ? <X /> : <Menu />}</button>
+            <span className="text-xl font-black tracking-tighter text-gray-900">NOHUD<span className="text-blue-500">.</span></span>
+          </Link>
+
+          <div className="hidden md:flex gap-8 items-center">
+            <a href="#funcionalidades" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Funcionalidades</a>
+            <a href="#depoimentos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Clientes</a>
+            <a href="#planos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Preços</a>
+            <AuthButton />
+          </div>
+
+          <button className="md:hidden p-2 text-gray-600" onClick={() => setMenuAberto(!menuAberto)}>
+            {menuAberto ? <X /> : <Menu />}
+          </button>
         </nav>
-
+        {/* MENU MOBILE */}
         {menuAberto && (
-            <div className="md:hidden bg-gray-900 border-b border-white/10 py-6 absolute left-0 right-0 z-50 animate-in fade-in slide-in-from-top-4 px-6">
-                <a href="#funcionalidades" onClick={() => setMenuAberto(false)} className="block py-3 font-bold text-gray-400">Funcionalidades</a>
-                <a href="#planos" onClick={() => setMenuAberto(false)} className="block py-3 font-bold text-gray-400">Preços</a>
-                <div className="mt-4 pt-4 border-t border-white/5">
-                    <AuthButton />
-                </div>
+          <div className="md:hidden bg-white border-b border-gray-100 absolute left-0 right-0 top-full p-6 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
+            <a href="#funcionalidades" onClick={() => setMenuAberto(false)} className="font-bold text-gray-600 py-2">Funcionalidades</a>
+            <a href="#planos" onClick={() => setMenuAberto(false)} className="font-bold text-gray-600 py-2">Preços</a>
+            <div className="pt-4 border-t border-gray-100">
+              <AuthButton />
             </div>
+          </div>
         )}
-
-        <div className="container mx-auto text-center relative z-10 py-24 md:py-32">
-          <h1 className="text-5xl md:text-7xl font-black leading-none mb-6 tracking-tighter">Seu software de gestão <span className="text-blue-500">completo.</span></h1>
-          <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-medium">Poupe tempo e esforço na gestão do seu negócio com a tecnologia da NOHUD.</p>
-          <div className="flex justify-center"><Link href="#planos" className="bg-white text-blue-600 font-black px-12 py-5 rounded-[2rem] shadow-2xl hover:scale-105 transition active:scale-95 text-lg">Começar Agora</Link></div>
-        </div>
       </header>
 
-      <section id="funcionalidades" className="py-24 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-20"><h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">Tudo em um só lugar</h2><p className="text-gray-500 mt-4 font-bold uppercase text-xs tracking-widest">Gestão moderna para profissionais exigentes</p></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            <div className="bg-gray-50 p-10 rounded-[3rem] border border-transparent hover:border-blue-500/20 transition-all hover:shadow-2xl group cursor-default">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 transition-all duration-500 mb-6"><Calendar size={32} className="text-blue-600 group-hover:text-white transition-colors" /></div>
-                <h3 className="font-black text-2xl text-gray-900">Agenda Inteligente</h3>
-                <p className="text-gray-500 mt-3 font-medium">Controle total de horários, pausas e bloqueios automáticos.</p>
-            </div>
-            <div className="bg-gray-50 p-10 rounded-[3rem] border border-transparent hover:border-green-500/20 transition-all hover:shadow-2xl group cursor-default">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center group-hover:bg-green-600 transition-all duration-500 mb-6"><Users size={32} className="text-green-600 group-hover:text-white transition-colors" /></div>
-                <h3 className="font-black text-2xl text-gray-900">Gestão de Equipe</h3>
-                <p className="text-gray-500 mt-3 font-medium">Acesso restrito para funcionários e visualização por cores.</p>
-            </div>
-            <div className="bg-gray-50 p-10 rounded-[3rem] border border-transparent hover:border-yellow-500/20 transition-all hover:shadow-2xl group cursor-default">
-                <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center group-hover:bg-yellow-600 transition-all duration-500 mb-6"><DollarSign size={32} className="text-yellow-600 group-hover:text-white transition-colors" /></div>
-                <h3 className="font-black text-2xl text-gray-900">Painel Financeiro</h3>
-                <p className="text-gray-500 mt-3 font-medium">Métricas de faturamento em tempo real e metas de crescimento.</p>
+      {/* HERO SECTION */}
+      <section className="pt-40 pb-20 px-4 bg-white relative overflow-hidden">
+        {/* Background Element */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-100/50 rounded-full blur-3xl opacity-50 -z-10 pointer-events-none"></div>
+
+        <div className="container mx-auto text-center relative z-10 max-w-4xl">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Star size={12} className="fill-blue-700" />
+            Mais de 1.000 agendamentos realizados
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-8 tracking-tight text-gray-900 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+            A gestão da sua empresa <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">simples e inteligente.</span>
+          </h1>
+
+          <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
+            Deixe as planilhas de lado. O NOHUD organiza sua agenda, controla seu financeiro e envia lembretes automáticos para seus clientes.
+          </p>
+
+          <div className="flex flex-col md:flex-row justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200">
+            <Link href="#planos" className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg">
+              Começar Gratuitamente <ArrowRight size={20} />
+            </Link>
+            <Link href="#funcionalidades" className="bg-white text-gray-700 border border-gray-200 font-bold px-10 py-4 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 flex items-center justify-center text-lg">
+              Ver Funcionalidades
+            </Link>
+          </div>
+
+          {/* Mockup / Dashboard Preview */}
+          <div className="mt-20 relative mx-auto max-w-5xl rounded-3xl p-4 bg-gray-900/5 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 border border-black/5">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 aspect-[16/9] relative flex items-center justify-center bg-gray-50">
+              {/* Placeholder visual do dashboard */}
+              <div className="text-center p-10">
+                <LayoutDashboard size={64} className="mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-400 font-medium">Dashboard Administrativo</p>
+              </div>
+              {/* Aqui poderia ser um <Image /> real do painel futuramente */}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-24 px-4 bg-gray-900 text-white relative overflow-hidden">
-        <div className="container mx-auto text-center relative z-10">
-            <h2 className="text-4xl font-black mb-16 tracking-tight">Liderando a nova era da gestão</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-gray-800/50 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-sm shadow-2xl">
-                    <p className="italic text-gray-300 font-medium">"O NOHUD transformou minha produtividade. O link de agendamento automático é um diferencial enorme."</p>
-                    <h4 className="font-black mt-8 text-blue-400 text-sm uppercase tracking-widest">— Dra. Ana Costa</h4>
-                </div>
-                <div className="bg-gray-800/50 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-sm shadow-2xl">
-                    <p className="italic text-gray-300 font-medium">"Fácil de usar e extremamente bonito. Minha equipe se adaptou em menos de um dia."</p>
-                    <h4 className="font-black mt-8 text-green-400 text-sm uppercase tracking-widest">— Ricardo Lima</h4>
-                </div>
-                <div className="bg-gray-800/50 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-sm shadow-2xl">
-                    <p className="italic text-gray-300 font-medium">"As notificações automáticas reduziram as faltas quase a zero. Vale cada centavo."</p>
-                    <h4 className="font-black mt-8 text-purple-400 text-sm uppercase tracking-widest">— Joana S.</h4 >
-                </div>
+      {/* FEATURES / FUNCIONALIDADES */}
+      <section id="funcionalidades" className="py-24 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-20 max-w-2xl mx-auto">
+            <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">Tudo que você precisa para crescer</h2>
+            <p className="text-gray-500 font-medium text-lg">Ferramentas poderosas integradas em uma única plataforma intuitiva.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Calendar size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Agenda Inteligente</h3>
+              <p className="text-gray-500 leading-relaxed">Visualize seus horários, evite conflitos e organize o dia da sua equipe com facilidade (Visão Diária, Semanal e Mensal).</p>
             </div>
+
+            {/* Feature 2 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Smartphone size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Notificações</h3>
+              <p className="text-gray-500 leading-relaxed">Reduza faltas com lembretes automáticos. Seus clientes recebem confirmações direto no e-mail.</p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><BarChart3 size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Financeiro & Metas</h3>
+              <p className="text-gray-500 leading-relaxed">Acompanhe seu faturamento em tempo real, defina metas mensais e saiba exatamente quanto sua empresa está lucrando.</p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Users size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Gestão de Equipe</h3>
+              <p className="text-gray-500 leading-relaxed">Controle comissões, horários de trabalho e permissões de acesso para cada colaborador.</p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><ShieldCheck size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Acesso Seguro</h3>
+              <p className="text-gray-500 leading-relaxed">Seus dados protegidos na nuvem. Acesse de qualquer lugar com segurança total e backups automáticos.</p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
+              <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Clock size={28} /></div>
+              <h3 className="font-black text-2xl text-gray-900 mb-3">Economia de Tempo</h3>
+              <p className="text-gray-500 leading-relaxed">Automatize tarefas repetitivas e ganhe até 10 horas livres na sua semana para focar no que importa.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SOCIAL PROOF */}
+      <section id="depoimentos" className="py-24 px-4 bg-gray-900 text-white relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-black tracking-tight mb-4">Quem usa, recomenda</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto text-lg">Junte-se a centenas de empresas que modernizaram sua gestão.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { quote: "O NOHUD transformou minha produtividade. O link de agendamento automático é um diferencial enorme para meus pacientes.", author: "Dra. Ana Costa", role: "Fisioterapeuta", color: "text-blue-400" },
+              { quote: "Fácil de usar e extremamente bonito. Minha equipe se adaptou em menos de um dia. O suporte é excelente.", author: "Ricardo Lima", role: "Dono de Barbearia", color: "text-green-400" },
+              { quote: "As notificações automáticas reduziram as faltas quase a zero. Vale cada centavo investido. Recomendo demais!", author: "Joana Santos", role: "Esteticista", color: "text-purple-400" }
+            ].map((testimonial, i) => (
+              <div key={i} className="bg-white/5 p-10 rounded-[2.5rem] border border-white/10 backdrop-blur-sm shadow-2xl relative">
+                <div className="absolute top-8 right-8 text-6xl font-serif text-white/10 leading-none">"</div>
+                <div className="flex gap-1 mb-6">
+                  {[1, 2, 3, 4, 5].map(s => <Star key={s} size={16} className="fill-yellow-400 text-yellow-400" />)}
+                </div>
+                <p className="text-gray-300 font-medium text-lg leading-relaxed mb-8 relative z-10">{testimonial.quote}</p>
+                <div>
+                  <h4 className="font-black text-white text-lg">{testimonial.author}</h4>
+                  <span className={`text-sm font-bold uppercase tracking-widest ${testimonial.color}`}>{testimonial.role}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       <PlanosSection />
 
-      <footer className="py-16 px-4 bg-gray-950 text-gray-600 text-center text-xs font-black uppercase tracking-widest">
-        <p>© 2026 NOHUD • Inteligência em Gestão.</p>
+      <FAQSection />
+
+      {/* CTA FINAL */}
+      <section className="py-24 px-4 bg-blue-600 text-white text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        <div className="container mx-auto relative z-10">
+          <h2 className="text-4xl md:text-5xl font-black mb-8 tracking-tight">Pronto para transformar seu negócio?</h2>
+          <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-10">Crie sua conta agora e tenha acesso imediato a todas as ferramentas.</p>
+          <Link href="#planos" className="inline-flex bg-white text-blue-600 font-black px-12 py-5 rounded-full shadow-2xl hover:scale-105 transition active:scale-95 text-xl items-center gap-3">
+            Começar Agora <ArrowRight size={24} />
+          </Link>
+          <p className="mt-8 text-sm text-blue-200 font-medium">Sem cartão de crédito necessário para cadastro.</p>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-16 px-4 bg-white border-t border-gray-100">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-2">
+            <div className="bg-gray-900 text-white p-1.5 rounded-lg">
+              <LayoutDashboard size={20} />
+            </div>
+            <span className="text-xl font-black tracking-tighter text-gray-900">NOHUD</span>
+          </div>
+
+          <div className="text-gray-500 text-sm font-medium">
+            © 2026 NOHUD Tecnologia. Todos os direitos reservados.
+          </div>
+
+          <div className="flex gap-6">
+            <a href="#" className="text-gray-400 hover:text-blue-600 transition"><span className="sr-only">Instagram</span><svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg></a>
+          </div>
+        </div>
       </footer>
     </div>
   );

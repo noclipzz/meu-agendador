@@ -1,21 +1,16 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 
-// Isso evita criar conexões demais no desenvolvimento
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-const prisma = globalForPrisma.prisma || new PrismaClient();
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const prisma = db;
 
 export async function GET() {
   try {
     const company = await prisma.company.findFirst({
-        include: { services: true }
+      include: { services: true }
     });
 
     if (!company) {
-        return NextResponse.json({ error: "Nenhuma empresa encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Nenhuma empresa encontrada" }, { status: 404 });
     }
 
     return NextResponse.json(company);

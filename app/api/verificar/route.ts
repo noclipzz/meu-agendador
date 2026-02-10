@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import { startOfDay, endOfDay } from 'date-fns';
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const { date, companyId, professionalId } = body;
 
     if (!companyId || !professionalId) {
-        return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
+      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
     const dataBusca = new Date(date);
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
       where: {
         companyId: companyId,
         professionalId: professionalId,
-        date: { 
-          gte: startOfDay(dataBusca), 
-          lte: endOfDay(dataBusca) 
+        date: {
+          gte: startOfDay(dataBusca),
+          lte: endOfDay(dataBusca)
         }
       },
       // IMPORTANTE: Inclui os dados do serviço para sabermos a duração
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     // Retorna a lista completa de agendamentos
     return NextResponse.json({ agendamentos });
-    
+
   } catch (error) {
     console.error("Erro ao verificar:", error);
     return NextResponse.json({ error: "Erro ao verificar disponibilidade" }, { status: 500 });

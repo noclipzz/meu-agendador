@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function POST(req: Request) {
   try {
@@ -53,11 +53,11 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-    try {
-        const { userId } = await auth();
-        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
-        const { id } = await req.json();
-        await prisma.expense.delete({ where: { id } });
-        return NextResponse.json({ success: true });
-    } catch (error) { return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 }); }
+  try {
+    const { userId } = await auth();
+    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    const { id } = await req.json();
+    await prisma.expense.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) { return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 }); }
 }

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 
-// Criamos o cliente fora para evitar muitas conexões no banco
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function GET(req: Request) {
   try {
@@ -10,20 +9,20 @@ export async function GET(req: Request) {
     const slug = searchParams.get('slug');
 
     if (!slug) {
-        return NextResponse.json({ error: "Slug faltando" }, { status: 400 });
+      return NextResponse.json({ error: "Slug faltando" }, { status: 400 });
     }
 
     // Busca a empresa pelo link (slug)
     const empresa = await prisma.company.findUnique({
       where: { slug: slug },
-      include: { 
-        services: true, 
-        professionals: true 
+      include: {
+        services: true,
+        professionals: true
       }
     });
 
     if (!empresa) {
-        return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+      return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
     // O objeto 'empresa' aqui já inclui instagramUrl e facebookUrl automaticamente

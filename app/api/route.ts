@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // COLOQUE SEU ID AQUI (Aquele que você pegou no passo 1)
-const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh"; 
+const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
 
 export async function GET() {
   const { userId } = auth();
@@ -18,9 +18,9 @@ export async function GET() {
   // Busca todas as empresas e conta quantos agendamentos cada uma tem
   const todasEmpresas = await prisma.company.findMany({
     include: {
-        _count: {
-            select: { bookings: true } // Conta agendamentos
-        }
+      _count: {
+        select: { bookings: true } // Conta agendamentos
+      }
     },
     orderBy: { createdAt: 'desc' }
   });

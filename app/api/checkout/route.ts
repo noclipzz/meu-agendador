@@ -1,68 +1,68 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import Stripe from 'stripe';
 
-const prisma = new PrismaClient();
+const prisma = db;
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia' as any,
+    apiVersion: '2024-12-18.acacia' as any,
 });
 
 export async function POST(req: Request) {
-  try {
-    const { userId } = await auth(); // Adicionado await
-    const user = await currentUser();
-    
-    if (!userId || !user) return NextResponse.json({}, { status: 401 });
+    try {
+        const { userId } = await auth(); // Adicionado await
+        const user = await currentUser();
 
-    const { plan } = await req.json();
+        if (!userId || !user) return NextResponse.json({}, { status: 401 });
 
-    let priceId = "";
-    switch (plan) {
-        case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
-        case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM!; break;
-        case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
-    }
+        const { plan } = await req.json();
 
-    let subscription = await prisma.subscription.findUnique({ where: { userId } });
-    let stripeCustomerId = subscription?.stripeCustomerId;
+        let priceId = "";
+        switch (plan) {
+            case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
+            case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM!; break;
+            case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
+        }
 
-    if (!stripeCustomerId) {
-        const customer = await stripe.customers.create({
-            email: user.emailAddresses[0].emailAddress,
-            metadata: { userId: userId } 
+        let subscription = await prisma.subscription.findUnique({ where: { userId } });
+        let stripeCustomerId = subscription?.stripeCustomerId;
+
+        if (!stripeCustomerId) {
+            const customer = await stripe.customers.create({
+                email: user.emailAddresses[0].emailAddress,
+                metadata: { userId: userId }
+            });
+            stripeCustomerId = customer.id;
+
+            await prisma.subscription.upsert({
+                where: { userId },
+                update: { stripeCustomerId },
+                create: { userId, plan: plan, stripeCustomerId, status: "INACTIVE" }
+            });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            customer: stripeCustomerId,
+            line_items: [{ price: priceId, quantity: 1 }],
+            mode: 'subscription',
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel?success=true`,
+            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
+            metadata: { userId: userId, plan: plan } // Enviando como 'userId'
         });
-        stripeCustomerId = customer.id;
-        
-        await prisma.subscription.upsert({
-            where: { userId },
-            update: { stripeCustomerId },
-            create: { userId, plan: plan, stripeCustomerId, status: "INACTIVE" }
-        });
+
+        return NextResponse.json({ url: session.url });
+
+    } catch (error) {
+        console.error("Erro Stripe:", error);
+        return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 500 });
     }
-
-    const session = await stripe.checkout.sessions.create({
-        customer: stripeCustomerId,
-        line_items: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
-        metadata: { userId: userId, plan: plan } // Enviando como 'userId'
-    });
-
-    return NextResponse.json({ url: session.url });
-
-  } catch (error) {
-    console.error("Erro Stripe:", error);
-    return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 500 });
-  }
 }
 
 export async function GET() {
     try {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ active: false });
-      
+
         // 1. Verifica se o usuário logado é um DONO de empresa
         const subDono = await prisma.subscription.findUnique({ where: { userId } });
         if (subDono?.status === "ACTIVE" && subDono.expiresAt && new Date(subDono.expiresAt) > new Date()) {
@@ -82,14 +82,14 @@ export async function GET() {
             });
 
             const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
-            
-            return NextResponse.json({ 
-                active: !!isActive, 
+
+            return NextResponse.json({
+                active: !!isActive,
                 plan: subPatrao?.plan,
-                role: "PROFESSIONAL" 
+                role: "PROFESSIONAL"
             });
         }
-        
+
         return NextResponse.json({ active: false });
     } catch (error) {
         return NextResponse.json({ active: false });

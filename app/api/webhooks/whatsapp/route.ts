@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -13,15 +13,15 @@ export async function POST(req: Request) {
   if (mensagem === "1" || mensagem?.toLowerCase().includes("confirmo")) {
     // Busca o agendamento pendente mais recente desse telefone
     const ag = await prisma.booking.findFirst({
-        where: { customerPhone: { contains: telefoneRemetente.slice(-8) }, status: "PENDENTE" },
-        orderBy: { date: 'asc' }
+      where: { customerPhone: { contains: telefoneRemetente.slice(-8) }, status: "PENDENTE" },
+      orderBy: { date: 'asc' }
     });
 
     if (ag) {
-        await prisma.booking.update({
-            where: { id: ag.id },
-            data: { status: "CONFIRMADO" }
-        });
+      await prisma.booking.update({
+        where: { id: ag.id },
+        data: { status: "CONFIRMADO" }
+      });
     }
   }
 

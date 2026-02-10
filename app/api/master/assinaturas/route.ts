@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { db } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { addDays } from 'date-fns';
 
-const prisma = new PrismaClient();
+const prisma = db;
 // SEU ID REAL AQUI
-const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh"; 
+const SUPER_ADMIN_ID = "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
 
 export async function POST(req: Request) {
   const { userId } = auth();
@@ -15,10 +15,10 @@ export async function POST(req: Request) {
 
   // Busca assinatura atual
   const sub = await prisma.subscription.findUnique({ where: { userId: targetUserId } });
-  
+
   // Se não existir, cria uma nova expirando hoje
   let dataBase = sub?.expiresAt ? new Date(sub.expiresAt) : new Date();
-  
+
   // Se a assinatura já venceu, começa a contar de hoje
   if (dataBase < new Date()) dataBase = new Date();
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // Função para transformar "Studio VIP" em "studio-vip" (Link Profissional)
 function gerarSlug(text: string) {
@@ -24,15 +24,15 @@ export async function GET() {
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     // Busca a empresa onde o usuário é o DONO ou onde ele é um PROFISSIONAL vinculado
-    const config = await prisma.company.findFirst({ 
-      where: { 
+    const config = await prisma.company.findFirst({
+      where: {
         OR: [
           { ownerId: userId },
           { professionals: { some: { userId: userId } } }
         ]
-      } 
+      }
     });
-    
+
     return NextResponse.json(config);
   } catch (error) {
     console.error("ERRO_GET_CONFIG:", error);
@@ -47,10 +47,10 @@ export async function POST(req: Request) {
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     const body = await req.json();
-    
+
     // 1. Validação do Nome
     if (!body.name) {
-        return NextResponse.json({ error: "O nome da empresa é obrigatório." }, { status: 400 });
+      return NextResponse.json({ error: "O nome da empresa é obrigatório." }, { status: 400 });
     }
 
     const slugDesejado = gerarSlug(body.name);
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
     if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
       return NextResponse.json(
-        { error: "Este nome de empresa já está em uso. Escolha outro para o seu link." }, 
+        { error: "Este nome de empresa já está em uso. Escolha outro para o seu link." },
         { status: 400 }
       );
     }
@@ -77,8 +77,8 @@ export async function POST(req: Request) {
       name: body.name,
       slug: slugDesejado,
       notificationEmail: body.notificationEmail || null,
-      instagramUrl: body.instagramUrl || "", 
-      facebookUrl: body.facebookUrl || "",   
+      instagramUrl: body.instagramUrl || "",
+      facebookUrl: body.facebookUrl || "",
       openTime: body.openTime || "09:00",
       closeTime: body.closeTime || "18:00",
       lunchStart: body.lunchStart || "12:00",
@@ -99,11 +99,11 @@ export async function POST(req: Request) {
       return NextResponse.json(updated);
     } else {
       // --- CORREÇÃO: Criar empresa incluindo o ownerId obrigatório ---
-      const created = await prisma.company.create({ 
+      const created = await prisma.company.create({
         data: {
-            ...dataToSave,
-            ownerId: userId // VINCULA AO SEU USUÁRIO DO CLERK
-        } 
+          ...dataToSave,
+          ownerId: userId // VINCULA AO SEU USUÁRIO DO CLERK
+        }
       });
       return NextResponse.json(created);
     }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const serviceId = searchParams.get('serviceId');
 
-    if(!serviceId) return new NextResponse("ID faltando", { status: 400 });
+    if (!serviceId) return new NextResponse("ID faltando", { status: 400 });
 
     const items = await prisma.serviceProduct.findMany({
         where: { serviceId },

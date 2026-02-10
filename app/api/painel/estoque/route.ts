@@ -1,100 +1,100 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const prisma = new PrismaClient();
+const prisma = db;
 
 // LISTAR
 export async function GET(req: Request) {
-  try {
-    const { userId } = await auth();
-    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+    try {
+        const { userId } = await auth();
+        if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get('productId');
+        const { searchParams } = new URL(req.url);
+        const productId = searchParams.get('productId');
 
-    // Se pedir logs
-    if (searchParams.get('logs') === 'true' && productId) {
-        const logs = await prisma.stockLog.findMany({
-            where: { productId },
-            orderBy: { createdAt: 'desc' },
-            take: 50
+        // Se pedir logs
+        if (searchParams.get('logs') === 'true' && productId) {
+            const logs = await prisma.stockLog.findMany({
+                where: { productId },
+                orderBy: { createdAt: 'desc' },
+                take: 50
+            });
+            return NextResponse.json(logs);
+        }
+
+        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+
+        // Lista produtos com lotes ordenados por validade
+        const products = await prisma.product.findMany({
+            where: { companyId: company.id },
+            orderBy: { name: 'asc' },
+            include: {
+                batches: {
+                    orderBy: { expiryDate: 'asc' }
+                }
+            }
         });
-        return NextResponse.json(logs);
+
+        return NextResponse.json(products);
+    } catch (error) {
+        console.error("ERRO_GET_ESTOQUE:", error);
+        return new NextResponse("Erro ao buscar estoque", { status: 500 });
     }
-
-    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-    if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
-
-    // Lista produtos com lotes ordenados por validade
-    const products = await prisma.product.findMany({
-      where: { companyId: company.id },
-      orderBy: { name: 'asc' },
-      include: {
-          batches: {
-              orderBy: { expiryDate: 'asc' } 
-          }
-      }
-    });
-
-    return NextResponse.json(products);
-  } catch (error) {
-    console.error("ERRO_GET_ESTOQUE:", error);
-    return new NextResponse("Erro ao buscar estoque", { status: 500 });
-  }
 }
 
 // CRIAR PRODUTO
 export async function POST(req: Request) {
-  try {
-    const { userId } = await auth();
-    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-    
-    if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+    try {
+        const { userId } = await auth();
+        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
 
-    const body = await req.json();
+        if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
 
-    const result = await prisma.$transaction(async (tx) => {
-        const product = await tx.product.create({
-          data: {
-            name: body.name,
-            quantity: body.quantity || 0,
-            unit: body.unit || "UN",
-            minStock: body.minStock || 5,
-            companyId: company.id,
-          }
+        const body = await req.json();
+
+        const result = await prisma.$transaction(async (tx) => {
+            const product = await tx.product.create({
+                data: {
+                    name: body.name,
+                    quantity: body.quantity || 0,
+                    unit: body.unit || "UN",
+                    minStock: body.minStock || 5,
+                    companyId: company.id,
+                }
+            });
+
+            // Cria o lote inicial se houver quantidade
+            if (Number(body.quantity) > 0) {
+                await tx.productBatch.create({
+                    data: {
+                        productId: product.id,
+                        quantity: body.quantity,
+                        expiryDate: body.expiryDate ? new Date(body.expiryDate) : null
+                    }
+                });
+
+                await tx.stockLog.create({
+                    data: {
+                        productId: product.id,
+                        quantity: body.quantity,
+                        oldStock: 0,
+                        newStock: body.quantity,
+                        type: "ENTRADA",
+                        reason: "Cadastro Inicial"
+                    }
+                });
+            }
+
+            return product;
         });
 
-        // Cria o lote inicial se houver quantidade
-        if (Number(body.quantity) > 0) {
-            await tx.productBatch.create({
-                data: {
-                    productId: product.id,
-                    quantity: body.quantity,
-                    expiryDate: body.expiryDate ? new Date(body.expiryDate) : null
-                }
-            });
-
-            await tx.stockLog.create({
-                data: {
-                    productId: product.id,
-                    quantity: body.quantity,
-                    oldStock: 0,
-                    newStock: body.quantity,
-                    type: "ENTRADA",
-                    reason: "Cadastro Inicial"
-                }
-            });
-        }
-        
-        return product;
-    });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("ERRO_CRIAR_PRODUTO:", error);
-    return new NextResponse("Erro ao criar produto", { status: 500 });
-  }
+        return NextResponse.json(result);
+    } catch (error) {
+        console.error("ERRO_CRIAR_PRODUTO:", error);
+        return new NextResponse("Erro ao criar produto", { status: 500 });
+    }
 }
 
 // ATUALIZAR (Adicionar Lote ou Remover Estoque)
@@ -139,16 +139,16 @@ export async function PUT(req: Request) {
                     }
                 });
                 newTotal += amount;
-            } 
+            }
             else if (operation === 'REMOVE') {
                 let remainingToRemove = amount;
-                
+
                 // Busca lotes: Primeiro os vencidos/com validade próxima, depois os mais antigos
                 const batches = await tx.productBatch.findMany({
                     where: { productId: id, quantity: { gt: 0 } },
                     orderBy: [
-                        { expiryDate: 'asc' }, 
-                        { createdAt: 'asc' }   
+                        { expiryDate: 'asc' },
+                        { createdAt: 'asc' }
                     ]
                 });
 
@@ -166,10 +166,10 @@ export async function PUT(req: Request) {
                             data: { quantity: currentBatchQty - toTake }
                         });
                     }
-                    
+
                     remainingToRemove -= toTake;
                 }
-                
+
                 newTotal -= amount;
                 if (newTotal < 0) newTotal = 0;
             }
