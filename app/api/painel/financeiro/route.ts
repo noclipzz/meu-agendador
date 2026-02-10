@@ -14,50 +14,65 @@ export async function GET() {
         const company = await prisma.company.findUnique({ where: { ownerId: userId } });
         if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
 
+        // VERIFICA SE O PLANO É INDIVIDUAL (Bloqueia Financeiro)
+        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        if (!sub || sub.plan === "INDIVIDUAL") {
+            return NextResponse.json({ error: "O Módulo Financeiro está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
+        }
+
         const hoje = new Date();
         const inicioMes = startOfMonth(hoje);
         const fimMes = endOfMonth(hoje);
         const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
         const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
-        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES) ---
-        // Gera um array com os últimos 6 meses
-        const mesesGrafico = eachMonthOfInterval({
-            start: subMonths(hoje, 5),
-            end: hoje
-        });
+        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES) - OTIMIZADO ---
+        const seisMesesAtras = startOfMonth(subMonths(hoje, 5));
 
-        // Calcula as somas de cada mês em paralelo
-        const fluxoCaixa = await Promise.all(mesesGrafico.map(async (data) => {
-            const inicio = startOfMonth(data);
-            const fim = endOfMonth(data);
-
-            // 1. Soma Entradas (Faturas com status PAGO)
-            const receitas = await prisma.invoice.aggregate({
-                _sum: { value: true },
+        // Busca tudo de uma vez para os últimos 6 meses
+        const [todasReceitas, todasDespesas] = await Promise.all([
+            prisma.invoice.findMany({
                 where: {
                     companyId: company.id,
                     status: 'PAGO',
-                    paidAt: { gte: inicio, lte: fim }
-                }
-            });
-
-            // 2. Soma Saídas (Despesas)
-            const despesas = await prisma.expense.aggregate({
-                _sum: { value: true },
+                    paidAt: { gte: seisMesesAtras, lte: fimMes }
+                },
+                select: { value: true, paidAt: true }
+            }),
+            prisma.expense.findMany({
                 where: {
                     companyId: company.id,
-                    date: { gte: inicio, lte: fim }
-                }
-            });
+                    date: { gte: seisMesesAtras, lte: fimMes }
+                },
+                select: { value: true, date: true }
+            })
+        ]);
+
+        const mesesGrafico = eachMonthOfInterval({
+            start: seisMesesAtras,
+            end: hoje
+        });
+
+        // Processa os dados em memória (JS) para não bater no banco 12 vezes
+        const fluxoCaixa = mesesGrafico.map((data) => {
+            const inicio = startOfMonth(data);
+            const fim = endOfMonth(data);
+
+            const receitaMes = todasReceitas
+                .filter(r => r.paidAt && r.paidAt >= inicio && r.paidAt <= fim)
+                .reduce((acc, curr) => acc + Number(curr.value), 0);
+
+            const despesaMes = todasDespesas
+                .filter(d => d.date && d.date >= inicio && d.date <= fim)
+                .reduce((acc, curr) => acc + Number(curr.value), 0);
 
             return {
                 mes: format(data, 'MMM', { locale: ptBR }).toUpperCase(),
-                receita: Number(receitas._sum.value || 0),
-                despesa: Number(despesas._sum.value || 0)
+                receita: receitaMes,
+                despesa: despesaMes
             };
-        }));
-        // ---------------------------------------------
+        });
+        // -------------------------------------------------------
 
         // Consultas Paralelas (Performance) para o restante da página
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([

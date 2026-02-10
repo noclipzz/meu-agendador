@@ -9,13 +9,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(req: Request) {
+    console.log("🚀 [CHECKOUT] Iniciando criação de sessão...");
     try {
-        const { userId } = await auth(); // Adicionado await
+        const { userId } = await auth();
         const user = await currentUser();
+        console.log("🔍 [CHECKOUT] Usuário identificado:", userId);
+        console.log("📧 [CHECKOUT] Email do usuário:", user?.emailAddresses[0]?.emailAddress);
 
-        if (!userId || !user) return NextResponse.json({}, { status: 401 });
+        if (!userId || !user) {
+            console.warn("⚠️ [CHECKOUT] Usuário não autenticado.");
+            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+        }
 
-        const { plan } = await req.json();
+        const body = await req.json();
+        const plan = body.plan;
+        console.log("📦 [CHECKOUT] Plano solicitado:", plan);
 
         let priceId = "";
         switch (plan) {
@@ -24,16 +32,37 @@ export async function POST(req: Request) {
             case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
         }
 
-        let subscription = await prisma.subscription.findUnique({ where: { userId } });
+        if (!priceId) {
+            console.error("❌ [CHECKOUT] Price ID não encontrado para o plano:", plan);
+            return NextResponse.json({ error: "Preço não configurado para este plano" }, { status: 400 });
+        }
+
+        console.log("⏳ [CHECKOUT] Buscando assinatura no banco (com retry)...");
+        let subscription = null;
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                subscription = await prisma.subscription.findUnique({ where: { userId } });
+                break;
+            } catch (err: any) {
+                retries--;
+                console.error(`⚠️ [CHECKOUT] Falha ao conectar no banco, tentando mais ${retries} vezes...`);
+                if (retries === 0) throw err;
+                await new Promise(res => setTimeout(res, 2000)); // Espera 2s
+            }
+        }
+        console.log("✅ [CHECKOUT] Assinatura consultada:", subscription ? "Sim" : "Não");
         let stripeCustomerId = subscription?.stripeCustomerId;
 
         if (!stripeCustomerId) {
+            console.log("👤 [CHECKOUT] Criando novo cliente no Stripe...");
             const customer = await stripe.customers.create({
                 email: user.emailAddresses[0].emailAddress,
                 metadata: { userId: userId }
             });
             stripeCustomerId = customer.id;
 
+            console.log("💾 [CHECKOUT] Salvando Customer ID no banco...");
             await prisma.subscription.upsert({
                 where: { userId },
                 update: { stripeCustomerId },
@@ -41,57 +70,113 @@ export async function POST(req: Request) {
             });
         }
 
+        console.log("💳 [CHECKOUT] Criando sessão de checkout...");
         const session = await stripe.checkout.sessions.create({
             customer: stripeCustomerId,
             line_items: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
             success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel?success=true`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
-            metadata: { userId: userId, plan: plan } // Enviando como 'userId'
+            metadata: { userId: userId, plan: plan },
+            subscription_data: {
+                metadata: { userId: userId, plan: plan }
+            }
         });
 
+        console.log("✅ [CHECKOUT] Sessão criada com sucesso!");
         return NextResponse.json({ url: session.url });
 
-    } catch (error) {
-        console.error("Erro Stripe:", error);
-        return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 500 });
+    } catch (error: any) {
+        console.error("❌ [CHECKOUT] ERRO FATAL:");
+        console.error("- Message:", error?.message);
+        console.error("- Details:", error);
+
+        return NextResponse.json({
+            error: "Erro ao processar pagamento",
+            details: error?.message || "Erro desconhecido"
+        }, { status: 500 });
     }
 }
 
 export async function GET() {
+    console.log("🔍 [CHECKOUT] Iniciando Super Check...");
     try {
         const { userId } = await auth();
-        if (!userId) return NextResponse.json({ active: false });
-
-        // 1. Verifica se o usuário logado é um DONO de empresa
-        const subDono = await prisma.subscription.findUnique({ where: { userId } });
-        if (subDono?.status === "ACTIVE" && subDono.expiresAt && new Date(subDono.expiresAt) > new Date()) {
-            return NextResponse.json({ active: true, plan: subDono.plan, role: "ADMIN" });
+        if (!userId) {
+            console.warn("⚠️ [CHECKOUT] Super Check: Usuário não autenticado.");
+            return NextResponse.json({ active: false });
         }
 
-        // 2. Se não for dono, verifica se ele é um PROFISSIONAL vinculado
-        const profissional = await prisma.professional.findUnique({
+        // Função auxiliar para rodar consulta com retry
+        const queryWithRetry = async (fn: () => Promise<any>) => {
+            let retries = 3;
+            while (retries > 0) {
+                try {
+                    return await fn();
+                } catch (err: any) {
+                    retries--;
+                    console.warn(`⚠️ [CHECKOUT] Falha em consulta interna, tentando mais ${retries} vezes...`);
+                    if (retries === 0) throw err;
+                    await new Promise(res => setTimeout(res, 1500));
+                }
+            }
+        };
+
+        // 1. Busca sequencial para não estressar o pool de conexões do Neon
+        console.log("⏳ [CHECKOUT] Consultando assinatura...");
+        const subscription = await queryWithRetry(() => prisma.subscription.findUnique({ where: { userId } }));
+
+        console.log("⏳ [CHECKOUT] Consultando profissional...");
+        const professional = await queryWithRetry(() => prisma.professional.findUnique({
             where: { userId },
             include: { company: true }
-        });
+        }));
 
-        if (profissional) {
-            // Busca a assinatura do DONO da empresa onde esse profissional trabalha
-            const subPatrao = await prisma.subscription.findUnique({
-                where: { userId: profissional.company.ownerId }
+        console.log("⏳ [CHECKOUT] Consultando empresa...");
+        const company = await queryWithRetry(() => prisma.company.findUnique({ where: { ownerId: userId } }));
+
+        // CASO 1: É DONO
+        if (company) {
+            const isActive = subscription?.status === "ACTIVE" && subscription.expiresAt && new Date(subscription.expiresAt) > new Date();
+            console.log("✅ [CHECKOUT] Identificado como ADMIN");
+            return NextResponse.json({
+                active: !!isActive,
+                plan: subscription?.plan || "INDIVIDUAL",
+                role: "ADMIN",
+                companyId: company.id,
+                companyName: company.name
             });
+        }
+
+        // CASO 2: É PROFISSIONAL VINCULADO
+        if (professional) {
+            console.log("⏳ [CHECKOUT] Consultando assinatura do patrão...");
+            const subPatrao = await queryWithRetry(() => prisma.subscription.findUnique({
+                where: { userId: professional.company.ownerId }
+            }));
 
             const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
+            console.log("✅ [CHECKOUT] Identificado como PROFESSIONAL");
 
             return NextResponse.json({
                 active: !!isActive,
                 plan: subPatrao?.plan,
-                role: "PROFESSIONAL"
+                role: "PROFESSIONAL",
+                companyId: professional.companyId,
+                companyName: professional.company.name
             });
         }
 
-        return NextResponse.json({ active: false });
-    } catch (error) {
-        return NextResponse.json({ active: false });
+        // CASO 3: USUÁRIO NOVO
+        console.log("✅ [CHECKOUT] Identificado como NEW");
+        return NextResponse.json({
+            active: false,
+            role: "NEW",
+            plan: subscription?.plan || "INDIVIDUAL"
+        });
+
+    } catch (error: any) {
+        console.error("❌ [CHECKOUT] Erro no Super Check:", error.message || error);
+        return NextResponse.json({ active: false, error: "Erro interno no banco", details: error.message }, { status: 500 });
     }
 }

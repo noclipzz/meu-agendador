@@ -19,9 +19,13 @@ export async function GET() {
         const inicioMes = startOfMonth(hoje);
         const fimMes = endOfMonth(hoje);
 
-        // Executa todas as consultas em paralelo para ser rápido
-        const [agendamentosHoje, boletosVencidos, boletosVencer, produtos, faturasMes] = await Promise.all([
-            // 1. Agendamentos de Hoje
+        // VERIFICA O PLANO
+        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        const plano = sub?.plan || "INDIVIDUAL";
+
+        // Executa as consultas permitidas pelo plano
+        const queries: any = [
+            // 1. Agendamentos de Hoje (TODOS OS PLANOS)
             prisma.booking.findMany({
                 where: {
                     companyId: company.id,
@@ -30,46 +34,45 @@ export async function GET() {
                 },
                 include: { service: true, professional: true },
                 orderBy: { date: 'asc' }
-            }),
-
-            // 2. Boletos Vencidos (Status PENDENTE e Data < Hoje)
-            prisma.invoice.findMany({
-                where: {
-                    companyId: company.id,
-                    status: 'PENDENTE',
-                    dueDate: { lt: inicioDia } // Menor que o início de hoje
-                },
-                include: { client: true },
-                take: 5
-            }),
-
-            // 3. Boletos a Vencer (Próximos 7 dias)
-            prisma.invoice.findMany({
-                where: {
-                    companyId: company.id,
-                    status: 'PENDENTE',
-                    dueDate: { gte: inicioDia }
-                },
-                include: { client: true },
-                orderBy: { dueDate: 'asc' },
-                take: 5
-            }),
-
-            // 4. Todos os produtos (para filtrar estoque baixo no código)
-            prisma.product.findMany({
-                where: { companyId: company.id },
-                select: { id: true, name: true, quantity: true, minStock: true, unit: true }
-            }),
-
-            // 5. Financeiro do Mês (Para o Gráfico)
-            prisma.invoice.findMany({
-                where: {
-                    companyId: company.id,
-                    status: 'PAGO',
-                    paidAt: { gte: inicioMes, lte: fimMes }
-                }
             })
-        ]);
+        ];
+
+        // Se for PREMIUM ou MASTER, pode ver financeiro
+        if (plano === "PREMIUM" || plano === "MASTER") {
+            queries.push(
+                prisma.invoice.findMany({
+                    where: { companyId: company.id, status: 'PENDENTE', dueDate: { lt: inicioDia } },
+                    include: { client: true },
+                    take: 5
+                }),
+                prisma.invoice.findMany({
+                    where: { companyId: company.id, status: 'PENDENTE', dueDate: { gte: inicioDia } },
+                    include: { client: true },
+                    orderBy: { dueDate: 'asc' },
+                    take: 5
+                }),
+                prisma.invoice.findMany({
+                    where: { companyId: company.id, status: 'PAGO', paidAt: { gte: inicioMes, lte: fimMes } }
+                })
+            );
+        } else {
+            // Placeholders para manter a estrutura do array
+            queries.push(Promise.resolve([]), Promise.resolve([]), Promise.resolve([]));
+        }
+
+        // Se for MASTER, pode ver estoque
+        if (plano === "MASTER") {
+            queries.push(
+                prisma.product.findMany({
+                    where: { companyId: company.id },
+                    select: { id: true, name: true, quantity: true, minStock: true, unit: true }
+                })
+            );
+        } else {
+            queries.push(Promise.resolve([]));
+        }
+
+        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos] = await Promise.all(queries);
 
         // Filtra estoque baixo via Javascript (Quantity <= MinStock)
         const estoqueBaixo = produtos.filter(p => Number(p.quantity) <= Number(p.minStock));
@@ -87,6 +90,7 @@ export async function GET() {
         }, []).sort((a, b) => a.dia.localeCompare(b.dia));
 
         return NextResponse.json({
+            plano,
             agendamentosHoje,
             boletosVencidos,
             boletosVencer,

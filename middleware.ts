@@ -9,6 +9,11 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware((auth, req) => {
+  // LOG PARA DEBUG
+  if (req.url.includes('/api/webhooks/stripe')) {
+    console.log("🚦 [MIDDLEWARE] Webhook detectado:", req.url);
+  }
+
   // Se for rota protegida, bloqueia. O resto (como /planos) passa livre.
   if (isProtectedRoute(req)) {
     auth().protect();

@@ -4,69 +4,129 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 
 const prisma = db;
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2024-12-18.acacia' as any
+});
 
 export async function POST(req: Request) {
+    console.log("🚀 [STRIPE WEBHOOK] Nova requisição recebida!");
+
     const body = await req.text();
-    const signature = headers().get("Stripe-Signature") as string;
+    const headersList = headers();
+    const signature = headersList.get("Stripe-Signature");
+
+    if (!signature) {
+        console.error("❌ [STRIPE WEBHOOK] Assinatura do Stripe ausente!");
+        return new NextResponse("No signature", { status: 400 });
+    }
 
     let event: Stripe.Event;
 
     try {
         event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-    } catch (error) {
-        console.error("Webhook signature verification failed.");
-        return new NextResponse("Webhook Error", { status: 400 });
+    } catch (error: any) {
+        console.error(`❌ [STRIPE WEBHOOK] Falha na verificação da assinatura: ${error.message}`);
+        return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
     }
 
-    // 1. PAGAMENTO APROVADO (Cria ou Renova)
+    console.log(`📡 [STRIPE WEBHOOK] Evento verificado: ${event.type} [${event.id}]`);
+
+    // 1. PAGAMENTO APROVADO (checkout.session.completed ou invoice.payment_succeeded)
     if (event.type === "checkout.session.completed" || event.type === "invoice.payment_succeeded") {
-        const session = event.data.object as any;
-        const subscriptionId = session.subscription as string;
+        const obj = event.data.object as any;
+        const subscriptionId = obj.subscription as string;
+        const customerId = obj.customer as string;
 
-        if (!subscriptionId) return new NextResponse(null, { status: 200 });
+        console.log(`🔍 [STRIPE WEBHOOK] Processando pagamento. Sub: ${subscriptionId}, Customer: ${customerId}`);
 
-        const subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId);
+        if (!subscriptionId) {
+            console.log("⚠️ [STRIPE WEBHOOK] Evento sem ID de assinatura. Pode ser um pagamento único ou falha. Ignorando.");
+            return new NextResponse(null, { status: 200 });
+        }
 
-        // CORREÇÃO: Buscando 'userId' (mesmo nome enviado no metadata do checkout)
-        let userId = session.metadata?.userId;
+        let subscriptionDetails;
+        try {
+            subscriptionDetails = await stripe.subscriptions.retrieve(subscriptionId);
+        } catch (error: any) {
+            console.error(`❌ [STRIPE WEBHOOK] Erro ao buscar assinatura ${subscriptionId} no Stripe:`, error.message);
+            return new NextResponse("Subscription not found", { status: 400 });
+        }
 
-        if (!userId && session.customer) {
-            const customer = await stripe.customers.retrieve(session.customer as string) as Stripe.Customer;
-            userId = customer.metadata.userId;
+        // Tenta achar o userId (Metadata do Stripe é a fonte mais confiável)
+        let userId = obj.metadata?.userId || subscriptionDetails.metadata?.userId;
+
+        if (!userId && customerId) {
+            console.log("🔍 [STRIPE WEBHOOK] userId não achado no metadata, tentando buscar no cliente...");
+            try {
+                const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+                userId = customer.metadata?.userId;
+            } catch (e) {
+                console.error("❌ [STRIPE WEBHOOK] Erro ao buscar cliente no Stripe", e);
+            }
+        }
+
+        // FALLBACK: Buscar no banco pelo stripeCustomerId
+        if (!userId && customerId) {
+            console.log("🔍 [STRIPE WEBHOOK] userId não achado, buscando no banco pelo stripeCustomerId...");
+            const subLocal = await prisma.subscription.findUnique({
+                where: { stripeCustomerId: customerId }
+            });
+            userId = subLocal?.userId;
         }
 
         if (userId) {
-            await prisma.subscription.update({
-                where: { userId: userId },
-                data: {
-                    stripeSubscriptionId: subscriptionId,
-                    stripeCustomerId: session.customer as string,
-                    status: "ACTIVE",
-                    plan: session.metadata?.plan || undefined,
-                    expiresAt: new Date(subscriptionDetails.current_period_end * 1000)
-                }
-            });
-            console.log(`✅ Assinatura ATIVADA: ${userId}`);
+            const plan = obj.metadata?.plan || subscriptionDetails.metadata?.plan || "INDIVIDUAL";
+            const expiresAt = new Date(subscriptionDetails.current_period_end * 1000);
+
+            // Tenta pegar o priceId de várias formas para não ficar NULL
+            const priceId = subscriptionDetails.items.data[0]?.price.id ||
+                subscriptionDetails.plan?.id ||
+                obj.metadata?.priceId;
+
+            console.log(`✅ [STRIPE WEBHOOK] Ativando assinatura para o usuário: ${userId}`);
+            console.log(`📋 Dados Finais: Plano=${plan}, Expira=${expiresAt.toISOString()}, PriceID=${priceId}`);
+
+            try {
+                const updatedSub = await prisma.subscription.update({
+                    where: { userId: userId },
+                    data: {
+                        stripeSubscriptionId: subscriptionId,
+                        stripeCustomerId: customerId,
+                        stripePriceId: priceId,
+                        status: "ACTIVE",
+                        plan: plan,
+                        expiresAt: expiresAt
+                    }
+                });
+                console.log(`✔️ [STRIPE WEBHOOK] Banco de dados atualizado! ID: ${updatedSub.id}, Status: ${updatedSub.status}`);
+            } catch (dbError: any) {
+                console.error("❌ [STRIPE WEBHOOK] Erro ao atualizar banco de dados:", dbError.message);
+            }
+        } else {
+            console.error("❌ [STRIPE WEBHOOK] ERRO CRÍTICO: Não foi possível identificar o usuário dono desta assinatura.");
+            console.log("DEBUG PAYLOAD:", JSON.stringify({
+                eventId: event.id,
+                customerId,
+                subscriptionId,
+                metadata: obj.metadata
+            }));
         }
     }
 
-    // 2. CANCELAMENTO OU FALHA
-    if (event.type === "customer.subscription.deleted" || event.type === "customer.subscription.updated") {
-        const subscription = event.data.object as Stripe.Subscription;
+    // 2. ALTERAÇÕES NA ASSINATURA (Cancelamento ou Falha)
+    if (event.type === "customer.subscription.deleted" ||
+        (event.type === "customer.subscription.updated" && (event.data.object as any).status === 'canceled')) {
+        const sub = event.data.object as Stripe.Subscription;
+        console.log(`📡 [STRIPE WEBHOOK] Assinatura cancelada/deletada: ${sub.id}`);
 
-        if (subscription.status !== 'active') {
-            const dbSub = await prisma.subscription.findFirst({
-                where: { stripeSubscriptionId: subscription.id }
+        try {
+            await prisma.subscription.update({
+                where: { stripeSubscriptionId: sub.id },
+                data: { status: "CANCELED" }
             });
-
-            if (dbSub) {
-                await prisma.subscription.update({
-                    where: { id: dbSub.id },
-                    data: { status: "CANCELED" }
-                });
-                console.log(`❌ Assinatura CANCELADA: ${dbSub.userId}`);
-            }
+            console.log(`❌ [STRIPE WEBHOOK] Assinatura marcada como cancelada no banco.`);
+        } catch (e) {
+            console.log("⚠️ [STRIPE WEBHOOK] Sub não encontrada no banco para cancelar.");
         }
     }
 

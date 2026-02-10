@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
+import { LogoNohud } from "./components/LogoNohud";
 import { toast } from "sonner";
 
 // --- BOTÃO INTELIGENTE (AUTH) ---
@@ -283,11 +284,8 @@ export default function LandingPage() {
       {/* NAVBAR */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
         <nav className="container mx-auto flex justify-between items-center py-4 px-4">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-blue-600 text-white p-1.5 rounded-lg group-hover:rotate-3 transition duration-300">
-              <LayoutDashboard size={20} />
-            </div>
-            <span className="text-xl font-black tracking-tighter text-gray-900">NOHUD<span className="text-blue-500">.</span></span>
+          <Link href="/">
+            <LogoNohud />
           </Link>
 
           <div className="hidden md:flex gap-8 items-center">
@@ -342,69 +340,29 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Mockup / Dashboard Preview */}
-          <div className="mt-20 relative mx-auto max-w-5xl rounded-3xl p-4 bg-gray-900/5 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 border border-black/5">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 aspect-[16/9] relative flex items-center justify-center bg-gray-50">
-              {/* Placeholder visual do dashboard */}
-              <div className="text-center p-10">
-                <LayoutDashboard size={64} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-400 font-medium">Dashboard Administrativo</p>
-              </div>
-              {/* Aqui poderia ser um <Image /> real do painel futuramente */}
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* FEATURES / FUNCIONALIDADES */}
-      <section id="funcionalidades" className="py-24 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-20 max-w-2xl mx-auto">
-            <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">Tudo que você precisa para crescer</h2>
-            <p className="text-gray-500 font-medium text-lg">Ferramentas poderosas integradas em uma única plataforma intuitiva.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Calendar size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Agenda Inteligente</h3>
-              <p className="text-gray-500 leading-relaxed">Visualize seus horários, evite conflitos e organize o dia da sua equipe com facilidade (Visão Diária, Semanal e Mensal).</p>
+          {/* FEATURES INTEGRADAS NO HERO */}
+          <div id="funcionalidades" className="mt-32 relative z-10">
+            <div className="text-center mb-16 max-w-2xl mx-auto">
+              <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">Domine sua gestão com um clique</h2>
+              <p className="text-gray-500 font-medium text-lg">Tudo o que você precisa para crescer organizado em uma única interface inteligente.</p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Smartphone size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Notificações</h3>
-              <p className="text-gray-500 leading-relaxed">Reduza faltas com lembretes automáticos. Seus clientes recebem confirmações direto no e-mail.</p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><BarChart3 size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Financeiro & Metas</h3>
-              <p className="text-gray-500 leading-relaxed">Acompanhe seu faturamento em tempo real, defina metas mensais e saiba exatamente quanto sua empresa está lucrando.</p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Users size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Gestão de Equipe</h3>
-              <p className="text-gray-500 leading-relaxed">Controle comissões, horários de trabalho e permissões de acesso para cada colaborador.</p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><ShieldCheck size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Acesso Seguro</h3>
-              <p className="text-gray-500 leading-relaxed">Seus dados protegidos na nuvem. Acesse de qualquer lugar com segurança total e backups automáticos.</p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="bg-slate-50 p-8 rounded-[2.5rem] hover:bg-white hover:shadow-xl transition-all border border-slate-100 group">
-              <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition"><Clock size={28} /></div>
-              <h3 className="font-black text-2xl text-gray-900 mb-3">Economia de Tempo</h3>
-              <p className="text-gray-500 leading-relaxed">Automatize tarefas repetitivas e ganhe até 10 horas livres na sua semana para focar no que importa.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {[
+                { icon: Calendar, title: "Agenda Inteligente", desc: "Visualize horários, evite conflitos e organize o dia com facilidade.", color: "bg-blue-100 text-blue-600" },
+                { icon: Smartphone, title: "Notificações", desc: "Reduza faltas com lembretes automáticos por e-mail para seus clientes.", color: "bg-green-100 text-green-600" },
+                { icon: BarChart3, title: "Financeiro & Metas", desc: "Acompanhe seu faturamento em tempo real e saiba exatamente quanto lucra.", color: "bg-purple-100 text-purple-600" },
+                { icon: Users, title: "Gestão de Equipe", desc: "Controle comissões, horários e permissões de acesso para colaboradores.", color: "bg-orange-100 text-orange-600" },
+                { icon: ShieldCheck, title: "Acesso Seguro", desc: "Seus dados protegidos na nuvem com backups automáticos e segurança total.", color: "bg-cyan-100 text-cyan-600" },
+                { icon: Clock, title: "Economia de Tempo", desc: "Ganhe até 10 horas livres na semana automatizando tarefas repetitivas.", color: "bg-red-100 text-red-600" }
+              ].map((f, i) => (
+                <div key={i} className="bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all border border-white/20 group hover:-translate-y-1 duration-300">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-500 ${f.color}`}><f.icon size={28} strokeWidth={2.5} /></div>
+                  <h3 className="font-black text-xl text-gray-900 mb-3">{f.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed font-medium">{f.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -464,12 +422,7 @@ export default function LandingPage() {
       {/* FOOTER */}
       <footer className="py-16 px-4 bg-white border-t border-gray-100">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-2">
-            <div className="bg-gray-900 text-white p-1.5 rounded-lg">
-              <LayoutDashboard size={20} />
-            </div>
-            <span className="text-xl font-black tracking-tighter text-gray-900">NOHUD</span>
-          </div>
+          <LogoNohud />
 
           <div className="text-gray-500 text-sm font-medium">
             © 2026 NOHUD Tecnologia. Todos os direitos reservados.

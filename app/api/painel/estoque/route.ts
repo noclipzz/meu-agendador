@@ -10,6 +10,12 @@ export async function GET(req: Request) {
         const { userId } = await auth();
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
+        // VERIFICA SE É PLANO MASTER (Bloqueia Estoque se não for)
+        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O Módulo de Estoque está disponível apenas para o plano MASTER." }, { status: 403 });
+        }
+
         const { searchParams } = new URL(req.url);
         const productId = searchParams.get('productId');
 
@@ -48,7 +54,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const { userId } = await auth();
-        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+
+        // VERIFICA PLANO
+        const sub = await prisma.subscription.findUnique({ where: { userId: userId || "" } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O Módulo de Estoque está disponível apenas no plano MASTER." }, { status: 403 });
+        }
+
+        const company = await prisma.company.findUnique({ where: { ownerId: userId || "" } });
 
         if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
 
@@ -100,6 +113,14 @@ export async function POST(req: Request) {
 // ATUALIZAR (Adicionar Lote ou Remover Estoque)
 export async function PUT(req: Request) {
     try {
+        const { userId } = await auth();
+
+        // VERIFICA PLANO
+        const sub = await prisma.subscription.findUnique({ where: { userId: userId || "" } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O Módulo de Estoque está disponível apenas no plano MASTER." }, { status: 403 });
+        }
+
         const body = await req.json();
         const { id, operation, amountAdjustment, expiryDate, reason, name, minStock } = body;
 
@@ -205,6 +226,14 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
+        const { userId } = await auth();
+
+        // VERIFICA PLANO
+        const sub = await prisma.subscription.findUnique({ where: { userId: userId || "" } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O Módulo de Estoque está disponível apenas no plano MASTER." }, { status: 403 });
+        }
+
         const body = await req.json();
         await prisma.product.delete({ where: { id: body.id } });
         return NextResponse.json({ success: true });
