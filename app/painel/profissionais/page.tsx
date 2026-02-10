@@ -322,7 +322,7 @@ export default function GestaoEquipe() {
                       {/* NOVO CAMPO: E-MAIL PARA LOGIN */}
                       <div>
                           <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1"><Mail size={12}/> E-mail para Login (Obrigatório)</label>
-                          <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="funcionario@gmail.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} disabled={!!form.id} />
+                          <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="colaborador@gmail.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} disabled={!!form.id} />
                           {form.id && <p className="text-[9px] text-gray-400 ml-2 mt-1">O e-mail não pode ser alterado após o cadastro.</p>}
                       </div>
 

@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     if (email) {
         try {
             await resend.emails.send({
-                from: `${nomeEmpresa} <onboarding@resend.dev>`,
+                from: `${nomeEmpresa} <nao-responda@nohud.com.br>`,
                 to: email,
                 subject: `⏳ Solicitação de Agendamento: ${dataFormatada}`, // Assunto mudou para Solicitação
                 html: `
@@ -117,8 +117,8 @@ export async function POST(req: Request) {
     if (company?.notificationEmail) {
         try {
             await resend.emails.send({
-                from: `Sistema NOHUD <onboarding@resend.dev>`,
-                to: company.notificationEmail,
+                from: `Sistema NOHUD <nao-responda@nohud.com.br>`,
+                to: email,
                 subject: `🔔 Novo Agendamento Pendente: ${name}`,
                 html: `
                     <p>Você tem uma nova solicitação de agendamento!</p>

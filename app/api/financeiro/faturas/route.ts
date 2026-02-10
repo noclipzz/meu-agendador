@@ -87,7 +87,7 @@ export async function POST(req: Request) {
                 // Atualiza o totalizador do produto e gera log
                 const product = await prisma.product.findUnique({ where: { id: productId } });
                 if (product) {
-                    const newTotal = Math.max(0, Number(product.quantity) - Number(item.amount)); // Simples subtração do total para o cache
+                    const newTotal = Math.max(0, Number(product.quantity) - Number(item.amount)); 
                     
                     await prisma.product.update({
                         where: { id: productId },
@@ -109,10 +109,45 @@ export async function POST(req: Request) {
         }
     }
 
-    // 4. ENVIO DE E-MAILS (Mantido igual)
+    // 4. ENVIO DE E-MAILS (ATUALIZADO)
     if (cliente?.email && process.env.RESEND_API_KEY) {
-        // ... (seu código de envio de email atual) ...
-        // Vou omitir para não ficar gigante, mas mantenha o bloco try/catch do Resend que você já tem
+        const isPago = status === "PAGO";
+        const corStatus = isPago ? "#059669" : "#dc2626";
+        const tituloEmail = isPago ? `Recibo de Pagamento - ${empresa?.name}` : `Fatura em Aberto - ${empresa?.name}`;
+
+        try {
+            await resend.emails.send({
+                from: `${empresa?.name} <nao-responda@nohud.com.br>`,
+                // ------------------------------------------------------------------
+                to: cliente.email,
+                subject: tituloEmail,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 20px; padding: 40px; color: #333;">
+                        <h1 style="color: ${corStatus}; font-size: 24px;">${isPago ? 'Pagamento Confirmado!' : 'Pagamento em Aberto'}</h1>
+                        <p>Olá, <strong>${cliente.name}</strong>.</p>
+                        <p>${isPago ? 'Recebemos seu pagamento. Seguem os detalhes do serviço realizado:' : 'Seu atendimento foi concluído! O pagamento consta em aberto no nosso sistema.'}</p>
+                        
+                        <div style="background: #f9fafb; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                            <p style="margin: 5px 0;"><strong>Serviço:</strong> ${description}</p>
+                            <p style="margin: 5px 0;"><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            <p style="margin: 5px 0;"><strong>Forma de Pagamento:</strong> ${method || 'A definir'}</p>
+                            <p style="margin: 5px 0;"><strong>Vencimento:</strong> ${new Date(dueDate).toLocaleDateString('pt-BR')}</p>
+                        </div>
+
+                        ${!isPago ? `
+                            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
+                                <p style="color: #991b1b; margin: 0; font-size: 14px;"><strong>Atenção:</strong> Por favor, entre em contato conosco para realizar o pagamento e baixar sua fatura.</p>
+                            </div>
+                        ` : ''}
+
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                        <p style="font-size: 12px; color: #999; text-align: center;">${empresa?.name} - Sistema Automático</p>
+                    </div>
+                `
+            });
+        } catch (e) { 
+            console.error("Erro ao enviar e-mail financeiro:", e); 
+        }
     }
 
     return NextResponse.json(invoice);
