@@ -10,7 +10,6 @@ export async function GET() {
     const { userId } = await auth();
     if (!userId) return NextResponse.json([], { status: 401 });
 
-    // Busca empresa do dono OU a empresa onde o usuário é funcionário
     let companyId = null;
 
     // 1. Tenta como Dono
@@ -50,7 +49,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, email, phone, photoUrl, color } = body;
     
-    // 1. Apenas o dono pode adicionar equipe
     const company = await prisma.company.findUnique({ 
       where: { ownerId: userId },
       include: { professionals: true }
@@ -58,15 +56,11 @@ export async function POST(req: Request) {
     
     if (!company) return NextResponse.json({ error: "Apenas o dono pode gerenciar a equipe." }, { status: 403 });
 
-    // 2. BUSCA O PLANO ATUAL
     const sub = await prisma.subscription.findUnique({ where: { userId } });
-    const plano = sub?.plan || "INDIVIDUAL"; // Se não achar, assume Individual
+    const plano = sub?.plan || "INDIVIDUAL"; 
 
-    // 3. REGRAS DE LIMITES
     const qtdAtual = company.professionals.length;
 
-    // REGRA DO PLANO INDIVIDUAL:
-    // Se for Individual e já tiver 1 (que deve ser o dono), bloqueia tudo.
     if (plano === "INDIVIDUAL" && qtdAtual >= 1) {
        return NextResponse.json(
          { error: "Seu plano é INDIVIDUAL. Para adicionar outros funcionários, faça upgrade para PREMIUM ou MASTER." }, 
@@ -74,25 +68,24 @@ export async function POST(req: Request) {
        );
     }
 
-    // Regras dos outros planos
     const limites = { "PREMIUM": 5, "MASTER": 15 };
-    const limiteMaximo = limites[plano as keyof typeof limites] || 1; // Default 1
+    const limiteMaximo = limites[plano as keyof typeof limites] || 1;
 
     if (qtdAtual >= limiteMaximo) {
       return NextResponse.json({ error: `Limite do plano ${plano} atingido (${limiteMaximo} profissionais).` }, { status: 403 });
     }
 
-    // 4. TRANSAÇÃO: Cria Membro e Profissional
+    // TRANSAÇÃO: Cria Membro e depois vincula ao Profissional
     const result = await prisma.$transaction(async (tx) => {
+        let teamMemberId = null;
         
-        // Se informou E-mail, cria o acesso no TeamMember (Login)
         if (email) {
             const existingMember = await tx.teamMember.findUnique({ where: { email } });
             if (existingMember) {
                 throw new Error("Este e-mail já está na equipe.");
             }
 
-            await tx.teamMember.create({
+            const newMember = await tx.teamMember.create({
                 data: {
                     email: email,
                     role: "PROFESSIONAL",
@@ -100,16 +93,17 @@ export async function POST(req: Request) {
                     clerkUserId: null 
                 }
             });
+            teamMemberId = newMember.id;
         }
 
-        // Cria o Profissional na Agenda
         const professional = await tx.professional.create({
             data: {
                 name,
                 phone,
                 photoUrl,
                 color: color || "#3b82f6",
-                companyId: company.id
+                companyId: company.id,
+                teamMemberId: teamMemberId // Vínculo essencial para o DELETE funcionar depois
             }
         });
 
@@ -124,26 +118,53 @@ export async function POST(req: Request) {
   }
 }
 
-// --- DELETAR ---
+// --- DELETAR PROFISSIONAL ---
 export async function DELETE(req: Request) {
   try {
     const { userId } = await auth();
-    const company = await prisma.company.findUnique({ where: { ownerId: userId || "" } });
-    
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
     if (!company) return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
 
     const body = await req.json();
-    
-    await prisma.professional.delete({ 
-      where: { id: body.id, companyId: company.id } 
+    if (!body.id) return NextResponse.json({ error: "ID não fornecido" }, { status: 400 });
+
+    // 1. Busca o profissional para verificar o TeamMember vinculado
+    const professional = await prisma.professional.findUnique({
+        where: { id: body.id, companyId: company.id }
+    });
+
+    if (!professional) {
+        return NextResponse.json({ error: "Profissional não encontrado" }, { status: 404 });
+    }
+
+    // 2. Executa a deleção em transação
+    await prisma.$transaction(async (tx) => {
+        // Apaga o profissional da agenda
+        await tx.professional.delete({ 
+            where: { id: body.id } 
+        });
+
+        // Se houver um membro da equipe (login) vinculado, apaga também
+        if (professional.teamMemberId) {
+            await tx.teamMember.delete({
+                where: { id: professional.teamMemberId }
+            });
+        }
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Erro ao deletar" }, { status: 500 });
+  } catch (error: any) {
+    console.error("ERRO_AO_DELETAR:", error);
+    // Erro comum: Restrição de chave estrangeira (se o profissional tiver agendamentos)
+    return NextResponse.json({ 
+        error: "Não foi possível deletar. Verifique se o profissional possui agendamentos ou faturas vinculadas." 
+    }, { status: 500 });
   }
 }
 
+// --- ATUALIZAR PROFISSIONAL ---
 export async function PUT(req: Request) {
     try {
         const { userId } = await auth();
@@ -151,7 +172,6 @@ export async function PUT(req: Request) {
         
         const body = await req.json();
         
-        // Atualiza apenas dados visuais do profissional
         const updated = await prisma.professional.update({
             where: { id: body.id },
             data: {
@@ -161,9 +181,6 @@ export async function PUT(req: Request) {
             }
         });
         
-        // Se tiver alteração de e-mail, teria que buscar o TeamMember e atualizar lá também
-        // Por simplicidade, mantemos a edição apenas dos dados da agenda aqui.
-
         return NextResponse.json(updated);
     } catch(e) {
         return NextResponse.json({error: "Erro ao atualizar"}, {status: 500});
