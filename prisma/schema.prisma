@@ -38,6 +38,7 @@ model Company {
   expenses          Expense[]      
   invoices          Invoice[]
   products          Product[]      // Estoque da empresa
+  formTemplates     FormTemplate[] // Templates de prontuário
 }
 
 // --- MEMBROS DA EQUIPE ---
@@ -189,6 +190,7 @@ model Client {
   bookings    Booking[] 
   attachments Attachment[]
   invoices    Invoice[]
+  formEntries FormEntry[] // Prontuários preenchidos
   createdAt   DateTime  @default(now())
 }
 
@@ -260,4 +262,38 @@ model ServiceProduct {
   product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   amount      Decimal 
   @@unique([serviceId, productId])
+}
+
+// --- PRONTUÁRIOS PERSONALIZÁVEIS ---
+
+model FormTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  fields      Json     // Array de definições de campos
+  
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  entries     FormEntry[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FormEntry {
+  id          String   @id @default(cuid())
+  data        Json     // Dados preenchidos do formulário
+  
+  templateId  String
+  template    FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  companyId   String
+  filledBy    String?  // userId de quem preencheu
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -1,0 +1,371 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+    Plus, Trash2, Save, GripVertical, X, FileText, ChevronDown,
+    Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
+    Heading, Loader2, Pencil, Copy, ClipboardList
+} from "lucide-react";
+import { toast } from "sonner";
+
+type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number";
+
+interface FormField {
+    id: string;
+    type: FieldType;
+    label: string;
+    required?: boolean;
+    options?: string[];
+    placeholder?: string;
+}
+
+interface Template {
+    id: string;
+    name: string;
+    description: string | null;
+    fields: FormField[];
+    _count?: { entries: number };
+    createdAt: string;
+}
+
+const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[] = [
+    { type: "header", label: "Título de Seção", icon: Heading, desc: "Divisor visual" },
+    { type: "text", label: "Texto Curto", icon: Type, desc: "Uma linha" },
+    { type: "textarea", label: "Texto Longo", icon: AlignLeft, desc: "Múltiplas linhas" },
+    { type: "select", label: "Seleção", icon: ListOrdered, desc: "Dropdown" },
+    { type: "checkbox", label: "Sim / Não", icon: CheckSquare, desc: "Checkbox" },
+    { type: "checkboxGroup", label: "Múltipla Escolha", icon: CheckSquare, desc: "Vários itens" },
+    { type: "date", label: "Data", icon: Calendar, desc: "Calendário" },
+    { type: "number", label: "Número", icon: Hash, desc: "Valor numérico" },
+];
+
+export default function ProntuariosPage() {
+    const [templates, setTemplates] = useState<Template[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Editor State
+    const [editando, setEditando] = useState(false);
+    const [templateAtual, setTemplateAtual] = useState<Template | null>(null);
+    const [nome, setNome] = useState("");
+    const [descricao, setDescricao] = useState("");
+    const [campos, setCampos] = useState<FormField[]>([]);
+    const [salvando, setSalvando] = useState(false);
+    const [showFieldPicker, setShowFieldPicker] = useState(false);
+
+    useEffect(() => { carregarTemplates(); }, []);
+
+    async function carregarTemplates() {
+        try {
+            const res = await fetch('/api/painel/prontuarios');
+            const data = await res.json();
+            setTemplates(data);
+        } finally { setLoading(false); }
+    }
+
+    function novoTemplate() {
+        setTemplateAtual(null);
+        setNome("");
+        setDescricao("");
+        setCampos([]);
+        setEditando(true);
+    }
+
+    function editarTemplate(t: Template) {
+        setTemplateAtual(t);
+        setNome(t.name);
+        setDescricao(t.description || "");
+        setCampos(t.fields || []);
+        setEditando(true);
+    }
+
+    function adicionarCampo(type: FieldType) {
+        const novoCampo: FormField = {
+            id: crypto.randomUUID(),
+            type,
+            label: "",
+            required: false,
+            ...(type === "select" || type === "checkboxGroup" ? { options: [""] } : {})
+        };
+        setCampos([...campos, novoCampo]);
+        setShowFieldPicker(false);
+    }
+
+    function atualizarCampo(id: string, updates: Partial<FormField>) {
+        setCampos(campos.map(c => c.id === id ? { ...c, ...updates } : c));
+    }
+
+    function removerCampo(id: string) {
+        setCampos(campos.filter(c => c.id !== id));
+    }
+
+    function moverCampo(index: number, direction: -1 | 1) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= campos.length) return;
+        const nova = [...campos];
+        [nova[index], nova[newIndex]] = [nova[newIndex], nova[index]];
+        setCampos(nova);
+    }
+
+    function addOption(fieldId: string) {
+        setCampos(campos.map(c => c.id === fieldId ? { ...c, options: [...(c.options || []), ""] } : c));
+    }
+
+    function updateOption(fieldId: string, optIndex: number, value: string) {
+        setCampos(campos.map(c => {
+            if (c.id !== fieldId) return c;
+            const opts = [...(c.options || [])];
+            opts[optIndex] = value;
+            return { ...c, options: opts };
+        }));
+    }
+
+    function removeOption(fieldId: string, optIndex: number) {
+        setCampos(campos.map(c => {
+            if (c.id !== fieldId) return c;
+            return { ...c, options: (c.options || []).filter((_, i) => i !== optIndex) };
+        }));
+    }
+
+    async function salvarTemplate() {
+        if (!nome.trim()) return toast.error("Nome do prontuário é obrigatório");
+        if (campos.length === 0) return toast.error("Adicione pelo menos um campo");
+
+        const camposInvalidos = campos.filter(c => !c.label.trim() && c.type !== "header");
+        if (camposInvalidos.length > 0) return toast.error("Preencha o nome de todos os campos");
+
+        setSalvando(true);
+        try {
+            const method = templateAtual?.id ? 'PUT' : 'POST';
+            const url = templateAtual?.id ? `/api/painel/prontuarios/${templateAtual.id}` : '/api/painel/prontuarios';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nome, description: descricao, fields: campos })
+            });
+
+            if (res.ok) {
+                toast.success(templateAtual?.id ? "Prontuário atualizado!" : "Prontuário criado!");
+                setEditando(false);
+                carregarTemplates();
+            } else {
+                toast.error("Erro ao salvar");
+            }
+        } finally { setSalvando(false); }
+    }
+
+    async function excluirTemplate(id: string) {
+        const res = await fetch(`/api/painel/prontuarios/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            toast.success("Prontuário excluído!");
+            setTemplates(templates.filter(t => t.id !== id));
+        }
+    }
+
+    if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse text-xs uppercase">Carregando prontuários...</div>;
+
+    // --- EDITOR DE TEMPLATE ---
+    if (editando) {
+        return (
+            <div className="space-y-6 pb-20 p-2 font-sans">
+                {/* HEADER */}
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-800 dark:text-white">
+                            {templateAtual ? "Editar Prontuário" : "Novo Prontuário"}
+                        </h1>
+                        <p className="text-sm text-gray-500">Configure os campos que o profissional vai preencher.</p>
+                    </div>
+                    <button onClick={() => setEditando(false)} className="p-3 bg-gray-100 dark:bg-gray-800 rounded-2xl hover:bg-gray-200 transition">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* NOME E DESCRIÇÃO */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome do Prontuário</label>
+                        <input
+                            className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white"
+                            placeholder="Ex: Anamnese Odontológica"
+                            value={nome}
+                            onChange={e => setNome(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Descrição (opcional)</label>
+                        <input
+                            className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white"
+                            placeholder="Ex: Formulário de primeira consulta"
+                            value={descricao}
+                            onChange={e => setDescricao(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* CAMPOS DO FORMULÁRIO */}
+                <div className="space-y-3">
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Campos do Formulário</h3>
+
+                    {campos.map((campo, index) => (
+                        <div key={campo.id} className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-5 flex gap-4 items-start group hover:border-blue-500 transition-all">
+                            {/* DRAG HANDLE */}
+                            <div className="flex flex-col items-center gap-1 pt-2">
+                                <button onClick={() => moverCampo(index, -1)} className="text-gray-300 hover:text-blue-500 transition" disabled={index === 0}>▲</button>
+                                <GripVertical size={16} className="text-gray-300" />
+                                <button onClick={() => moverCampo(index, 1)} className="text-gray-300 hover:text-blue-500 transition" disabled={index === campos.length - 1}>▼</button>
+                            </div>
+
+                            {/* CONTEÚDO DO CAMPO */}
+                            <div className="flex-1 space-y-3">
+                                <div className="flex gap-3 items-center">
+                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-lg uppercase">
+                                        {FIELD_TYPES.find(f => f.type === campo.type)?.label}
+                                    </span>
+                                    <input
+                                        className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
+                                        placeholder={campo.type === "header" ? "Título da seção (ex: Histórico Médico)" : "Nome do campo (ex: Possui alergia?)"}
+                                        value={campo.label}
+                                        onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
+                                    />
+                                    {campo.type !== "header" && (
+                                        <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 cursor-pointer whitespace-nowrap">
+                                            <input
+                                                type="checkbox"
+                                                checked={campo.required || false}
+                                                onChange={e => atualizarCampo(campo.id, { required: e.target.checked })}
+                                                className="accent-blue-600"
+                                            />
+                                            Obrigatório
+                                        </label>
+                                    )}
+                                </div>
+
+                                {/* OPÇÕES PARA SELECT E CHECKBOX GROUP */}
+                                {(campo.type === "select" || campo.type === "checkboxGroup") && (
+                                    <div className="pl-4 space-y-2">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase">Opções:</p>
+                                        {campo.options?.map((opt, i) => (
+                                            <div key={i} className="flex gap-2 items-center">
+                                                <span className="text-[10px] text-gray-400 font-bold w-5">{i + 1}.</span>
+                                                <input
+                                                    className="flex-1 border dark:border-gray-700 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm outline-none dark:text-white"
+                                                    placeholder={`Opção ${i + 1}`}
+                                                    value={opt}
+                                                    onChange={e => updateOption(campo.id, i, e.target.value)}
+                                                />
+                                                <button onClick={() => removeOption(campo.id, i)} className="text-red-400 hover:text-red-600 transition"><X size={14} /></button>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => addOption(campo.id)} className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
+                                            <Plus size={12} /> Adicionar opção
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* BOTÃO REMOVER */}
+                            <button onClick={() => removerCampo(campo.id)} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
+                                <Trash2 size={18} />
+                            </button>
+                        </div>
+                    ))}
+
+                    {/* BOTÃO ADICIONAR CAMPO */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowFieldPicker(!showFieldPicker)}
+                            className="w-full border-2 border-dashed dark:border-gray-700 p-4 rounded-2xl text-gray-400 font-bold text-sm hover:border-blue-500 hover:text-blue-500 transition flex items-center justify-center gap-2"
+                        >
+                            <Plus size={18} /> Adicionar Campo
+                        </button>
+
+                        {showFieldPicker && (
+                            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl shadow-2xl p-4 z-50 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {FIELD_TYPES.map(ft => (
+                                    <button
+                                        key={ft.type}
+                                        onClick={() => adicionarCampo(ft.type)}
+                                        className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition text-left group"
+                                    >
+                                        <ft.icon size={20} className="mb-2 text-gray-400 group-hover:text-blue-500" />
+                                        <p className="font-bold text-sm dark:text-white">{ft.label}</p>
+                                        <p className="text-[10px] text-gray-400">{ft.desc}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* BOTÃO SALVAR */}
+                <button
+                    onClick={salvarTemplate}
+                    disabled={salvando}
+                    className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                    {salvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
+                    {salvando ? "Salvando..." : "Salvar Prontuário"}
+                </button>
+            </div>
+        );
+    }
+
+    // --- LISTA DE TEMPLATES ---
+    return (
+        <div className="space-y-6 pb-20 p-2 font-sans">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-black text-gray-800 dark:text-white">Prontuários</h1>
+                    <p className="text-sm text-gray-500">Crie formulários personalizados para seus atendimentos.</p>
+                </div>
+                <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                    <Plus size={20} /> Novo Prontuário
+                </button>
+            </div>
+
+            {templates.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
+                        <ClipboardList size={40} className="text-blue-500" />
+                    </div>
+                    <h3 className="text-xl font-black dark:text-white mb-2">Nenhum prontuário criado</h3>
+                    <p className="text-gray-500 text-sm max-w-md mb-6">
+                        Crie um prontuário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
+                        preencher durante o atendimento do cliente.
+                    </p>
+                    <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                        <Plus size={20} /> Criar Primeiro Prontuário
+                    </button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {templates.map(t => (
+                        <div key={t.id} className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] border-2 dark:border-gray-800 hover:border-blue-500 transition-all cursor-pointer group shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
+                                    <FileText size={22} />
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                    <button onClick={() => editarTemplate(t)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition">
+                                        <Pencil size={14} />
+                                    </button>
+                                    <button onClick={() => excluirTemplate(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                            <h3 className="font-black text-lg dark:text-white mb-1">{t.name}</h3>
+                            {t.description && <p className="text-xs text-gray-500 mb-3">{t.description}</p>}
+                            <div className="flex gap-3 text-[10px] font-bold text-gray-400 uppercase">
+                                <span>{(t.fields as any[])?.length || 0} campos</span>
+                                <span>•</span>
+                                <span>{t._count?.entries || 0} preenchidos</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

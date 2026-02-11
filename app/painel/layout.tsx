@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard
+    LayoutDashboard, ClipboardList
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -322,6 +322,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         // --- FUNÇÕES POR PLANO ---
         if (userPlan === "PREMIUM" || userPlan === "MASTER") {
             menuItems.push({ name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> });
+            menuItems.push({ name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> });
         }
 
         if (userPlan === "MASTER") {
