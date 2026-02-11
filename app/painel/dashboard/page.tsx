@@ -61,7 +61,7 @@ export default function DashboardPage() {
                 <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800 lg:col-span-2">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2"><Calendar className="text-blue-500" /> Agenda de Hoje</h3>
-                        <Link href="/painel" className="text-xs font-bold text-blue-600 hover:underline">Ver completa</Link>
+                        <Link href="/painel/agenda" className="text-xs font-bold text-blue-600 hover:underline">Ver completa</Link>
                     </div>
 
                     <div className="space-y-3">
