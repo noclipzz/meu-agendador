@@ -133,6 +133,7 @@ export async function POST(req: Request) {
             customer: stripeCustomerId,
             line_items: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
+            allow_promotion_codes: true, // ✅ Permite cupons de desconto
             success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel/dashboard?success=true&autoSync=true`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
             metadata: { userId: userId, plan: plan },
