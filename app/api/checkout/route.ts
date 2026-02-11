@@ -166,9 +166,28 @@ export async function GET() {
     try {
         const { userId } = await auth();
         if (!userId) {
-            console.warn("⚠️ [CHECKOUT] Super Check: Usuário não autenticado.");
             return NextResponse.json({ active: false });
         }
+
+        // --- 🔐 SUPER ADMIN VITALÍCIO ---
+        // Se for o dono do sistema, libera tudo SEMPRE.
+        const SUPER_ADMIN = "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
+
+        if (userId === SUPER_ADMIN) {
+            console.log("👑 [CHECKOUT] SUPER ADMIN DETECTADO - LIBERANDO ACESSO TOTAL");
+
+            // Busca apenas a empresa para ter o ID correto no painel
+            const myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
+
+            return NextResponse.json({
+                active: true, // Sempre ATIVO
+                plan: "MASTER", // Sempre MASTER
+                role: "ADMIN",
+                companyId: myCompany?.id, // ID da sua empresa
+                companyName: myCompany?.name
+            });
+        }
+        // --------------------------------
 
         // Função auxiliar para rodar consulta com retry
         const queryWithRetry = async (fn: () => Promise<any>) => {
