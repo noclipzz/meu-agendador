@@ -8,6 +8,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2024-12-18.acacia' as any,
 });
 
+// Força renderização dinâmica (necessário para usar auth() no Vercel)
+export const dynamic = 'force-dynamic';
+
 /**
  * Função auxiliar para verificar e ativar assinatura automaticamente
  * Usada como fallback caso o webhook do Stripe não funcione

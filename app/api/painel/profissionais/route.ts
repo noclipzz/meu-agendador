@@ -4,6 +4,9 @@ import { auth } from '@clerk/nextjs/server';
 
 const prisma = db;
 
+// Força renderização dinâmica (necessário para usar auth() no Vercel)
+export const dynamic = 'force-dynamic';
+
 // --- LISTAR PROFISSIONAIS ---
 export async function GET() {
   try {

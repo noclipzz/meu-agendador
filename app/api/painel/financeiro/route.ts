@@ -6,6 +6,9 @@ import { ptBR } from "date-fns/locale";
 
 const prisma = db;
 
+// Força renderização dinâmica (necessário para usar auth() no Vercel)
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const { userId } = await auth();
