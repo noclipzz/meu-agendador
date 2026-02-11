@@ -41,6 +41,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { refreshAgenda, companyId, setCompanyId } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
+    const [hasAccess, setHasAccess] = useState(false); // Novo: controle de acesso
     const [userRole, setUserRole] = useState<"ADMIN" | "PROFESSIONAL">("PROFESSIONAL");
     const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -149,6 +150,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         const dadosSync = await resSync.json();
                         setCompanyId(dadosSync.companyId);
                         setUserRole(dadosSync.role);
+                        setHasAccess(true); // Permite acesso para profissionais
                         setVerificando(false);
                         return;
                     }
@@ -176,6 +178,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         setUserPlan(dados.plan || "INDIVIDUAL");
                         setUserRole(dados.role);
                         setCompanyId(dados.companyId);
+                        setHasAccess(true); // Libera acesso temporário
                         setVerificando(false);
                         return;
                     }
@@ -189,6 +192,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
                 setCompanyId(dados.companyId);
+                setHasAccess(true); // Libera acesso total
                 setVerificando(false);
 
             } catch (error) {
@@ -330,9 +334,13 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (verificando) return (
+    // Bloqueia se estiver verificando OU se não tiver acesso (caso esteja redirecionando)
+    if (verificando || !hasAccess) return (
         <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
-            <Loader2 className="animate-spin text-blue-600 mb-4" size={40} /><p className="text-gray-500 font-bold animate-pulse text-sm">Acessando ambiente...</p>
+            <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+            <p className="text-gray-500 font-bold animate-pulse text-sm">
+                {verificando ? "Acessando ambiente..." : "Redirecionando..."}
+            </p>
         </div>
     );
 
