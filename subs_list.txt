@@ -1,0 +1,12 @@
+﻿[
+  {
+    userId: 'user_38nO1LGL10TPHJLkiGg0A4GaqHy',
+    stripeCustomerId: 'cus_TrZESBLufZG5sd',
+    status: 'ACTIVE'
+  },
+  {
+    userId: 'user_38aeICHQCoSI3FGUxX6SVCyvEQh',
+    stripeCustomerId: 'cus_TrZ26jLMrOPUNR',
+    status: 'ACTIVE'
+  }
+]

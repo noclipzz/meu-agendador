@@ -54,12 +54,16 @@ export async function POST(req: Request) {
 
         // Tenta achar o userId (Metadata do Stripe é a fonte mais confiável)
         let userId = obj.metadata?.userId || subscriptionDetails.metadata?.userId;
+        console.log(`🔍 [STRIPE WEBHOOK] userId do metadata da sessão: ${obj.metadata?.userId}`);
+        console.log(`🔍 [STRIPE WEBHOOK] userId do metadata da subscription: ${subscriptionDetails.metadata?.userId}`);
+        console.log(`🔍 [STRIPE WEBHOOK] userId final (primeira tentativa): ${userId}`);
 
         if (!userId && customerId) {
             console.log("🔍 [STRIPE WEBHOOK] userId não achado no metadata, tentando buscar no cliente...");
             try {
                 const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
                 userId = customer.metadata?.userId;
+                console.log(`🔍 [STRIPE WEBHOOK] userId encontrado no customer: ${userId}`);
             } catch (e) {
                 console.error("❌ [STRIPE WEBHOOK] Erro ao buscar cliente no Stripe", e);
             }
@@ -76,20 +80,30 @@ export async function POST(req: Request) {
 
         if (userId) {
             const plan = obj.metadata?.plan || subscriptionDetails.metadata?.plan || "INDIVIDUAL";
-            const expiresAt = new Date(subscriptionDetails.current_period_end * 1000);
+            const expiresAt = new Date((subscriptionDetails as any).current_period_end * 1000);
 
             // Tenta pegar o priceId de várias formas para não ficar NULL
             const priceId = subscriptionDetails.items.data[0]?.price.id ||
-                subscriptionDetails.plan?.id ||
+                (subscriptionDetails as any).plan?.id ||
                 obj.metadata?.priceId;
 
             console.log(`✅ [STRIPE WEBHOOK] Ativando assinatura para o usuário: ${userId}`);
             console.log(`📋 Dados Finais: Plano=${plan}, Expira=${expiresAt.toISOString()}, PriceID=${priceId}`);
 
             try {
-                const updatedSub = await prisma.subscription.update({
+                // UPSERT: Cria se não existir, Atualiza se existir
+                const updatedSub = await prisma.subscription.upsert({
                     where: { userId: userId },
-                    data: {
+                    update: {
+                        stripeSubscriptionId: subscriptionId,
+                        stripeCustomerId: customerId,
+                        stripePriceId: priceId,
+                        status: "ACTIVE",
+                        plan: plan,
+                        expiresAt: expiresAt
+                    },
+                    create: {
+                        userId: userId,
                         stripeSubscriptionId: subscriptionId,
                         stripeCustomerId: customerId,
                         stripePriceId: priceId,
@@ -100,7 +114,34 @@ export async function POST(req: Request) {
                 });
                 console.log(`✔️ [STRIPE WEBHOOK] Banco de dados atualizado! ID: ${updatedSub.id}, Status: ${updatedSub.status}`);
             } catch (dbError: any) {
-                console.error("❌ [STRIPE WEBHOOK] Erro ao atualizar banco de dados:", dbError.message);
+                console.error("❌ [STRIPE WEBHOOK] Erro ao salvar no banco:", dbError.message);
+                // Se falhou, tenta mais uma vez após 2 segundos
+                try {
+                    await new Promise(res => setTimeout(res, 2000));
+                    await prisma.subscription.upsert({
+                        where: { userId: userId },
+                        update: {
+                            stripeSubscriptionId: subscriptionId,
+                            stripeCustomerId: customerId,
+                            stripePriceId: priceId,
+                            status: "ACTIVE",
+                            plan: plan,
+                            expiresAt: expiresAt
+                        },
+                        create: {
+                            userId: userId,
+                            stripeSubscriptionId: subscriptionId,
+                            stripeCustomerId: customerId,
+                            stripePriceId: priceId,
+                            status: "ACTIVE",
+                            plan: plan,
+                            expiresAt: expiresAt
+                        }
+                    });
+                    console.log("✔️ [STRIPE WEBHOOK] Banco atualizado na segunda tentativa!");
+                } catch (retryError: any) {
+                    console.error("❌ [STRIPE WEBHOOK] FALHA TOTAL ao salvar assinatura:", retryError.message);
+                }
             }
         } else {
             console.error("❌ [STRIPE WEBHOOK] ERRO CRÍTICO: Não foi possível identificar o usuário dono desta assinatura.");

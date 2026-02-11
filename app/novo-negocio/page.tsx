@@ -20,8 +20,8 @@ export default function NovoNegocio() {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
                 // CORREÇÃO: Avisa o servidor que estamos enviando um JSON
-                headers: { 
-                    'Content-Type': 'application/json' 
+                headers: {
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ name: nome })
             });
@@ -32,9 +32,9 @@ export default function NovoNegocio() {
                 toast.success("Empresa configurada com sucesso!");
                 // Pequeno delay para garantir que o banco salvou antes de redirecionar
                 setTimeout(() => {
-                    router.push('/painel');
+                    router.push('/painel/dashboard');
                     // Força um recarregamento para o layout perceber a empresa nova
-                    window.location.href = '/painel';
+                    window.location.href = '/painel/dashboard';
                 }, 1000);
             } else {
                 toast.error(data.error || "Este nome já está em uso.");
@@ -55,21 +55,21 @@ export default function NovoNegocio() {
                 </div>
                 <h1 className="text-3xl font-black mb-2 dark:text-white tracking-tight">Nome da Empresa</h1>
                 <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm font-medium">Como seus clientes verão seu negócio no link de agendamento.</p>
-                
+
                 <div className="space-y-4">
-                    <input 
+                    <input
                         className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 dark:text-white font-bold transition-all text-center"
                         placeholder="Ex: Studio VIP"
                         value={nome}
                         onChange={(e) => setNome(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && criarEmpresa()}
                     />
-                    <button 
+                    <button
                         onClick={criarEmpresa}
                         disabled={loading}
                         className={`w-full p-5 rounded-2xl font-black text-lg shadow-xl transition flex items-center justify-center gap-2 ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-95'}`}
                     >
-                        {loading ? <Loader2 className="animate-spin" /> : <>Criar meu Painel <ArrowRight size={20}/></>}
+                        {loading ? <Loader2 className="animate-spin" /> : <>Criar meu Painel <ArrowRight size={20} /></>}
                     </button>
                 </div>
             </div>

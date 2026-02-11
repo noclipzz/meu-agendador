@@ -14,6 +14,7 @@ export default function GestaoEquipe() {
     const { refreshAgenda } = useAgenda();
     const [loading, setLoading] = useState(true);
     const [salvando, setSalvando] = useState(false);
+    const [userPlan, setUserPlan] = useState<string>("INDIVIDUAL"); // Detecta o plano do usuário
 
     const [profissionais, setProfissionais] = useState<any[]>([]);
     const [modalAberto, setModalAberto] = useState(false);
@@ -32,9 +33,17 @@ export default function GestaoEquipe() {
 
     async function carregarDados() {
         try {
-            const res = await fetch('/api/painel/profissionais');
-            const data = await res.json();
-            if (Array.isArray(data)) setProfissionais(data);
+            // Carrega profissionais e informações do usuário
+            const [resPro, resCheckout] = await Promise.all([
+                fetch('/api/painel/profissionais'),
+                fetch('/api/checkout')
+            ]);
+
+            const dataPro = await resPro.json();
+            if (Array.isArray(dataPro)) setProfissionais(dataPro);
+
+            const dataCheckout = await resCheckout.json();
+            setUserPlan(dataCheckout.plan || "INDIVIDUAL");
         } catch (e) {
             console.error(e);
             toast.error("Erro ao carregar lista de profissionais.");
@@ -142,10 +151,18 @@ export default function GestaoEquipe() {
                     <p className="text-gray-500 text-sm font-medium">Cadastre seus colaboradores para liberar o acesso ao sistema.</p>
                 </div>
                 <button
-                    onClick={() => setModalAberto(true)}
+                    onClick={() => {
+                        // Verifica limite do plano INDIVIDUAL
+                        if (userPlan === "INDIVIDUAL" && profissionais.length >= 1) {
+                            toast.error("O plano INDIVIDUAL permite apenas 1 profissional. Faça upgrade para PREMIUM.");
+                            return;
+                        }
+                        setModalAberto(true);
+                    }}
                     className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
                 >
                     <Plus size={20} /> Novo Profissional
+                    {userPlan === "INDIVIDUAL" && <span className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full ml-2">Máx: {profissionais.length}/1</span>}
                 </button>
             </div>
 
@@ -319,12 +336,25 @@ export default function GestaoEquipe() {
                                 <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
 
-                            {/* NOVO CAMPO: E-MAIL PARA LOGIN */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1"><Mail size={12} /> E-mail para Login (Obrigatório)</label>
-                                <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="colaborador@gmail.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={!!form.id} />
-                                {form.id && <p className="text-[9px] text-gray-400 ml-2 mt-1">O e-mail não pode ser alterado após o cadastro.</p>}
-                            </div>
+                            {/* E-MAIL PARA LOGIN - Apenas PREMIUM e MASTER */}
+                            {userPlan === "PREMIUM" || userPlan === "MASTER" ? (
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1"><Mail size={12} /> E-mail para Login (Obrigatório)</label>
+                                    <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="colaborador@gmail.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={!!form.id} />
+                                    {form.id && <p className="text-[9px] text-gray-400 ml-2 mt-1">O e-mail não pode ser alterado após o cadastro.</p>}
+                                    <p className="text-[9px] text-blue-500 ml-2 mt-1 flex items-center gap-1"><ShieldCheck size={10} /> Este profissional poderá fazer login no sistema.</p>
+                                </div>
+                            ) : (
+                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl">
+                                    <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                                        <ShieldCheck size={14} />
+                                        Plano INDIVIDUAL: Profissional sem acesso ao sistema
+                                    </p>
+                                    <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-1">
+                                        Faça upgrade para PREMIUM para permitir login de colaboradores.
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">WhatsApp</label>

@@ -86,7 +86,12 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
 
       // Se informou E-mail, cria o acesso no TeamMember (Login)
+      // PLANO INDIVIDUAL não pode criar TeamMember com login
       if (email) {
+        if (plano === "INDIVIDUAL") {
+          throw new Error("O plano INDIVIDUAL não permite criar profissionais com acesso ao sistema. Faça upgrade para PREMIUM.");
+        }
+
         const existingMember = await tx.teamMember.findUnique({ where: { email } });
         if (existingMember) {
           throw new Error("Este e-mail já está na equipe.");

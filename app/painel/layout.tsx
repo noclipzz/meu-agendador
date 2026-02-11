@@ -87,17 +87,56 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 let res = await fetch('/api/checkout');
                 let dados = await res.json();
 
-                // SE ACABOU DE VOLTAR DO CHECKOUT (success=true), VAMOS TENTAR MAIS UMA VEZ CASO AINDA ESTEJA INATIVO
-                if (!dados.active && window.location.search.includes('success=true')) {
+                const acabouDePagar = window.location.search.includes('success=true');
+                const autoSync = window.location.search.includes('autoSync=true');
+
+                // 🚀 SE TEM autoSync=true, tenta sincronizar automaticamente
+                if (autoSync && !dados.active && dados.role === "ADMIN") {
+                    console.log("🔄 [AUTO-SYNC] Detectado autoSync=true, tentando ativar assinatura automaticamente...");
+
+                    // Tenta sync automático
+                    try {
+                        const syncRes = await fetch('/api/sync-subscription', { method: 'POST' });
+                        const syncData = await syncRes.json();
+
+                        if (syncData.success) {
+                            console.log("✅ [AUTO-SYNC] Assinatura ativada automaticamente!");
+                            toast.success("Assinatura ativada com sucesso! 🎉");
+
+                            // Recarrega a página sem o autoSync
+                            window.history.replaceState({}, '', '/painel?success=true');
+                            window.location.reload();
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn("⚠️ [AUTO-SYNC] Falha na sincronização automática, continuando com polling...", e);
+                    }
+                }
+
+                // SE ACABOU DE VOLTAR DO CHECKOUT, ESPERA O WEBHOOK ATIVAR (até 15s)
+                if (!dados.active && acabouDePagar) {
                     console.log("⏳ Aguardando confirmação do pagamento...");
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    res = await fetch('/api/checkout');
-                    dados = await res.json();
+                    for (let i = 0; i < 5; i++) {
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        res = await fetch('/api/checkout');
+                        dados = await res.json();
+                        if (dados.active) {
+                            console.log("✅ Pagamento confirmado!");
+                            break;
+                        }
+                        console.log(`⏳ Tentativa ${i + 2}/5...`);
+                    }
                 }
 
                 // CASO 1: Usuário Novo ou sem vínculo
                 if (dados.role === "NEW") {
-                    // Tenta o Sync uma última vez para ver se ele foi convidado agora
+                    // Se acabou de pagar, precisa criar empresa primeiro
+                    if (acabouDePagar) {
+                        console.log("🏢 Usuário pagou, mas precisa criar empresa.");
+                        router.push('/novo-negocio');
+                        return;
+                    }
+                    // Tenta o Sync para ver se ele foi convidado
                     const resSync = await fetch('/api/sync');
                     if (resSync.ok) {
                         const dadosSync = await resSync.json();
@@ -112,6 +151,27 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 // CASO 2: Dono sem pagamento
                 if (dados.role === "ADMIN" && !dados.active) {
+                    // Se ACABOU de pagar e ainda está inativo, NÃO redireciona para planos
+                    // (o webhook pode ainda estar processando)
+                    if (acabouDePagar) {
+                        console.log("⏳ Pagamento processando... permitindo acesso temporário.");
+
+                        // Mostra toast com link para sincronização manual
+                        toast("⏳ Aguardando confirmação do pagamento...", {
+                            description: "Se o acesso não for liberado em alguns minutos, clique aqui para sincronizar manualmente.",
+                            duration: 10000,
+                            action: {
+                                label: "Sincronizar Agora",
+                                onClick: () => router.push('/sync')
+                            }
+                        });
+
+                        setUserPlan(dados.plan || "INDIVIDUAL");
+                        setUserRole(dados.role);
+                        setCompanyId(dados.companyId);
+                        setVerificando(false);
+                        return;
+                    }
                     router.push('/#planos');
                     return;
                 }
@@ -235,7 +295,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     );
 
     const menuItems = [
-        { name: "Agenda", path: "/painel", icon: <Calendar size={20} /> },
+        { name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
         { name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
     ];
 
@@ -243,10 +303,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         // --- DASHBOARD NO TOPO ---
         menuItems.unshift({ name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> });
 
+        // --- EQUIPE: TODOS OS PLANOS (INDIVIDUAL = 1 profissional sem login, PREMIUM/MASTER = múltiplos com login) ---
+        menuItems.push({ name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> });
+
         // --- FUNÇÕES POR PLANO ---
         if (userPlan === "PREMIUM" || userPlan === "MASTER") {
             menuItems.push({ name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> });
-            menuItems.push({ name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> });
         }
 
         if (userPlan === "MASTER") {

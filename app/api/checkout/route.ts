@@ -8,6 +8,61 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2024-12-18.acacia' as any,
 });
 
+/**
+ * Função auxiliar para verificar e ativar assinatura automaticamente
+ * Usada como fallback caso o webhook do Stripe não funcione
+ */
+async function verificarEAtivarAssinatura(userId: string, stripeCustomerId: string, plan: string) {
+    console.log(`🔍 [AUTO-SYNC] Verificando assinatura para usuário ${userId}...`);
+
+    try {
+        // Busca assinaturas ativas no Stripe
+        const subscriptions = await stripe.subscriptions.list({
+            customer: stripeCustomerId,
+            status: 'active',
+            limit: 1
+        });
+
+        if (subscriptions.data.length === 0) {
+            console.log("⏳ [AUTO-SYNC] Nenhuma assinatura ativa ainda. Provavelmente o pagamento ainda não foi concluído.");
+            return;
+        }
+
+        const subscription = subscriptions.data[0];
+        const priceId = subscription.items.data[0]?.price.id;
+        const expiresAt = new Date((subscription as any).current_period_end * 1000);
+
+        console.log(`✅ [AUTO-SYNC] Assinatura ativa encontrada: ${subscription.id}`);
+
+        // Atualiza no banco
+        await prisma.subscription.upsert({
+            where: { userId },
+            update: {
+                stripeSubscriptionId: subscription.id,
+                stripeCustomerId: stripeCustomerId,
+                stripePriceId: priceId,
+                status: "ACTIVE",
+                plan: plan,
+                expiresAt: expiresAt
+            },
+            create: {
+                userId: userId,
+                stripeSubscriptionId: subscription.id,
+                stripeCustomerId: stripeCustomerId,
+                stripePriceId: priceId,
+                status: "ACTIVE",
+                plan: plan,
+                expiresAt: expiresAt
+            }
+        });
+
+        console.log(`💾 [AUTO-SYNC] Assinatura ativada automaticamente no banco!`);
+    } catch (error: any) {
+        console.error(`❌ [AUTO-SYNC] Erro ao verificar/ativar assinatura:`, error.message);
+        throw error;
+    }
+}
+
 export async function POST(req: Request) {
     console.log("🚀 [CHECKOUT] Iniciando criação de sessão...");
     try {
@@ -75,7 +130,7 @@ export async function POST(req: Request) {
             customer: stripeCustomerId,
             line_items: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel?success=true`,
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/painel/dashboard?success=true&autoSync=true`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?canceled=true`,
             metadata: { userId: userId, plan: plan },
             subscription_data: {
@@ -84,6 +139,18 @@ export async function POST(req: Request) {
         });
 
         console.log("✅ [CHECKOUT] Sessão criada com sucesso!");
+
+        // 🚀 MELHORIA: Inicia verificação em background (não espera terminar)
+        // Isso garante que mesmo se o webhook falhar, a assinatura será ativada
+        setTimeout(async () => {
+            try {
+                console.log("🔄 [CHECKOUT] Iniciando auto-sync em background...");
+                await verificarEAtivarAssinatura(userId, stripeCustomerId, plan);
+            } catch (err) {
+                console.warn("⚠️ [CHECKOUT] Auto-sync em background falhou (não é crítico):", err);
+            }
+        }, 5000); // Espera 5 segundos após criar a sessão
+
         return NextResponse.json({ url: session.url });
 
     } catch (error: any) {
