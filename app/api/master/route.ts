@@ -7,7 +7,7 @@ const prisma = db;
 // Força renderização dinâmica
 export const dynamic = 'force-dynamic';
 
-const SUPER_ADMIN_ID = process.env.SUPER_ADMIN_ID || "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
+const SUPER_ADMIN_ID = process.env.SUPER_ADMIN_ID || "user_39S9qNrKwwgObMZffifdZyNKUKm";
 
 // DASHBOARD - GET: Retorna estatísticas completas
 export async function GET() {
@@ -104,15 +104,30 @@ export async function GET() {
       return acc;
     }, {});
 
-    // Últimos 6 meses de crescimento (mock - você pode calcular real depois)
-    const crescimentoMensal = [
-      { mes: 'Jul', valor: mrr * 0.6, clientes: Math.floor(totalEmpresas * 0.6) },
-      { mes: 'Ago', valor: mrr * 0.7, clientes: Math.floor(totalEmpresas * 0.7) },
-      { mes: 'Set', valor: mrr * 0.8, clientes: Math.floor(totalEmpresas * 0.8) },
-      { mes: 'Out', valor: mrr * 0.85, clientes: Math.floor(totalEmpresas * 0.85) },
-      { mes: 'Nov', valor: mrr * 0.92, clientes: Math.floor(totalEmpresas * 0.92) },
-      { mes: 'Dez', valor: mrr, clientes: totalEmpresas },
-    ];
+    // Últimos 6 meses de crescimento (DADOS REAIS baseados nas datas de criação)
+    const mesesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const crescimentoMensal = [];
+    for (let i = 5; i >= 0; i--) {
+      const data = new Date();
+      data.setMonth(data.getMonth() - i);
+      const mes = data.getMonth();
+      const ano = data.getFullYear();
+
+      // Filtra empresas ativas naquele mês (criadas até o final do mês E com assinatura ativa)
+      const empresasNoMes = dadosCompletos.filter(e => {
+        const criacao = new Date(e.createdAt);
+        const fimDoMes = new Date(ano, mes + 1, 0, 23, 59, 59);
+        return criacao <= fimDoMes && e.status === 'ACTIVE';
+      });
+
+      const receitaNoMes = empresasNoMes.reduce((acc, e) => acc + e.valor, 0);
+
+      crescimentoMensal.push({
+        mes: mesesNomes[mes],
+        valor: receitaNoMes,
+        clientes: empresasNoMes.length
+      });
+    }
 
     // Assinaturas vencendo nos próximos 7 dias
     const hoje = new Date();
