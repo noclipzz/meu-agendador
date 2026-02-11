@@ -179,7 +179,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         setVerificando(false);
                         return;
                     }
-                    router.push('/#planos');
+                    // Redireciona para a página de planos (URL completa)
+                    console.log("🚫 Sem assinatura ativa. Redirecionando para planos...");
+                    window.location.href = 'https://www.nohud.com.br/#planos';
                     return;
                 }
 
