@@ -16,7 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 
-const SUPER_ADMIN_ID = process.env.NEXT_PUBLIC_SUPER_ADMIN_ID || "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
+const SUPER_ADMIN_ID = "user_39S9qNrKwwgObMZffifdZyNKUKm";
 
 export default function MasterLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -87,8 +87,8 @@ export default function MasterLayout({ children }: { children: React.ReactNode }
                 key={item.path}
                 href={item.path}
                 className={`flex items-center gap-3 p-3 rounded-xl transition-all ${isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                    : 'hover:bg-gray-800 text-gray-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                  : 'hover:bg-gray-800 text-gray-400 hover:text-white'
                   } ${!sidebarOpen && 'justify-center'}`}
               >
                 {item.icon}
