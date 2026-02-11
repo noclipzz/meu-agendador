@@ -29,14 +29,27 @@ export default function DashboardPage() {
         <div className="p-6 space-y-8 pb-20 font-sans">
 
             {/* BOAS VINDAS */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-800 dark:text-white">Visão Geral</h1>
                     <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
                 </div>
                 {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && (
-                    <div className="bg-green-100 text-green-700 px-4 py-2 rounded-2xl font-black text-sm flex items-center gap-2">
-                        <DollarSign size={16} /> Faturamento Mês: R$ {dados.resumoFinanceiro?.totalMes.toLocaleString()}
+                    <div className="relative group cursor-default">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition duration-500" />
+                        <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 px-6 py-4 rounded-2xl shadow-xl flex items-center gap-4">
+                            <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-xl">
+                                <DollarSign size={22} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-emerald-100 font-bold">
+                                    Faturamento {format(new Date(), 'MMMM', { locale: ptBR })}
+                                </p>
+                                <p className="text-2xl font-black text-white leading-tight">
+                                    R$ {dados.resumoFinanceiro?.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
