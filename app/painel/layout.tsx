@@ -90,6 +90,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 const acabouDePagar = window.location.search.includes('success=true');
                 const autoSync = window.location.search.includes('autoSync=true');
 
+                console.log("🔍 [DEBUG] URL params:", { acabouDePagar, autoSync, active: dados.active, role: dados.role });
+
                 // 🚀 SE TEM autoSync=true, tenta sincronizar automaticamente
                 if (autoSync && !dados.active && dados.role === "ADMIN") {
                     console.log("🔄 [AUTO-SYNC] Detectado autoSync=true, tentando ativar assinatura automaticamente...");
@@ -99,16 +101,21 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         const syncRes = await fetch('/api/sync-subscription', { method: 'POST' });
                         const syncData = await syncRes.json();
 
+                        console.log("📊 [AUTO-SYNC] Resposta da API:", syncData);
+
                         if (syncData.success) {
                             console.log("✅ [AUTO-SYNC] Assinatura ativada automaticamente!");
                             toast.success("Assinatura ativada com sucesso! 🎉");
 
                             // Recarrega a página sem o autoSync
-                            window.history.replaceState({}, '', '/painel?success=true');
+                            window.history.replaceState({}, '', '/painel/dashboard');
                             window.location.reload();
                             return;
+                        } else {
+                            console.warn("⚠️ [AUTO-SYNC] API retornou success=false:", syncData);
                         }
                     } catch (e) {
+                        console.error("❌ [AUTO-SYNC] Erro ao chamar API:", e);
                         console.warn("⚠️ [AUTO-SYNC] Falha na sincronização automática, continuando com polling...", e);
                     }
                 }

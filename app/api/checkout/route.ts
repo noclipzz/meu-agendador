@@ -143,16 +143,8 @@ export async function POST(req: Request) {
 
         console.log("✅ [CHECKOUT] Sessão criada com sucesso!");
 
-        // 🚀 MELHORIA: Inicia verificação em background (não espera terminar)
-        // Isso garante que mesmo se o webhook falhar, a assinatura será ativada
-        setTimeout(async () => {
-            try {
-                console.log("🔄 [CHECKOUT] Iniciando auto-sync em background...");
-                await verificarEAtivarAssinatura(userId, stripeCustomerId, plan);
-            } catch (err) {
-                console.warn("⚠️ [CHECKOUT] Auto-sync em background falhou (não é crítico):", err);
-            }
-        }, 5000); // Espera 5 segundos após criar a sessão
+        // ⚠️ NOTA: O auto-sync em background via setTimeout não funciona em ambiente serverless (Vercel)
+        // A assinatura será ativada automaticamente pelo frontend quando o usuário retornar (autoSync=true)
 
         return NextResponse.json({ url: session.url });
 
