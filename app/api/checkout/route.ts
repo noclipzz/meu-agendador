@@ -171,7 +171,7 @@ export async function GET() {
 
         // --- 🔐 SUPER ADMIN VITALÍCIO ---
         // Se for o dono do sistema, libera tudo SEMPRE.
-        const SUPER_ADMIN = "user_38aeICHQCoSI3FGUxX6SVCyvEQh";
+        const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
 
         if (userId === SUPER_ADMIN) {
             console.log("👑 [CHECKOUT] SUPER ADMIN DETECTADO - LIBERANDO ACESSO TOTAL");
