@@ -27,7 +27,7 @@ export default function Configuracoes() {
     const [interval, setInterval] = useState(30);
     const [workDays, setWorkDays] = useState<string[]>([]);
     const [monthlyGoal, setMonthlyGoal] = useState("5000");
-    const [idEmpresa, setIdEmpresa] = useState("");
+    const [clerkUserId, setClerkUserId] = useState("");
 
     const [whatsappMessage, setWhatsappMessage] = useState("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.");
     const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
@@ -39,7 +39,7 @@ export default function Configuracoes() {
             const resConfig = await fetch('/api/painel/config');
             const dataConfig = await resConfig.json();
             if (dataConfig && dataConfig.id) {
-                setIdEmpresa(dataConfig.id);
+                setClerkUserId(dataConfig.ownerId || "");
                 setName(dataConfig.name || "");
                 setNotificationEmail(dataConfig.notificationEmail || "");
                 setInstagramUrl(dataConfig.instagramUrl || "");
@@ -116,8 +116,11 @@ export default function Configuracoes() {
         <div className="max-w-4xl mx-auto space-y-8 pb-20 p-4 font-sans">
 
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex justify-between items-center text-sm dark:bg-gray-900/50 dark:border-gray-700">
-                <span className="text-blue-800 font-bold dark:text-blue-200 uppercase text-[10px] tracking-widest">ID para Suporte Técnico:</span>
-                <code className="bg-white px-2 py-1 rounded border text-gray-600 font-mono select-all dark:bg-gray-800 dark:text-gray-300 text-xs">{idEmpresa}</code>
+                <div>
+                    <span className="text-blue-800 font-bold dark:text-blue-200 uppercase text-[10px] tracking-widest">Clerk ID (Suporte Técnico)</span>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">Use este ID para suporte no painel administrativo</p>
+                </div>
+                <code className="bg-white px-3 py-2 rounded border text-gray-600 font-mono select-all dark:bg-gray-800 dark:text-gray-300 text-xs">{clerkUserId}</code>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border dark:border-gray-800">

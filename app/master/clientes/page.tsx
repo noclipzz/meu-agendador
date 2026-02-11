@@ -137,7 +137,7 @@ export default function MasterClientes() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                     <input
                         type="text"
-                        placeholder="Buscar por nome, slug ou ID..."
+                        placeholder="Buscar por nome, slug ou Clerk ID..."
                         value={busca}
                         onChange={(e) => setBusca(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl text-white placeholder-gray-500 outline-none focus:border-blue-500"
@@ -193,9 +193,9 @@ export default function MasterClientes() {
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${emp.plano === 'MASTER' ? 'bg-yellow-600/20 text-yellow-400' :
-                                                emp.plano === 'PREMIUM' ? 'bg-purple-600/20 text-purple-400' :
-                                                    emp.plano === 'INDIVIDUAL' ? 'bg-blue-600/20 text-blue-400' :
-                                                        'bg-gray-700 text-gray-400'
+                                            emp.plano === 'PREMIUM' ? 'bg-purple-600/20 text-purple-400' :
+                                                emp.plano === 'INDIVIDUAL' ? 'bg-blue-600/20 text-blue-400' :
+                                                    'bg-gray-700 text-gray-400'
                                             }`}>
                                             {emp.plano}
                                         </span>
