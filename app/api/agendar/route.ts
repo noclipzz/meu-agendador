@@ -89,7 +89,26 @@ export async function POST(req: Request) {
             }
         });
 
-        // 5. ENVIO DE E-MAILS (RESEND)
+        // 5. VERIFICAÇÃO DE ESTOQUE CRÍTICO
+        const warnings: string[] = [];
+        if (serviceId) {
+            const serviceWithProducts = await prisma.service.findUnique({
+                where: { id: serviceId },
+                include: { products: { include: { product: true } } }
+            });
+
+            if (serviceWithProducts?.products) {
+                for (const sp of serviceWithProducts.products) {
+                    const p = sp.product;
+                    // Se o estoque atual for menor ou igual ao mínimo
+                    if (Number(p.quantity) <= Number(p.minStock)) {
+                        warnings.push(`⚠️ Atenção: O produto "${p.name}" está com estoque baixo (${Number(p.quantity)} ${p.unit}).`);
+                    }
+                }
+            }
+        }
+
+        // 6. ENVIO DE E-MAILS (RESEND)
         const dataFormatada = format(new Date(date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
         const nomeServico = service?.name || "Atendimento";
         const nomeProfissional = professional?.name || "Profissional da Equipe";
@@ -99,6 +118,16 @@ export async function POST(req: Request) {
         if (company?.notificationEmail) {
             try {
                 console.log("📨 [DEBUG] Tentando enviar e-mail para admin:", company.notificationEmail);
+
+                const warningHtml = warnings.length > 0
+                    ? `<div style="background:#fff7ed; border-left:4px solid #f97316; padding:15px; margin:20px 0;">
+                       <p style="color:#c2410c; margin:0; font-weight:bold;">Avisos de Estoque:</p>
+                       <ul style="color:#c2410c; margin:5px 0 0 20px; padding:0;">
+                         ${warnings.map(w => `<li>${w}</li>`).join('')}
+                       </ul>
+                     </div>`
+                    : '';
+
                 const { data, error } = await resend.emails.send({
                     from: `NOHUD App <nao-responda@nohud.com.br>`,
                     to: company.notificationEmail,
@@ -108,6 +137,9 @@ export async function POST(req: Request) {
                     <p><strong>Cliente:</strong> ${name} (${phone})</p>
                     <p><strong>Serviço:</strong> ${nomeServico}</p>
                     <p><strong>Data:</strong> ${dataFormatada}</p>
+                    
+                    ${warningHtml}
+
                     <br/>
                     <a href="https://meu-agendador-kappa.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel</a>
                 `
@@ -125,7 +157,7 @@ export async function POST(req: Request) {
             console.log("⚠️ [DEBUG] Empresa não possui email de notificação configurado.");
         }
 
-        return NextResponse.json(booking);
+        return NextResponse.json({ ...booking, warnings });
 
     } catch (error) {
         console.error("ERRO_AGENDAR:", error);

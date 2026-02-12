@@ -290,6 +290,14 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
             if (res.ok) {
                 toast.success(tipoAgendamento === "CLIENTE" ? "Agendado com sucesso!" : "Evento criado!");
+
+                // Exibir avisos de estoque se houver
+                if (data.warnings && data.warnings.length > 0) {
+                    data.warnings.forEach((warning: string) => {
+                        toast.warning(warning, { duration: 6000 });
+                    });
+                }
+
                 setIsModalOpen(false);
                 setNovo({ clientId: "", nome: "", phone: "", local: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
                 if (refreshAgenda) refreshAgenda();
