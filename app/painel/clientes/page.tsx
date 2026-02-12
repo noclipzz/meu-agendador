@@ -44,7 +44,7 @@ export default function ClientesPage() {
     const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
-    const [empresaInfo, setEmpresaInfo] = useState<{ name: string; logo: string }>({ name: "", logo: "" });
+    const [empresaInfo, setEmpresaInfo] = useState<{ name: string; logo: string; plan: string }>({ name: "", logo: "", plan: "" });
 
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
@@ -57,7 +57,7 @@ export default function ClientesPage() {
         try {
             const res = await fetch('/api/painel/config');
             const data = await res.json();
-            if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "" });
+            if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "", plan: data.plan || "" });
         } catch { }
     }
 
@@ -457,7 +457,9 @@ export default function ClientesPage() {
                             <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400"}`}>Geral</button>
                             <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
                             <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
-                            <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
+                            {empresaInfo.plan === "MASTER" && (
+                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
+                            )}
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">

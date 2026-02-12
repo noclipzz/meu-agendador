@@ -322,10 +322,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         // --- FUNÇÕES POR PLANO ---
         if (userPlan === "PREMIUM" || userPlan === "MASTER") {
             menuItems.push({ name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> });
-            menuItems.push({ name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> });
         }
 
         if (userPlan === "MASTER") {
+            menuItems.push({ name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> });
             menuItems.push({ name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> });
         }
 
