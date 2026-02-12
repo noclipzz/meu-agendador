@@ -195,7 +195,8 @@ export async function PUT(req: Request) {
       data: {
         name: body.name,
         phone: body.phone,
-        color: body.color
+        color: body.color,
+        photoUrl: body.photoUrl
       }
     });
 

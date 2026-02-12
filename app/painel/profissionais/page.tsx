@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
-    Users, History, Star, Calendar, Clock, Mail
+    Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,7 +35,8 @@ export default function GestaoEquipe() {
         name: "",
         email: "", // NOVO CAMPO EMAIL
         phone: "",
-        color: "#3b82f6"
+        color: "#3b82f6",
+        photoUrl: ""
     });
 
     useEffect(() => { carregarDados(); }, []);
@@ -75,6 +76,24 @@ export default function GestaoEquipe() {
 
         return { totalGeral, totalComissao, atendimentos: confirmados.length };
     };
+
+    async function handleUploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        // setSalvando(true); // Opcional: mostrar loading no botão de upload
+        toast.info("Enviando foto...");
+        try {
+            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
+            const blob = await resUpload.json();
+            if (blob.url) {
+                setForm(prev => ({ ...prev, photoUrl: blob.url }));
+                toast.success("Foto enviada!");
+            } else {
+                toast.error("Erro ao processar imagem.");
+            }
+        } catch (error) { toast.error("Erro no upload."); }
+        // finally { setSalvando(false); }
+    }
 
     async function salvarProfissional() {
         if (!form.name) return toast.error("O nome é obrigatório.");
@@ -132,14 +151,15 @@ export default function GestaoEquipe() {
             name: p.name,
             email: p.email || "",
             phone: formatarTelefone(p.phone || ""),
-            color: p.color || "#3b82f6"
+            color: p.color || "#3b82f6",
+            photoUrl: p.photoUrl || ""
         });
         setModalAberto(true);
     }
 
     function fecharModal() {
         setModalAberto(false);
-        setForm({ id: "", name: "", email: "", phone: "", color: "#3b82f6" });
+        setForm({ id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "" });
     }
 
     if (loading) return (
@@ -187,10 +207,10 @@ export default function GestaoEquipe() {
                         >
                             <div className="flex justify-between items-start mb-6">
                                 <div
-                                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg"
-                                    style={{ backgroundColor: p.color }}
+                                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg overflow-hidden shrink-0"
+                                    style={{ backgroundColor: p.photoUrl ? 'transparent' : p.color }}
                                 >
-                                    {p.name.charAt(0)}
+                                    {p.photoUrl ? <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" /> : p.name.charAt(0)}
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Produção</p>
@@ -227,8 +247,8 @@ export default function GestaoEquipe() {
                         {/* HEADER DA FICHA */}
                         <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
                             <div className="flex items-center gap-6">
-                                <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl" style={{ backgroundColor: proSelecionado.color }}>
-                                    {proSelecionado.name.charAt(0)}
+                                <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl overflow-hidden shrink-0" style={{ backgroundColor: proSelecionado.photoUrl ? 'transparent' : proSelecionado.color }}>
+                                    {proSelecionado.photoUrl ? <img src={proSelecionado.photoUrl} alt={proSelecionado.name} className="w-full h-full object-cover" /> : proSelecionado.name.charAt(0)}
                                 </div>
                                 <div>
                                     <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
@@ -338,6 +358,23 @@ export default function GestaoEquipe() {
                     <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
                         <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
                         <h2 className="text-3xl font-black mb-8 dark:text-white tracking-tighter">{form.id ? "Editar Membro" : "Novo Profissional"}</h2>
+
+                        {/* FOTO UPLOAD */}
+                        <div className="flex gap-4 items-center mb-6">
+                            <div className="w-20 h-20 rounded-3xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border-2 dark:border-gray-700">
+                                {form.photoUrl ? <img src={form.photoUrl} className="w-full h-full object-cover" /> : <UserCircle size={40} className="text-gray-300" />}
+                            </div>
+                            <div className="flex-1 space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase">Foto do Perfil</label>
+                                <div className="flex gap-2">
+                                    <input className="flex-1 border-2 dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-xs font-bold dark:text-white outline-none" placeholder="Cole o link..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} />
+                                    <label className="bg-blue-100 hover:bg-blue-200 text-blue-600 p-3 rounded-xl cursor-pointer transition flex items-center justify-center h-[42px] w-[42px]">
+                                        <UploadCloud size={20} />
+                                        <input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
 
                         <div className="space-y-5">
                             <div>
