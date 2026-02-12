@@ -21,6 +21,20 @@ const formatarTelefone = (value: string) => {
     return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
 };
 
+const formatarCPF = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 11);
+    if (raw.length <= 3) return raw;
+    if (raw.length <= 6) return `${raw.slice(0, 3)}.${raw.slice(3)}`;
+    if (raw.length <= 9) return `${raw.slice(0, 3)}.${raw.slice(3, 6)}.${raw.slice(6)}`;
+    return `${raw.slice(0, 3)}.${raw.slice(3, 6)}.${raw.slice(6, 9)}-${raw.slice(9)}`;
+};
+
+const formatarCEP = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 8);
+    if (raw.length <= 5) return raw;
+    return `${raw.slice(0, 5)}-${raw.slice(5)}`;
+};
+
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [busca, setBusca] = useState("");
@@ -59,6 +73,30 @@ export default function ClientesPage() {
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
         birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO"
     });
+
+    async function handleCEPChange(cep: string) {
+        const formatado = formatarCEP(cep);
+        setForm(prev => ({ ...prev, cep: formatado }));
+
+        const cleanCEP = formatado.replace(/\D/g, "");
+        if (cleanCEP.length === 8) {
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setForm(prev => ({
+                        ...prev,
+                        cep: formatado,
+                        address: `${data.logradouro}${data.bairro ? ', ' + data.bairro : ''}`,
+                        city: `${data.localidade} - ${data.uf}`
+                    }));
+                    toast.success("Endereço localizado!");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CEP:", error);
+            }
+        }
+    }
 
     useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
 
@@ -719,13 +757,13 @@ export default function ClientesPage() {
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nascimento</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
                                 </div>
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CPF</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.cpf} onChange={e => setForm({ ...form, cpf: e.target.value })} /></div>
+                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CPF</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} /></div>
                             </div>
                             <div className="space-y-5">
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Endereço Residencial</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Cidade</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CEP</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.cep} onChange={e => setForm({ ...form, cep: e.target.value })} /></div>
+                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CEP</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="00000-000" value={form.cep} onChange={e => handleCEPChange(e.target.value)} /></div>
                                 </div>
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Status</label><select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 font-bold dark:text-white outline-none" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="ATIVO">ATIVO</option><option value="INATIVO">INATIVO</option></select></div>
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Notas Iniciais</label><textarea rows={2} className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none dark:text-white font-bold" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
