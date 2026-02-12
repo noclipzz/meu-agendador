@@ -457,7 +457,7 @@ export default function ClientesPage() {
                             <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400"}`}>Geral</button>
                             <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
                             <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
-                            {empresaInfo.plan !== "INDIVIDUAL" && empresaInfo.plan !== "PREMIUM" && (
+                            {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
                                 <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
                             )}
                         </div>

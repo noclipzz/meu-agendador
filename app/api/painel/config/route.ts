@@ -33,7 +33,16 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json(config);
+    if (!config) {
+      return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+    }
+
+    // Busca o plano do DONO da empresa
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: config.ownerId }
+    });
+
+    return NextResponse.json({ ...config, plan: subscription?.plan || "FREE" });
   } catch (error) {
     console.error("ERRO_GET_CONFIG:", error);
     return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 });
