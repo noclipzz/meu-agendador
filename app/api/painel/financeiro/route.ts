@@ -9,7 +9,7 @@ const prisma = db;
 // Força renderização dinâmica (necessário para usar auth() no Vercel)
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const { userId } = await auth();
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
@@ -23,29 +23,43 @@ export async function GET() {
             return NextResponse.json({ error: "O Módulo Financeiro está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
         }
 
+        // PEGA A DATA DA URL OU USA A ATUAL
+        const { searchParams } = new URL(request.url);
+        const mesParam = searchParams.get('month');
+        const anoParam = searchParams.get('year');
+
         const hoje = new Date();
-        const inicioMes = startOfMonth(hoje);
-        const fimMes = endOfMonth(hoje);
-        const inicioMesAnterior = startOfMonth(subMonths(hoje, 1));
-        const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
+        // Se vier parametros, monta a data de referência. Senão usa hoje.
+        const dataReferencia = (mesParam && anoParam)
+            ? new Date(Number(anoParam), Number(mesParam) - 1, 1) // Meses no JS são 0-11
+            : hoje;
 
-        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES) - OTIMIZADO ---
+        const inicioMes = startOfMonth(dataReferencia);
+        const fimMes = endOfMonth(dataReferencia);
+
+        // Para comparação (Mês Anterior ao selecionado)
+        const inicioMesAnterior = startOfMonth(subMonths(dataReferencia, 1));
+        const fimMesAnterior = endOfMonth(subMonths(dataReferencia, 1));
+
+        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES A PARTIR DE HOJE, FIXO) ---
+        // O gráfico geralmente mostra a evolução recente, independente do filtro de "visualização do mês"
         const seisMesesAtras = startOfMonth(subMonths(hoje, 5));
+        const fimMesAtual = endOfMonth(hoje);
 
-        // Busca tudo de uma vez para os últimos 6 meses
-        const [todasReceitas, todasDespesas] = await Promise.all([
+        // Busca tudo de uma vez para os últimos 6 meses (GRÁFICO)
+        const [todasReceitasGrafico, todasDespesasGrafico] = await Promise.all([
             prisma.invoice.findMany({
                 where: {
                     companyId: company.id,
                     status: 'PAGO',
-                    paidAt: { gte: seisMesesAtras, lte: fimMes }
+                    paidAt: { gte: seisMesesAtras, lte: fimMesAtual }
                 },
                 select: { value: true, paidAt: true }
             }),
             prisma.expense.findMany({
                 where: {
                     companyId: company.id,
-                    date: { gte: seisMesesAtras, lte: fimMes }
+                    date: { gte: seisMesesAtras, lte: fimMesAtual }
                 },
                 select: { value: true, date: true }
             })
@@ -56,16 +70,16 @@ export async function GET() {
             end: hoje
         });
 
-        // Processa os dados em memória (JS) para não bater no banco 12 vezes
+        // Processa os dados do GRÁFICO
         const fluxoCaixa = mesesGrafico.map((data) => {
             const inicio = startOfMonth(data);
             const fim = endOfMonth(data);
 
-            const receitaMes = todasReceitas
+            const receitaMes = todasReceitasGrafico
                 .filter(r => r.paidAt && r.paidAt >= inicio && r.paidAt <= fim)
                 .reduce((acc, curr) => acc + Number(curr.value), 0);
 
-            const despesaMes = todasDespesas
+            const despesaMes = todasDespesasGrafico
                 .filter(d => d.date && d.date >= inicio && d.date <= fim)
                 .reduce((acc, curr) => acc + Number(curr.value), 0);
 
@@ -77,21 +91,21 @@ export async function GET() {
         });
         // -------------------------------------------------------
 
-        // Consultas Paralelas (Performance) para o restante da página
+        // Consultas Paralelas (Performance) para o restante da página (USANDO DATA SELECIONADA)
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
-            // 1. Receitas do Mês Atual (PAGO)
+            // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
                 where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } }
             }),
-            // 2. Despesas do Mês Atual
+            // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
                 where: { companyId: company.id, date: { gte: inicioMes, lte: fimMes } }
             }),
-            // 3. Receitas Mês Anterior (Para comparar crescimento)
+            // 3. Receitas Mês Anterior ao SELECIONADO
             prisma.invoice.findMany({
                 where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior } }
             }),
-            // 4. Ranking Serviços (Top 5)
+            // 4. Ranking Serviços (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['serviceId'],
                 where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
@@ -99,7 +113,7 @@ export async function GET() {
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
             }),
-            // 5. Ranking Profissionais (Top 5)
+            // 5. Ranking Profissionais (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['professionalId'],
                 where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
@@ -107,28 +121,31 @@ export async function GET() {
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
             }),
-            // 6. Todas as Despesas (Para listagem)
+            // 6. Despesas LISTGEM - DO MÊS SELECIONADO (Removendo limite 20 pra ver todas do mês)
             prisma.expense.findMany({
-                where: { companyId: company.id },
-                orderBy: { date: 'desc' },
-                take: 20
+                where: { companyId: company.id, date: { gte: inicioMes, lte: fimMes } },
+                orderBy: { date: 'desc' }
             }),
-            // 7. BOLETOS VENCIDOS
+            // 7. BOLETOS VENCIDOS (Global, pois vencido é vencido independente do mês que eu olho? Ou filtro? Geralmente Vencido mostra tudo que tá pendente pra trás)
             prisma.invoice.findMany({
                 where: {
                     companyId: company.id,
                     status: "PENDENTE",
-                    dueDate: { lt: startOfDay(hoje) } // Vencimento menor que hoje
+                    dueDate: { lt: startOfDay(hoje) } // Vencido em relação a HOJE sempre
                 },
                 include: { client: true },
                 orderBy: { dueDate: 'asc' }
             }),
-            // 8. BOLETOS A VENCER/EM ABERTO
+            // 8. BOLETOS A VENCER (Mostrar do mês selecionado ou global? Se estou olhando 'Dezembro', quero ver contas de Dezembro. Mas a lógica original era 'Futuro'. Vou manter lógica original de 'A partir de hoje' se não tiver filtro, mas se tiver filtro, talvez mostrar contas daquele mês?)
+            // MANTENDO A LÓGICA ORIGINAL PARA BOLETOS (FINANCEIRO GERAL), MAS SE O USUÁRIO QUER VER "PRÓXIMOS MESES", ELE VAI NAVEGAR NOS MESES.
+            // Para "Contas a Receber" no card, faz sentido mostrar as do mês selecionado se for futuro.
             prisma.invoice.findMany({
                 where: {
                     companyId: company.id,
                     status: "PENDENTE",
-                    dueDate: { gte: startOfDay(hoje) } // Vencimento maior ou igual a hoje
+                    // Se a data selecionada for futura, mostra boletos daquele mês. Se for passado/presente, mostra a partir de hoje? 
+                    // Vamos simplificar: A receber NAQUELE mês.
+                    dueDate: { gte: inicioMes, lte: fimMes }
                 },
                 include: { client: true },
                 orderBy: { dueDate: 'asc' }
@@ -170,12 +187,12 @@ export async function GET() {
                 crescimento: Math.round(crescimento),
                 comissoes: 0
             },
-            fluxoCaixa, // Array com os últimos 6 meses preenchidos
+            fluxoCaixa,
             rankingServicos,
             rankingProfissionais,
             allExpenses,
-            boletosVencidos,
-            boletosAbertos
+            boletosVencidos, // Sempre geral
+            boletosAbertos // Agora filtrado pelo mês
         });
 
     } catch (error) {

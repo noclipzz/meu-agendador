@@ -8,10 +8,10 @@ import {
 import {
     TrendingUp, ArrowDownCircle, ArrowUpCircle, Repeat, Trash2, Pencil, CheckCircle2,
     AlertTriangle, Calendar, MessageCircle, Printer, FileText, DollarSign, Receipt,
-    Loader2, X // <--- ADICIONADO AQUI
+    Loader2, X, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function FinanceiroPage() {
@@ -30,11 +30,15 @@ export default function FinanceiroPage() {
         date: new Date().toISOString().split('T')[0]
     });
 
-    useEffect(() => { carregarDados(); }, []);
+    const [dataSelecionada, setDataSelecionada] = useState(new Date());
 
-    async function carregarDados() {
+    useEffect(() => { carregarDados(dataSelecionada); }, [dataSelecionada]);
+
+    async function carregarDados(dataBase = new Date()) {
         try {
-            const res = await fetch('/api/painel/financeiro');
+            const mes = dataBase.getMonth() + 1;
+            const ano = dataBase.getFullYear();
+            const res = await fetch(`/api/painel/financeiro?month=${mes}&year=${ano}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setDados(data);
@@ -70,7 +74,7 @@ export default function FinanceiroPage() {
             if (res.ok) {
                 toast.success(novaDespesa.id ? "Alteração salva!" : "Gasto registrado!");
                 fecharModal();
-                carregarDados();
+                carregarDados(dataSelecionada);
             } else {
                 toast.error("Erro ao processar operação.");
             }
@@ -82,7 +86,7 @@ export default function FinanceiroPage() {
         if (!confirm("Deseja remover este gasto?")) return;
         try {
             const res = await fetch('/api/painel/financeiro/despesas', { method: 'DELETE', body: JSON.stringify({ id }) });
-            if (res.ok) { toast.success("Despesa removida."); carregarDados(); }
+            if (res.ok) { toast.success("Despesa removida."); carregarDados(dataSelecionada); }
         } catch (error) { toast.error("Erro ao excluir."); }
     }
 
@@ -96,7 +100,7 @@ export default function FinanceiroPage() {
             });
             if (res.ok) {
                 toast.success("Recebimento confirmado!");
-                carregarDados();
+                carregarDados(dataSelecionada);
             } else {
                 toast.error("Erro ao baixar.");
             }
@@ -160,6 +164,15 @@ export default function FinanceiroPage() {
                     >
                         <ArrowDownCircle size={20} /> Lançar Despesa
                     </button>
+                </div>
+            </div>
+
+            {/* --- SELETOR DE MÊS --- */}
+            <div className="flex items-center justify-center md:justify-start gap-4 print:hidden px-2">
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
+                    <button onClick={() => setDataSelecionada(prev => subMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={20} /></button>
+                    <span className="font-black text-sm uppercase w-40 text-center text-gray-700 dark:text-white select-none">{format(dataSelecionada, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+                    <button onClick={() => setDataSelecionada(prev => addMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={20} /></button>
                 </div>
             </div>
 
