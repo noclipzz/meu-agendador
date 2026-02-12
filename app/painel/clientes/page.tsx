@@ -44,13 +44,22 @@ export default function ClientesPage() {
     const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
+    const [empresaInfo, setEmpresaInfo] = useState<{ name: string; logo: string }>({ name: "", logo: "" });
 
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
         birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO"
     });
 
-    useEffect(() => { carregarClientes(); }, []);
+    useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+
+    async function carregarEmpresa() {
+        try {
+            const res = await fetch('/api/painel/config');
+            const data = await res.json();
+            if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "" });
+        } catch { }
+    }
 
     async function carregarClientes() {
         const res = await fetch('/api/clientes');
@@ -245,66 +254,147 @@ export default function ClientesPage() {
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
 
-        let camposHtml = '';
+        // Separar headers e campos normais
+        const sections: { header: string; items: { label: string; value: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
+
         fields.forEach((field: any) => {
             if (field.type === 'header') {
-                camposHtml += `<tr><td colspan="2" style="padding:16px 0 8px 0;font-weight:900;font-size:14px;color:#0d9488;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid #0d9488;">${field.label}</td></tr>`;
+                if (currentSection.items.length > 0 || currentSection.header) {
+                    sections.push(currentSection);
+                }
+                currentSection = { header: field.label, items: [] };
                 return;
             }
-            const valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '❌ Não') :
-                field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '---') :
-                    data[field.id] || '---';
-            camposHtml += `<tr>
-                <td style="padding:10px 12px;font-weight:600;color:#6b7280;font-size:13px;width:40%;border-bottom:1px solid #f3f4f6;">${field.label}</td>
-                <td style="padding:10px 12px;font-weight:700;color:#111827;font-size:13px;border-bottom:1px solid #f3f4f6;">${valor}</td>
-            </tr>`;
+            const valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
+                field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
+                    data[field.id] || '—';
+            currentSection.items.push({ label: field.label, value: String(valor) });
         });
+        if (currentSection.items.length > 0 || currentSection.header) {
+            sections.push(currentSection);
+        }
+
+        // Gerar HTML dos campos em duas colunas
+        let camposHtml = '';
+        sections.forEach(section => {
+            if (section.header) {
+                camposHtml += `<div class="section-header">${section.header}</div>`;
+            }
+            camposHtml += '<div class="fields-grid">';
+            section.items.forEach(item => {
+                const isLong = item.value.length > 60;
+                camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
+                    <div class="field-label">${item.label}</div>
+                    <div class="field-value">${item.value}</div>
+                </div>`;
+            });
+            camposHtml += '</div>';
+        });
+
+        const logoHtml = empresaInfo.logo
+            ? `<img src="${empresaInfo.logo}" class="company-logo" />`
+            : `<div class="company-logo-placeholder">🏥</div>`;
+
+        const nomeEmpresa = empresaInfo.name || 'Clínica';
 
         const html = `<!DOCTYPE html><html><head><title>Prontuário - ${clienteSelecionado?.name}</title>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family:'Inter',sans-serif; padding:40px; color:#111; background:#fff; }
-            .header { display:flex; justify-content:space-between; align-items:center; padding-bottom:24px; border-bottom:3px solid #0d9488; margin-bottom:24px; }
-            .logo { font-size:24px; font-weight:900; color:#0d9488; }
-            .info { text-align:right; font-size:11px; color:#6b7280; font-weight:600; }
-            .title { font-size:22px; font-weight:900; color:#111; margin-bottom:4px; }
-            .subtitle { font-size:12px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:24px; }
-            .client-box { background:#f9fafb; padding:16px 20px; border-radius:12px; margin-bottom:24px; display:flex; gap:40px; }
-            .client-box div { font-size:12px; color:#6b7280; font-weight:600; }
-            .client-box span { display:block; font-size:14px; color:#111; font-weight:700; }
-            table { width:100%; border-collapse:collapse; }
-            .footer { margin-top:60px; text-align:center; font-size:10px; color:#9ca3af; padding-top:20px; border-top:1px solid #e5e7eb; }
-            .signature { margin-top:80px; display:flex; justify-content:space-around; }
-            .signature div { text-align:center; }
-            .signature .line { width:200px; border-top:1px solid #000; margin-bottom:4px; }
-            .signature p { font-size:11px; color:#6b7280; }
-            @media print { body { padding:20px; } }
+            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; }
+            .page { max-width:800px; margin:0 auto; padding:40px; }
+
+            /* HEADER */
+            .header { display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:3px solid #0d9488; margin-bottom:28px; }
+            .header-left { display:flex; align-items:center; gap:14px; }
+            .company-logo { width:52px; height:52px; border-radius:14px; object-fit:cover; border:2px solid #e5e7eb; }
+            .company-logo-placeholder { width:52px; height:52px; border-radius:14px; background:#f0fdfa; display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid #ccfbf1; }
+            .company-name { font-size:20px; font-weight:900; color:#0f172a; letter-spacing:-0.5px; }
+            .company-subtitle { font-size:10px; color:#0d9488; font-weight:700; text-transform:uppercase; letter-spacing:2px; }
+            .header-right { text-align:right; }
+            .header-date { font-size:11px; color:#6b7280; font-weight:600; }
+            .header-doc { font-size:9px; color:#9ca3af; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+            /* TÍTULO */
+            .doc-title { font-size:22px; font-weight:900; color:#0f172a; margin-bottom:4px; letter-spacing:-0.5px; }
+            .doc-subtitle { font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; }
+
+            /* PACIENTE */
+            .client-box { background:linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%); padding:16px 24px; border-radius:14px; margin-bottom:28px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; border:1px solid #e0f2fe; }
+            .client-item label { font-size:9px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:2px; }
+            .client-item span { font-size:14px; color:#0f172a; font-weight:800; }
+
+            /* SEÇÕES */
+            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:2px; padding:14px 0 8px; border-bottom:2px solid #0d9488; margin-bottom:0; margin-top:12px; }
+
+            /* GRID DE CAMPOS - DUAS COLUNAS */
+            .fields-grid { display:grid; grid-template-columns:1fr 1fr; border-left:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
+            .field-item { padding:10px 14px; border-right:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; }
+            .field-item.full-width { grid-column: 1 / -1; }
+            .field-label { font-size:9px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
+            .field-value { font-size:13px; font-weight:700; color:#111827; word-break:break-word; }
+
+            /* ASSINATURA */
+            .signature { margin-top:60px; display:flex; justify-content:space-around; padding-top:20px; }
+            .signature-block { text-align:center; }
+            .signature-line { width:220px; border-top:1px solid #374151; margin-bottom:6px; }
+            .signature-label { font-size:10px; color:#6b7280; font-weight:600; }
+
+            /* RODAPÉ */
+            .footer { margin-top:40px; text-align:center; font-size:9px; color:#9ca3af; padding-top:16px; border-top:1px solid #e5e7eb; }
+            .footer strong { color:#6b7280; }
+
+            @media print {
+                body { padding:0; }
+                .page { padding:20px; max-width:100%; }
+                .section-header { break-after:avoid; }
+                .fields-grid { break-inside:auto; }
+                .field-item { break-inside:avoid; }
+            }
         </style></head><body>
-        <div class="header">
-            <div class="logo">📋 Prontuário</div>
-            <div class="info">Data: ${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
+        <div class="page">
+            <div class="header">
+                <div class="header-left">
+                    ${logoHtml}
+                    <div>
+                        <div class="company-name">${nomeEmpresa}</div>
+                        <div class="company-subtitle">Prontuário do Paciente</div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
+                    <div class="header-doc">Documento Nº ${entry.id.slice(-6).toUpperCase()}</div>
+                </div>
+            </div>
+
+            <h1 class="doc-title">${entry.template?.name}</h1>
+            <p class="doc-subtitle">${entry.template?.description || 'Registro Clínico'}</p>
+
+            <div class="client-box">
+                <div class="client-item"><label>Paciente</label><span>${clienteSelecionado?.name || '—'}</span></div>
+                <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
+                <div class="client-item"><label>CPF</label><span>${clienteSelecionado?.cpf || '—'}</span></div>
+            </div>
+
+            ${camposHtml}
+
+            <div class="signature">
+                <div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>
+                <div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Paciente</div></div>
+            </div>
+
+            <div class="footer">
+                <strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
+            </div>
         </div>
-        <h1 class="title">${entry.template?.name}</h1>
-        <p class="subtitle">Registro Clínico</p>
-        <div class="client-box">
-            <div>Paciente: <span>${clienteSelecionado?.name}</span></div>
-            <div>Telefone: <span>${clienteSelecionado?.phone || '---'}</span></div>
-            <div>CPF: <span>${clienteSelecionado?.cpf || '---'}</span></div>
-        </div>
-        <table>${camposHtml}</table>
-        <div class="signature">
-            <div><div class="line"></div><p>Assinatura do Profissional</p></div>
-            <div><div class="line"></div><p>Assinatura do Paciente</p></div>
-        </div>
-        <div class="footer">Documento gerado automaticamente pelo sistema</div>
         </body></html>`;
 
         const printWindow = window.open('', '_blank');
         if (printWindow) {
             printWindow.document.write(html);
             printWindow.document.close();
-            setTimeout(() => printWindow.print(), 500);
+            setTimeout(() => printWindow.print(), 600);
         }
     }
 
