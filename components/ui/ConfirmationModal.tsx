@@ -20,7 +20,7 @@ export function ConfirmationModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 animate-in fade-in duration-200">
             <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl border dark:border-gray-800 scale-100 animate-in zoom-in-95 duration-200">
                 <div className="flex flex-col items-center text-center">
                     <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 ring-8 ring-red-50/50 dark:ring-red-900/10">
