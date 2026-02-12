@@ -89,9 +89,9 @@ export async function POST(req: Request) {
         if (email) {
             try {
                 await resend.emails.send({
-                    from: `${nomeEmpresa} <nao-responda@nohud.com.br>`,
+                    from: `NOHUD App <nao-responda@nohud.com.br>`,
                     to: email,
-                    subject: `⏳ Solicitação de Agendamento: ${dataFormatada}`, // Assunto mudou para Solicitação
+                    subject: `⏳ Solicitação de Agendamento: ${dataFormatada}`,
                     html: `
                     <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
                         <h2 style="color: #d97706;">Olá, ${name}!</h2>
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
         if (company?.notificationEmail) {
             try {
                 await resend.emails.send({
-                    from: `Sistema NOHUD <nao-responda@nohud.com.br>`,
+                    from: `NOHUD App <nao-responda@nohud.com.br>`,
                     to: company.notificationEmail,
                     subject: `🔔 Novo Agendamento Pendente: ${name}`,
                     html: `
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
                     <p><strong>Serviço:</strong> ${nomeServico}</p>
                     <p><strong>Data:</strong> ${dataFormatada}</p>
                     <br/>
-                    <a href="https://seu-sistema.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel para Confirmar</a>
+                    <a href="https://meu-agendador-kappa.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel</a>
                 `
                 });
             } catch (error) {

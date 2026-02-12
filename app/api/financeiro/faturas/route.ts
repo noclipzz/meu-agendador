@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
             try {
                 await resend.emails.send({
-                    from: `${empresa?.name} <nao-responda@nohud.com.br>`,
+                    from: `NOHUD App <nao-responda@nohud.com.br>`,
                     // ------------------------------------------------------------------
                     to: cliente.email,
                     subject: tituloEmail,
@@ -145,6 +145,22 @@ export async function POST(req: Request) {
                     </div>
                 `
                 });
+
+                // --- E-mail para ADMIN EMPRESA ---
+                if (empresa?.notificationEmail) {
+                    await resend.emails.send({
+                        from: `NOHUD App <nao-responda@nohud.com.br>`,
+                        to: empresa.notificationEmail,
+                        subject: isPago ? `💰 Pagamento Recebido: R$ ${value}` : `🧾 Fatura Gerada: R$ ${value}`,
+                        html: `
+                            <p>Atualização financeira:</p>
+                            <p><strong>Cliente:</strong> ${cliente.name}</p>
+                            <p><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR')}</p>
+                            <p><strong>Status:</strong> ${isPago ? 'PAGO ✅' : 'PENDENTE ⏳'}</p>
+                        `
+                    });
+                }
+
             } catch (e) {
                 console.error("Erro ao enviar e-mail financeiro:", e);
             }

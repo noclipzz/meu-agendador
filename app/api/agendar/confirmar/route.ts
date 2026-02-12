@@ -49,8 +49,9 @@ export async function PUT(req: Request) {
       const nomeEmpresa = booking.company.name;
 
       try {
+        // 1. Email para o Cliente
         await resend.emails.send({
-          from: `${nomeEmpresa} <nao-responda@nohud.com.br>`,
+          from: `NOHUD App <nao-responda@nohud.com.br>`,
           to: emailCliente,
           subject: `✅ Agendamento Confirmado: ${dataFormatada}`,
           html: `
@@ -69,10 +70,25 @@ export async function PUT(req: Request) {
                 </div>
             `
         });
-        console.log("E-mail de confirmação enviado para:", emailCliente);
+
+        // 2. Email para o Admin (Cópia de Confirmação)
+        if (booking.company.notificationEmail) {
+          await resend.emails.send({
+            from: `NOHUD App <nao-responda@nohud.com.br>`,
+            to: booking.company.notificationEmail,
+            subject: `🗓️ Agendamento CONFIRMADO: ${booking.customerName}`,
+            html: `
+                    <p>O agendamento foi confirmado com sucesso.</p>
+                    <p><strong>Cliente:</strong> ${booking.customerName}</p>
+                    <p><strong>Data:</strong> ${dataFormatada}</p>
+                    <p><strong>Profissional:</strong> ${booking.professional?.name || "N/A"}</p>
+                `
+          });
+        }
+
+        console.log("E-mails de confirmação enviados.");
       } catch (emailError) {
         console.error("Erro ao enviar e-mail de confirmação:", emailError);
-        // Não falhamos a requisição se o e-mail falhar, apenas logamos
       }
     }
 
