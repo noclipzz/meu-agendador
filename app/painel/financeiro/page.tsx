@@ -167,14 +167,7 @@ export default function FinanceiroPage() {
                 </div>
             </div>
 
-            {/* --- SELETOR DE MÊS --- */}
-            <div className="flex items-center justify-center md:justify-start gap-4 print:hidden px-2">
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
-                    <button onClick={() => setDataSelecionada(prev => subMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={20} /></button>
-                    <span className="font-black text-sm uppercase w-40 text-center text-gray-700 dark:text-white select-none">{format(dataSelecionada, "MMMM 'de' yyyy", { locale: ptBR })}</span>
-                    <button onClick={() => setDataSelecionada(prev => addMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={20} /></button>
-                </div>
-            </div>
+
 
             {/* --- CONTEÚDO PRINCIPAL (Oculto na Impressão) --- */}
             <div className="print:hidden space-y-8">
@@ -284,9 +277,17 @@ export default function FinanceiroPage() {
 
                 {/* HISTÓRICO DE DESPESAS */}
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] shadow-sm border dark:border-gray-700 mx-2">
-                    <h3 className="font-black text-xs uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                        <Receipt size={18} className="text-red-500" /> Histórico de Despesas
-                    </h3>
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                            <Receipt size={18} className="text-red-500" /> Histórico de Despesas
+                        </h3>
+                        {/* --- SELETOR DE MÊS --- */}
+                        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <button onClick={() => setDataSelecionada(prev => subMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={16} /></button>
+                            <span className="font-black text-xs uppercase w-32 text-center text-gray-700 dark:text-white select-none">{format(dataSelecionada, "MMM 'de' yyyy", { locale: ptBR })}</span>
+                            <button onClick={() => setDataSelecionada(prev => addMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={16} /></button>
+                        </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {dados?.allExpenses?.map((exp: any) => (
                             <div key={exp.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-red-500 shadow-sm group">
