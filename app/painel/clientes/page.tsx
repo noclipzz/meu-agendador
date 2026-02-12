@@ -43,6 +43,7 @@ export default function ClientesPage() {
     const [prontuarioSalvando, setProntuarioSalvando] = useState(false);
     const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
+    const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
 
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
@@ -213,6 +214,7 @@ export default function ClientesPage() {
                 setProntuarioFormData({});
                 setProntuarioEditId(null);
                 setProntuarioTemplateSelecionado("");
+                setModalProntuarioAberto(false);
                 carregarProntuario();
             } else {
                 toast.error("Erro ao salvar prontuário");
@@ -220,6 +222,23 @@ export default function ClientesPage() {
         } finally {
             setProntuarioSalvando(false);
         }
+    }
+
+    async function excluirProntuario(id: string) {
+        if (!confirm("Tem certeza que deseja excluir este prontuário?")) return;
+        try {
+            const res = await fetch('/api/painel/prontuarios/entries', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) {
+                toast.success("Prontuário excluído!");
+                setProntuarioEntries(prontuarioEntries.filter(e => e.id !== id));
+            } else {
+                toast.error("Erro ao excluir prontuário");
+            }
+        } catch { toast.error("Erro ao excluir"); }
     }
 
     function imprimirProntuario(entry: any) {
@@ -512,9 +531,8 @@ export default function ClientesPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        /* FORMULÁRIO + LISTA */
+                                        /* LISTA + BOTÃO NOVO */
                                         <>
-                                            {/* SELETOR DE TEMPLATE */}
                                             {prontuarioTemplates.length === 0 ? (
                                                 <div className="text-center py-16">
                                                     <ClipboardList size={40} className="text-gray-300 mx-auto mb-4" />
@@ -523,115 +541,44 @@ export default function ClientesPage() {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div>
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo do Prontuário</label>
-                                                        <select
-                                                            className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
-                                                            value={prontuarioTemplateSelecionado}
-                                                            onChange={e => { setProntuarioTemplateSelecionado(e.target.value); setProntuarioFormData({}); setProntuarioEditId(null); }}
-                                                        >
-                                                            <option value="">Selecione um modelo...</option>
-                                                            {prontuarioTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                                        </select>
-                                                    </div>
-
-                                                    {/* CAMPOS DINÂMICOS */}
-                                                    {prontuarioTemplateSelecionado && (() => {
-                                                        const template = prontuarioTemplates.find((t: any) => t.id === prontuarioTemplateSelecionado);
-                                                        if (!template) return null;
-                                                        return (
-                                                            <div className="space-y-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-6">
-                                                                <h4 className="font-black dark:text-white flex items-center gap-2"><FileText className="text-teal-500" size={18} /> {template.name}</h4>
-                                                                {(template.fields as any[]).map((field: any) => (
-                                                                    <div key={field.id}>
-                                                                        {field.type === 'header' && (
-                                                                            <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 pb-1 border-t dark:border-gray-800">{field.label}</h5>
-                                                                        )}
-                                                                        {field.type === 'text' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-teal-500" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                                            </div>
-                                                                        )}
-                                                                        {field.type === 'textarea' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <textarea rows={3} className="w-full border dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-teal-500" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                                            </div>
-                                                                        )}
-                                                                        {field.type === 'number' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <input type="number" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-teal-500" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                                            </div>
-                                                                        )}
-                                                                        {field.type === 'date' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <input type="date" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-teal-500" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                                            </div>
-                                                                        )}
-                                                                        {field.type === 'select' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <select className="w-full border dark:border-gray-700 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-teal-500" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })}>
-                                                                                    <option value="">Selecione...</option>
-                                                                                    {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
-                                                                                </select>
-                                                                            </div>
-                                                                        )}
-                                                                        {field.type === 'checkbox' && (
-                                                                            <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                                                                <input type="checkbox" className="w-5 h-5 accent-teal-600" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
-                                                                                <span className="text-sm font-bold dark:text-white">{field.label}</span>
-                                                                                {field.required && <span className="text-red-500 text-xs">*</span>}
-                                                                            </label>
-                                                                        )}
-                                                                        {field.type === 'checkboxGroup' && (
-                                                                            <div>
-                                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                                <div className="grid grid-cols-2 gap-2">
-                                                                                    {field.options?.map((opt: string, i: number) => (
-                                                                                        <label key={i} className="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm">
-                                                                                            <input type="checkbox" className="accent-teal-600" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
-                                                                                                const arr = prontuarioFormData[field.id] || [];
-                                                                                                setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
-                                                                                            }} />
-                                                                                            <span className="font-bold dark:text-white">{opt}</span>
-                                                                                        </label>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                                <button onClick={salvarProntuario} disabled={prontuarioSalvando} className="w-full bg-teal-600 text-white p-4 rounded-2xl font-black text-sm hover:bg-teal-700 transition flex items-center justify-center gap-2 mt-4 disabled:opacity-50">
-                                                                    {prontuarioSalvando ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                                                                    {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Prontuário' : 'Salvar Prontuário')}
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })()}
+                                                    {/* BOTÃO NOVO PRONTUÁRIO */}
+                                                    <button
+                                                        onClick={() => { setProntuarioTemplateSelecionado(""); setProntuarioFormData({}); setProntuarioEditId(null); setModalProntuarioAberto(true); }}
+                                                        className="w-full border-2 border-dashed border-teal-300 dark:border-teal-800 p-5 rounded-2xl text-teal-600 font-bold text-sm hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={18} /> Novo Prontuário
+                                                    </button>
 
                                                     {/* LISTA DE PRONTUÁRIOS PREENCHIDOS */}
                                                     {prontuarioEntries.length > 0 && (
                                                         <div>
-                                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Prontuários Preenchidos</h4>
+                                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Prontuários Preenchidos ({prontuarioEntries.length})</h4>
                                                             <div className="space-y-2">
                                                                 {prontuarioEntries.map((entry: any) => (
                                                                     <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
-                                                                        <div>
-                                                                            <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
-                                                                            <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center shrink-0"><FileText size={18} /></div>
+                                                                            <div>
+                                                                                <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
+                                                                                <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                                                        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                                                             <button onClick={() => setProntuarioVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
-                                                                            <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
+                                                                            <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); setModalProntuarioAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
                                                                             <button onClick={() => imprimirProntuario(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
+                                                                            <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
                                                                         </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
+                                                        </div>
+                                                    )}
+
+                                                    {prontuarioEntries.length === 0 && (
+                                                        <div className="text-center py-10 opacity-40">
+                                                            <ClipboardList size={30} className="mx-auto mb-2" />
+                                                            <p className="text-xs font-bold">Nenhum prontuário preenchido para este cliente.</p>
                                                         </div>
                                                     )}
                                                 </>
@@ -699,6 +646,130 @@ export default function ClientesPage() {
                             <button onClick={() => setConfirmarExclusao(null)} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-2xl font-black text-[10px] uppercase text-gray-600 dark:text-gray-300">Não</button>
                             <button onClick={executarExclusao} className="p-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Sim, excluir</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL FLUTUANTE DO PRONTUÁRIO */}
+            {modalProntuarioAberto && clienteSelecionado && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
+                    <div className="bg-white dark:bg-gray-950 w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+                        {/* HEADER DO MODAL */}
+                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
+                                    {prontuarioEditId ? "Editar Prontuário" : "Novo Prontuário"}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
+                            </div>
+                            <button onClick={() => { setModalProntuarioAberto(false); setProntuarioFormData({}); setProntuarioEditId(null); setProntuarioTemplateSelecionado(""); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* CONTEÚDO SCROLLÁVEL */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                            {/* SELETOR DE TEMPLATE */}
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo do Prontuário</label>
+                                <select
+                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
+                                    value={prontuarioTemplateSelecionado}
+                                    onChange={e => { setProntuarioTemplateSelecionado(e.target.value); if (!prontuarioEditId) setProntuarioFormData({}); }}
+                                >
+                                    <option value="">Selecione um modelo...</option>
+                                    {prontuarioTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+
+                            {/* CAMPOS DINÂMICOS */}
+                            {prontuarioTemplateSelecionado && (() => {
+                                const template = prontuarioTemplates.find((t: any) => t.id === prontuarioTemplateSelecionado);
+                                if (!template) return null;
+                                return (
+                                    <div className="space-y-5">
+                                        {(template.fields as any[]).map((field: any) => (
+                                            <div key={field.id}>
+                                                {field.type === 'header' && (
+                                                    <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
+                                                )}
+                                                {field.type === 'text' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'textarea' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'number' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'date' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'select' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })}>
+                                                            <option value="">Selecione...</option>
+                                                            {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                                {field.type === 'checkbox' && (
+                                                    <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
+                                                        <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
+                                                        <span className="text-sm font-bold dark:text-white">{field.label}</span>
+                                                        {field.required && <span className="text-red-500 text-xs">*</span>}
+                                                    </label>
+                                                )}
+                                                {field.type === 'checkboxGroup' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {field.options?.map((opt: string, i: number) => (
+                                                                <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
+                                                                    <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
+                                                                        const arr = prontuarioFormData[field.id] || [];
+                                                                        setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
+                                                                    }} />
+                                                                    <span className="font-bold dark:text-white">{opt}</span>
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* BOTÃO SALVAR FIXO NO RODAPÉ */}
+                        {prontuarioTemplateSelecionado && (
+                            <div className="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 shrink-0">
+                                <button
+                                    onClick={salvarProntuario}
+                                    disabled={prontuarioSalvando}
+                                    className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
+                                >
+                                    {prontuarioSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
+                                    {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Prontuário' : 'Salvar Prontuário')}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
