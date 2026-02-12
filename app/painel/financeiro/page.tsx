@@ -199,12 +199,14 @@ export default function FinanceiroPage() {
         window.print();
     };
 
-    if (loading) return (
-        <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
-            <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
-            <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">Sincronizando caixa...</p>
-        </div>
-    );
+    if (loading) {
+        return (
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+                <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">Sincronizando caixa...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-20 p-2 font-sans">
@@ -567,70 +569,68 @@ export default function FinanceiroPage() {
                         </div>
                     </div>
                 </div>
-                </div>
-    )
-}
+            )}
 
-{/* --- MODAL CONFIRMAR EXCLUSÃO --- */ }
-{
-    modalExcluir && despesaParaExcluir && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
-                <button onClick={() => setModalExcluir(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white"><X size={20} /></button>
+            {/* --- MODAL CONFIRMAR EXCLUSÃO --- */}
+            {
+                modalExcluir && despesaParaExcluir && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
+                            <button onClick={() => setModalExcluir(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white"><X size={20} /></button>
 
-                <div className="flex flex-col items-center text-center mb-6">
-                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-2xl flex items-center justify-center mb-3">
-                        <Trash2 size={24} />
+                            <div className="flex flex-col items-center text-center mb-6">
+                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-2xl flex items-center justify-center mb-3">
+                                    <Trash2 size={24} />
+                                </div>
+                                <h3 className="text-xl font-black text-gray-800 dark:text-white">Excluir Despesa</h3>
+                                <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                                    O que você deseja fazer com <strong>"{despesaParaExcluir.description}"</strong>?
+                                </p>
+                            </div>
+
+                            <div className="space-y-3">
+                                {despesaParaExcluir.quantidade > 1 ? (
+                                    <>
+                                        <button
+                                            onClick={() => confirmarExclusao(true)}
+                                            disabled={salvando}
+                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                                        >
+                                            {salvando ? <Loader2 className="animate-spin" /> : <Repeat size={18} />}
+                                            Excluir Toda a Série ({despesaParaExcluir.quantidade}x)
+                                        </button>
+                                        <button
+                                            onClick={() => confirmarExclusao(false)}
+                                            disabled={salvando}
+                                            className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                                        >
+                                            {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
+                                            Excluir Apenas Esta
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => confirmarExclusao(false)}
+                                        disabled={salvando}
+                                        className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                                    >
+                                        {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
+                                        Confirmar Exclusão
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => setModalExcluir(false)}
+                                    disabled={salvando}
+                                    className="w-full text-gray-400 hover:text-gray-600 font-bold py-2 text-sm transition"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <h3 className="text-xl font-black text-gray-800 dark:text-white">Excluir Despesa</h3>
-                    <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                        O que você deseja fazer com <strong>"{despesaParaExcluir.description}"</strong>?
-                    </p>
-                </div>
-
-                <div className="space-y-3">
-                    {despesaParaExcluir.quantidade > 1 ? (
-                        <>
-                            <button
-                                onClick={() => confirmarExclusao(true)}
-                                disabled={salvando}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
-                            >
-                                {salvando ? <Loader2 className="animate-spin" /> : <Repeat size={18} />}
-                                Excluir Toda a Série ({despesaParaExcluir.quantidade}x)
-                            </button>
-                            <button
-                                onClick={() => confirmarExclusao(false)}
-                                disabled={salvando}
-                                className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
-                            >
-                                {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
-                                Excluir Apenas Esta
-                            </button>
-                        </>
-                    ) : (
-                        <button
-                            onClick={() => confirmarExclusao(false)}
-                            disabled={salvando}
-                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
-                        >
-                            {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
-                            Confirmar Exclusão
-                        </button>
-                    )}
-
-                    <button
-                        onClick={() => setModalExcluir(false)}
-                        disabled={salvando}
-                        className="w-full text-gray-400 hover:text-gray-600 font-bold py-2 text-sm transition"
-                    >
-                        Cancelar
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
+                )
+            }
         </div >
     );
 }
