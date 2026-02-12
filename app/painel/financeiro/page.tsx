@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, BarChart, Bar, Legend
@@ -73,6 +73,22 @@ export default function FinanceiroPage() {
             setLoading(false);
         }
     }
+
+    // --- AGRUPAMENTO DE DESPESAS (VISUAL) ---
+    const despesasAgrupadas = useMemo(() => {
+        if (!dadosDespesas?.allExpenses) return [];
+        const grupos: any = {};
+        dadosDespesas.allExpenses.forEach((exp: any) => {
+            // Chave única baseada nas propriedades visuais
+            const chave = `${exp.description?.trim().toLowerCase()}-${exp.value}-${exp.category}-${exp.frequency}`;
+            if (!grupos[chave]) {
+                grupos[chave] = { ...exp, quantidade: 0, ids: [] };
+            }
+            grupos[chave].quantidade += 1;
+            grupos[chave].ids.push(exp.id);
+        });
+        return Object.values(grupos);
+    }, [dadosDespesas]);
 
     function prepararEdicao(exp: any) {
         setNovaDespesa({
@@ -328,19 +344,31 @@ export default function FinanceiroPage() {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {dadosDespesas?.allExpenses?.map((exp: any) => (
+                        {despesasAgrupadas.map((exp: any) => (
                             <div key={exp.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-red-500 shadow-sm group">
                                 <div>
-                                    <p className="font-black text-sm uppercase dark:text-white">{exp.description}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-black text-sm uppercase dark:text-white">{exp.description}</p>
+                                        {exp.quantidade > 1 && (
+                                            <span className="bg-red-100 text-red-600 text-[10px] font-black px-2 py-0.5 rounded-full">
+                                                {exp.quantidade}x
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex gap-2 mt-1">
                                         <span className="text-[9px] font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-lg uppercase">
-                                            {exp.frequency === 'MONTHLY' ? 'Mensal' : 'Único'}
+                                            {exp.frequency === 'MONTHLY' ? 'Mensal' : exp.frequency === 'WEEKLY' ? 'Semanal' : exp.frequency === 'YEARLY' ? 'Anual' : 'Único'}
                                         </span>
                                         <span className="text-[9px] font-bold text-gray-400 uppercase">{exp.category}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <p className="font-black text-red-600 text-lg mr-2">R$ {Number(exp.value).toLocaleString()}</p>
+                                    <div className="text-right">
+                                        <p className="font-black text-red-600 text-lg">R$ {Number(exp.value).toLocaleString()}</p>
+                                        {exp.quantidade > 1 && (
+                                            <p className="text-[9px] font-bold text-gray-400">Total: R$ {(Number(exp.value) * exp.quantidade).toLocaleString()}</p>
+                                        )}
+                                    </div>
                                     <button onClick={() => prepararEdicao(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-blue-500 transition"><Pencil size={18} /></button>
                                     <button onClick={() => excluirDespesa(exp.id)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"><Trash2 size={18} /></button>
                                 </div>
