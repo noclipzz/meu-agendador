@@ -457,7 +457,13 @@ export default function PainelDashboard() {
                                         <button
                                             onClick={() => {
                                                 setAgendamentoSelecionado(null);
-                                                router.push(`/painel/clientes?abrirFicha=${agendamentoSelecionado.clientId}`);
+                                                const params = new URLSearchParams();
+                                                params.set('abrirFicha', agendamentoSelecionado.clientId);
+                                                // Fallback: envia dados do agendamento caso o cliente não seja encontrado (ex: deletado)
+                                                if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                params.set('bookingId', agendamentoSelecionado.id);
+                                                router.push(`/painel/clientes?${params.toString()}`);
                                             }}
                                             className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
                                             title="Ver ficha do cliente"

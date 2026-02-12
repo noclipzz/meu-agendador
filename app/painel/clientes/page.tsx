@@ -107,6 +107,7 @@ export default function ClientesPage() {
     useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
 
     // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
+    // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
     useEffect(() => {
         if (loading || clientes.length === 0 && !searchParams.get('novoCadastro')) return;
 
@@ -117,8 +118,23 @@ export default function ClientesPage() {
             const cliente = clientes.find(c => c.id === abrirFichaId);
             if (cliente) {
                 abrirFichaCliente(cliente);
+            } else {
+                // Se o ID foi passado mas o cliente não existe (ex: excluído), mas temos dados de fallback
+                const nomeFallback = searchParams.get('nome');
+                if (nomeFallback) {
+                    toast.info("Cliente vinculado não encontrado. Abrindo novo cadastro.", { duration: 4000 });
+                    const telefone = searchParams.get('telefone') || '';
+                    const bookingId = searchParams.get('bookingId') || '';
+                    setForm(prev => ({
+                        ...prev,
+                        id: '',
+                        name: nomeFallback,
+                        phone: formatarTelefone(telefone),
+                    }));
+                    if (bookingId) setPendingBookingId(bookingId);
+                    setModalAberto(true);
+                }
             }
-            // Limpa os params da URL
             router.replace('/painel/clientes', { scroll: false });
         } else if (novoCadastro === '1') {
             const nome = searchParams.get('nome') || '';
@@ -132,7 +148,6 @@ export default function ClientesPage() {
             }));
             if (bookingId) setPendingBookingId(bookingId);
             setModalAberto(true);
-            // Limpa os params da URL
             router.replace('/painel/clientes', { scroll: false });
         }
     }, [loading, clientes]);
