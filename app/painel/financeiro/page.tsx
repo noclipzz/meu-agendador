@@ -17,34 +17,59 @@ import { ptBR } from "date-fns/locale";
 export default function FinanceiroPage() {
     const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [dadosResumo, setDadosResumo] = useState<any>(null); // Dados do Cabeçalho e Gráfico
+    const [dadosDespesas, setDadosDespesas] = useState<any>(null); // Dados da Lista de Despesas
+
+    const [dataResumo, setDataResumo] = useState(new Date()); // Data Selecionada para o Resumo
+    const [dataDespesas, setDataDespesas] = useState(new Date()); // Data Selecionada para as Despesas
+
+    const [abaAtiva, setAbaAtiva] = useState("GERAL");
+
     const [modalDespesa, setModalDespesa] = useState(false);
     const [salvando, setSalvando] = useState(false);
 
     // Estado do formulário de despesa
     const [novaDespesa, setNovaDespesa] = useState({
-        id: "",
+        id: null,
         description: "",
         value: "",
-        category: "OUTROS",
         frequency: "ONCE",
+        category: "Outros",
         date: new Date().toISOString().split('T')[0]
     });
 
-    const [dataSelecionada, setDataSelecionada] = useState(new Date());
+    useEffect(() => { carregarResumo(dataResumo); }, [dataResumo]);
+    useEffect(() => { carregarDespesas(dataDespesas); }, [dataDespesas]);
 
-    useEffect(() => { carregarDados(dataSelecionada); }, [dataSelecionada]);
-
-    async function carregarDados(dataBase = new Date()) {
+    // Função para carregar DADOS DO RESUMO (Gráfico, Cards, Totais)
+    async function carregarResumo(dataBase = new Date()) {
         try {
             const mes = dataBase.getMonth() + 1;
             const ano = dataBase.getFullYear();
             const res = await fetch(`/api/painel/financeiro?month=${mes}&year=${ano}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
-            setDados(data);
-        } catch (error: any) {
-            toast.error(error.message || "Erro ao carregar dados.");
-        } finally {
+            setDadosResumo(data);
+        } catch (error: any) { toast.error(error.message || "Erro ao carregar resumo."); }
+        finally {
+            // Only set loading to false if both initial loads are done, or handle separately
+            // For simplicity, we'll assume initial load is done after both are called once.
+            // A more robust solution would use a counter or Promise.all
+            setLoading(false);
+        }
+    }
+
+    // Função para carregar DADOS DAS DESPESAS (Lista)
+    async function carregarDespesas(dataBase = new Date()) {
+        try {
+            const mes = dataBase.getMonth() + 1;
+            const ano = dataBase.getFullYear();
+            const res = await fetch(`/api/painel/financeiro?month=${mes}&year=${ano}`);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setDadosDespesas(data);
+        } catch (error: any) { toast.error(error.message || "Erro ao carregar despesas."); }
+        finally {
             setLoading(false);
         }
     }
@@ -74,7 +99,8 @@ export default function FinanceiroPage() {
             if (res.ok) {
                 toast.success(novaDespesa.id ? "Alteração salva!" : "Gasto registrado!");
                 fecharModal();
-                carregarDados(dataSelecionada);
+                carregarResumo(dataResumo); // Atualiza os totais e gráfico
+                carregarDespesas(dataDespesas); // Atualiza a lista
             } else {
                 toast.error("Erro ao processar operação.");
             }
@@ -86,7 +112,11 @@ export default function FinanceiroPage() {
         if (!confirm("Deseja remover este gasto?")) return;
         try {
             const res = await fetch('/api/painel/financeiro/despesas', { method: 'DELETE', body: JSON.stringify({ id }) });
-            if (res.ok) { toast.success("Despesa removida."); carregarDados(dataSelecionada); }
+            if (res.ok) {
+                toast.success("Despesa removida.");
+                carregarResumo(dataResumo);
+                carregarDespesas(dataDespesas);
+            }
         } catch (error) { toast.error("Erro ao excluir."); }
     }
 
@@ -100,7 +130,7 @@ export default function FinanceiroPage() {
             });
             if (res.ok) {
                 toast.success("Recebimento confirmado!");
-                carregarDados(dataSelecionada);
+                carregarResumo(dataResumo); // Atualiza os cards de recebimento e totais
             } else {
                 toast.error("Erro ao baixar.");
             }
@@ -127,7 +157,7 @@ export default function FinanceiroPage() {
 
     function fecharModal() {
         setModalDespesa(false);
-        setNovaDespesa({ id: "", description: "", value: "", category: "OUTROS", frequency: "ONCE", date: new Date().toISOString().split('T')[0] });
+        setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", date: new Date().toISOString().split('T')[0] });
     }
 
     // --- FUNÇÃO DE IMPRESSÃO ---
@@ -169,26 +199,35 @@ export default function FinanceiroPage() {
 
 
 
+            {/* --- SELETOR DE MÊS (RESUMO FINANCEIRO) --- */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 mb-8 mt-4 print:hidden">
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
+                    <button onClick={() => setDataResumo(prev => subMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={20} /></button>
+                    <span className="font-black text-sm uppercase w-40 text-center text-gray-700 dark:text-white select-none">{format(dataResumo, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+                    <button onClick={() => setDataResumo(prev => addMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={20} /></button>
+                </div>
+            </div>
+
             {/* --- CONTEÚDO PRINCIPAL (Oculto na Impressão) --- */}
             <div className="print:hidden space-y-8">
                 {/* CARDS RESUMO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-gray-100 dark:border-gray-700 shadow-sm">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faturamento Bruto</p>
-                        <h2 className="text-2xl font-black text-gray-800 dark:text-white">R$ {dados?.resumo?.bruto?.toLocaleString() || "0"}</h2>
-                        <div className="flex items-center gap-1 text-green-500 mt-2"><ArrowUpCircle size={12} /><span className="text-[10px] font-black">+{dados?.resumo?.crescimento || "0"}% vs mês anterior</span></div>
+                        <h2 className="text-2xl font-black text-gray-800 dark:text-white">R$ {dadosResumo?.resumo?.bruto?.toLocaleString() || "0"}</h2>
+                        <div className="flex items-center gap-1 text-green-500 mt-2"><ArrowUpCircle size={12} /><span className="text-[10px] font-black">+{dadosResumo?.resumo?.crescimento || "0"}% vs mês anterior</span></div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-red-50 dark:border-red-900/20 shadow-sm">
                         <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Total Gastos (Saídas)</p>
-                        <h2 className="text-2xl font-black text-red-600">R$ {dados?.resumo?.despesas?.toLocaleString() || "0"}</h2>
+                        <h2 className="text-2xl font-black text-red-600">R$ {dadosResumo?.resumo?.despesas?.toLocaleString() || "0"}</h2>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-orange-50 dark:border-orange-900/20 shadow-sm">
                         <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">A Receber (Boletos)</p>
-                        <h2 className="text-2xl font-black text-orange-600">R$ {dados?.boletosAbertos?.reduce((acc: any, b: any) => acc + Number(b.value), 0).toLocaleString() || "0"}</h2>
+                        <h2 className="text-2xl font-black text-orange-600">R$ {dadosResumo?.boletosAbertos?.reduce((acc: any, b: any) => acc + Number(b.value), 0).toLocaleString() || "0"}</h2>
                     </div>
                     <div className="bg-blue-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/30 transform hover:scale-105 transition-transform">
                         <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest mb-1">Lucro Líquido (Real)</p>
-                        <h2 className="text-3xl font-black text-white font-mono tracking-tighter">R$ {dados?.resumo?.liquido?.toLocaleString() || "0"}</h2>
+                        <h2 className="text-3xl font-black text-white font-mono tracking-tighter">R$ {dadosResumo?.resumo?.liquido?.toLocaleString() || "0"}</h2>
                     </div>
                 </div>
 
@@ -201,7 +240,7 @@ export default function FinanceiroPage() {
                     </div>
                     <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={dados?.fluxoCaixa || []}>
+                            <BarChart data={dadosResumo?.fluxoCaixa || []}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                                 <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 'bold', fill: '#9ca3af' }} />
                                 <YAxis hide />
@@ -221,10 +260,10 @@ export default function FinanceiroPage() {
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] shadow-sm border dark:border-gray-700 relative overflow-hidden">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="font-black text-xs uppercase tracking-widest text-red-500 flex items-center gap-2"><AlertTriangle size={18} /> Vencidos / Atrasados</h3>
-                            <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black">{dados?.boletosVencidos?.length || 0}</span>
+                            <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black">{dadosResumo?.boletosVencidos?.length || 0}</span>
                         </div>
                         <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                            {dados?.boletosVencidos?.map((fat: any) => (
+                            {dadosResumo?.boletosVencidos?.map((fat: any) => (
                                 <div key={fat.id} className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center group">
                                     <div>
                                         <p className="font-bold text-sm text-red-700 dark:text-red-300">{fat.client.name}</p>
@@ -243,7 +282,7 @@ export default function FinanceiroPage() {
                                     </div>
                                 </div>
                             ))}
-                            {(!dados?.boletosVencidos || dados?.boletosVencidos.length === 0) && <p className="text-center text-gray-400 text-xs italic py-10">Tudo em dia!</p>}
+                            {(!dadosResumo?.boletosVencidos || dadosResumo?.boletosVencidos.length === 0) && <p className="text-center text-gray-400 text-xs italic py-10">Tudo em dia!</p>}
                         </div>
                     </div>
 
@@ -251,7 +290,7 @@ export default function FinanceiroPage() {
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] shadow-sm border dark:border-gray-700">
                         <h3 className="font-black text-xs uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2"><Calendar size={18} className="text-blue-500" /> Próximos Recebimentos</h3>
                         <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                            {dados?.boletosAbertos?.map((fat: any) => (
+                            {dadosResumo?.boletosAbertos?.map((fat: any) => (
                                 <div key={fat.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border dark:border-gray-800 flex justify-between items-center group">
                                     <div>
                                         <p className="font-bold text-sm dark:text-white">{fat.client.name}</p>
@@ -270,7 +309,7 @@ export default function FinanceiroPage() {
                                     </div>
                                 </div>
                             ))}
-                            {(!dados?.boletosAbertos || dados?.boletosAbertos.length === 0) && <p className="text-center text-gray-400 text-xs italic py-10">Nenhum lançamento futuro.</p>}
+                            {(!dadosResumo?.boletosAbertos || dadosResumo?.boletosAbertos.length === 0) && <p className="text-center text-gray-400 text-xs italic py-10">Nenhum lançamento futuro.</p>}
                         </div>
                     </div>
                 </div>
@@ -283,13 +322,13 @@ export default function FinanceiroPage() {
                         </h3>
                         {/* --- SELETOR DE MÊS --- */}
                         <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
-                            <button onClick={() => setDataSelecionada(prev => subMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={16} /></button>
-                            <span className="font-black text-xs uppercase w-32 text-center text-gray-700 dark:text-white select-none">{format(dataSelecionada, "MMM 'de' yyyy", { locale: ptBR })}</span>
-                            <button onClick={() => setDataSelecionada(prev => addMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={16} /></button>
+                            <button onClick={() => setDataDespesas(prev => subMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={16} /></button>
+                            <span className="font-black text-xs uppercase w-32 text-center text-gray-700 dark:text-white select-none">{format(dataDespesas, "MMM 'de' yyyy", { locale: ptBR })}</span>
+                            <button onClick={() => setDataDespesas(prev => addMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={16} /></button>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {dados?.allExpenses?.map((exp: any) => (
+                        {dadosDespesas?.allExpenses?.map((exp: any) => (
                             <div key={exp.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-red-500 shadow-sm group">
                                 <div>
                                     <p className="font-black text-sm uppercase dark:text-white">{exp.description}</p>

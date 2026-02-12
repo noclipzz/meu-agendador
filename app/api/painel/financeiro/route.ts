@@ -41,10 +41,9 @@ export async function GET(request: Request) {
         const inicioMesAnterior = startOfMonth(subMonths(dataReferencia, 1));
         const fimMesAnterior = endOfMonth(subMonths(dataReferencia, 1));
 
-        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES A PARTIR DE HOJE, FIXO) ---
-        // O gráfico geralmente mostra a evolução recente, independente do filtro de "visualização do mês"
-        const seisMesesAtras = startOfMonth(subMonths(hoje, 5));
-        const fimMesAtual = endOfMonth(hoje);
+        // --- CÁLCULO DO GRÁFICO (ÚLTIMOS 6 MESES A PARTIR DA DATA SELECIONADA) ---
+        const seisMesesAtras = startOfMonth(subMonths(dataReferencia, 5));
+        const fimMesAtual = endOfMonth(dataReferencia);
 
         // Busca tudo de uma vez para os últimos 6 meses (GRÁFICO)
         const [todasReceitasGrafico, todasDespesasGrafico] = await Promise.all([
@@ -67,7 +66,7 @@ export async function GET(request: Request) {
 
         const mesesGrafico = eachMonthOfInterval({
             start: seisMesesAtras,
-            end: hoje
+            end: dataReferencia
         });
 
         // Processa os dados do GRÁFICO
