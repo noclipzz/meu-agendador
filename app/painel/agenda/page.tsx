@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Link2Off } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -171,32 +171,6 @@ export default function PainelDashboard() {
             }
         } catch (error) { toast.error("Erro no checkout."); }
         finally { setLoading(false); }
-    }
-
-    async function desvincularCliente() {
-        // Confirmação para evitar cliques acidentais
-        const confirmacao = window.confirm("O cliente vinculado está incorreto? Deseja remover o vínculo?");
-        if (!confirmacao) return;
-
-        try {
-            const res = await fetch('/api/painel/vincular-cliente', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookingId: agendamentoSelecionado.id, clientId: null })
-            });
-
-            if (res.ok) {
-                toast.success("Cliente desvinculado com sucesso!");
-                setAgendamentoSelecionado(null);
-                carregarDados();
-            } else {
-                const erro = await res.json();
-                toast.error(erro.error || "Erro ao desvincular.");
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Erro ao processar solicitação.");
-        }
     }
 
     async function confirmarAgendamentoManual(id: string) {
@@ -480,30 +454,22 @@ export default function PainelDashboard() {
                                 <div className="flex items-center gap-1">
                                     <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar agendamento"><Pencil size={20} /></button>
                                     {agendamentoSelecionado.clientId ? (
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => {
-                                                    setAgendamentoSelecionado(null);
-                                                    const params = new URLSearchParams();
-                                                    params.set('abrirFicha', agendamentoSelecionado.clientId);
-                                                    if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
-                                                    if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
-                                                    params.set('bookingId', agendamentoSelecionado.id);
-                                                    router.push(`/painel/clientes?${params.toString()}`);
-                                                }}
-                                                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
-                                                title="Ver ficha do cliente vinculado"
-                                            >
-                                                <FileText size={20} />
-                                            </button>
-                                            <button
-                                                onClick={desvincularCliente}
-                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full text-red-500 transition"
-                                                title="Cliente errado? Clique para desvincular"
-                                            >
-                                                <Link2Off size={18} />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setAgendamentoSelecionado(null);
+                                                const params = new URLSearchParams();
+                                                params.set('abrirFicha', agendamentoSelecionado.clientId);
+                                                // Fallback: envia dados do agendamento caso o cliente não seja encontrado (ex: deletado)
+                                                if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                params.set('bookingId', agendamentoSelecionado.id);
+                                                router.push(`/painel/clientes?${params.toString()}`);
+                                            }}
+                                            className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
+                                            title="Ver ficha do cliente"
+                                        >
+                                            <FileText size={20} />
+                                        </button>
                                     ) : (
                                         <button
                                             onClick={() => {

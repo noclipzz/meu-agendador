@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 const prisma = db;
 
-// PUT: Vincular ou desvincular um cliente de um agendamento
+// PUT: Vincular um cliente cadastrado a um agendamento existente
 export async function PUT(req: Request) {
     try {
         const { userId } = await auth();
@@ -13,9 +13,8 @@ export async function PUT(req: Request) {
         const body = await req.json();
         const { bookingId, clientId } = body;
 
-        // Validação: bookingId é obrigatório. clientId pode ser string (vincular) ou null (desvincular).
-        if (!bookingId) {
-            return NextResponse.json({ error: "bookingId é obrigatório" }, { status: 400 });
+        if (!bookingId || !clientId) {
+            return NextResponse.json({ error: "bookingId e clientId são obrigatórios" }, { status: 400 });
         }
 
         // Verifica se o agendamento existe e se o usuário tem permissão
@@ -28,8 +27,9 @@ export async function PUT(req: Request) {
             return NextResponse.json({ error: "Agendamento não encontrado" }, { status: 404 });
         }
 
-        // Verifica permissão: deve ser o dono da empresa ou membro da equipe
+        // Verifica permissão: deve ser o dono da empresa
         if (booking.company.ownerId !== userId) {
+            // Ou pode ser um membro da equipe
             const teamMember = await prisma.teamMember.findUnique({
                 where: { clerkUserId: userId }
             });
@@ -38,26 +38,24 @@ export async function PUT(req: Request) {
             }
         }
 
-        // Se clientId for fornecido, verifica se o cliente existe
-        if (clientId) {
-            const client = await prisma.client.findFirst({
-                where: { id: clientId, companyId: booking.companyId }
-            });
+        // Verifica se o cliente existe e pertence à mesma empresa
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, companyId: booking.companyId }
+        });
 
-            if (!client) {
-                return NextResponse.json({ error: "Cliente não encontrado nesta empresa" }, { status: 404 });
-            }
+        if (!client) {
+            return NextResponse.json({ error: "Cliente não encontrado nesta empresa" }, { status: 404 });
         }
 
-        // Atualiza o agendamento (com clientId novo ou null)
+        // Atualiza o agendamento com o clientId
         const updated = await prisma.booking.update({
             where: { id: bookingId },
-            data: { clientId: clientId || null }
+            data: { clientId }
         });
 
         return NextResponse.json(updated);
     } catch (error) {
         console.error("ERRO_VINCULAR_CLIENTE:", error);
-        return NextResponse.json({ error: "Erro ao vincular/desvincular cliente" }, { status: 500 });
+        return NextResponse.json({ error: "Erro ao vincular cliente" }, { status: 500 });
     }
 }
