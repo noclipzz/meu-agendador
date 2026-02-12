@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { name, email, phone, photoUrl, color } = body;
+    const { name, email, phone, photoUrl, color, cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status } = body;
 
     // 1. Apenas o dono pode adicionar equipe
     const company = await prisma.company.findUnique({
@@ -118,7 +118,8 @@ export async function POST(req: Request) {
           email, // Salva o email agora!
           photoUrl,
           color: color || "#3b82f6",
-          companyId: company.id
+          companyId: company.id,
+          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status: status || "ATIVO"
         }
       });
 
@@ -196,7 +197,13 @@ export async function PUT(req: Request) {
         name: body.name,
         phone: body.phone,
         color: body.color,
-        photoUrl: body.photoUrl
+        photoUrl: body.photoUrl,
+        cpf: body.cpf, rg: body.rg,
+        birthDate: body.birthDate,
+        cep: body.cep, address: body.address, number: body.number,
+        complement: body.complement, neighborhood: body.neighborhood,
+        city: body.city, state: body.state, notes: body.notes,
+        status: body.status
       }
     });
 

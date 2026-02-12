@@ -66,6 +66,23 @@ model Professional {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings  Booking[]
+  
+  // Dados completos (Espelho do Cliente)
+  cpf         String?
+  rg          String?
+  birthDate   String?
+  cep         String?
+  address     String?
+  number      String?
+  complement  String?
+  neighborhood String?
+  city        String?
+  state       String?
+  notes       String?
+  status      String    @default("ATIVO")
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 }
 
 // --- SERVIÇOS ---
