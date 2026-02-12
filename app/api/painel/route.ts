@@ -20,7 +20,7 @@ export async function GET() {
       // É ADMIN: Busca todos os agendamentos da empresa dele
       const bookings = await prisma.booking.findMany({
         where: { companyId: companyAsOwner.id },
-        include: { service: true, professional: true },
+        include: { service: true, professional: true, client: true },
         orderBy: { date: 'asc' }
       });
       return NextResponse.json(bookings);
@@ -38,7 +38,7 @@ export async function GET() {
           companyId: professionalAccount.companyId,
           professionalId: professionalAccount.id // FILTRO DE EQUIPE
         },
-        include: { service: true, professional: true },
+        include: { service: true, professional: true, client: true },
         orderBy: { date: 'asc' }
       });
       return NextResponse.json(bookings);
