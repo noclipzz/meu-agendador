@@ -26,6 +26,8 @@ export default function FinanceiroPage() {
     const [abaAtiva, setAbaAtiva] = useState("GERAL");
 
     const [modalDespesa, setModalDespesa] = useState(false);
+    const [modalExcluir, setModalExcluir] = useState(false);
+    const [despesaParaExcluir, setDespesaParaExcluir] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
 
     // Estado do formulário de despesa
@@ -124,35 +126,33 @@ export default function FinanceiroPage() {
         finally { setSalvando(false); }
     }
 
-    async function excluirDespesa(exp: any) {
-        let deleteSeries = false;
+    function abrirModalExclusao(exp: any) {
+        setDespesaParaExcluir(exp);
+        setModalExcluir(true);
+    }
 
-        if (exp.quantidade && exp.quantidade > 1) {
-            // Se for agrupada, pergunta se quer apagar tudo
-            if (confirm(`Esta despesa se repete ${exp.quantidade} vezes. Deseja excluir TODAS as ocorrências da série?`)) {
-                deleteSeries = true;
-            } else {
-                // Se cancelou, pergunta se quer apagar só essa
-                if (!confirm("Deseja excluir APENAS esta ocorrência atual?")) return;
-            }
-        } else {
-            // Se for única
-            if (!confirm("Deseja remover este gasto permanentemente?")) return;
-        }
-
+    async function confirmarExclusao(deleteSeries: boolean) {
+        if (!despesaParaExcluir) return;
+        setSalvando(true);
         try {
             const res = await fetch('/api/painel/financeiro/despesas', {
                 method: 'DELETE',
-                body: JSON.stringify({ id: exp.id, deleteSeries })
+                body: JSON.stringify({ id: despesaParaExcluir.id, deleteSeries })
             });
 
             if (res.ok) {
                 toast.success(deleteSeries ? "Série de despesas removida." : "Despesa removida.");
                 carregarResumo(dataResumo);
                 carregarDespesas(dataDespesas);
+                setModalExcluir(false);
+                setDespesaParaExcluir(null);
+            } else {
+                toast.error("Erro ao excluir.");
             }
         } catch (error) { toast.error("Erro ao excluir."); }
+        finally { setSalvando(false); }
     }
+
 
     async function baixarBoleto(id: string) {
         if (!confirm("Confirmar recebimento deste valor?")) return;
@@ -388,7 +388,7 @@ export default function FinanceiroPage() {
                                         )}
                                     </div>
                                     <button onClick={() => prepararEdicao(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-blue-500 transition"><Pencil size={18} /></button>
-                                    <button onClick={() => excluirDespesa(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"><Trash2 size={18} /></button>
+                                    <button onClick={() => abrirModalExclusao(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"><Trash2 size={18} /></button>
                                 </div>
                             </div>
                         ))}
@@ -567,7 +567,70 @@ export default function FinanceiroPage() {
                         </div>
                     </div>
                 </div>
-            )}
+                </div>
+    )
+}
+
+{/* --- MODAL CONFIRMAR EXCLUSÃO --- */ }
+{
+    modalExcluir && despesaParaExcluir && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
+                <button onClick={() => setModalExcluir(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white"><X size={20} /></button>
+
+                <div className="flex flex-col items-center text-center mb-6">
+                    <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-2xl flex items-center justify-center mb-3">
+                        <Trash2 size={24} />
+                    </div>
+                    <h3 className="text-xl font-black text-gray-800 dark:text-white">Excluir Despesa</h3>
+                    <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+                        O que você deseja fazer com <strong>"{despesaParaExcluir.description}"</strong>?
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    {despesaParaExcluir.quantidade > 1 ? (
+                        <>
+                            <button
+                                onClick={() => confirmarExclusao(true)}
+                                disabled={salvando}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                            >
+                                {salvando ? <Loader2 className="animate-spin" /> : <Repeat size={18} />}
+                                Excluir Toda a Série ({despesaParaExcluir.quantidade}x)
+                            </button>
+                            <button
+                                onClick={() => confirmarExclusao(false)}
+                                disabled={salvando}
+                                className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                            >
+                                {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
+                                Excluir Apenas Esta
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => confirmarExclusao(false)}
+                            disabled={salvando}
+                            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
+                        >
+                            {salvando ? <Loader2 className="animate-spin" /> : <Trash2 size={18} />}
+                            Confirmar Exclusão
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => setModalExcluir(false)}
+                        disabled={salvando}
+                        className="w-full text-gray-400 hover:text-gray-600 font-bold py-2 text-sm transition"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
         </div>
+    )
+}
+        </div >
     );
 }
