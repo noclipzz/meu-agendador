@@ -4,6 +4,8 @@ import { auth } from "@clerk/nextjs/server";
 
 const prisma = db;
 
+import { addWeeks, addMonths, addYears } from "date-fns";
+
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -12,18 +14,46 @@ export async function POST(req: Request) {
     const company = await prisma.company.findFirst({ where: { ownerId: userId } });
     if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-    const despesa = await prisma.expense.create({
-      data: {
-        description: body.description,
+    const expensesToCreate = [];
+    const baseDate = new Date(body.date); // Garante que é Date
+
+    // Definição de quantas repetições criar
+    let occurrences = 1;
+    if (body.frequency === 'WEEKLY') occurrences = 52; // 1 ano de semanas
+    if (body.frequency === 'MONTHLY') occurrences = 12; // 1 ano de meses
+    if (body.frequency === 'YEARLY') occurrences = 5; // 5 anos
+
+    for (let i = 0; i < occurrences; i++) {
+      let nextDate = new Date(baseDate);
+
+      // Calcula a próxima data com base na frequência e no índice
+      if (i > 0) {
+        if (body.frequency === 'WEEKLY') nextDate = addWeeks(baseDate, i);
+        else if (body.frequency === 'MONTHLY') nextDate = addMonths(baseDate, i);
+        else if (body.frequency === 'YEARLY') nextDate = addYears(baseDate, i);
+      }
+
+      expensesToCreate.push({
+        description: body.description, // Mantém a mesma descrição
         value: parseFloat(body.value),
         category: body.category,
         frequency: body.frequency || "ONCE",
-        date: new Date(body.date),
+        date: nextDate,
         companyId: company.id
-      }
+      });
+    }
+
+    // Usa createMany para inserir tudo de uma vez (Performance)
+    await prisma.expense.createMany({
+      data: expensesToCreate
     });
-    return NextResponse.json(despesa);
-  } catch (error) { return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 }); }
+
+    return NextResponse.json({ success: true, count: occurrences });
+
+  } catch (error) {
+    console.error("ERRO_CRIAR_DESPESA:", error);
+    return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 });
+  }
 }
 
 // NOVO: Função para ATUALIZAR despesa
