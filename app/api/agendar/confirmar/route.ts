@@ -37,20 +37,36 @@ export async function PUT(req: Request) {
       data: { status: "CONFIRMADO" }
     });
 
-    // 3. ENVIA O E-MAIL DE CONFIRMAÇÃO
-    // Verifica se o cliente tem e-mail cadastrado (via tabela Client ou campo email solto?)
-    // O Booking tem customerName/customerPhone soltos, e link opcional com Client.
-    // Vamos priorizar o email do Client vinculado, senão não temos email.
-
+    // 3. ENVIA OS E-MAILS
+    const dataFormatada = format(new Date(booking.date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
     const emailCliente = booking.client?.email;
 
-    if (emailCliente) {
-      const dataFormatada = format(new Date(booking.date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
-      const nomeEmpresa = booking.company.name;
-
+    // A. E-mail para o Admin (Sempre que houver notificationEmail)
+    if (booking.company.notificationEmail) {
       try {
-        // 1. Email para o Cliente
-        await resend.emails.send({
+        console.log("📨 [DEBUG] Enviando confirmação para ADMIN:", booking.company.notificationEmail);
+        const { error } = await resend.emails.send({
+          from: `NOHUD App <nao-responda@nohud.com.br>`,
+          to: booking.company.notificationEmail,
+          subject: `🗓️ Agendamento CONFIRMADO: ${booking.customerName}`,
+          html: `
+                    <p>O agendamento foi confirmado com sucesso no painel.</p>
+                    <p><strong>Cliente:</strong> ${booking.customerName}</p>
+                    <p><strong>Data:</strong> ${dataFormatada}</p>
+                    <p><strong>Profissional:</strong> ${booking.professional?.name || "N/A"}</p>
+                `
+        });
+        if (error) console.error("❌ [DEBUG] Erro Resend Admin:", error);
+      } catch (e) {
+        console.error("❌ [DEBUG] Erro fatal e-mail admin:", e);
+      }
+    }
+
+    // B. E-mail para o Cliente (Somente se ele tiver e-mail)
+    if (emailCliente) {
+      try {
+        console.log("📨 [DEBUG] Enviando confirmação para CLIENTE:", emailCliente);
+        const { error } = await resend.emails.send({
           from: `NOHUD App <nao-responda@nohud.com.br>`,
           to: emailCliente,
           subject: `✅ Agendamento Confirmado: ${dataFormatada}`,
@@ -58,38 +74,22 @@ export async function PUT(req: Request) {
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
                     <h2 style="color: #16a34a;">Olá, ${booking.customerName}!</h2>
                     <p>Ótima notícia! Seu agendamento foi <strong>CONFIRMADO</strong>.</p>
-                    
                     <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #dcfce7;">
                         <p><strong>📅 Data:</strong> ${dataFormatada}</p>
                         <p><strong>💇 Serviço:</strong> ${booking.service?.name || "Atendimento"}</p>
                         <p><strong>👨‍⚕️ Profissional:</strong> ${booking.professional?.name || "Profissional da Equipe"}</p>
-                        <p><strong>📍 Local:</strong> ${nomeEmpresa}</p>
+                        <p><strong>📍 Local:</strong> ${booking.company.name}</p>
                     </div>
-                    
-                    <p>Estamos te esperando! Se precisar remarcar, entre em contato com antecedência.</p>
+                    <p>Estamos te esperando!</p>
                 </div>
             `
         });
-
-        // 2. Email para o Admin (Cópia de Confirmação)
-        if (booking.company.notificationEmail) {
-          await resend.emails.send({
-            from: `NOHUD App <nao-responda@nohud.com.br>`,
-            to: booking.company.notificationEmail,
-            subject: `🗓️ Agendamento CONFIRMADO: ${booking.customerName}`,
-            html: `
-                    <p>O agendamento foi confirmado com sucesso.</p>
-                    <p><strong>Cliente:</strong> ${booking.customerName}</p>
-                    <p><strong>Data:</strong> ${dataFormatada}</p>
-                    <p><strong>Profissional:</strong> ${booking.professional?.name || "N/A"}</p>
-                `
-          });
-        }
-
-        console.log("E-mails de confirmação enviados.");
-      } catch (emailError) {
-        console.error("Erro ao enviar e-mail de confirmação:", emailError);
+        if (error) console.error("❌ [DEBUG] Erro Resend Cliente:", error);
+      } catch (e) {
+        console.error("❌ [DEBUG] Erro fatal e-mail cliente:", e);
       }
+    } else {
+      console.log("⚠️ [DEBUG] Cliente sem e-mail cadastrado, pulando notificação do cliente.");
     }
 
     return NextResponse.json(updated);

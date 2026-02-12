@@ -28,12 +28,22 @@ export async function POST(req: Request) {
             return new NextResponse("Dados incompletos", { status: 400 });
         }
 
+        const dataAgendamento = new Date(date);
+        const agora = new Date();
+
+        // Se a data for anterior ao momento atual (com margem de 1 minuto)
+        if (dataAgendamento < new Date(agora.getTime() - 60000)) {
+            return new NextResponse("Não é possível agendar um horário que já passou.", { status: 400 });
+        }
+
         // 2. Busca dados auxiliares
         const [service, professional, company] = await Promise.all([
             serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
             professionalId ? prisma.professional.findUnique({ where: { id: professionalId } }) : null,
             prisma.company.findUnique({ where: { id: companyId } })
         ]);
+
+        console.log("🔍 [DEBUG] Empresa encontrada:", company?.name, "| Email de Notificação:", company?.notificationEmail);
 
         let finalClientId = clientId;
 
@@ -88,7 +98,8 @@ export async function POST(req: Request) {
         // A) E-mail para a EMPRESA/ADMIN (Alerta para APROVAR)
         if (company?.notificationEmail) {
             try {
-                await resend.emails.send({
+                console.log("📨 [DEBUG] Tentando enviar e-mail para admin:", company.notificationEmail);
+                const { data, error } = await resend.emails.send({
                     from: `NOHUD App <nao-responda@nohud.com.br>`,
                     to: company.notificationEmail,
                     subject: `🔔 Novo Agendamento Pendente: ${name}`,
@@ -101,9 +112,17 @@ export async function POST(req: Request) {
                     <a href="https://meu-agendador-kappa.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel</a>
                 `
                 });
+
+                if (error) {
+                    console.error("❌ [DEBUG] Erro Resend:", error);
+                } else {
+                    console.log("✅ [DEBUG] E-mail enviado! ID:", data?.id);
+                }
             } catch (error) {
-                console.error("Erro ao enviar e-mail para admin:", error);
+                console.error("❌ [DEBUG] Erro fatal no envio:", error);
             }
+        } else {
+            console.log("⚠️ [DEBUG] Empresa não possui email de notificação configurado.");
         }
 
         return NextResponse.json(booking);

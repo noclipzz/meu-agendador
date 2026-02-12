@@ -110,59 +110,59 @@ export async function POST(req: Request) {
         }
 
         // 4. ENVIO DE E-MAILS (ATUALIZADO)
-        if (cliente?.email && process.env.RESEND_API_KEY) {
+        if (process.env.RESEND_API_KEY) {
             const isPago = status === "PAGO";
             const corStatus = isPago ? "#059669" : "#dc2626";
             const tituloEmail = isPago ? `Recibo de Pagamento - ${empresa?.name}` : `Fatura em Aberto - ${empresa?.name}`;
 
             try {
-                await resend.emails.send({
-                    from: `NOHUD App <nao-responda@nohud.com.br>`,
-                    // ------------------------------------------------------------------
-                    to: cliente.email,
-                    subject: tituloEmail,
-                    html: `
-                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 20px; padding: 40px; color: #333;">
-                        <h1 style="color: ${corStatus}; font-size: 24px;">${isPago ? 'Pagamento Confirmado!' : 'Pagamento em Aberto'}</h1>
-                        <p>Olá, <strong>${cliente.name}</strong>.</p>
-                        <p>${isPago ? 'Recebemos seu pagamento. Seguem os detalhes do serviço realizado:' : 'Seu atendimento foi concluído! O pagamento consta em aberto no nosso sistema.'}</p>
-                        
-                        <div style="background: #f9fafb; border-radius: 15px; padding: 20px; margin: 20px 0;">
-                            <p style="margin: 5px 0;"><strong>Serviço:</strong> ${description}</p>
-                            <p style="margin: 5px 0;"><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                            <p style="margin: 5px 0;"><strong>Forma de Pagamento:</strong> ${method || 'A definir'}</p>
-                            <p style="margin: 5px 0;"><strong>Vencimento:</strong> ${new Date(dueDate).toLocaleDateString('pt-BR')}</p>
-                        </div>
-
-                        ${!isPago ? `
-                            <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin-bottom: 20px;">
-                                <p style="color: #991b1b; margin: 0; font-size: 14px;"><strong>Atenção:</strong> Por favor, entre em contato conosco para realizar o pagamento e baixar sua fatura.</p>
+                // A. E-mail para o Cliente (Se houver e-mail)
+                if (cliente?.email) {
+                    console.log("📨 [DEBUG] Enviando e-mail financeiro para CLIENTE:", cliente.email);
+                    const { error: errorClient } = await resend.emails.send({
+                        from: `NOHUD App <nao-responda@nohud.com.br>`,
+                        to: cliente.email,
+                        subject: tituloEmail,
+                        html: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 20px; padding: 40px; color: #333;">
+                            <h1 style="color: ${corStatus}; font-size: 24px;">${isPago ? 'Pagamento Confirmado!' : 'Pagamento em Aberto'}</h1>
+                            <p>Olá, <strong>${cliente.name}</strong>.</p>
+                            <p>${isPago ? 'Recebemos seu pagamento. Seguem os detalhes do serviço realizado:' : 'Seu atendimento foi concluído! O pagamento consta em aberto no nosso sistema.'}</p>
+                            
+                            <div style="background: #f9fafb; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                                <p style="margin: 5px 0;"><strong>Serviço:</strong> ${description}</p>
+                                <p style="margin: 5px 0;"><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                <p style="margin: 5px 0;"><strong>Forma de Pagamento:</strong> ${method || 'A definir'}</p>
+                                <p style="margin: 5px 0;"><strong>Vencimento:</strong> ${new Date(dueDate).toLocaleDateString('pt-BR')}</p>
                             </div>
-                        ` : ''}
+                            <p style="font-size: 12px; color: #999; text-align: center;">${empresa?.name} - Sistema Automático</p>
+                        </div>
+                    `
+                    });
+                    if (errorClient) console.error("❌ [DEBUG] Erro Resend Financeiro Cliente:", errorClient);
+                } else {
+                    console.log("⚠️ [DEBUG] Cliente sem e-mail, pulando notificação financeira do cliente.");
+                }
 
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
-                        <p style="font-size: 12px; color: #999; text-align: center;">${empresa?.name} - Sistema Automático</p>
-                    </div>
-                `
-                });
-
-                // --- E-mail para ADMIN EMPRESA ---
+                // B. E-mail para o Admin (Sempre que houver notificationEmail)
                 if (empresa?.notificationEmail) {
-                    await resend.emails.send({
+                    console.log("📨 [DEBUG] Enviando e-mail financeiro para ADMIN:", empresa.notificationEmail);
+                    const { error: errorAdmin } = await resend.emails.send({
                         from: `NOHUD App <nao-responda@nohud.com.br>`,
                         to: empresa.notificationEmail,
                         subject: isPago ? `💰 Pagamento Recebido: R$ ${value}` : `🧾 Fatura Gerada: R$ ${value}`,
                         html: `
-                            <p>Atualização financeira:</p>
-                            <p><strong>Cliente:</strong> ${cliente.name}</p>
+                            <p>Atualização financeira no sistema:</p>
+                            <p><strong>Cliente:</strong> ${cliente?.name || 'Não identificado'}</p>
+                            <p><strong>Serviço:</strong> ${description}</p>
                             <p><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR')}</p>
                             <p><strong>Status:</strong> ${isPago ? 'PAGO ✅' : 'PENDENTE ⏳'}</p>
                         `
                     });
+                    if (errorAdmin) console.error("❌ [DEBUG] Erro Resend Financeiro Admin:", errorAdmin);
                 }
-
             } catch (e) {
-                console.error("Erro ao enviar e-mail financeiro:", e);
+                console.error("❌ [DEBUG] Erro fatal no envio financeiro:", e);
             }
         }
 
