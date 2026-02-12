@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
     Plus, Search, Phone, Mail, History, X, Save, UserPlus, Pencil,
     Calendar, Clock, MapPin, FileText, CheckCircle2, UserCircle,
@@ -74,6 +75,11 @@ export default function ClientesPage() {
         birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO"
     });
 
+    // Query params para integração com a agenda
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+
     async function handleCEPChange(cep: string) {
         const formatado = formatarCEP(cep);
         setForm(prev => ({ ...prev, cep: formatado }));
@@ -99,6 +105,37 @@ export default function ClientesPage() {
     }
 
     useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+
+    // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
+    useEffect(() => {
+        if (loading || clientes.length === 0 && !searchParams.get('novoCadastro')) return;
+
+        const abrirFichaId = searchParams.get('abrirFicha');
+        const novoCadastro = searchParams.get('novoCadastro');
+
+        if (abrirFichaId) {
+            const cliente = clientes.find(c => c.id === abrirFichaId);
+            if (cliente) {
+                abrirFichaCliente(cliente);
+            }
+            // Limpa os params da URL
+            router.replace('/painel/clientes', { scroll: false });
+        } else if (novoCadastro === '1') {
+            const nome = searchParams.get('nome') || '';
+            const telefone = searchParams.get('telefone') || '';
+            const bookingId = searchParams.get('bookingId') || '';
+            setForm(prev => ({
+                ...prev,
+                id: '',
+                name: nome,
+                phone: formatarTelefone(telefone),
+            }));
+            if (bookingId) setPendingBookingId(bookingId);
+            setModalAberto(true);
+            // Limpa os params da URL
+            router.replace('/painel/clientes', { scroll: false });
+        }
+    }, [loading, clientes]);
 
     async function carregarEmpresa() {
         try {
@@ -166,6 +203,20 @@ export default function ClientesPage() {
                 }
             } else {
                 setClientes(prev => [...prev, clienteSalvo]);
+
+                // Se veio da agenda, vincula o novo cliente ao agendamento
+                if (pendingBookingId) {
+                    try {
+                        await fetch('/api/painel/vincular-cliente', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ bookingId: pendingBookingId, clientId: clienteSalvo.id })
+                        });
+                    } catch (err) {
+                        console.error('Erro ao vincular cliente ao agendamento:', err);
+                    }
+                    setPendingBookingId(null);
+                }
             }
             toast.success(form.id ? "Dados atualizados!" : "Cliente cadastrado!");
             fecharModal();

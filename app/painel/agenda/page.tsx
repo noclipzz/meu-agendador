@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -47,6 +48,7 @@ const calcularLayoutVisual = (agendamentos: any[]) => {
 export default function PainelDashboard() {
     const { user } = useUser();
     const { refreshKey } = useAgenda();
+    const router = useRouter();
 
     const [view, setView] = useState<'month' | 'week' | 'day'>('day');
     const [agendamentos, setAgendamentos] = useState<any[]>([]);
@@ -442,12 +444,45 @@ export default function PainelDashboard() {
                                     ) : (
                                         <>
                                             <h2 className="text-2xl font-bold dark:text-white">{agendamentoSelecionado.customerName}</h2>
-                                            <p className="text-gray-500 text-sm font-bold flex items-center gap-1"><Phone size={12} /> {agendamentoSelecionado.customerPhone || "N/A"}</p>
+                                            <p className="text-gray-400 text-xs">Detalhes</p>
+                                            <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone || "N/A"}</p>
                                         </>
                                     )}
                                 </div>
                             </div>
-                            {!isEditing && <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition"><Pencil size={20} /></button>}
+                            {!isEditing && (
+                                <div className="flex items-center gap-1">
+                                    <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar agendamento"><Pencil size={20} /></button>
+                                    {agendamentoSelecionado.clientId ? (
+                                        <button
+                                            onClick={() => {
+                                                setAgendamentoSelecionado(null);
+                                                router.push(`/painel/clientes?abrirFicha=${agendamentoSelecionado.clientId}`);
+                                            }}
+                                            className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
+                                            title="Ver ficha do cliente"
+                                        >
+                                            <FileText size={20} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setAgendamentoSelecionado(null);
+                                                const params = new URLSearchParams();
+                                                params.set('novoCadastro', '1');
+                                                if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                params.set('bookingId', agendamentoSelecionado.id);
+                                                router.push(`/painel/clientes?${params.toString()}`);
+                                            }}
+                                            className="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full text-green-600 transition"
+                                            title="Criar cadastro para este cliente"
+                                        >
+                                            <UserPlus size={20} />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-4">
                             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
