@@ -88,7 +88,11 @@ export async function POST(req: Request) {
         birthDate: body.birthDate,
         cep: body.cep,
         address: body.address,
+        number: body.number,
+        complement: body.complement,
+        neighborhood: body.neighborhood,
         city: body.city,
+        state: body.state,
         notes: body.notes,
         status: body.status || "ATIVO",
         companyId: companyId
@@ -129,7 +133,11 @@ export async function PUT(req: Request) {
         birthDate: data.birthDate,
         cep: data.cep,
         address: data.address,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
         city: data.city,
+        state: data.state,
         notes: data.notes,
         status: data.status
       }

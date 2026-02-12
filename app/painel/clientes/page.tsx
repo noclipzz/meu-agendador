@@ -72,7 +72,7 @@ export default function ClientesPage() {
 
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
-        birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO"
+        birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", status: "ATIVO"
     });
 
     // Query params para integração com a agenda
@@ -93,8 +93,10 @@ export default function ClientesPage() {
                     setForm(prev => ({
                         ...prev,
                         cep: formatado,
-                        address: `${data.logradouro}${data.bairro ? ', ' + data.bairro : ''}`,
-                        city: `${data.localidade} - ${data.uf}`
+                        address: data.logradouro,
+                        neighborhood: data.bairro,
+                        city: data.localidade,
+                        state: data.uf
                     }));
                     toast.success("Endereço localizado!");
                 }
@@ -302,12 +304,16 @@ export default function ClientesPage() {
             cpf: formatarCPF(cliente.cpf || ""),
             cep: formatarCEP(cliente.cep || ""),
             birthDate: cliente.birthDate || "",
-            rg: cliente.rg || ""
+            rg: cliente.rg || "",
+            number: cliente.number || "",
+            complement: cliente.complement || "",
+            neighborhood: cliente.neighborhood || "",
+            state: cliente.state || ""
         });
         setIsEditing(true);
         setModalAberto(true);
     }
-    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO" }); }
+    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", status: "ATIVO" }); }
 
     // === PRONTUÁRIO ===
     async function carregarProntuario() {
@@ -602,9 +608,15 @@ export default function ClientesPage() {
                                         </section>
                                         <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Localização</h4>
                                             <div className="grid grid-cols-12 gap-4">
-                                                <div className="col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-sm">{clienteSelecionado.cep || "---"}</p></div>
-                                                <div className="col-span-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-sm truncate">{clienteSelecionado.address || "---"}</p></div>
-                                                <div className="col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Cidade</label><p className="font-bold dark:text-white text-sm">{clienteSelecionado.city || "---"}</p></div>
+                                                <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.cep || "---"}</p></div>
+                                                <div className="col-span-6 md:col-span-9 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-xs truncate" title={`${clienteSelecionado.address || ""} ${clienteSelecionado.number || ""}`}>{clienteSelecionado.address || "---"}{clienteSelecionado.number ? `, ${clienteSelecionado.number}` : ""}</p></div>
+
+                                                <div className="col-span-6 md:col-span-5 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Bairro</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.neighborhood || "---"}</p></div>
+                                                <div className={`col-span-6 ${clienteSelecionado.complement ? 'md:col-span-4' : 'md:col-span-7'} p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800`}><label className="text-[9px] font-black text-gray-400 uppercase">Cidade / UF</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.city || "---"}{clienteSelecionado.state ? ` / ${clienteSelecionado.state}` : ""}</p></div>
+
+                                                {clienteSelecionado.complement && (
+                                                    <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Comp.</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.complement}</p></div>
+                                                )}
                                             </div>
                                         </section>
                                         <section><div className="flex justify-between items-center mb-4"><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={14} /> Notas</h4><button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 bg-blue-600 text-white rounded-lg"><Plus size={14} /></button></div>
@@ -820,33 +832,112 @@ export default function ClientesPage() {
             {/* MODAL CADASTRO/EDIÇÃO (MANTIDO) */}
             {modalAberto && (
                 <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[80] p-4">
-                    <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-4xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-5xl relative shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
                         <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                        <h2 className="text-3xl font-black mb-8 dark:text-white">{isEditing ? "Editar Ficha" : "Novo Cliente"}</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="space-y-5">
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome Completo</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Telefone</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Email para Alertas</label><input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                        <h2 className="text-3xl font-black mb-8 dark:text-white px-2">{isEditing ? "Editar Ficha" : "Novo Cliente"}</h2>
+
+                        <div className="space-y-8 px-2">
+                            {/* SEÇÃO 1: DADOS PESSOAIS */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <UserCircle size={16} /> Dados Pessoais
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-8 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
+                                        <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                    </div>
+
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
+                                        <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
+                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
+                                    </div>
+                                    <div className="md:col-span-12 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
+                                        <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nascimento</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
+                            </section>
+
+                            {/* SEÇÃO 2: ENDEREÇO */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <MapPin size={16} /> Endereço Residencial
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label>
+                                        <div className="relative">
+                                            <input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
+                                            <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-7 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Logradouro" />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="Nº" />
+                                    </div>
+
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} placeholder="Bairro" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} placeholder="Apto, Bloco..." />
+                                    </div>
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" />
+                                    </div>
+                                    <div className="md:col-span-1 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">UF</label>
+                                        <input maxLength={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition uppercase text-center" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" />
+                                    </div>
                                 </div>
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CPF</label><input maxLength={14} inputMode="numeric" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} /></div>
-                            </div>
-                            <div className="space-y-5">
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Endereço Residencial</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Cidade</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CEP</label><input maxLength={9} inputMode="numeric" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="00000-000" value={form.cep} onChange={e => handleCEPChange(e.target.value)} /></div>
+                            </section>
+
+                            {/* SEÇÃO 3: OUTROS */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <ClipboardList size={16} /> Outras Informações
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Status do Cliente</label>
+                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                            <option value="ATIVO">ATIVO</option>
+                                            <option value="INATIVO">INATIVO</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-8 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas</label>
+                                        <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
+                                    </div>
                                 </div>
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Status</label><select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 font-bold dark:text-white outline-none" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="ATIVO">ATIVO</option><option value="INATIVO">INATIVO</option></select></div>
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Notas Iniciais</label><textarea rows={2} className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none dark:text-white font-bold" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
-                            </div>
+                            </section>
                         </div>
-                        <button onClick={salvarCliente} className="w-full mt-8 bg-blue-600 text-white p-6 rounded-[2rem] font-black text-xl shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3"><Save size={24} /> Salvar Registro</button>
+
+                        <div className="mt-8 px-2">
+                            <button onClick={salvarCliente} className="w-full bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3 active:scale-[0.98]">
+                                <Save size={20} /> Salvar Registro
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
