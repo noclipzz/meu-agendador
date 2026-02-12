@@ -589,7 +589,7 @@ export default function FinanceiroPage() {
                             </div>
 
                             <div className="space-y-3">
-                                {despesaParaExcluir.quantidade > 1 ? (
+                                {despesaParaExcluir.quantidade > 1 || despesaParaExcluir.frequency !== 'ONCE' ? (
                                     <>
                                         <button
                                             onClick={() => confirmarExclusao(true)}
@@ -597,7 +597,9 @@ export default function FinanceiroPage() {
                                             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2"
                                         >
                                             {salvando ? <Loader2 className="animate-spin" /> : <Repeat size={18} />}
-                                            Excluir Toda a Série ({despesaParaExcluir.quantidade}x)
+                                            {despesaParaExcluir.quantidade > 1
+                                                ? `Excluir Toda a Série (${despesaParaExcluir.quantidade}x)`
+                                                : "Excluir Toda a Série (Recorrente)"}
                                         </button>
                                         <button
                                             onClick={() => confirmarExclusao(false)}
