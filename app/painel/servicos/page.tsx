@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 // --- TROQUEI SCISSORS POR BRIEFCASE PARA FICAR GENÉRICO ---
 import { Plus, Search, Briefcase, Trash2, Save, X, Pencil, Beaker } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 export default function ServicosPage() {
     const [servicos, setServicos] = useState<any[]>([]);
@@ -11,6 +12,7 @@ export default function ServicosPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [busca, setBusca] = useState("");
+    const [servicoParaExcluir, setServicoParaExcluir] = useState<string | null>(null);
 
     // --- CORREÇÃO: VALORES INICIAIS VAZIOS PARA NÃO ATRAPALHAR O USUÁRIO ---
     const [form, setForm] = useState({ id: "", name: "", price: "", duration: "", commission: "" });
@@ -123,11 +125,12 @@ export default function ServicosPage() {
         }
     }
 
-    async function excluir(id: string) {
-        if (!confirm("Excluir serviço?")) return;
-        await fetch('/api/painel/servicos', { method: 'DELETE', body: JSON.stringify({ id }) });
+    async function confirmarExclusao() {
+        if (!servicoParaExcluir) return;
+        await fetch('/api/painel/servicos', { method: 'DELETE', body: JSON.stringify({ id: servicoParaExcluir }) });
         carregarDados();
         toast.success("Excluído.");
+        setServicoParaExcluir(null);
     }
 
     const filtrados = servicos.filter(s => s.name.toLowerCase().includes(busca.toLowerCase()));
@@ -152,7 +155,7 @@ export default function ServicosPage() {
                             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center"><Briefcase size={24} /></div>
                             <div className="flex gap-2">
                                 <button onClick={() => abrirModal(s)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-blue-600 transition"><Pencil size={16} /></button>
-                                <button onClick={() => excluir(s.id)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-red-600 transition"><Trash2 size={16} /></button>
+                                <button onClick={() => setServicoParaExcluir(s.id)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-red-600 transition"><Trash2 size={16} /></button>
                             </div>
                         </div>
                         <h3 className="font-black text-lg dark:text-white uppercase truncate">{s.name}</h3>
@@ -229,6 +232,15 @@ export default function ServicosPage() {
                     </div>
                 </div>
             )}
+            {/* MODAL DE CONFIRMAÇÃO */}
+            <ConfirmationModal
+                isOpen={!!servicoParaExcluir}
+                onClose={() => setServicoParaExcluir(null)}
+                onConfirm={confirmarExclusao}
+                title="Excluir Serviço?"
+                message="Tem certeza que deseja remover este serviço? Esta ação não pode ser desfeita."
+                isDeleting={true}
+            />
         </div>
     );
 }

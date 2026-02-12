@@ -7,6 +7,7 @@ import {
     Heading, Loader2, Pencil, Copy, ClipboardList
 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number";
 
@@ -51,6 +52,7 @@ export default function ProntuariosPage() {
     const [campos, setCampos] = useState<FormField[]>([]);
     const [salvando, setSalvando] = useState(false);
     const [showFieldPicker, setShowFieldPicker] = useState(false);
+    const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
 
     useEffect(() => { carregarTemplates(); }, []);
 
@@ -350,7 +352,7 @@ export default function ProntuariosPage() {
                                     <button onClick={() => editarTemplate(t)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition">
                                         <Pencil size={14} />
                                     </button>
-                                    <button onClick={() => excluirTemplate(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
+                                    <button onClick={() => setTemplateParaExcluir(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
@@ -366,6 +368,15 @@ export default function ProntuariosPage() {
                     ))}
                 </div>
             )}
+            {/* MODAL DE CONFIRMAÇÃO */}
+            <ConfirmationModal
+                isOpen={!!templateParaExcluir}
+                onClose={() => setTemplateParaExcluir(null)}
+                onConfirm={() => templateParaExcluir && excluirTemplate(templateParaExcluir)}
+                title="Excluir Prontuário?"
+                message="Tem certeza que deseja excluir este modelo de prontuário? Esta ação não pode ser desfeita."
+                isDeleting={true}
+            />
         </div>
     );
 }
