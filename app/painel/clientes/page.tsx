@@ -229,7 +229,18 @@ export default function ClientesPage() {
         setConfirmarExclusao(null);
     }
 
-    function abrirEdicao(cliente: any) { setForm({ ...cliente }); setIsEditing(true); setModalAberto(true); }
+    function abrirEdicao(cliente: any) {
+        setForm({
+            ...cliente,
+            phone: formatarTelefone(cliente.phone || ""),
+            cpf: formatarCPF(cliente.cpf || ""),
+            cep: formatarCEP(cliente.cep || ""),
+            birthDate: cliente.birthDate || "",
+            rg: cliente.rg || ""
+        });
+        setIsEditing(true);
+        setModalAberto(true);
+    }
     function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", city: "", notes: "", status: "ATIVO" }); }
 
     // === PRONTUÁRIO ===
@@ -750,20 +761,20 @@ export default function ClientesPage() {
                             <div className="space-y-5">
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome Completo</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Telefone</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
+                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Telefone</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Email para Alertas</label><input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nascimento</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
                                 </div>
-                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CPF</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} /></div>
+                                <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CPF</label><input maxLength={14} inputMode="numeric" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="000.000.000-00" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} /></div>
                             </div>
                             <div className="space-y-5">
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Endereço Residencial</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Cidade</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CEP</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="00000-000" value={form.cep} onChange={e => handleCEPChange(e.target.value)} /></div>
+                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">CEP</label><input maxLength={9} inputMode="numeric" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" placeholder="00000-000" value={form.cep} onChange={e => handleCEPChange(e.target.value)} /></div>
                                 </div>
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Status</label><select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 font-bold dark:text-white outline-none" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option value="ATIVO">ATIVO</option><option value="INATIVO">INATIVO</option></select></div>
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Notas Iniciais</label><textarea rows={2} className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none dark:text-white font-bold" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>

@@ -9,6 +9,15 @@ import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
 // --- HELPERS ---
+// --- HELPER: MÁSCARA DE TELEFONE ---
+const formatarTelefone = (value: string) => {
+    const raw = (value || "").replace(/\D/g, "").slice(0, 11);
+    if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+    if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+    if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+    return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+};
+
 const calcularLayoutVisual = (agendamentos: any[]) => {
     if (!agendamentos.length) return [];
     const sorted = [...agendamentos].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -425,8 +434,17 @@ export default function PainelDashboard() {
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500"><Calendar size={32} /></div>
                                 <div>
-                                    {isEditing ? <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} /> : <h2 className="text-2xl font-bold dark:text-white">{agendamentoSelecionado.customerName}</h2>}
-                                    <p className="text-gray-500 text-sm">{isEditing ? "Editando agendamento" : "Detalhes"}</p>
+                                    {isEditing ? (
+                                        <div className="space-y-2 w-full">
+                                            <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} placeholder="Nome" />
+                                            <input className="text-lg font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h2 className="text-2xl font-bold dark:text-white">{agendamentoSelecionado.customerName}</h2>
+                                            <p className="text-gray-500 text-sm font-bold flex items-center gap-1"><Phone size={12} /> {agendamentoSelecionado.customerPhone || "N/A"}</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             {!isEditing && <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition"><Pencil size={20} /></button>}

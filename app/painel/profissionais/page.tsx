@@ -130,8 +130,8 @@ export default function GestaoEquipe() {
         setForm({
             id: p.id,
             name: p.name,
-            email: p.email || "", // Carrega e-mail se disponível (pode precisar ajustar o GET da API para trazer o email do TeamMember)
-            phone: p.phone || "",
+            email: p.email || "",
+            phone: formatarTelefone(p.phone || ""),
             color: p.color || "#3b82f6"
         });
         setModalAberto(true);
@@ -367,7 +367,7 @@ export default function GestaoEquipe() {
 
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">WhatsApp</label>
-                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} />
+                                <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} />
                             </div>
 
                             <div>

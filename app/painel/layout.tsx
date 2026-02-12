@@ -423,7 +423,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                                 onChange={e => setNovo({ ...novo, nome: e.target.value, clientId: e.target.value === "" ? "" : novo.clientId })}
                                             />
                                             <input
-                                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold"
+                                                type="tel"
+                                                maxLength={15}
+                                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold transition-all"
                                                 placeholder="(00) 00000-0000"
                                                 value={novo.phone}
                                                 onChange={e => setNovo({ ...novo, phone: formatarTelefoneInput(e.target.value) })}
@@ -490,7 +492,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             </div>
                             <div className="overflow-y-auto flex-1 space-y-2 custom-scrollbar pr-2 px-2">
                                 {clientesFiltrados.map(c => (
-                                    <button key={c.id} onClick={() => { setNovo({ ...novo, clientId: c.id, nome: c.name, phone: c.phone || "" }); setIsSearchModalOpen(false); setTermoBusca(""); }} className="w-full text-left p-5 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-transparent hover:border-blue-200 transition flex justify-between items-center dark:text-white group">
+                                    <button key={c.id} onClick={() => { setNovo({ ...novo, clientId: c.id, nome: c.name, phone: formatarTelefoneInput(c.phone || "") }); setIsSearchModalOpen(false); setTermoBusca(""); }} className="w-full text-left p-5 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-transparent hover:border-blue-200 transition flex justify-between items-center dark:text-white group">
                                         <div><p className="font-black text-base group-hover:text-blue-600 transition">{c.name}</p><p className="text-xs font-bold text-gray-500">{c.phone || "Sem telefone"}</p></div>
                                         <PlusCircle size={22} className="text-blue-500 opacity-0 group-hover:opacity-100 transition" />
                                     </button>
