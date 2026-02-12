@@ -159,6 +159,11 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     });
 
     if (res.ok) {
+      const data = await res.json();
+      // Se houver avisos de estoque, mostrar alert antes de concluir visualmente
+      if (data.warnings && data.warnings.length > 0) {
+        alert(data.warnings.join("\n"));
+      }
       setAgendamentoConcluido(true);
     } else {
       const err = await res.json();
