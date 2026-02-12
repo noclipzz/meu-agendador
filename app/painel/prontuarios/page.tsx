@@ -18,6 +18,8 @@ interface FormField {
     required?: boolean;
     options?: string[];
     placeholder?: string;
+    allowsDetails?: boolean;
+    detailsLabel?: string;
 }
 
 interface Template {
@@ -262,6 +264,33 @@ export default function ProntuariosPage() {
                                         <button onClick={() => addOption(campo.id)} className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
                                             <Plus size={12} /> Adicionar opção
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* OPÇÃO DE JUSTIFICATIVA PARA CHECKBOX */}
+                                {campo.type === "checkbox" && (
+                                    <div className="pl-4 space-y-3">
+                                        <label className="flex items-center gap-2 cursor-pointer group/opt">
+                                            <input
+                                                type="checkbox"
+                                                className="accent-blue-600 w-4 h-4"
+                                                checked={campo.allowsDetails || false}
+                                                onChange={e => atualizarCampo(campo.id, { allowsDetails: e.target.checked })}
+                                            />
+                                            <span className="text-[11px] font-bold text-gray-500 group-hover/opt:text-blue-600 transition">Ativar justificativa se a resposta for "SIM"</span>
+                                        </label>
+
+                                        {campo.allowsDetails && (
+                                            <div className="animate-in slide-in-from-top-2 duration-200">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase ml-1 mb-1 block">Pergunta da Justificativa (Ex: Qual?)</label>
+                                                <input
+                                                    className="w-full border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500 transition"
+                                                    placeholder="Ex: Se sim, descreva qual..."
+                                                    value={campo.detailsLabel || ""}
+                                                    onChange={e => atualizarCampo(campo.id, { detailsLabel: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>

@@ -396,9 +396,14 @@ export default function ClientesPage() {
                 currentSection = { header: field.label, items: [] };
                 return;
             }
-            const valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
+            let valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
                 field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
                     data[field.id] || '—';
+
+            if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
+                valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
+            }
+
             currentSection.items.push({ label: field.label, value: String(valor) });
         });
         if (currentSection.items.length > 0 || currentSection.header) {
@@ -748,7 +753,16 @@ export default function ClientesPage() {
                                                             <div key={field.id} className="grid grid-cols-3 gap-4 py-2 border-b dark:border-gray-800/50">
                                                                 <p className="text-xs font-bold text-gray-500 col-span-1">{field.label}</p>
                                                                 <p className="text-sm font-bold dark:text-white col-span-2">
-                                                                    {field.type === 'checkbox' ? (valor ? '✅ Sim' : '❌ Não') :
+                                                                    {field.type === 'checkbox' ? (
+                                                                        <span>
+                                                                            {valor ? '✅ Sim' : '❌ Não'}
+                                                                            {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
+                                                                                <span className="text-gray-400 font-normal ml-2 italic">
+                                                                                    ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                    ) :
                                                                         field.type === 'checkboxGroup' ? (Array.isArray(valor) ? valor.join(', ') : '---') :
                                                                             valor || '---'}
                                                                 </p>
@@ -1035,11 +1049,25 @@ export default function ClientesPage() {
                                                     </div>
                                                 )}
                                                 {field.type === 'checkbox' && (
-                                                    <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
-                                                        <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
-                                                        <span className="text-sm font-bold dark:text-white">{field.label}</span>
-                                                        {field.required && <span className="text-red-500 text-xs">*</span>}
-                                                    </label>
+                                                    <div className="space-y-3">
+                                                        <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
+                                                            <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
+                                                            <span className="text-sm font-bold dark:text-white">{field.label}</span>
+                                                            {field.required && <span className="text-red-500 text-xs">*</span>}
+                                                        </label>
+
+                                                        {field.allowsDetails && prontuarioFormData[field.id] && (
+                                                            <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
+                                                                <input
+                                                                    className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
+                                                                    placeholder="Descreva aqui..."
+                                                                    value={prontuarioFormData[field.id + "_details"] || ''}
+                                                                    onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id + "_details"]: e.target.value })}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 )}
                                                 {field.type === 'checkboxGroup' && (
                                                     <div>
