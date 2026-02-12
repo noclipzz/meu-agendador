@@ -85,35 +85,7 @@ export async function POST(req: Request) {
         const nomeProfissional = professional?.name || "Profissional da Equipe";
         const nomeEmpresa = company?.name || "NOHUD Agenda";
 
-        // A) E-mail para o CLIENTE (Avisando que está PENDENTE)
-        if (email) {
-            try {
-                await resend.emails.send({
-                    from: `NOHUD App <nao-responda@nohud.com.br>`,
-                    to: email,
-                    subject: `⏳ Solicitação de Agendamento: ${dataFormatada}`,
-                    html: `
-                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px; max-width: 600px;">
-                        <h2 style="color: #d97706;">Olá, ${name}!</h2>
-                        <p>Recebemos sua solicitação de agendamento.</p>
-                        <p><strong>Status atual:</strong> <span style="background: #fffbeb; color: #b45309; padding: 2px 6px; border-radius: 4px; font-weight: bold;">Aguardando Confirmação</span></p>
-                        
-                        <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                            <p><strong>📅 Data:</strong> ${dataFormatada}</p>
-                            <p><strong>💇 Serviço:</strong> ${nomeServico}</p>
-                            <p><strong>👨‍⚕️ Profissional:</strong> ${nomeProfissional}</p>
-                            <p><strong>📍 Local:</strong> ${company?.name}</p>
-                        </div>
-                        <p style="font-size: 12px; color: #666;">Você receberá uma nova notificação assim que confirmarmos.</p>
-                    </div>
-                `
-                });
-            } catch (error) {
-                console.error("Erro ao enviar e-mail para cliente:", error);
-            }
-        }
-
-        // B) E-mail para a EMPRESA/ADMIN (Alerta para APROVAR)
+        // A) E-mail para a EMPRESA/ADMIN (Alerta para APROVAR)
         if (company?.notificationEmail) {
             try {
                 await resend.emails.send({
