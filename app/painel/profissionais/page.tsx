@@ -10,6 +10,15 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
+// --- HELPER: MÁSCARA DE TELEFONE ---
+const formatarTelefone = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 11);
+    if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+    if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+    if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+    return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+};
+
 export default function GestaoEquipe() {
     const { refreshAgenda } = useAgenda();
     const [loading, setLoading] = useState(true);
@@ -358,7 +367,7 @@ export default function GestaoEquipe() {
 
                             <div>
                                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">WhatsApp</label>
-                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} />
                             </div>
 
                             <div>

@@ -12,6 +12,15 @@ import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
+// --- HELPER: MÁSCARA DE TELEFONE ---
+const formatarTelefone = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 11);
+    if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+    if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+    if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+    return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+};
+
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [busca, setBusca] = useState("");
@@ -703,7 +712,7 @@ export default function ClientesPage() {
                             <div className="space-y-5">
                                 <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome Completo</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Telefone</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Telefone</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Email para Alertas</label><input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">

@@ -18,19 +18,11 @@ import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
-    if (!value) return "";
-    value = value.replace(/\D/g, "");
-    if (value.length > 11) value = value.substring(0, 11);
-    if (value.length > 10) {
-        value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
-    } else if (value.length > 6) {
-        value = value.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (value.length > 2) {
-        value = value.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
-    } else {
-        value = value.replace(/^(\d*)/, "($1");
-    }
-    return value;
+    const raw = value.replace(/\D/g, "").slice(0, 11);
+    if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+    if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+    if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+    return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
 };
 
 function PainelConteudo({ children }: { children: React.ReactNode }) {
@@ -433,8 +425,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                             <input
                                                 className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold"
                                                 placeholder="(00) 00000-0000"
-                                                value={formatarTelefoneInput(novo.phone)}
-                                                onChange={e => setNovo({ ...novo, phone: e.target.value })}
+                                                value={novo.phone}
+                                                onChange={e => setNovo({ ...novo, phone: formatarTelefoneInput(e.target.value) })}
                                             />
                                         </div>
                                     </>

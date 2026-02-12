@@ -9,6 +9,15 @@ import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock } from "
 import Image from 'next/image';
 import Link from 'next/link';
 
+// --- HELPER: MÁSCARA DE TELEFONE ---
+const formatarTelefone = (value: string) => {
+  const raw = value.replace(/\D/g, "").slice(0, 11);
+  if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+  if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+  if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+  return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+};
+
 // --- FUNÇÃO AVANÇADA DE HORÁRIOS ---
 function gerarHorarios(
   inicioExpediente: string, fimExpediente: string, almocoInicio: string, almocoFim: string,
@@ -325,7 +334,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
-                  <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(e.target.value)} />
+                  <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
                 </div>
                 <button onClick={finalizar} className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95">Finalizar Agendamento</button>
               </div>
