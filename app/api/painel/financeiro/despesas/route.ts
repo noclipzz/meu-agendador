@@ -86,8 +86,30 @@ export async function DELETE(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
-    const { id } = await req.json();
-    await prisma.expense.delete({ where: { id } });
+
+    const { id, deleteSeries } = await req.json();
+
+    if (deleteSeries) {
+      // Busca a despesa original para pegar os critérios de grupo
+      const original = await prisma.expense.findUnique({ where: { id } });
+      if (original) {
+        await prisma.expense.deleteMany({
+          where: {
+            companyId: original.companyId,
+            description: original.description,
+            value: original.value,
+            category: original.category,
+            frequency: original.frequency,
+            // Opcional: Se quiser apagar só as futuras:
+            // date: { gte: original.date } 
+            // Mas como o usuário reclamou de "apagar uma por uma", provavelmente quer limpar a série toda.
+          }
+        });
+      }
+    } else {
+      await prisma.expense.delete({ where: { id } });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) { return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 }); }
 }

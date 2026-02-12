@@ -124,12 +124,30 @@ export default function FinanceiroPage() {
         finally { setSalvando(false); }
     }
 
-    async function excluirDespesa(id: string) {
-        if (!confirm("Deseja remover este gasto?")) return;
+    async function excluirDespesa(exp: any) {
+        let deleteSeries = false;
+
+        if (exp.quantidade && exp.quantidade > 1) {
+            // Se for agrupada, pergunta se quer apagar tudo
+            if (confirm(`Esta despesa se repete ${exp.quantidade} vezes. Deseja excluir TODAS as ocorrências da série?`)) {
+                deleteSeries = true;
+            } else {
+                // Se cancelou, pergunta se quer apagar só essa
+                if (!confirm("Deseja excluir APENAS esta ocorrência atual?")) return;
+            }
+        } else {
+            // Se for única
+            if (!confirm("Deseja remover este gasto permanentemente?")) return;
+        }
+
         try {
-            const res = await fetch('/api/painel/financeiro/despesas', { method: 'DELETE', body: JSON.stringify({ id }) });
+            const res = await fetch('/api/painel/financeiro/despesas', {
+                method: 'DELETE',
+                body: JSON.stringify({ id: exp.id, deleteSeries })
+            });
+
             if (res.ok) {
-                toast.success("Despesa removida.");
+                toast.success(deleteSeries ? "Série de despesas removida." : "Despesa removida.");
                 carregarResumo(dataResumo);
                 carregarDespesas(dataDespesas);
             }
@@ -370,7 +388,7 @@ export default function FinanceiroPage() {
                                         )}
                                     </div>
                                     <button onClick={() => prepararEdicao(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-blue-500 transition"><Pencil size={18} /></button>
-                                    <button onClick={() => excluirDespesa(exp.id)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"><Trash2 size={18} /></button>
+                                    <button onClick={() => excluirDespesa(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"><Trash2 size={18} /></button>
                                 </div>
                             </div>
                         ))}
