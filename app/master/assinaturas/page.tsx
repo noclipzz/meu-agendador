@@ -22,6 +22,7 @@ import {
     CalendarDays,
     BadgeCheck
 } from "lucide-react";
+import { toast } from "sonner";
 
 const PLANOS = [
     { value: "INDIVIDUAL", label: "Individual", preco: "R$ 35/mês", cor: "blue", icon: <Zap size={18} /> },
@@ -103,9 +104,13 @@ export default function MasterAssinaturas() {
         const dias = usandoCustom ? parseInt(diasCustom) : diasSelecionados;
 
         if (!dias || dias < 1 || dias > 365) {
+            toast.error("A duração deve ser entre 1 e 365 dias.");
             setErro("Dias deve ser entre 1 e 365");
             return;
         }
+
+        console.log("🚀 Enviando assinatura...", { targetUserId: userIdInput, plano: planoSelecionado, dias });
+        const toastId = toast.loading("Processando assinatura...");
 
         setEnviando(true);
         setErro("");
@@ -122,19 +127,29 @@ export default function MasterAssinaturas() {
                 }),
             });
 
+            console.log("📡 Resposta Status:", res.status);
             const data = await res.json();
+            console.log("📦 Dados recebidos:", data);
 
             if (res.ok) {
+                toast.success(data.message || "Assinatura ativada com sucesso!", { id: toastId });
                 setResultado(data);
                 // Recarrega dados da página
                 carregarDados();
-                // Busca info atualizada do user
-                buscarUsuario();
+                // Busca info atualizada do user para mostrar no modal
+                if (userIdInput.trim()) {
+                    buscarUsuario();
+                }
             } else {
-                setErro(data.error || "Erro ao criar assinatura");
+                const msg = data.error || "Erro ao criar assinatura";
+                toast.error(msg, { id: toastId });
+                setErro(msg);
+                console.error("❌ Erro API:", data);
             }
-        } catch {
-            setErro("Erro de conexão");
+        } catch (error) {
+            console.error("❌ Erro Fetch:", error);
+            toast.error("Erro de conexão. Verifique o console.", { id: toastId });
+            setErro("Erro de conexão. Verifique o console.");
         } finally {
             setEnviando(false);
         }
@@ -474,8 +489,8 @@ export default function MasterAssinaturas() {
                                                 {userInfo.subscription && (
                                                     <div className="mt-2 flex flex-wrap gap-2">
                                                         <span className={`text-xs px-2 py-0.5 rounded font-bold ${userInfo.subscription.status === 'ACTIVE'
-                                                                ? 'bg-green-600/20 text-green-400'
-                                                                : 'bg-red-600/20 text-red-400'
+                                                            ? 'bg-green-600/20 text-green-400'
+                                                            : 'bg-red-600/20 text-red-400'
                                                             }`}>
                                                             {userInfo.subscription.status}
                                                         </span>
@@ -563,8 +578,8 @@ export default function MasterAssinaturas() {
                                                 setUsandoCustom(false);
                                             }}
                                             className={`p-3 rounded-xl border text-center transition-all ${!usandoCustom && diasSelecionados === p.dias
-                                                    ? 'border-blue-500 bg-blue-950/40 ring-2 ring-blue-500/30'
-                                                    : 'border-gray-700 hover:border-gray-600 bg-gray-800/40'
+                                                ? 'border-blue-500 bg-blue-950/40 ring-2 ring-blue-500/30'
+                                                : 'border-gray-700 hover:border-gray-600 bg-gray-800/40'
                                                 }`}
                                         >
                                             <p className="font-black text-white text-sm">{p.label}</p>

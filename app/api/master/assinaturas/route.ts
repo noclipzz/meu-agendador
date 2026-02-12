@@ -61,13 +61,20 @@ export async function GET(req: Request) {
 
 // POST - Criar ou atualizar assinatura manualmente
 export async function POST(req: Request) {
+  console.log("🚀 [MASTER API] Recebida requisição POST em /api/master/assinaturas");
   try {
     const { userId } = await auth();
+    console.log("👤 [MASTER API] Solicitante:", userId);
+
     if (userId !== SUPER_ADMIN_ID) {
+      console.warn("⛔ [MASTER API] Acesso negado para:", userId);
       return NextResponse.json({ error: "Acesso Negado" }, { status: 403 });
     }
 
-    const { targetUserId, plano, diasAdicionais } = await req.json();
+    const body = await req.json();
+    console.log("📦 [MASTER API] Payload:", body);
+
+    const { targetUserId, plano, diasAdicionais } = body;
 
     // Validação
     if (!targetUserId || !targetUserId.startsWith('user_')) {
@@ -78,7 +85,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Plano inválido. Opções: ${PLANOS_VALIDOS.join(', ')}` }, { status: 400 });
     }
 
-    const dias = parseInt(diasAdicionais);
+    const dias = Number(diasAdicionais);
     if (isNaN(dias) || dias < 1 || dias > 365) {
       return NextResponse.json({ error: "Dias deve ser entre 1 e 365" }, { status: 400 });
     }
@@ -113,6 +120,8 @@ export async function POST(req: Request) {
       }
     });
 
+    console.log("✅ [MASTER API] Assinatura salva com sucesso:", resultado.id);
+
     return NextResponse.json({
       success: true,
       message: `Assinatura ${sub ? 'atualizada' : 'criada'} com sucesso!`,
@@ -126,7 +135,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Erro ao criar/atualizar assinatura:", error);
+    console.error("❌ [MASTER API] Erro ao criar/atualizar assinatura:", error);
     return NextResponse.json({ error: "Erro interno", details: error.message }, { status: 500 });
   }
 }
