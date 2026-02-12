@@ -20,7 +20,8 @@ export async function POST(req: Request) {
             companyId,
             type,
             location,
-            clientId
+            clientId,
+            autoCreateClient = true // Default: cria cliente automaticamente (comportamento padrão para agendamento público)
         } = body;
 
         // 1. Validações Básicas
@@ -47,8 +48,8 @@ export async function POST(req: Request) {
 
         let finalClientId = clientId;
 
-        // 3. Lógica de Cliente (Cria ou Atualiza se for público)
-        if (!finalClientId) {
+        // 3. Lógica de Cliente (Cria ou Atualiza SE solicitado)
+        if (!finalClientId && autoCreateClient) {
             const phoneClean = phone?.replace(/\D/g, "") || "";
             let existingClient = null;
 

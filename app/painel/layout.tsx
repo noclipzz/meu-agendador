@@ -274,7 +274,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     clientId: novo.clientId || null,
                     type: tipoAgendamento,
                     location: novo.local || null,
-                    companyId: companyId
+                    companyId: companyId,
+                    autoCreateClient: false // No painel, não queremos criar cliente automático se for avulso
                 })
             });
 
