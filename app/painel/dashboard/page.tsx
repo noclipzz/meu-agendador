@@ -30,9 +30,10 @@ export default function DashboardPage() {
         setSubscribing(true);
         try {
             await subscribeUserToPush();
-            toast.success("Notificações ativadas!");
-        } catch (error) {
-            toast.error("Erro ao ativar notificações.");
+            toast.success("Notificações ativadas! A Apple/Google agora tem sua nova chave.");
+        } catch (error: any) {
+            toast.error(`Erro: ${error.message || "Falha técnica"}`);
+            console.error(error);
         } finally {
             setSubscribing(false);
         }
@@ -80,10 +81,11 @@ export default function DashboardPage() {
                         <button
                             onClick={handleEnableNotifications}
                             disabled={subscribing}
-                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-blue-600 shadow-sm hover:bg-blue-50 transition flex items-center gap-2 text-xs font-bold"
-                            title="Ativar Notificações no Celular"
+                            className={`p-3 border rounded-2xl shadow-sm transition flex items-center gap-2 text-xs font-bold ${subscribing ? "bg-gray-100 text-gray-400" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-blue-600 hover:text-green-600"
+                                }`}
+                            title="Ativar Notificações"
                         >
-                            <Bell size={18} className={subscribing ? "animate-pulse" : ""} />
+                            <Bell size={18} className={subscribing ? "animate-pulse text-yellow-500" : "text-current"} />
                             <span className="hidden md:inline">Notificações</span>
                         </button>
                         <button

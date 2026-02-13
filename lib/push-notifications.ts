@@ -27,48 +27,31 @@ export async function subscribeUserToPush() {
         const registration = await navigator.serviceWorker.ready;
         await registration.update();
 
-        // BUSCA A CHAVE PÚBLICA DIRETO DO SERVIDOR (Corta o cache)
+        // 1. BUSCA A CHAVE PÚBLICA DIRETO DO SERVIDOR
         const keyResponse = await fetch('/api/notifications/public-key');
         const { publicKey } = await keyResponse.json();
 
-        if (!publicKey) {
-            throw new Error("Não foi possível obter a chave pública do servidor.");
+        if (!publicKey) throw new Error("Servidor não enviou chave pública.");
+
+        console.log("🛠️ Tentando resetar assinatura antiga...");
+
+        // 2. FORÇAMOS O NAVEGADOR A ESQUECER QUALQUER ASSINATURA VELHA
+        const existingSub = await registration.pushManager.getSubscription();
+        if (existingSub) {
+            console.log("♻️ Desinscrevendo assinatura prévia...");
+            await existingSub.unsubscribe();
         }
 
-        // 1. Verifica se já existe uma inscrição
-        let subscription = await registration.pushManager.getSubscription();
+        // 3. PEDIMOS PERMISSÃO (Caso não tenha)
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') throw new Error('Permissão negada pelo navegador');
 
-        // 2. Se existir, verifica se a chave bate
-        if (subscription) {
-            const currentKey = subscription.options.applicationServerKey;
-
-            if (currentKey) {
-                // Converto o buffer binário para string Base64
-                const currentKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(currentKey)))
-                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-                const serverKeyBase64 = publicKey
-                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-                if (currentKeyBase64 !== serverKeyBase64) {
-                    console.warn(`⚠️ Chave VAPID mudou!\nAtual: ${currentKeyBase64}\nNova: ${serverKeyBase64}\nRenovando...`);
-                    await subscription.unsubscribe();
-                    subscription = null;
-                }
-            }
-        }
-
-        if (!subscription) {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('Permissão negada');
-            }
-
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(publicKey),
-            });
-        }
+        // 4. CRIAMOS UMA ASSINATURA DO ZERO COM A CHAVE NOVA
+        console.log("🆕 Criando nova assinatura com a chave do servidor...");
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
 
         await saveSubscriptionToServer(subscription);
         console.log('User is subscribed to Push Notifications');
