@@ -5,7 +5,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock } from "lucide-react";
+import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin } from "lucide-react";
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -219,7 +219,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">{empresa.name}</h1>
         <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Agendamento Online</p>
 
-        {/* --- BOTÕES DE REDES SOCIAIS ADICIONADOS --- */}
+        {/* --- BOTÕES DE REDES SOCIAIS --- */}
         <div className="flex justify-center gap-3 mt-6">
           {empresa.instagramUrl && (
             <a
@@ -244,6 +244,34 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             </a>
           )}
         </div>
+
+        {/* --- ENDEREÇO COMERCIAL --- */}
+        {(empresa.address || empresa.city) && (
+          <div className="mt-8 flex flex-col items-center animate-in fade-in duration-1000 delay-300">
+            <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-[1.5rem] shadow-sm group hover:shadow-md transition-all">
+              <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                <MapPin size={20} className="text-blue-600" />
+              </div>
+              <div className="text-left">
+                <p className="text-[11px] font-black text-gray-900 leading-tight">
+                  {empresa.address ? `${empresa.address}${empresa.number ? `, ${empresa.number}` : ""}` : empresa.city}
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                  {empresa.address ? (
+                    <>{empresa.neighborhood && `${empresa.neighborhood}, `}{empresa.city}{empresa.state ? ` - ${empresa.state}` : ""}</>
+                  ) : (
+                    <>{empresa.state ? `Estado de ${empresa.state}` : "Localização da Empresa"}</>
+                  )}
+                </p>
+              </div>
+            </div>
+            {empresa.phone && (
+              <div className="mt-3 flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
+                <Phone size={10} /> {empresa.phone}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* FLUXO DE AGENDAMENTO */}
@@ -346,6 +374,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       <footer className="mt-12 text-gray-400 text-center">
         <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>
       </footer>
-    </div>
+    </div >
   );
 }
