@@ -628,16 +628,17 @@ export default function GestaoEquipe() {
                                     </div>
                                 </section>
                             </div>
+                        </div>
 
-                            {/* RODAPÉ FIXO */}
-                            <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
-                                <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
-                                    {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Alterações</>}
-                                </button>
-                            </div>
+                        {/* RODAPÉ FIXO */}
+                        <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
+                            <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
+                                {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Alterações</>}
+                            </button>
                         </div>
                     </div>
-            )}
                 </div>
-            );
+            )}
+        </div>
+    );
 }
