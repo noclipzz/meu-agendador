@@ -123,7 +123,11 @@ export async function GET(request: Request) {
         });
         // -------------------------------------------------------
 
-        // Consultas Paralelas (Performance) para o restante da página (USANDO DATA SELECIONADA)
+        // 8. BOLETOS A VENCER (Lógica Corrigida: Se for o mês atual, mostra tudo do futuro. Se for outro mês, filtra pelo mês.)
+        const isCurrentMonth = (!mesParam && !anoParam) || (Number(mesParam) === hoje.getMonth() + 1 && Number(anoParam) === hoje.getFullYear());
+        const startFilter = startOfDay(hoje) > inicioMes ? startOfDay(hoje) : inicioMes;
+        const endFilter = isCurrentMonth ? undefined : fimMes;
+
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
@@ -168,19 +172,16 @@ export async function GET(request: Request) {
                 include: { client: true },
                 orderBy: { dueDate: 'asc' }
             }),
-            // 8. BOLETOS A VENCER (Mostrar do mês selecionado ou global? Se estou olhando 'Dezembro', quero ver contas de Dezembro. Mas a lógica original era 'Futuro'. Vou manter lógica original de 'A partir de hoje' se não tiver filtro, mas se tiver filtro, talvez mostrar contas daquele mês?)
-            // MANTENDO A LÓGICA ORIGINAL PARA BOLETOS (FINANCEIRO GERAL), MAS SE O USUÁRIO QUER VER "PRÓXIMOS MESES", ELE VAI NAVEGAR NOS MESES.
-            // Para "Contas a Receber" no card, faz sentido mostrar as do mês selecionado se for futuro.
+            // 8. BOLETOS A VENCER (Próximos)
             prisma.invoice.findMany({
                 where: {
                     companyId: companyId,
                     status: "PENDENTE",
-                    // Se a data selecionada for futura, mostra boletos daquele mês. Se for passado/presente, mostra a partir de hoje? 
-                    // Vamos simplificar: A receber NAQUELE mês.
-                    dueDate: { gte: inicioMes, lte: fimMes }
+                    dueDate: endFilter ? { gte: startFilter, lte: endFilter } : { gte: startFilter }
                 },
                 include: { client: true },
-                orderBy: { dueDate: 'asc' }
+                orderBy: { dueDate: 'asc' },
+                take: 50
             })
         ]);
 
