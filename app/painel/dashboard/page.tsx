@@ -49,10 +49,16 @@ export default function DashboardPage() {
                     url: "/painel/dashboard"
                 })
             });
-            if (res.ok) toast.success("Notificação enviada!");
-            else toast.error("Falha ao enviar notificação.");
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success("Notificação enviada!");
+            } else {
+                toast.error(`Erro: ${data.error || "Falha desconhecida"}`);
+            }
         } catch (error) {
-            toast.error("Erro no teste.");
+            toast.error("Erro na conexão com o servidor.");
         }
     }
 
