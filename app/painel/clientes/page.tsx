@@ -57,6 +57,8 @@ export default function ClientesPage() {
     // Estado para nova observação rápida
     const [novaObs, setNovaObs] = useState("");
     const [mostrarInputObs, setMostrarInputObs] = useState(false);
+    const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
+    const [salvandoAnexo, setSalvandoAnexo] = useState(false);
 
     // Prontuário
     const [prontuarioTemplates, setProntuarioTemplates] = useState<any[]>([]);
@@ -266,6 +268,48 @@ export default function ClientesPage() {
             setClientes(prev => prev.map(c => c.id === atualizado.id ? { ...c, notes: novaStringNotas } : c));
             setNovaObs(""); setMostrarInputObs(false);
             toast.success("Observação adicionada!");
+        }
+    }
+
+    async function deletarNota(index: number) {
+        if (!clienteSelecionado) return;
+        const notasArray = (clienteSelecionado.notes || "").split('\n');
+        // Como exibimos em reverse(), o index aqui precisa ser mapeado de volta
+        const indexOriginal = notasArray.length - 1 - index;
+        const novasNotasArr = notasArray.filter((_, i) => i !== indexOriginal);
+        const novaStringNotas = novasNotasArr.join('\n');
+
+        const res = await fetch('/api/clientes', {
+            method: 'PUT',
+            body: JSON.stringify({ ...clienteSelecionado, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            setClienteSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setClientes(prev => prev.map(c => c.id === clienteSelecionado.id ? { ...c, notes: novaStringNotas } : c));
+            toast.success("Observação removida!");
+        }
+    }
+
+    async function salvarEdicaoNota() {
+        if (!clienteSelecionado || !editandoNota) return;
+        const notasArray = (clienteSelecionado.notes || "").split('\n');
+        // Mapear o index reverso de volta
+        const indexOriginal = notasArray.length - 1 - editandoNota.index;
+        const novasNotasArr = [...notasArray];
+        novasNotasArr[indexOriginal] = editandoNota.text;
+        const novaStringNotas = novasNotasArr.join('\n');
+
+        const res = await fetch('/api/clientes', {
+            method: 'PUT',
+            body: JSON.stringify({ ...clienteSelecionado, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            setClienteSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setClientes(prev => prev.map(c => c.id === clienteSelecionado.id ? { ...c, notes: novaStringNotas } : c));
+            setEditandoNota(null);
+            toast.success("Observação atualizada!");
         }
     }
 
@@ -644,9 +688,68 @@ export default function ClientesPage() {
                                                 )}
                                             </div>
                                         </section>
-                                        <section><div className="flex justify-between items-center mb-4"><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={14} /> Notas</h4><button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 bg-blue-600 text-white rounded-lg"><Plus size={14} /></button></div>
-                                            {mostrarInputObs && <div className="flex gap-2 mb-4 animate-in slide-in-from-top-2"><input className="flex-1 border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 text-sm outline-none dark:text-white" placeholder="Escreva..." value={novaObs} onChange={e => setNovaObs(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionarNotaRapida()} /><button onClick={adicionarNotaRapida} className="bg-green-600 text-white px-4 rounded-xl font-bold text-sm">Salvar</button></div>}
-                                            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">{clienteSelecionado.notes?.split('\n').reverse().map((n: string, i: number) => (<div key={i} className="p-3 bg-yellow-50/50 dark:bg-yellow-500/5 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-sm italic dark:text-gray-200">{n}</div>)) || <p className="text-gray-400 text-sm italic">Nenhuma observação.</p>}</div>
+                                        <section>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                                    <Plus size={14} /> Notas e Observações
+                                                </h4>
+                                                <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
+                                                    <Plus size={14} />
+                                                </button>
+                                            </div>
+
+                                            {mostrarInputObs && (
+                                                <div className="flex gap-2 mb-6 animate-in slide-in-from-top-2">
+                                                    <input
+                                                        className="flex-1 border-2 dark:border-gray-800 p-3 rounded-2xl bg-white dark:bg-gray-900 text-sm outline-none focus:border-blue-500 dark:text-white transition"
+                                                        placeholder="Digite uma nova nota..."
+                                                        value={novaObs}
+                                                        onChange={e => setNovaObs(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && adicionarNotaRapida()}
+                                                    />
+                                                    <button onClick={adicionarNotaRapida} className="bg-green-600 text-white px-5 rounded-2x font-black text-xs uppercase shadow-lg shadow-green-600/20 hover:bg-green-700 transition">Salvar</button>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {clienteSelecionado.notes?.split('\n').filter((n: string) => n.trim() !== "").reverse().map((n: string, i: number) => (
+                                                    <div key={i} className="group relative p-4 bg-yellow-50/40 dark:bg-yellow-500/5 rounded-2xl border border-yellow-100 dark:border-yellow-900/20 text-sm dark:text-gray-200 transition-all hover:border-yellow-200 dark:hover:border-yellow-800/50">
+                                                        {editandoNota?.index === i ? (
+                                                            <div className="space-y-2">
+                                                                <textarea
+                                                                    className="w-full bg-white dark:bg-gray-900 border-2 border-blue-500 p-3 rounded-xl outline-none font-bold text-xs shadow-inner"
+                                                                    value={editandoNota.text}
+                                                                    onChange={e => setEditandoNota({ ...editandoNota, text: e.target.value })}
+                                                                />
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button onClick={() => setEditandoNota(null)} className="text-[10px] font-black uppercase text-gray-400 hover:text-gray-600 transition">Cancelar</button>
+                                                                    <button onClick={salvarEdicaoNota} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 transition">Salvar Alteração</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex justify-between items-start gap-4">
+                                                                <p className="flex-1 leading-relaxed italic">{n}</p>
+                                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                                    <button
+                                                                        onClick={() => setEditandoNota({ index: i, text: n })}
+                                                                        className="text-blue-400 hover:text-blue-500 p-1"
+                                                                        title="Editar nota"
+                                                                    >
+                                                                        <Pencil size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => { if (confirm("Deseja excluir esta nota?")) deletarNota(i); }}
+                                                                        className="text-red-400 hover:text-red-500 p-1"
+                                                                        title="Excluir nota"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )) || <p className="text-gray-400 text-xs text-center py-10 italic uppercase font-bold tracking-widest opacity-40">Nenhuma observação registrada.</p>}
+                                            </div>
                                         </section>
                                     </div>
                                     <div className="col-span-12 lg:col-span-4 bg-gray-50 dark:bg-white/5 rounded-[2.5rem] p-6 border dark:border-gray-800">
@@ -971,8 +1074,9 @@ export default function ClientesPage() {
                                         </select>
                                     </div>
                                     <div className="md:col-span-8 space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
                                         <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
+                                        <p className="text-[9px] text-gray-400 font-bold ml-4">* As notas podem ser editadas/excluídas individualmente diretamente na ficha do cliente.</p>
                                     </div>
                                 </div>
                             </section>

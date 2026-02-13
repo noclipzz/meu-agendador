@@ -42,6 +42,9 @@ export default function GestaoEquipe() {
     const [modalAberto, setModalAberto] = useState(false);
     const [proSelecionado, setProSelecionado] = useState<any>(null);
     const [abaAtiva, setAbaAtiva] = useState<"RESUMO" | "DADOS">("RESUMO");
+    const [novaObs, setNovaObs] = useState("");
+    const [mostrarInputObs, setMostrarInputObs] = useState(false);
+    const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
 
     // FORMULÁRIO
     const [form, setForm] = useState({
@@ -131,6 +134,74 @@ export default function GestaoEquipe() {
             }
         } catch (error) { toast.error("Erro no upload."); }
         // finally { setSalvando(false); }
+    }
+
+    async function adicionarNotaRapidaPro() {
+        if (!proSelecionado || !novaObs.trim()) return;
+        const dataNota = format(new Date(), "dd/MM/yy 'às' HH:mm");
+        const notaFormatada = `[${dataNota}]: ${novaObs}`;
+        const novaStringNotas = proSelecionado.notes ? `${proSelecionado.notes}\n${notaFormatada}` : notaFormatada;
+
+        const res = await fetch('/api/painel/profissionais', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: proSelecionado.id, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            setProSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, notes: novaStringNotas } : p));
+            setNovaObs(""); setMostrarInputObs(false);
+            toast.success("Observação adicionada!");
+        } else {
+            toast.error("Erro ao adicionar observação.");
+        }
+    }
+
+    async function deletarNotaPro(index: number) {
+        if (!proSelecionado) return;
+        const notasArray = (proSelecionado.notes || "").split('\n').filter((n: string) => n.trim() !== "");
+        const indexOriginal = notasArray.length - 1 - index; // Adjust index for reversed display
+        const novasNotasArr = notasArray.filter((_, i) => i !== indexOriginal);
+        const novaStringNotas = novasNotasArr.join('\n');
+
+        const res = await fetch('/api/painel/profissionais', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: proSelecionado.id, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            setProSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, notes: novaStringNotas } : p));
+            toast.success("Observação removida!");
+        } else {
+            toast.error("Erro ao remover observação.");
+        }
+    }
+
+    async function salvarEdicaoNotaPro() {
+        if (!proSelecionado || !editandoNota) return;
+        const notasArray = (proSelecionado.notes || "").split('\n').filter((n: string) => n.trim() !== "");
+        const indexOriginal = notasArray.length - 1 - editandoNota.index; // Adjust index for reversed display
+        const novasNotasArr = [...notasArray];
+        novasNotasArr[indexOriginal] = editandoNota.text;
+        const novaStringNotas = novasNotasArr.join('\n');
+
+        const res = await fetch('/api/painel/profissionais', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: proSelecionado.id, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            setProSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, notes: novaStringNotas } : p));
+            setEditandoNota(null);
+            toast.success("Observação atualizada!");
+        } else {
+            toast.error("Erro ao atualizar observação.");
+        }
     }
 
     async function salvarProfissional() {
@@ -391,9 +462,52 @@ export default function GestaoEquipe() {
                                     </div>
                                     <div className="col-span-12 lg:col-span-4 space-y-6">
                                         <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
-                                            <h4 className="font-black text-xs uppercase tracking-widest mb-6 text-gray-400">Anotações Internas</h4>
-                                            <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-[2rem] border border-yellow-100 dark:border-yellow-800 text-sm font-medium dark:text-yellow-100 italic">
-                                                "{proSelecionado.notes || "Sem observações registradas."}"
+                                            <div className="flex justify-between items-center mb-6">
+                                                <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Anotações Internas</h4>
+                                                <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                                    <Plus size={14} />
+                                                </button>
+                                            </div>
+
+                                            {mostrarInputObs && (
+                                                <div className="flex gap-2 mb-6 animate-in slide-in-from-top-2">
+                                                    <input
+                                                        className="flex-1 border-2 dark:border-gray-800 p-3 rounded-2xl bg-white dark:bg-gray-950 text-xs outline-none focus:border-blue-500 dark:text-white transition"
+                                                        placeholder="Nova nota..."
+                                                        value={novaObs}
+                                                        onChange={e => setNovaObs(e.target.value)}
+                                                        onKeyDown={e => e.key === 'Enter' && adicionarNotaRapidaPro()}
+                                                    />
+                                                    <button onClick={adicionarNotaRapidaPro} className="bg-green-600 text-white px-4 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-green-600/20 hover:bg-green-700 transition">OK</button>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {proSelecionado.notes?.split('\n').filter((n: string) => n.trim() !== "").reverse().map((n: string, i: number) => (
+                                                    <div key={i} className="group relative p-4 bg-yellow-50/40 dark:bg-yellow-500/5 rounded-2xl border border-yellow-100 dark:border-yellow-900/20 text-xs dark:text-gray-200 transition-all hover:border-yellow-200 dark:hover:border-yellow-800/50">
+                                                        {editandoNota?.index === i ? (
+                                                            <div className="space-y-2">
+                                                                <textarea
+                                                                    className="w-full bg-white dark:bg-gray-950 border-2 border-blue-500 p-3 rounded-xl outline-none font-bold text-xs"
+                                                                    value={editandoNota.text}
+                                                                    onChange={e => setEditandoNota({ ...editandoNota, text: e.target.value })}
+                                                                />
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button onClick={() => setEditandoNota(null)} className="text-[9px] font-black uppercase text-gray-400">Canc.</button>
+                                                                    <button onClick={salvarEdicaoNotaPro} className="text-[9px] font-black uppercase text-blue-600">Salvar</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex justify-between items-start gap-4">
+                                                                <p className="flex-1 leading-relaxed italic">{n}</p>
+                                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                                    <button onClick={() => setEditandoNota({ index: i, text: n })} className="text-blue-400"><Pencil size={12} /></button>
+                                                                    <button onClick={() => { if (confirm("Excluir nota?")) deletarNotaPro(i); }} className="text-red-400"><Trash2 size={12} /></button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )) || <p className="text-gray-400 text-xs italic opacity-40">Sem notas.</p>}
                                             </div>
                                         </div>
                                     </div>
@@ -461,7 +575,7 @@ export default function GestaoEquipe() {
 
                                     <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} /></div>
                                     <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade - UF</label><div className="flex gap-2"><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" /><input maxLength={2} className="w-20 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white text-center uppercase" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" /></div></div>
+                                    <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade / UF</label><div className="flex gap-2"><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" /><input maxLength={2} className="w-20 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white text-center uppercase" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" /></div></div>
                                 </div>
                             </section>
 
@@ -502,9 +616,10 @@ export default function GestaoEquipe() {
                                         </select>
                                     </div>
 
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Notas Internas</label>
-                                        <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white resize-none" placeholder="Observações..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} />
+                                    <div className="md:col-span-8 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
+                                        <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Dê informações extras sobre o profissional..." />
+                                        <p className="text-[9px] text-gray-400 font-black ml-4 mt-1 leading-none">* Dica: Você pode gerenciar notas rápidas diretamente na ficha do profissional.</p>
                                     </div>
                                 </div>
                             </section>
