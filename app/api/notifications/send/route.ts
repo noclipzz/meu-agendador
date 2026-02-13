@@ -16,19 +16,29 @@ export async function POST(req: Request) {
         const privateKey = process.env.VAPID_PRIVATE_KEY;
 
         if (!publicKey || !privateKey) {
-            return NextResponse.json({ error: "VAPID keys not configured in environment" }, { status: 500 });
+            console.error("❌ [PUSH] Chaves VAPID não configuradas na Vercel!");
+            return NextResponse.json({ error: "VAPID keys missing" }, { status: 500 });
         }
 
-        webpush.setVapidDetails("mailto:suporte@nohud.com.br", publicKey, privateKey);
+        try {
+            webpush.setVapidDetails("mailto:suporte@nohud.com.br", publicKey, privateKey);
+        } catch (vapidErr: any) {
+            console.error("❌ [PUSH] Erro ao configurar VapidDetails:", vapidErr.message);
+            return NextResponse.json({ error: "VAPID configuration error", details: vapidErr.message }, { status: 500 });
+        }
 
         const { targetUserId, title, body, url } = await req.json();
+        const userIdToNotify = targetUserId || currentUserId;
+
+        console.log("🔍 [PUSH] Buscando inscrição para o usuário:", userIdToNotify);
 
         const subs = await prisma.pushSubscription.findUnique({
-            where: { userId: targetUserId || currentUserId },
+            where: { userId: userIdToNotify },
         });
 
         if (!subs) {
-            return NextResponse.json({ error: "No subscription found for user" }, { status: 404 });
+            console.warn("⚠️ [PUSH] Nenhuma inscrição encontrada para o usuário:", userIdToNotify);
+            return NextResponse.json({ error: "No subscription found. Please click the Bell icon first." }, { status: 404 });
         }
 
         const pushConfig = {
