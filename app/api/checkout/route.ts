@@ -183,6 +183,11 @@ export async function GET() {
                 active: true, // Sempre ATIVO
                 plan: "MASTER", // Sempre MASTER
                 role: "ADMIN",
+                permissions: {
+                    dashboard: true, agenda: true, clientes: true,
+                    financeiro: true, estoque: true, prontuarios: true,
+                    servicos: true, profissionais: true, config: true
+                },
                 companyId: myCompany?.id, // ID da sua empresa
                 companyName: myCompany?.name
             });
