@@ -9,18 +9,25 @@ const prisma = db;
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const phone = searchParams.get('phone')?.replace(/\D/g, "");
+        const phoneRaw = searchParams.get('phone') || "";
+        const phoneClean = phoneRaw.replace(/\D/g, "");
         const companyId = searchParams.get('companyId');
 
-        if (!phone || !companyId) {
+        if (!phoneClean || !companyId) {
             return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
         }
 
         // Busca agendamentos PENDENTES ou CONFIRMADOS para este telefone nesta empresa
+        // Tenta achar tanto com máscara quanto sem
         const bookings = await prisma.booking.findMany({
             where: {
                 companyId,
-                customerPhone: { contains: phone },
+                OR: [
+                    { customerPhone: { contains: phoneRaw } },
+                    { customerPhone: { contains: phoneClean } },
+                    // Fallback para caso o DD esteja faltando ou algo assim
+                    { customerPhone: { contains: phoneClean.slice(-8) } }
+                ],
                 status: { in: ["PENDENTE", "CONFIRMADO"] },
                 date: { gte: new Date() } // Somente futuros
             },

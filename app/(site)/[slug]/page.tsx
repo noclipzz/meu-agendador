@@ -181,13 +181,19 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   useEffect(() => {
     async function buscarAgendamentos() {
-      if (telefoneCliente.length === 15 && empresa?.id) {
+      // Começa a buscar a partir de 14 caracteres (ex: (11) 9999-9999 ou (11) 99999-9999)
+      if (telefoneCliente.length >= 14 && empresa?.id) {
         try {
-          const res = await fetch(`/api/portal/agendamentos?phone=${telefoneCliente}&companyId=${empresa.id}`);
+          const res = await fetch(`/api/portal/agendamentos?phone=${encodeURIComponent(telefoneCliente)}&companyId=${empresa.id}`);
           const data = await res.json();
-          if (Array.isArray(data)) setAgendamentosExistentes(data);
-        } catch (e) { console.error(e); }
-      } else {
+          if (Array.isArray(data)) {
+            setAgendamentosExistentes(data);
+          }
+        } catch (e) {
+          console.error("Erro ao buscar agendamentos:", e);
+        }
+      } else if (telefoneCliente.length < 10) {
+        // Limpa se o usuário apagar o campo
         setAgendamentosExistentes([]);
       }
     }
