@@ -520,7 +520,7 @@ export default function GestaoEquipe() {
 
             {modalAberto && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                         {/* HEADER FIXO */}
                         <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
                             <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
