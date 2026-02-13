@@ -30,6 +30,18 @@ export default function Configuracoes() {
     const [clerkUserId, setClerkUserId] = useState("");
 
     const [whatsappMessage, setWhatsappMessage] = useState("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.");
+
+    // --- NOVOS CAMPOS: ENDEREÇO E CONTATO ---
+    const [cnpj, setCnpj] = useState("");
+    const [phone, setPhone] = useState("");
+    const [cep, setCep] = useState("");
+    const [address, setAddress] = useState("");
+    const [number, setNumber] = useState("");
+    const [complement, setComplement] = useState("");
+    const [neighborhood, setNeighborhood] = useState("");
+    const [city, setCity] = useState("");
+    const [state, setState] = useState("");
+
     const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
 
     useEffect(() => { carregarTudo(); }, []);
@@ -53,9 +65,38 @@ export default function Configuracoes() {
                 setMonthlyGoal(dataConfig.monthlyGoal || "5000");
                 if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
                 if (dataConfig.whatsappMessage) setWhatsappMessage(dataConfig.whatsappMessage);
+
+                // Popula novos campos
+                setCnpj(dataConfig.cnpj || "");
+                setPhone(dataConfig.phone || "");
+                setCep(dataConfig.cep || "");
+                setAddress(dataConfig.address || "");
+                setNumber(dataConfig.number || "");
+                setComplement(dataConfig.complement || "");
+                setNeighborhood(dataConfig.neighborhood || "");
+                setCity(dataConfig.city || "");
+                setState(dataConfig.state || "");
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
+    }
+
+    async function handleCEPChange(v: string) {
+        const raw = v.replace(/\D/g, "").slice(0, 8);
+        setCep(raw.length === 8 ? `${raw.slice(0, 5)}-${raw.slice(5)}` : raw);
+
+        if (raw.length === 8) {
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setAddress(data.logradouro);
+                    setNeighborhood(data.bairro);
+                    setCity(data.localidade);
+                    setState(data.uf);
+                }
+            } catch { }
+        }
     }
 
     async function handleLogoUpload() {
@@ -81,7 +122,8 @@ export default function Configuracoes() {
                 method: 'POST',
                 body: JSON.stringify({
                     name, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
-                    monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), whatsappMessage
+                    monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), whatsappMessage,
+                    cnpj, phone, cep, address, number, complement, neighborhood, city, state
                 })
             });
 
@@ -154,6 +196,70 @@ export default function Configuracoes() {
                         </div>
                     </div>
 
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">CNPJ (Opcional)</label>
+                            <input
+                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                placeholder="00.000.000/0000-00"
+                                value={cnpj}
+                                onChange={e => setCnpj(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Telefone da Empresa</label>
+                            <input
+                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                placeholder="(00) 00000-0000"
+                                value={phone}
+                                onChange={e => setPhone(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t dark:border-gray-700 space-y-4">
+                        <h3 className="text-[10px] font-black uppercase text-blue-600 tracking-widest flex items-center gap-2 mb-4">
+                            <MapPin size={14} /> Endereço Comercial
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div className="md:col-span-3">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">CEP</label>
+                                <div className="relative">
+                                    <input maxLength={9} className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
+                                    <Search size={16} className="absolute right-3 top-3.5 text-gray-300" />
+                                </div>
+                            </div>
+                            <div className="md:col-span-7">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">Rua / Avenida</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={address} onChange={e => setAddress(e.target.value)} />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">Nº</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={number} onChange={e => setNumber(e.target.value)} />
+                            </div>
+
+                            <div className="md:col-span-4">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">Bairro</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={neighborhood} onChange={e => setNeighborhood(e.target.value)} />
+                            </div>
+                            <div className="md:col-span-4">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">Complemento</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={complement} onChange={e => setComplement(e.target.value)} placeholder="Ex: Sala 2" />
+                            </div>
+                            <div className="md:col-span-3">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">Cidade</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={city} onChange={e => setCity(e.target.value)} />
+                            </div>
+                            <div className="md:col-span-1">
+                                <label className="text-[9px] font-black text-gray-400 uppercase ml-2 block mb-1">UF</label>
+                                <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 font-bold dark:text-white outline-none focus:border-blue-500" value={state} onChange={e => setState(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1 dark:text-gray-400">
@@ -223,23 +329,24 @@ export default function Configuracoes() {
                 </div>
 
                 <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2"><Save size={18} /> Salvar Alterações</button>
-            </div>
+            </div >
 
-            {modalWhatsappOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md border dark:border-gray-800 shadow-2xl animate-in zoom-in-95">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-black flex items-center gap-2 dark:text-white"><MessageSquare size={20} className="text-green-500" /> Editar Mensagem</h2>
-                            <button onClick={() => setModalWhatsappOpen(false)} className="text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                        </div>
-                        <textarea rows={6} className="w-full mt-2 p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-950 dark:text-white text-sm outline-none focus:ring-2 ring-blue-500 resize-none font-medium" value={whatsappMessage} onChange={(e) => setWhatsappMessage(e.target.value)} />
-                        <div className="grid grid-cols-2 gap-3 mt-6">
-                            <button onClick={() => setModalWhatsappOpen(false)} className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl font-black uppercase text-xs text-gray-500 dark:text-gray-300">Cancelar</button>
-                            <button onClick={salvarMensagemWhatsapp} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs">Confirmar</button>
-                        </div>
+        { modalWhatsappOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md border dark:border-gray-800 shadow-2xl animate-in zoom-in-95">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-black flex items-center gap-2 dark:text-white"><MessageSquare size={20} className="text-green-500" /> Editar Mensagem</h2>
+                        <button onClick={() => setModalWhatsappOpen(false)} className="text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
+                    </div>
+                    <textarea rows={6} className="w-full mt-2 p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-950 dark:text-white text-sm outline-none focus:ring-2 ring-blue-500 resize-none font-medium" value={whatsappMessage} onChange={(e) => setWhatsappMessage(e.target.value)} />
+                    <div className="grid grid-cols-2 gap-3 mt-6">
+                        <button onClick={() => setModalWhatsappOpen(false)} className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl font-black uppercase text-xs text-gray-500 dark:text-gray-300">Cancelar</button>
+                        <button onClick={salvarMensagemWhatsapp} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs">Confirmar</button>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+        )
+}
+        </div >
     );
 }

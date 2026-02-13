@@ -96,7 +96,17 @@ export async function POST(req: Request) {
       monthlyGoal: body.monthlyGoal ? Number(body.monthlyGoal) : 5000,
       workDays: body.workDays || "1,2,3,4,5",
       interval: body.interval ? Number(body.interval) : 30,
-      whatsappMessage: body.whatsappMessage || "Olá {nome}, seu agendamento está confirmado para {dia} às {hora}."
+      whatsappMessage: body.whatsappMessage || "Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.",
+      // Novos Campos
+      cnpj: body.cnpj || null,
+      phone: body.phone || null,
+      cep: body.cep || null,
+      address: body.address || null,
+      number: body.number || null,
+      complement: body.complement || null,
+      neighborhood: body.neighborhood || null,
+      city: body.city || null,
+      state: body.state || null
     };
 
     if (existingConfig) {

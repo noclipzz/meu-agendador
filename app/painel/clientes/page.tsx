@@ -68,7 +68,7 @@ export default function ClientesPage() {
     const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
-    const [empresaInfo, setEmpresaInfo] = useState<{ name: string; logo: string; plan: string }>({ name: "", logo: "", plan: "" });
+    const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -157,7 +157,17 @@ export default function ClientesPage() {
         try {
             const res = await fetch('/api/painel/config');
             const data = await res.json();
-            if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "", plan: data.plan || "" });
+            if (data) {
+                setEmpresaInfo({
+                    name: data.name || "",
+                    logo: data.logoUrl || "",
+                    plan: data.plan || "",
+                    city: data.city || "",
+                    address: data.address || "",
+                    phone: data.phone || "",
+                    cnpj: data.cnpj || ""
+                });
+            }
         } catch { }
     }
 
@@ -520,7 +530,7 @@ export default function ClientesPage() {
             ${camposHtml}
 
             <div style="margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1f2937; padding-right: 20px;">
-                ${clienteSelecionado?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </div>
 
             <div class="signature">

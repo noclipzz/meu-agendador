@@ -28,6 +28,17 @@ model Company {
   notificationEmail String?        
   instagramUrl      String?        @default("")
   facebookUrl       String?        @default("")
+  
+  // Dados de Endereço e Contato (Novo)
+  cnpj              String?
+  phone             String?
+  cep               String?
+  address           String?
+  number            String?
+  complement        String?
+  neighborhood      String?
+  city              String?
+  state             String?
    
   // Relações
   services          Service[]
