@@ -12,18 +12,23 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const clienteId = params.id;
 
-    // 1. Verifica se a empresa pertence ao usuário (Segurança)
-    const userCompany = await prisma.company.findFirst({
-      where: { ownerId: userId }
-    });
+    // 1. Descobre a empresa (Dono ou Membro)
+    let companyId = null;
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+      companyId = ownerCompany.id;
+    } else {
+      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+      if (member) companyId = member.companyId;
+    }
 
-    if (!userCompany) return new NextResponse("Empresa não encontrada", { status: 404 });
+    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
 
     // 2. Busca o cliente com todos os relacionamentos (Financeiro e Agenda)
     const client = await prisma.client.findFirst({
       where: {
         id: clienteId,
-        companyId: userCompany.id // Garante que o cliente é desta empresa
+        companyId: companyId // Garante que o cliente é desta empresa
       },
       include: {
         // Traz as faturas (Financeiro)
