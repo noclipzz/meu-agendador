@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
     Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
     Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon, Search,
-    MapPin, FileText, LayoutDashboard
+    MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
