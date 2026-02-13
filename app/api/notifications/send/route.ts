@@ -3,6 +3,8 @@ import { auth } from "@clerk/nextjs/server";
 import { PrismaClient } from "@prisma/client";
 import webpush from "web-push";
 
+export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 
 export async function POST(req: Request) {

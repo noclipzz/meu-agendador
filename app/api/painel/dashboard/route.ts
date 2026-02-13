@@ -5,6 +5,8 @@ import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format } from 
 
 const prisma = db;
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
     try {
         const { userId } = await auth();
