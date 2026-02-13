@@ -26,26 +26,25 @@ export async function subscribeUserToPush() {
 
         const registration = await navigator.serviceWorker.ready;
 
+        // Força atualização para garantir que o worker mais recente está ativo
+        await registration.update();
+
         // Verifica se já existe uma inscrição
-        const existingSubscription = await registration.pushManager.getSubscription();
-        if (existingSubscription) {
-            // Opcional: atualizar no servidor
-            await saveSubscriptionToServer(existingSubscription);
-            return;
-        }
+        let subscription = await registration.pushManager.getSubscription();
 
-        // Solicita permissão
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            console.warn('Notification permission denied');
-            return;
-        }
+        if (!subscription) {
+            // Solicita permissão
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Permissão negada');
+            }
 
-        // Cria nova inscrição
-        const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
+            // Cria nova inscrição
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            });
+        }
 
         await saveSubscriptionToServer(subscription);
         console.log('User is subscribed to Push Notifications');
