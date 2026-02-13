@@ -51,7 +51,7 @@ export default function GestaoEquipe() {
         phone: "",
         color: "#3b82f6",
         photoUrl: "",
-        cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", status: "ATIVO"
+        cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
     });
 
     async function handleCEPChange(cep: string) {
@@ -199,6 +199,7 @@ export default function GestaoEquipe() {
             number: p.number || "",
             complement: p.complement || "",
             neighborhood: p.neighborhood || "",
+            maritalStatus: p.maritalStatus || "",
             city: p.city || "",
             state: p.state || "",
             notes: p.notes || "",
@@ -211,7 +212,7 @@ export default function GestaoEquipe() {
         setModalAberto(false);
         setForm({
             id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "",
-            cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", status: "ATIVO"
+            cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
         });
     }
 
@@ -375,6 +376,7 @@ export default function GestaoEquipe() {
                                                 <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-sm">{formatarCPF(proSelecionado.cpf || "") || "---"}</p></div>
                                                 <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-sm">{proSelecionado.rg || "---"}</p></div>
                                                 <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nascimento</label><p className="font-bold dark:text-white text-sm">{proSelecionado.birthDate ? format(new Date(proSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
+                                                <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-sm">{proSelecionado.maritalStatus || "---"}</p></div>
                                             </div>
                                         </section>
                                         <section>
@@ -431,10 +433,21 @@ export default function GestaoEquipe() {
                             {/* 2. DADOS PESSOAIS */}
                             <section>
                                 <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><UserCircle size={16} /> Documentação Pessoal</h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label><input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
                                     <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data Nasc.</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
+                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                                            <option value="">Selecione...</option>
+                                            <option value="Solteiro(a)">Solteiro(a)</option>
+                                            <option value="Casado(a)">Casado(a)</option>
+                                            <option value="Divorciado(a)">Divorciado(a)</option>
+                                            <option value="Viúvo(a)">Viúvo(a)</option>
+                                            <option value="União Estável">União Estável</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </section>
 

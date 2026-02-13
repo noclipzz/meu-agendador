@@ -79,6 +79,7 @@ model Professional {
   city        String?
   state       String?
   notes       String?
+  maritalStatus String?
   status      String    @default("ATIVO")
   
   createdAt   DateTime  @default(now())
@@ -203,6 +204,7 @@ model Client {
   city        String?
   state       String?
   notes       String?
+  maritalStatus String?
   status      String    @default("ATIVO")
   
   companyId   String
