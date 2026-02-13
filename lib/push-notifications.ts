@@ -1,6 +1,6 @@
 "use client";
 
-const VAPID_PUBLIC_KEY = "BG6vrlAV2S7nXPuXMK_tZ2X5yvVb1FVPxoGKvgL65ab6t-CGIVxSyeQt6DgxL3d4-tF8G2yvJz_hO6a6Q6p6jU8";
+const VAPID_PUBLIC_KEY = "BCp3sW6dUPm0bD6jsj4uwpmpl50ddKvbrCta9LuVW79jXed3WuQWjgNaat_P5taLlU3t-SEM4PLnfaTlAGKxfk0";
 
 function urlBase64ToUint8Array(base64String: string) {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
