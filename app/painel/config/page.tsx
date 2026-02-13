@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search } from "lucide-react";
 import { useTheme } from "../../../hooks/useTheme";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
