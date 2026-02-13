@@ -69,370 +69,371 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<{ name: string; logo: string; plan: string }>({ name: "", logo: "", plan: "" });
+    const [form, setForm] = useState({
+        id: "", name: "", phone: "", email: "", cpf: "", rg: "",
+        birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
+    });
 
-    birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
-});
+    // Query params para integração com a agenda
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
-// Query params para integração com a agenda
-const searchParams = useSearchParams();
-const router = useRouter();
-const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+    async function handleCEPChange(cep: string) {
+        const formatado = formatarCEP(cep);
+        setForm(prev => ({ ...prev, cep: formatado }));
 
-async function handleCEPChange(cep: string) {
-    const formatado = formatarCEP(cep);
-    setForm(prev => ({ ...prev, cep: formatado }));
+        const cleanCEP = formatado.replace(/\D/g, "");
+        if (cleanCEP.length === 8) {
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setForm(prev => ({
+                        ...prev,
+                        cep: formatado,
+                        address: data.logradouro,
+                        neighborhood: data.bairro,
+                        city: data.localidade,
+                        state: data.uf
+                    }));
+                    toast.success("Endereço localizado!");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CEP:", error);
+            }
+        }
+    }
 
-    const cleanCEP = formatado.replace(/\D/g, "");
-    if (cleanCEP.length === 8) {
+    useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+
+    // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
+    // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
+    useEffect(() => {
+        if (loading || clientes.length === 0 && !searchParams.get('novoCadastro')) return;
+
+        const abrirFichaId = searchParams.get('abrirFicha');
+        const novoCadastro = searchParams.get('novoCadastro');
+
+        if (abrirFichaId) {
+            const cliente = clientes.find(c => c.id === abrirFichaId);
+            if (cliente) {
+                abrirFichaCliente(cliente);
+            } else {
+                // Se o ID foi passado mas o cliente não existe (ex: excluído), mas temos dados de fallback
+                const nomeFallback = searchParams.get('nome');
+                if (nomeFallback) {
+                    toast.info("Cliente vinculado não encontrado. Abrindo novo cadastro.", { duration: 4000 });
+                    const telefone = searchParams.get('telefone') || '';
+                    const bookingId = searchParams.get('bookingId') || '';
+                    setForm(prev => ({
+                        ...prev,
+                        id: '',
+                        name: nomeFallback,
+                        phone: formatarTelefone(telefone),
+                    }));
+                    if (bookingId) setPendingBookingId(bookingId);
+                    setModalAberto(true);
+                }
+            }
+            router.replace('/painel/clientes', { scroll: false });
+        } else if (novoCadastro === '1') {
+            const nome = searchParams.get('nome') || '';
+            const telefone = searchParams.get('telefone') || '';
+            const bookingId = searchParams.get('bookingId') || '';
+            setForm(prev => ({
+                ...prev,
+                id: '',
+                name: nome,
+                phone: formatarTelefone(telefone),
+            }));
+            if (bookingId) setPendingBookingId(bookingId);
+            setModalAberto(true);
+            router.replace('/painel/clientes', { scroll: false });
+        }
+    }, [loading, clientes]);
+
+    async function carregarEmpresa() {
         try {
-            const res = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`);
+            const res = await fetch('/api/painel/config');
             const data = await res.json();
-            if (!data.erro) {
-                setForm(prev => ({
-                    ...prev,
-                    cep: formatado,
-                    address: data.logradouro,
-                    neighborhood: data.bairro,
-                    city: data.localidade,
-                    state: data.uf
-                }));
-                toast.success("Endereço localizado!");
+            if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "", plan: data.plan || "" });
+        } catch { }
+    }
+
+    async function carregarClientes() {
+        const res = await fetch('/api/clientes');
+        const data = await res.json();
+        setClientes(data);
+        setLoading(false);
+    }
+
+    async function abrirFichaCliente(clienteBasico: any) {
+        setClienteSelecionado(clienteBasico);
+        setAbaAtiva("DADOS");
+        setLoadingDetalhes(true);
+        // Reset prontuário
+        setProntuarioEntries([]);
+        setProntuarioTemplateSelecionado("");
+        setProntuarioFormData({});
+        setProntuarioEditId(null);
+        setProntuarioVisualizando(null);
+
+        // 2. Inicia o carregamento dos detalhes em background
+
+        try {
+            const res = await fetch(`/api/clientes/${clienteBasico.id}`);
+            if (res.ok) {
+                const dadosCompletos = await res.json();
+
+                // 3. Atualiza o cliente selecionado mesclando os dados novos
+                setClienteSelecionado((prev: any) => {
+                    if (prev && prev.id === clienteBasico.id) {
+                        return { ...prev, ...dadosCompletos };
+                    }
+                    return prev;
+                });
+            } else {
+                toast.error("Não foi possível carregar o histórico completo.");
             }
         } catch (error) {
-            console.error("Erro ao buscar CEP:", error);
+            console.error(error);
+        } finally {
+            setLoadingDetalhes(false);
         }
     }
-}
 
-useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+    async function salvarCliente() {
+        if (!form.name) return toast.error("Nome obrigatório");
+        const method = form.id ? 'PUT' : 'POST';
+        const res = await fetch('/api/clientes', {
+            method, body: JSON.stringify(form)
+        });
 
-// Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
-// Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
-useEffect(() => {
-    if (loading || clientes.length === 0 && !searchParams.get('novoCadastro')) return;
-
-    const abrirFichaId = searchParams.get('abrirFicha');
-    const novoCadastro = searchParams.get('novoCadastro');
-
-    if (abrirFichaId) {
-        const cliente = clientes.find(c => c.id === abrirFichaId);
-        if (cliente) {
-            abrirFichaCliente(cliente);
-        } else {
-            // Se o ID foi passado mas o cliente não existe (ex: excluído), mas temos dados de fallback
-            const nomeFallback = searchParams.get('nome');
-            if (nomeFallback) {
-                toast.info("Cliente vinculado não encontrado. Abrindo novo cadastro.", { duration: 4000 });
-                const telefone = searchParams.get('telefone') || '';
-                const bookingId = searchParams.get('bookingId') || '';
-                setForm(prev => ({
-                    ...prev,
-                    id: '',
-                    name: nomeFallback,
-                    phone: formatarTelefone(telefone),
-                }));
-                if (bookingId) setPendingBookingId(bookingId);
-                setModalAberto(true);
-            }
-        }
-        router.replace('/painel/clientes', { scroll: false });
-    } else if (novoCadastro === '1') {
-        const nome = searchParams.get('nome') || '';
-        const telefone = searchParams.get('telefone') || '';
-        const bookingId = searchParams.get('bookingId') || '';
-        setForm(prev => ({
-            ...prev,
-            id: '',
-            name: nome,
-            phone: formatarTelefone(telefone),
-        }));
-        if (bookingId) setPendingBookingId(bookingId);
-        setModalAberto(true);
-        router.replace('/painel/clientes', { scroll: false });
-    }
-}, [loading, clientes]);
-
-async function carregarEmpresa() {
-    try {
-        const res = await fetch('/api/painel/config');
-        const data = await res.json();
-        if (data) setEmpresaInfo({ name: data.name || "", logo: data.logoUrl || "", plan: data.plan || "" });
-    } catch { }
-}
-
-async function carregarClientes() {
-    const res = await fetch('/api/clientes');
-    const data = await res.json();
-    setClientes(data);
-    setLoading(false);
-}
-
-async function abrirFichaCliente(clienteBasico: any) {
-    setClienteSelecionado(clienteBasico);
-    setAbaAtiva("DADOS");
-    setLoadingDetalhes(true);
-    // Reset prontuário
-    setProntuarioEntries([]);
-    setProntuarioTemplateSelecionado("");
-    setProntuarioFormData({});
-    setProntuarioEditId(null);
-    setProntuarioVisualizando(null);
-
-    // 2. Inicia o carregamento dos detalhes em background
-
-    try {
-        const res = await fetch(`/api/clientes/${clienteBasico.id}`);
         if (res.ok) {
-            const dadosCompletos = await res.json();
-
-            // 3. Atualiza o cliente selecionado mesclando os dados novos
-            setClienteSelecionado((prev: any) => {
-                if (prev && prev.id === clienteBasico.id) {
-                    return { ...prev, ...dadosCompletos };
+            const clienteSalvo = await res.json();
+            if (form.id) {
+                setClientes(prev => prev.map(c => c.id === form.id ? clienteSalvo : c));
+                if (clienteSelecionado?.id === form.id) {
+                    setClienteSelecionado((prev: any) => ({ ...prev, ...clienteSalvo }));
                 }
-                return prev;
+            } else {
+                setClientes(prev => [...prev, clienteSalvo]);
+
+                // Se veio da agenda, vincula o novo cliente ao agendamento
+                if (pendingBookingId) {
+                    try {
+                        await fetch('/api/painel/vincular-cliente', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ bookingId: pendingBookingId, clientId: clienteSalvo.id })
+                        });
+                    } catch (err) {
+                        console.error('Erro ao vincular cliente ao agendamento:', err);
+                    }
+                    setPendingBookingId(null);
+                }
+            }
+            toast.success(form.id ? "Dados atualizados!" : "Cliente cadastrado!");
+            fecharModal();
+        }
+    }
+
+    async function adicionarNotaRapida() {
+        if (!novaObs.trim()) return;
+        const dataNota = format(new Date(), "dd/MM/yy 'às' HH:mm");
+        const notaFormatada = `[${dataNota}]: ${novaObs}`;
+        const novaStringNotas = clienteSelecionado.notes ? `${clienteSelecionado.notes}\n${notaFormatada}` : notaFormatada;
+
+        const res = await fetch('/api/clientes', {
+            method: 'PUT',
+            body: JSON.stringify({ ...clienteSelecionado, notes: novaStringNotas })
+        });
+
+        if (res.ok) {
+            const atualizado = await res.json();
+            setClienteSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
+            setClientes(prev => prev.map(c => c.id === atualizado.id ? { ...c, notes: novaStringNotas } : c));
+            setNovaObs(""); setMostrarInputObs(false);
+            toast.success("Observação adicionada!");
+        }
+    }
+
+    async function handleUploadAnexo(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        setSalvandoAnexo(true);
+        try {
+            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
+            const blob = await resUpload.json();
+            const resBanco = await fetch('/api/clientes/anexos', {
+                method: 'POST',
+                body: JSON.stringify({ name: file.name, url: blob.url, type: file.type, clientId: clienteSelecionado.id })
             });
-        } else {
-            toast.error("Não foi possível carregar o histórico completo.");
-        }
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setLoadingDetalhes(false);
-    }
-}
-
-async function salvarCliente() {
-    if (!form.name) return toast.error("Nome obrigatório");
-    const method = form.id ? 'PUT' : 'POST';
-    const res = await fetch('/api/clientes', {
-        method, body: JSON.stringify(form)
-    });
-
-    if (res.ok) {
-        const clienteSalvo = await res.json();
-        if (form.id) {
-            setClientes(prev => prev.map(c => c.id === form.id ? clienteSalvo : c));
-            if (clienteSelecionado?.id === form.id) {
-                setClienteSelecionado((prev: any) => ({ ...prev, ...clienteSalvo }));
+            if (resBanco.ok) {
+                const novoAnexo = await resBanco.json();
+                setClienteSelecionado({ ...clienteSelecionado, attachments: [...(clienteSelecionado.attachments || []), novoAnexo] });
+                toast.success("Arquivo anexado!");
             }
-        } else {
-            setClientes(prev => [...prev, clienteSalvo]);
+        } catch (error) { toast.error("Erro no upload."); }
+        finally { setSalvandoAnexo(false); }
+    }
 
-            // Se veio da agenda, vincula o novo cliente ao agendamento
-            if (pendingBookingId) {
-                try {
-                    await fetch('/api/painel/vincular-cliente', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ bookingId: pendingBookingId, clientId: clienteSalvo.id })
-                    });
-                } catch (err) {
-                    console.error('Erro ao vincular cliente ao agendamento:', err);
+    async function executarExclusao() {
+        if (!confirmarExclusao) return;
+        const { id, tipo } = confirmarExclusao;
+        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : '/api/clientes/anexos';
+        const res = await fetch(url, { method: 'DELETE', body: JSON.stringify({ id }) });
+        if (res.ok) {
+            if (tipo === 'CLIENTE') {
+                setClientes(prev => prev.filter(c => c.id !== id));
+                setClienteSelecionado(null);
+            } else {
+                setClienteSelecionado({ ...clienteSelecionado, attachments: clienteSelecionado.attachments.filter((a: any) => a.id !== id) });
+            }
+            toast.success("Excluído com sucesso.");
+        }
+        setConfirmarExclusao(null);
+    }
+
+    function abrirEdicao(cliente: any) {
+        setForm({
+            ...cliente,
+            phone: formatarTelefone(cliente.phone || ""),
+            cpf: formatarCPF(cliente.cpf || ""),
+            cep: formatarCEP(cliente.cep || ""),
+            birthDate: cliente.birthDate || "",
+            rg: cliente.rg || "",
+            number: cliente.number || "",
+            complement: cliente.complement || "",
+            neighborhood: cliente.neighborhood || "",
+            maritalStatus: cliente.maritalStatus || "",
+            state: cliente.state || ""
+        });
+        setIsEditing(true);
+        setModalAberto(true);
+    }
+    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
+
+    // === PRONTUÁRIO ===
+    async function carregarProntuario() {
+        if (!clienteSelecionado) return;
+        setLoadingProntuarios(true);
+        try {
+            const [resTemplates, resEntries] = await Promise.all([
+                fetch('/api/painel/prontuarios'),
+                fetch(`/api/painel/prontuarios/entries?clientId=${clienteSelecionado.id}`)
+            ]);
+            const [tpls, ents] = await Promise.all([resTemplates.json(), resEntries.json()]);
+            setProntuarioTemplates(Array.isArray(tpls) ? tpls : []);
+            setProntuarioEntries(Array.isArray(ents) ? ents : []);
+        } catch (error) {
+            console.error("Erro ao carregar prontuários:", error);
+        } finally {
+            setLoadingProntuarios(false);
+        }
+    }
+
+    async function salvarProntuario() {
+        if (!prontuarioTemplateSelecionado || !clienteSelecionado) return;
+        setProntuarioSalvando(true);
+        try {
+            const res = await fetch('/api/painel/prontuarios/entries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: prontuarioEditId || undefined,
+                    templateId: prontuarioTemplateSelecionado,
+                    clientId: clienteSelecionado.id,
+                    data: prontuarioFormData
+                })
+            });
+            if (res.ok) {
+                toast.success(prontuarioEditId ? "Prontuário atualizado!" : "Prontuário salvo!");
+                setProntuarioFormData({});
+                setProntuarioEditId(null);
+                setProntuarioTemplateSelecionado("");
+                setModalProntuarioAberto(false);
+                carregarProntuario();
+            } else {
+                toast.error("Erro ao salvar prontuário");
+            }
+        } finally {
+            setProntuarioSalvando(false);
+        }
+    }
+
+    async function excluirProntuario(id: string) {
+        if (!confirm("Tem certeza que deseja excluir este prontuário?")) return;
+        try {
+            const res = await fetch('/api/painel/prontuarios/entries', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) {
+                toast.success("Prontuário excluído!");
+                setProntuarioEntries(prontuarioEntries.filter(e => e.id !== id));
+            } else {
+                toast.error("Erro ao excluir prontuário");
+            }
+        } catch { toast.error("Erro ao excluir"); }
+    }
+
+    function imprimirProntuario(entry: any) {
+        const fields = entry.template?.fields as any[] || [];
+        const data = entry.data as Record<string, any> || {};
+
+        // Separar headers e campos normais
+        const sections: { header: string; items: { label: string; value: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
+
+        fields.forEach((field: any) => {
+            if (field.type === 'header') {
+                if (currentSection.items.length > 0 || currentSection.header) {
+                    sections.push(currentSection);
                 }
-                setPendingBookingId(null);
+                currentSection = { header: field.label, items: [] };
+                return;
             }
-        }
-        toast.success(form.id ? "Dados atualizados!" : "Cliente cadastrado!");
-        fecharModal();
-    }
-}
+            let valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
+                field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
+                    data[field.id] || '—';
 
-async function adicionarNotaRapida() {
-    if (!novaObs.trim()) return;
-    const dataNota = format(new Date(), "dd/MM/yy 'às' HH:mm");
-    const notaFormatada = `[${dataNota}]: ${novaObs}`;
-    const novaStringNotas = clienteSelecionado.notes ? `${clienteSelecionado.notes}\n${notaFormatada}` : notaFormatada;
-
-    const res = await fetch('/api/clientes', {
-        method: 'PUT',
-        body: JSON.stringify({ ...clienteSelecionado, notes: novaStringNotas })
-    });
-
-    if (res.ok) {
-        const atualizado = await res.json();
-        setClienteSelecionado((prev: any) => ({ ...prev, notes: novaStringNotas }));
-        setClientes(prev => prev.map(c => c.id === atualizado.id ? { ...c, notes: novaStringNotas } : c));
-        setNovaObs(""); setMostrarInputObs(false);
-        toast.success("Observação adicionada!");
-    }
-}
-
-async function handleUploadAnexo(e: React.ChangeEvent<HTMLInputElement>) {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
-    setSalvandoAnexo(true);
-    try {
-        const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-        const blob = await resUpload.json();
-        const resBanco = await fetch('/api/clientes/anexos', {
-            method: 'POST',
-            body: JSON.stringify({ name: file.name, url: blob.url, type: file.type, clientId: clienteSelecionado.id })
-        });
-        if (resBanco.ok) {
-            const novoAnexo = await resBanco.json();
-            setClienteSelecionado({ ...clienteSelecionado, attachments: [...(clienteSelecionado.attachments || []), novoAnexo] });
-            toast.success("Arquivo anexado!");
-        }
-    } catch (error) { toast.error("Erro no upload."); }
-    finally { setSalvandoAnexo(false); }
-}
-
-async function executarExclusao() {
-    if (!confirmarExclusao) return;
-    const { id, tipo } = confirmarExclusao;
-    const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : '/api/clientes/anexos';
-    const res = await fetch(url, { method: 'DELETE', body: JSON.stringify({ id }) });
-    if (res.ok) {
-        if (tipo === 'CLIENTE') {
-            setClientes(prev => prev.filter(c => c.id !== id));
-            setClienteSelecionado(null);
-        } else {
-            setClienteSelecionado({ ...clienteSelecionado, attachments: clienteSelecionado.attachments.filter((a: any) => a.id !== id) });
-        }
-        toast.success("Excluído com sucesso.");
-    }
-    setConfirmarExclusao(null);
-}
-
-function abrirEdicao(cliente: any) {
-    setForm({
-        ...cliente,
-        phone: formatarTelefone(cliente.phone || ""),
-        cpf: formatarCPF(cliente.cpf || ""),
-        cep: formatarCEP(cliente.cep || ""),
-        birthDate: cliente.birthDate || "",
-        rg: cliente.rg || "",
-        number: cliente.number || "",
-        complement: cliente.complement || "",
-        neighborhood: cliente.neighborhood || "",
-        maritalStatus: cliente.maritalStatus || "",
-        state: cliente.state || ""
-    });
-    setIsEditing(true);
-    setModalAberto(true);
-}
-function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
-
-// === PRONTUÁRIO ===
-async function carregarProntuario() {
-    if (!clienteSelecionado) return;
-    setLoadingProntuarios(true);
-    try {
-        const [resTemplates, resEntries] = await Promise.all([
-            fetch('/api/painel/prontuarios'),
-            fetch(`/api/painel/prontuarios/entries?clientId=${clienteSelecionado.id}`)
-        ]);
-        const [tpls, ents] = await Promise.all([resTemplates.json(), resEntries.json()]);
-        setProntuarioTemplates(Array.isArray(tpls) ? tpls : []);
-        setProntuarioEntries(Array.isArray(ents) ? ents : []);
-    } catch (error) {
-        console.error("Erro ao carregar prontuários:", error);
-    } finally {
-        setLoadingProntuarios(false);
-    }
-}
-
-async function salvarProntuario() {
-    if (!prontuarioTemplateSelecionado || !clienteSelecionado) return;
-    setProntuarioSalvando(true);
-    try {
-        const res = await fetch('/api/painel/prontuarios/entries', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: prontuarioEditId || undefined,
-                templateId: prontuarioTemplateSelecionado,
-                clientId: clienteSelecionado.id,
-                data: prontuarioFormData
-            })
-        });
-        if (res.ok) {
-            toast.success(prontuarioEditId ? "Prontuário atualizado!" : "Prontuário salvo!");
-            setProntuarioFormData({});
-            setProntuarioEditId(null);
-            setProntuarioTemplateSelecionado("");
-            setModalProntuarioAberto(false);
-            carregarProntuario();
-        } else {
-            toast.error("Erro ao salvar prontuário");
-        }
-    } finally {
-        setProntuarioSalvando(false);
-    }
-}
-
-async function excluirProntuario(id: string) {
-    if (!confirm("Tem certeza que deseja excluir este prontuário?")) return;
-    try {
-        const res = await fetch('/api/painel/prontuarios/entries', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        if (res.ok) {
-            toast.success("Prontuário excluído!");
-            setProntuarioEntries(prontuarioEntries.filter(e => e.id !== id));
-        } else {
-            toast.error("Erro ao excluir prontuário");
-        }
-    } catch { toast.error("Erro ao excluir"); }
-}
-
-function imprimirProntuario(entry: any) {
-    const fields = entry.template?.fields as any[] || [];
-    const data = entry.data as Record<string, any> || {};
-
-    // Separar headers e campos normais
-    const sections: { header: string; items: { label: string; value: string }[] }[] = [];
-    let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
-
-    fields.forEach((field: any) => {
-        if (field.type === 'header') {
-            if (currentSection.items.length > 0 || currentSection.header) {
-                sections.push(currentSection);
+            if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
+                valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
             }
-            currentSection = { header: field.label, items: [] };
-            return;
-        }
-        let valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
-            field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
-                data[field.id] || '—';
 
-        if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
-            valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
+            currentSection.items.push({ label: field.label, value: String(valor) });
+        });
+        if (currentSection.items.length > 0 || currentSection.header) {
+            sections.push(currentSection);
         }
 
-        currentSection.items.push({ label: field.label, value: String(valor) });
-    });
-    if (currentSection.items.length > 0 || currentSection.header) {
-        sections.push(currentSection);
-    }
-
-    // Gerar HTML dos campos em duas colunas
-    let camposHtml = '';
-    sections.forEach(section => {
-        if (section.header) {
-            camposHtml += `<div class="section-header">${section.header}</div>`;
-        }
-        camposHtml += '<div class="fields-grid">';
-        section.items.forEach(item => {
-            const isLong = item.value.length > 60;
-            camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
+        // Gerar HTML dos campos em duas colunas
+        let camposHtml = '';
+        sections.forEach(section => {
+            if (section.header) {
+                camposHtml += `<div class="section-header">${section.header}</div>`;
+            }
+            camposHtml += '<div class="fields-grid">';
+            section.items.forEach(item => {
+                const isLong = item.value.length > 60;
+                camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
+            });
+            camposHtml += '</div>';
         });
-        camposHtml += '</div>';
-    });
 
-    const logoHtml = empresaInfo.logo
-        ? `<img src="${empresaInfo.logo}" class="company-logo" />`
-        : `<div class="company-logo-placeholder">🏥</div>`;
+        const logoHtml = empresaInfo.logo
+            ? `<img src="${empresaInfo.logo}" class="company-logo" />`
+            : `<div class="company-logo-placeholder">🏥</div>`;
 
-    const nomeEmpresa = empresaInfo.name || 'Clínica';
+        const nomeEmpresa = empresaInfo.name || 'Clínica';
 
-    const html = `<!DOCTYPE html><html><head><title>Prontuário - ${clienteSelecionado?.name}</title>
+        const html = `<!DOCTYPE html><html><head><title>Prontuário - ${clienteSelecionado?.name}</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
             * { margin:0; padding:0; box-sizing:border-box; }
@@ -533,600 +534,600 @@ function imprimirProntuario(entry: any) {
         </div>
         </body></html>`;
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-        printWindow.document.write(html);
-        printWindow.document.close();
-        setTimeout(() => printWindow.print(), 600);
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 600);
+        }
     }
-}
 
-const filtrados = clientes.filter(c => c.name.toLowerCase().includes(busca.toLowerCase()) || c.phone?.includes(busca));
+    const filtrados = clientes.filter(c => c.name.toLowerCase().includes(busca.toLowerCase()) || c.phone?.includes(busca));
 
-if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse uppercase text-xs">Sincronizando CRM...</div>;
+    if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse uppercase text-xs">Sincronizando CRM...</div>;
 
-return (
-    <div className="space-y-6 pb-20 p-2 font-sans">
-        <div className="flex justify-between items-center px-2">
-            <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Gestão de Clientes</h1>
-            <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
-        </div>
+    return (
+        <div className="space-y-6 pb-20 p-2 font-sans">
+            <div className="flex justify-between items-center px-2">
+                <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Gestão de Clientes</h1>
+                <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
+            </div>
 
-        <div className="bg-white dark:bg-gray-800 p-2 rounded-2xl border dark:border-gray-700 flex items-center gap-3 shadow-sm mx-2">
-            <Search className="text-gray-400 ml-3" size={20} />
-            <input className="bg-transparent outline-none flex-1 py-3 text-sm dark:text-white" placeholder="Pesquisar por nome ou telefone..." value={busca} onChange={(e) => setBusca(e.target.value)} />
-        </div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-2xl border dark:border-gray-700 flex items-center gap-3 shadow-sm mx-2">
+                <Search className="text-gray-400 ml-3" size={20} />
+                <input className="bg-transparent outline-none flex-1 py-3 text-sm dark:text-white" placeholder="Pesquisar por nome ou telefone..." value={busca} onChange={(e) => setBusca(e.target.value)} />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
-            {filtrados.map(c => (
-                <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
-                    <div className="flex justify-between mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600">{c.name.charAt(0)}</div>
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${c.status === 'ATIVO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{c.status}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
+                {filtrados.map(c => (
+                    <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
+                        <div className="flex justify-between mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600">{c.name.charAt(0)}</div>
+                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${c.status === 'ATIVO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{c.status}</span>
+                        </div>
+                        <h3 className="font-black text-lg group-hover:text-blue-600 transition dark:text-white">{c.name}</h3>
+                        <p className="text-sm text-gray-500">{c.phone || 'Sem telefone'}</p>
                     </div>
-                    <h3 className="font-black text-lg group-hover:text-blue-600 transition dark:text-white">{c.name}</h3>
-                    <p className="text-sm text-gray-500">{c.phone || 'Sem telefone'}</p>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
 
-        {/* FICHA DO CLIENTE (HORIZONTAL COM ABAS) */}
-        {clienteSelecionado && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                <div className="bg-white dark:bg-gray-950 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+            {/* FICHA DO CLIENTE (HORIZONTAL COM ABAS) */}
+            {clienteSelecionado && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+                    <div className="bg-white dark:bg-gray-950 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
 
-                    {/* HEADER DA FICHA */}
-                    <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 shrink-0">
-                        <div className="flex items-center gap-6">
-                            <div className="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-3xl font-black shadow-xl">{clienteSelecionado.name.charAt(0)}</div>
-                            <div><h2 className="text-3xl font-black dark:text-white">{clienteSelecionado.name}</h2>
-                                <div className="flex gap-4 mt-1">
-                                    <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {clienteSelecionado.phone}</span>
-                                    <span className="text-gray-400 font-bold flex items-center gap-1 text-sm"><CheckCircle2 size={14} className="text-green-500" /> Cliente {clienteSelecionado.status}</span>
+                        {/* HEADER DA FICHA */}
+                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 shrink-0">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-3xl font-black shadow-xl">{clienteSelecionado.name.charAt(0)}</div>
+                                <div><h2 className="text-3xl font-black dark:text-white">{clienteSelecionado.name}</h2>
+                                    <div className="flex gap-4 mt-1">
+                                        <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {clienteSelecionado.phone}</span>
+                                        <span className="text-gray-400 font-bold flex items-center gap-1 text-sm"><CheckCircle2 size={14} className="text-green-500" /> Cliente {clienteSelecionado.status}</span>
+                                    </div>
                                 </div>
                             </div>
+                            {/* BOTÕES DE AÇÃO: EDITAR, EXCLUIR, FECHAR */}
+                            <div className="flex gap-3">
+                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm" title="Editar"><Pencil size={20} /></button>
+                                {/* BOTÃO DE EXCLUIR ADICIONADO AQUI */}
+                                <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm" title="Excluir"><Trash2 size={20} /></button>
+                                <button onClick={() => setClienteSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm" title="Fechar"><X size={20} /></button>
+                            </div>
                         </div>
-                        {/* BOTÕES DE AÇÃO: EDITAR, EXCLUIR, FECHAR */}
-                        <div className="flex gap-3">
-                            <button onClick={() => abrirEdicao(clienteSelecionado)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm" title="Editar"><Pencil size={20} /></button>
-                            {/* BOTÃO DE EXCLUIR ADICIONADO AQUI */}
-                            <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm" title="Excluir"><Trash2 size={20} /></button>
-                            <button onClick={() => setClienteSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm" title="Fechar"><X size={20} /></button>
+
+                        {/* SELETOR DE ABAS */}
+                        <div className="flex px-8 pt-6 gap-8 border-b dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto shrink-0 relative z-10">
+                            <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400"}`}>Geral</button>
+                            <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
+                            <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
+                            {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
+                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
+                            )}
                         </div>
-                    </div>
 
-                    {/* SELETOR DE ABAS */}
-                    <div className="flex px-8 pt-6 gap-8 border-b dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto shrink-0 relative z-10">
-                        <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400"}`}>Geral</button>
-                        <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
-                        <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
-                        {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
-                            <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
-                        )}
-                    </div>
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
 
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            {abaAtiva === "DADOS" && (
+                                <div className="grid grid-cols-12 gap-8">
+                                    <div className="col-span-12 lg:col-span-8 space-y-8">
+                                        <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
+                                            <div className="grid grid-cols-12 gap-4">
+                                                <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cpf || "---"}</p></div>
+                                                <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.rg || "---"}</p></div>
+                                                <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Telefone</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.phone || "---"}</p></div>
+                                                <div className="col-span-12 lg:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800 min-w-0"><label className="text-[9px] font-black text-gray-400 uppercase">E-mail</label><p className="font-bold dark:text-white text-xs truncate" title={clienteSelecionado.email}>{clienteSelecionado.email || "---"}</p></div>
+                                                <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nasc.</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.birthDate ? format(new Date(clienteSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
+                                            </div>
+                                        </section>
+                                        <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Localização</h4>
+                                            <div className="grid grid-cols-12 gap-4">
+                                                <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.cep || "---"}</p></div>
+                                                <div className="col-span-6 md:col-span-9 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-xs truncate" title={`${clienteSelecionado.address || ""} ${clienteSelecionado.number || ""}`}>{clienteSelecionado.address || "---"}{clienteSelecionado.number ? `, ${clienteSelecionado.number}` : ""}</p></div>
 
-                        {abaAtiva === "DADOS" && (
-                            <div className="grid grid-cols-12 gap-8">
-                                <div className="col-span-12 lg:col-span-8 space-y-8">
-                                    <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
-                                        <div className="grid grid-cols-12 gap-4">
-                                            <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cpf || "---"}</p></div>
-                                            <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.rg || "---"}</p></div>
-                                            <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Telefone</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.phone || "---"}</p></div>
-                                            <div className="col-span-12 lg:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800 min-w-0"><label className="text-[9px] font-black text-gray-400 uppercase">E-mail</label><p className="font-bold dark:text-white text-xs truncate" title={clienteSelecionado.email}>{clienteSelecionado.email || "---"}</p></div>
-                                            <div className="col-span-6 lg:col-span-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nasc.</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.birthDate ? format(new Date(clienteSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
-                                        </div>
-                                    </section>
-                                    <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Localização</h4>
-                                        <div className="grid grid-cols-12 gap-4">
-                                            <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.cep || "---"}</p></div>
-                                            <div className="col-span-6 md:col-span-9 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-xs truncate" title={`${clienteSelecionado.address || ""} ${clienteSelecionado.number || ""}`}>{clienteSelecionado.address || "---"}{clienteSelecionado.number ? `, ${clienteSelecionado.number}` : ""}</p></div>
+                                                <div className="col-span-6 md:col-span-5 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Bairro</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.neighborhood || "---"}</p></div>
+                                                <div className={`col-span-6 ${clienteSelecionado.complement ? 'md:col-span-4' : 'md:col-span-7'} p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800`}><label className="text-[9px] font-black text-gray-400 uppercase">Cidade / UF</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.city || "---"}{clienteSelecionado.state ? ` / ${clienteSelecionado.state}` : ""}</p></div>
 
-                                            <div className="col-span-6 md:col-span-5 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Bairro</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.neighborhood || "---"}</p></div>
-                                            <div className={`col-span-6 ${clienteSelecionado.complement ? 'md:col-span-4' : 'md:col-span-7'} p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800`}><label className="text-[9px] font-black text-gray-400 uppercase">Cidade / UF</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.city || "---"}{clienteSelecionado.state ? ` / ${clienteSelecionado.state}` : ""}</p></div>
-
-                                            {clienteSelecionado.complement && (
-                                                <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Comp.</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.complement}</p></div>
+                                                {clienteSelecionado.complement && (
+                                                    <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Comp.</label><p className="font-bold dark:text-white text-xs truncate">{clienteSelecionado.complement}</p></div>
+                                                )}
+                                            </div>
+                                        </section>
+                                        <section><div className="flex justify-between items-center mb-4"><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={14} /> Notas</h4><button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 bg-blue-600 text-white rounded-lg"><Plus size={14} /></button></div>
+                                            {mostrarInputObs && <div className="flex gap-2 mb-4 animate-in slide-in-from-top-2"><input className="flex-1 border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 text-sm outline-none dark:text-white" placeholder="Escreva..." value={novaObs} onChange={e => setNovaObs(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionarNotaRapida()} /><button onClick={adicionarNotaRapida} className="bg-green-600 text-white px-4 rounded-xl font-bold text-sm">Salvar</button></div>}
+                                            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">{clienteSelecionado.notes?.split('\n').reverse().map((n: string, i: number) => (<div key={i} className="p-3 bg-yellow-50/50 dark:bg-yellow-500/5 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-sm italic dark:text-gray-200">{n}</div>)) || <p className="text-gray-400 text-sm italic">Nenhuma observação.</p>}</div>
+                                        </section>
+                                    </div>
+                                    <div className="col-span-12 lg:col-span-4 bg-gray-50 dark:bg-white/5 rounded-[2.5rem] p-6 border dark:border-gray-800">
+                                        <h4 className="text-sm font-black mb-6 uppercase text-blue-600 flex items-center gap-2"><History size={18} /> Últimas Visitas</h4>
+                                        <div className="space-y-4">
+                                            {loadingDetalhes && !clienteSelecionado.bookings ? (
+                                                <div className="text-center py-4"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando histórico...</p></div>
+                                            ) : (
+                                                <>
+                                                    {clienteSelecionado.bookings?.map((b: any) => (
+                                                        <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border dark:border-gray-800 flex justify-between items-center group hover:border-blue-500 transition-all">
+                                                            <div>
+                                                                <p className="font-black text-sm dark:text-white uppercase leading-none mb-1">{b.service?.name || "Serviço"}</p>
+                                                                <p className="text-[9px] font-black text-blue-500 uppercase flex items-center gap-1 mb-1">
+                                                                    <UserCircle size={10} /> Prof: {b.professional?.name || 'Não informado'}
+                                                                </p>
+                                                                <p className="text-[10px] font-bold text-gray-400">{format(new Date(b.date), "dd/MM/yy 'às' HH:mm")}</p>
+                                                            </div>
+                                                            <span className="font-black text-green-600 text-sm">R$ {b.service?.price}</span>
+                                                        </div>
+                                                    ))}
+                                                    {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (
+                                                        <p className="text-center text-xs text-gray-400">Nenhuma visita.</p>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
-                                    </section>
-                                    <section><div className="flex justify-between items-center mb-4"><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={14} /> Notas</h4><button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 bg-blue-600 text-white rounded-lg"><Plus size={14} /></button></div>
-                                        {mostrarInputObs && <div className="flex gap-2 mb-4 animate-in slide-in-from-top-2"><input className="flex-1 border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 text-sm outline-none dark:text-white" placeholder="Escreva..." value={novaObs} onChange={e => setNovaObs(e.target.value)} onKeyDown={e => e.key === 'Enter' && adicionarNotaRapida()} /><button onClick={adicionarNotaRapida} className="bg-green-600 text-white px-4 rounded-xl font-bold text-sm">Salvar</button></div>}
-                                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">{clienteSelecionado.notes?.split('\n').reverse().map((n: string, i: number) => (<div key={i} className="p-3 bg-yellow-50/50 dark:bg-yellow-500/5 rounded-xl border border-yellow-100 dark:border-yellow-900/30 text-sm italic dark:text-gray-200">{n}</div>)) || <p className="text-gray-400 text-sm italic">Nenhuma observação.</p>}</div>
-                                    </section>
-                                </div>
-                                <div className="col-span-12 lg:col-span-4 bg-gray-50 dark:bg-white/5 rounded-[2.5rem] p-6 border dark:border-gray-800">
-                                    <h4 className="text-sm font-black mb-6 uppercase text-blue-600 flex items-center gap-2"><History size={18} /> Últimas Visitas</h4>
-                                    <div className="space-y-4">
-                                        {loadingDetalhes && !clienteSelecionado.bookings ? (
-                                            <div className="text-center py-4"><Loader2 className="animate-spin mx-auto text-blue-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando histórico...</p></div>
-                                        ) : (
-                                            <>
-                                                {clienteSelecionado.bookings?.map((b: any) => (
-                                                    <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-sm border dark:border-gray-800 flex justify-between items-center group hover:border-blue-500 transition-all">
-                                                        <div>
-                                                            <p className="font-black text-sm dark:text-white uppercase leading-none mb-1">{b.service?.name || "Serviço"}</p>
-                                                            <p className="text-[9px] font-black text-blue-500 uppercase flex items-center gap-1 mb-1">
-                                                                <UserCircle size={10} /> Prof: {b.professional?.name || 'Não informado'}
-                                                            </p>
-                                                            <p className="text-[10px] font-bold text-gray-400">{format(new Date(b.date), "dd/MM/yy 'às' HH:mm")}</p>
-                                                        </div>
-                                                        <span className="font-black text-green-600 text-sm">R$ {b.service?.price}</span>
-                                                    </div>
-                                                ))}
-                                                {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (
-                                                    <p className="text-center text-xs text-gray-400">Nenhuma visita.</p>
-                                                )}
-                                            </>
-                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {abaAtiva === "FINANCEIRO" && (
-                            <div className="space-y-8 animate-in fade-in duration-500">
+                            {abaAtiva === "FINANCEIRO" && (
+                                <div className="space-y-8 animate-in fade-in duration-500">
 
-                                {loadingDetalhes ? (
-                                    <div className="flex flex-col items-center justify-center py-20">
-                                        <div className="bg-white dark:bg-gray-900 shadow-xl rounded-full px-8 py-4 flex items-center gap-3 border dark:border-gray-800">
-                                            <Loader2 className="animate-spin text-blue-600" size={24} />
-                                            <span className="font-black text-xs uppercase tracking-widest text-gray-500">Carregando Ficha Financeira...</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="grid grid-cols-3 gap-6">
-                                            <div className="p-8 bg-green-50 dark:bg-green-900/10 rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center"><p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p><p className="text-3xl font-black text-green-600">R$ {clienteSelecionado.invoices?.filter((i: any) => i.status === "PAGO").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                            <div className="p-8 bg-red-50 dark:bg-red-900/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center"><p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p><p className="text-3xl font-black text-red-600">R$ {clienteSelecionado.invoices?.filter((i: any) => i.status === "PENDENTE").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                            <div className="p-8 bg-blue-50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p><p className="text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc: any, cur: any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2 ml-2"><Receipt size={18} /> Detalhamento Financeiro</h4>
-                                            {clienteSelecionado.invoices?.map((inv: any) => (
-                                                <div key={inv.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2rem] flex justify-between items-center hover:border-green-500 transition-all shadow-sm">
-                                                    <div className="flex items-center gap-5">
-                                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                                            {inv.method === 'PIX' ? <QrCode size={24} /> : inv.method === 'CARTAO' ? <CreditCard size={24} /> : <Banknote size={24} />}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
-                                                            {inv.status !== 'PAGO' && (
-                                                                <p className="text-[10px] font-bold text-red-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className={`font-black text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
-                                                    </div>
-                                                </div>
-                                            )) || <p className="text-center py-20 opacity-30 italic">Sem faturamentos registrados.</p>}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        {abaAtiva === "ANEXOS" && (
-                            <div className="space-y-8 animate-in fade-in duration-500">
-                                <div className="flex justify-between items-center px-2"><h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2"><Plus size={18} /> Documentos e Fotos</h4>
-                                    <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
-                                        {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
-                                        <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
-                                    </label>
-                                </div>
-                                {loadingDetalhes && !clienteSelecionado.attachments ? (
-                                    <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {clienteSelecionado.attachments?.map((file: any) => (
-                                            <div key={file.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center">{file.type.includes('image') ? <ImageIcon size={24} /> : <FileText size={24} />}</div>
-                                                    <div><p className="font-black text-sm uppercase dark:text-white truncate max-w-[150px]">{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
-                                                </div>
-                                                <div className="flex gap-2"><a href={file.url} target="_blank" className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={18} /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={18} /></button></div>
+                                    {loadingDetalhes ? (
+                                        <div className="flex flex-col items-center justify-center py-20">
+                                            <div className="bg-white dark:bg-gray-900 shadow-xl rounded-full px-8 py-4 flex items-center gap-3 border dark:border-gray-800">
+                                                <Loader2 className="animate-spin text-blue-600" size={24} />
+                                                <span className="font-black text-xs uppercase tracking-widest text-gray-500">Carregando Ficha Financeira...</span>
                                             </div>
-                                        )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {abaAtiva === "PRONTUARIO" && (
-                            <div className="space-y-6 animate-in fade-in duration-500">
-                                {loadingProntuarios ? (
-                                    <div className="flex flex-col items-center justify-center py-20">
-                                        <Loader2 className="animate-spin text-teal-600 mb-2" size={30} />
-                                        <p className="text-[10px] uppercase text-gray-400 font-bold">Carregando prontuários...</p>
-                                    </div>
-                                ) : prontuarioVisualizando ? (
-                                    /* VISUALIZAÇÃO DO PRONTUÁRIO PREENCHIDO */
-                                    <div>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <button onClick={() => setProntuarioVisualizando(null)} className="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1">&larr; Voltar</button>
-                                            <button onClick={() => imprimirProntuario(prontuarioVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
                                         </div>
-                                        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-8">
-                                            <h3 className="text-xl font-black dark:text-white mb-1">{prontuarioVisualizando.template?.name}</h3>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(prontuarioVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <div className="p-8 bg-green-50 dark:bg-green-900/10 rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center"><p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p><p className="text-3xl font-black text-green-600">R$ {clienteSelecionado.invoices?.filter((i: any) => i.status === "PAGO").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-8 bg-red-50 dark:bg-red-900/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center"><p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p><p className="text-3xl font-black text-red-600">R$ {clienteSelecionado.invoices?.filter((i: any) => i.status === "PENDENTE").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-8 bg-blue-50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p><p className="text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc: any, cur: any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                            </div>
                                             <div className="space-y-4">
-                                                {(prontuarioVisualizando.template?.fields as any[])?.map((field: any) => {
-                                                    const valor = (prontuarioVisualizando.data as any)?.[field.id];
-                                                    if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
-                                                    return (
-                                                        <div key={field.id} className="grid grid-cols-3 gap-4 py-2 border-b dark:border-gray-800/50">
-                                                            <p className="text-xs font-bold text-gray-500 col-span-1">{field.label}</p>
-                                                            <p className="text-sm font-bold dark:text-white col-span-2">
-                                                                {field.type === 'checkbox' ? (
-                                                                    <span>
-                                                                        {valor ? '✅ Sim' : '❌ Não'}
-                                                                        {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
-                                                                            <span className="text-gray-400 font-normal ml-2 italic">
-                                                                                ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
-                                                                            </span>
-                                                                        )}
-                                                                    </span>
-                                                                ) :
-                                                                    field.type === 'checkboxGroup' ? (Array.isArray(valor) ? valor.join(', ') : '---') :
-                                                                        valor || '---'}
-                                                            </p>
+                                                <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2 ml-2"><Receipt size={18} /> Detalhamento Financeiro</h4>
+                                                {clienteSelecionado.invoices?.map((inv: any) => (
+                                                    <div key={inv.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2rem] flex justify-between items-center hover:border-green-500 transition-all shadow-sm">
+                                                        <div className="flex items-center gap-5">
+                                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                                                {inv.method === 'PIX' ? <QrCode size={24} /> : inv.method === 'CARTAO' ? <CreditCard size={24} /> : <Banknote size={24} />}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
+                                                                {inv.status !== 'PAGO' && (
+                                                                    <p className="text-[10px] font-bold text-red-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    );
-                                                })}
+                                                        <div className="text-right">
+                                                            <p className={`font-black text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
+                                                        </div>
+                                                    </div>
+                                                )) || <p className="text-center py-20 opacity-30 italic">Sem faturamentos registrados.</p>}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {abaAtiva === "ANEXOS" && (
+                                <div className="space-y-8 animate-in fade-in duration-500">
+                                    <div className="flex justify-between items-center px-2"><h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2"><Plus size={18} /> Documentos e Fotos</h4>
+                                        <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
+                                            {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
+                                            <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
+                                        </label>
+                                    </div>
+                                    {loadingDetalhes && !clienteSelecionado.attachments ? (
+                                        <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {clienteSelecionado.attachments?.map((file: any) => (
+                                                <div key={file.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center">{file.type.includes('image') ? <ImageIcon size={24} /> : <FileText size={24} />}</div>
+                                                        <div><p className="font-black text-sm uppercase dark:text-white truncate max-w-[150px]">{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
+                                                    </div>
+                                                    <div className="flex gap-2"><a href={file.url} target="_blank" className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={18} /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={18} /></button></div>
+                                                </div>
+                                            )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {abaAtiva === "PRONTUARIO" && (
+                                <div className="space-y-6 animate-in fade-in duration-500">
+                                    {loadingProntuarios ? (
+                                        <div className="flex flex-col items-center justify-center py-20">
+                                            <Loader2 className="animate-spin text-teal-600 mb-2" size={30} />
+                                            <p className="text-[10px] uppercase text-gray-400 font-bold">Carregando prontuários...</p>
+                                        </div>
+                                    ) : prontuarioVisualizando ? (
+                                        /* VISUALIZAÇÃO DO PRONTUÁRIO PREENCHIDO */
+                                        <div>
+                                            <div className="flex justify-between items-center mb-6">
+                                                <button onClick={() => setProntuarioVisualizando(null)} className="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1">&larr; Voltar</button>
+                                                <button onClick={() => imprimirProntuario(prontuarioVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
+                                            </div>
+                                            <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-8">
+                                                <h3 className="text-xl font-black dark:text-white mb-1">{prontuarioVisualizando.template?.name}</h3>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(prontuarioVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                <div className="space-y-4">
+                                                    {(prontuarioVisualizando.template?.fields as any[])?.map((field: any) => {
+                                                        const valor = (prontuarioVisualizando.data as any)?.[field.id];
+                                                        if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
+                                                        return (
+                                                            <div key={field.id} className="grid grid-cols-3 gap-4 py-2 border-b dark:border-gray-800/50">
+                                                                <p className="text-xs font-bold text-gray-500 col-span-1">{field.label}</p>
+                                                                <p className="text-sm font-bold dark:text-white col-span-2">
+                                                                    {field.type === 'checkbox' ? (
+                                                                        <span>
+                                                                            {valor ? '✅ Sim' : '❌ Não'}
+                                                                            {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
+                                                                                <span className="text-gray-400 font-normal ml-2 italic">
+                                                                                    ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                    ) :
+                                                                        field.type === 'checkboxGroup' ? (Array.isArray(valor) ? valor.join(', ') : '---') :
+                                                                            valor || '---'}
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    /* LISTA + BOTÃO NOVO */
-                                    <>
-                                        {prontuarioTemplates.length === 0 ? (
-                                            <div className="text-center py-16">
-                                                <ClipboardList size={40} className="text-gray-300 mx-auto mb-4" />
-                                                <p className="text-sm text-gray-500 font-bold">Nenhum modelo de prontuário criado.</p>
-                                                <p className="text-xs text-gray-400 mt-1">Vá em <b>Prontuários</b> no menu lateral para criar um modelo.</p>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {/* BOTÃO NOVO PRONTUÁRIO */}
-                                                <button
-                                                    onClick={() => { setProntuarioTemplateSelecionado(""); setProntuarioFormData({}); setProntuarioEditId(null); setModalProntuarioAberto(true); }}
-                                                    className="w-full border-2 border-dashed border-teal-300 dark:border-teal-800 p-5 rounded-2xl text-teal-600 font-bold text-sm hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition flex items-center justify-center gap-2"
-                                                >
-                                                    <Plus size={18} /> Novo Prontuário
-                                                </button>
+                                    ) : (
+                                        /* LISTA + BOTÃO NOVO */
+                                        <>
+                                            {prontuarioTemplates.length === 0 ? (
+                                                <div className="text-center py-16">
+                                                    <ClipboardList size={40} className="text-gray-300 mx-auto mb-4" />
+                                                    <p className="text-sm text-gray-500 font-bold">Nenhum modelo de prontuário criado.</p>
+                                                    <p className="text-xs text-gray-400 mt-1">Vá em <b>Prontuários</b> no menu lateral para criar um modelo.</p>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    {/* BOTÃO NOVO PRONTUÁRIO */}
+                                                    <button
+                                                        onClick={() => { setProntuarioTemplateSelecionado(""); setProntuarioFormData({}); setProntuarioEditId(null); setModalProntuarioAberto(true); }}
+                                                        className="w-full border-2 border-dashed border-teal-300 dark:border-teal-800 p-5 rounded-2xl text-teal-600 font-bold text-sm hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition flex items-center justify-center gap-2"
+                                                    >
+                                                        <Plus size={18} /> Novo Prontuário
+                                                    </button>
 
-                                                {/* LISTA DE PRONTUÁRIOS PREENCHIDOS */}
-                                                {prontuarioEntries.length > 0 && (
-                                                    <div>
-                                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Prontuários Preenchidos ({prontuarioEntries.length})</h4>
-                                                        <div className="space-y-2">
-                                                            {prontuarioEntries.map((entry: any) => (
-                                                                <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center shrink-0"><FileText size={18} /></div>
-                                                                        <div>
-                                                                            <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
-                                                                            <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                    {/* LISTA DE PRONTUÁRIOS PREENCHIDOS */}
+                                                    {prontuarioEntries.length > 0 && (
+                                                        <div>
+                                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Prontuários Preenchidos ({prontuarioEntries.length})</h4>
+                                                            <div className="space-y-2">
+                                                                {prontuarioEntries.map((entry: any) => (
+                                                                    <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center shrink-0"><FileText size={18} /></div>
+                                                                            <div>
+                                                                                <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
+                                                                                <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                                                                            <button onClick={() => setProntuarioVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
+                                                                            <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); setModalProntuarioAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
+                                                                            <button onClick={() => imprimirProntuario(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
+                                                                            <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                                                                        <button onClick={() => setProntuarioVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
-                                                                        <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); setModalProntuarioAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
-                                                                        <button onClick={() => imprimirProntuario(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
-                                                                        <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
-                                                                    </div>
-                                                                </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {prontuarioEntries.length === 0 && (
+                                                        <div className="text-center py-10 opacity-40">
+                                                            <ClipboardList size={30} className="mx-auto mb-2" />
+                                                            <p className="text-xs font-bold">Nenhum prontuário preenchido para este cliente.</p>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* RODAPÉ ESTILIZADO */}
+                        <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex justify-between items-center shrink-0">
+                            <div className="flex gap-8">
+                                <div><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0) || "0"}</p></div>
+                                <div className="border-l dark:border-gray-800 pl-8"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Frequência</p><p className="font-black text-2xl text-blue-600">{clienteSelecionado.bookings?.length || 0}x</p></div>
+                            </div>
+                            <div className="text-right"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[9px] text-gray-500 mt-1 uppercase font-bold">Registro: {clienteSelecionado.createdAt ? format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy") : "---"}</p></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL CADASTRO/EDIÇÃO (MANTIDO) */}
+            {modalAberto && (
+                <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[80] p-4">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-5xl relative shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+                        <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
+                        <h2 className="text-3xl font-black mb-8 dark:text-white px-2">{isEditing ? "Editar Ficha" : "Novo Cliente"}</h2>
+
+                        <div className="space-y-8 px-2">
+                            {/* SEÇÃO 1: DADOS PESSOAIS */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <UserCircle size={16} /> Dados Pessoais
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-8 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
+                                        <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                    </div>
+
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
+                                        <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
+                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
+                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                                            <option value="">Selecione...</option>
+                                            <option value="Solteiro(a)">Solteiro(a)</option>
+                                            <option value="Casado(a)">Casado(a)</option>
+                                            <option value="Divorciado(a)">Divorciado(a)</option>
+                                            <option value="Viúvo(a)">Viúvo(a)</option>
+                                            <option value="União Estável">União Estável</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-12 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
+                                        <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* SEÇÃO 2: ENDEREÇO */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <MapPin size={16} /> Endereço Residencial
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label>
+                                        <div className="relative">
+                                            <input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
+                                            <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-7 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Logradouro" />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="Nº" />
+                                    </div>
+
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} placeholder="Bairro" />
+                                    </div>
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} placeholder="Apto, Bloco..." />
+                                    </div>
+                                    <div className="md:col-span-3 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade</label>
+                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" />
+                                    </div>
+                                    <div className="md:col-span-1 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">UF</label>
+                                        <input maxLength={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition uppercase text-center" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* SEÇÃO 3: OUTROS */}
+                            <section>
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                    <ClipboardList size={16} /> Outras Informações
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                    <div className="md:col-span-4 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Status do Cliente</label>
+                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                            <option value="ATIVO">ATIVO</option>
+                                            <option value="INATIVO">INATIVO</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-8 space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas</label>
+                                        <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div className="mt-8 px-2">
+                            <button onClick={salvarCliente} className="w-full bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3 active:scale-[0.98]">
+                                <Save size={20} /> Salvar Registro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DE CONFIRMAÇÃO ESTILIZADO */}
+            {confirmarExclusao && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
+                    <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-sm text-center shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
+                        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
+                        <h2 className="text-2xl font-black mb-2 dark:text-white tracking-tighter uppercase">Excluir?</h2>
+                        <p className="text-gray-500 text-sm mb-8 font-medium">Os dados serão removidos permanentemente. Confirmar?</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => setConfirmarExclusao(null)} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-2xl font-black text-[10px] uppercase text-gray-600 dark:text-gray-300">Não</button>
+                            <button onClick={executarExclusao} className="p-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Sim, excluir</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL FLUTUANTE DO PRONTUÁRIO */}
+            {modalProntuarioAberto && clienteSelecionado && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
+                    <div className="bg-white dark:bg-gray-950 w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+                        {/* HEADER DO MODAL */}
+                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shrink-0">
+                            <div>
+                                <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
+                                    {prontuarioEditId ? "Editar Prontuário" : "Novo Prontuário"}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
+                            </div>
+                            <button onClick={() => { setModalProntuarioAberto(false); setProntuarioFormData({}); setProntuarioEditId(null); setProntuarioTemplateSelecionado(""); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* CONTEÚDO SCROLLÁVEL */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                            {/* SELETOR DE TEMPLATE */}
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo do Prontuário</label>
+                                <select
+                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
+                                    value={prontuarioTemplateSelecionado}
+                                    onChange={e => { setProntuarioTemplateSelecionado(e.target.value); if (!prontuarioEditId) setProntuarioFormData({}); }}
+                                >
+                                    <option value="">Selecione um modelo...</option>
+                                    {prontuarioTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+
+                            {/* CAMPOS DINÂMICOS */}
+                            {prontuarioTemplateSelecionado && (() => {
+                                const template = prontuarioTemplates.find((t: any) => t.id === prontuarioTemplateSelecionado);
+                                if (!template) return null;
+                                return (
+                                    <div className="space-y-5">
+                                        {(template.fields as any[]).map((field: any) => (
+                                            <div key={field.id}>
+                                                {field.type === 'header' && (
+                                                    <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
+                                                )}
+                                                {field.type === 'text' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'textarea' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'number' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'date' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
+                                                    </div>
+                                                )}
+                                                {field.type === 'select' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })}>
+                                                            <option value="">Selecione...</option>
+                                                            {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
+                                                        </select>
+                                                    </div>
+                                                )}
+                                                {field.type === 'checkbox' && (
+                                                    <div className="space-y-3">
+                                                        <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
+                                                            <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
+                                                            <span className="text-sm font-bold dark:text-white">{field.label}</span>
+                                                            {field.required && <span className="text-red-500 text-xs">*</span>}
+                                                        </label>
+
+                                                        {field.allowsDetails && prontuarioFormData[field.id] && (
+                                                            <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
+                                                                <input
+                                                                    className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
+                                                                    placeholder="Descreva aqui..."
+                                                                    value={prontuarioFormData[field.id + "_details"] || ''}
+                                                                    onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id + "_details"]: e.target.value })}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {field.type === 'checkboxGroup' && (
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {field.options?.map((opt: string, i: number) => (
+                                                                <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
+                                                                    <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
+                                                                        const arr = prontuarioFormData[field.id] || [];
+                                                                        setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
+                                                                    }} />
+                                                                    <span className="font-bold dark:text-white">{opt}</span>
+                                                                </label>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
 
-                                                {prontuarioEntries.length === 0 && (
-                                                    <div className="text-center py-10 opacity-40">
-                                                        <ClipboardList size={30} className="mx-auto mb-2" />
-                                                        <p className="text-xs font-bold">Nenhum prontuário preenchido para este cliente.</p>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </>
-                                )}
+                        {/* BOTÃO SALVAR FIXO NO RODAPÉ */}
+                        {prontuarioTemplateSelecionado && (
+                            <div className="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 shrink-0">
+                                <button
+                                    onClick={salvarProntuario}
+                                    disabled={prontuarioSalvando}
+                                    className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
+                                >
+                                    {prontuarioSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
+                                    {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Prontuário' : 'Salvar Prontuário')}
+                                </button>
                             </div>
                         )}
                     </div>
-
-                    {/* RODAPÉ ESTILIZADO */}
-                    <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex justify-between items-center shrink-0">
-                        <div className="flex gap-8">
-                            <div><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0) || "0"}</p></div>
-                            <div className="border-l dark:border-gray-800 pl-8"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Frequência</p><p className="font-black text-2xl text-blue-600">{clienteSelecionado.bookings?.length || 0}x</p></div>
-                        </div>
-                        <div className="text-right"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[9px] text-gray-500 mt-1 uppercase font-bold">Registro: {clienteSelecionado.createdAt ? format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy") : "---"}</p></div>
-                    </div>
                 </div>
-            </div>
-        )}
-
-        {/* MODAL CADASTRO/EDIÇÃO (MANTIDO) */}
-        {modalAberto && (
-            <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-[80] p-4">
-                <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-5xl relative shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
-                    <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                    <h2 className="text-3xl font-black mb-8 dark:text-white px-2">{isEditing ? "Editar Ficha" : "Novo Cliente"}</h2>
-
-                    <div className="space-y-8 px-2">
-                        {/* SEÇÃO 1: DADOS PESSOAIS */}
-                        <section>
-                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                <UserCircle size={16} /> Dados Pessoais
-                            </h3>
-                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                <div className="md:col-span-8 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
-                                </div>
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
-                                    <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
-                                </div>
-
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
-                                    <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
-                                </div>
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
-                                </div>
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
-                                    <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
-                                </div>
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
-                                    <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
-                                        <option value="">Selecione...</option>
-                                        <option value="Solteiro(a)">Solteiro(a)</option>
-                                        <option value="Casado(a)">Casado(a)</option>
-                                        <option value="Divorciado(a)">Divorciado(a)</option>
-                                        <option value="Viúvo(a)">Viúvo(a)</option>
-                                        <option value="União Estável">União Estável</option>
-                                    </select>
-                                </div>
-                                <div className="md:col-span-12 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
-                                    <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* SEÇÃO 2: ENDEREÇO */}
-                        <section>
-                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                <MapPin size={16} /> Endereço Residencial
-                            </h3>
-                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                <div className="md:col-span-3 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label>
-                                    <div className="relative">
-                                        <input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
-                                        <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
-                                    </div>
-                                </div>
-                                <div className="md:col-span-7 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Logradouro" />
-                                </div>
-                                <div className="md:col-span-2 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="Nº" />
-                                </div>
-
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} placeholder="Bairro" />
-                                </div>
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} placeholder="Apto, Bloco..." />
-                                </div>
-                                <div className="md:col-span-3 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade</label>
-                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" />
-                                </div>
-                                <div className="md:col-span-1 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">UF</label>
-                                    <input maxLength={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition uppercase text-center" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" />
-                                </div>
-                            </div>
-                        </section>
-
-                        {/* SEÇÃO 3: OUTROS */}
-                        <section>
-                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                <ClipboardList size={16} /> Outras Informações
-                            </h3>
-                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                <div className="md:col-span-4 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Status do Cliente</label>
-                                    <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                        <option value="ATIVO">ATIVO</option>
-                                        <option value="INATIVO">INATIVO</option>
-                                    </select>
-                                </div>
-                                <div className="md:col-span-8 space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas</label>
-                                    <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-
-                    <div className="mt-8 px-2">
-                        <button onClick={salvarCliente} className="w-full bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3 active:scale-[0.98]">
-                            <Save size={20} /> Salvar Registro
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* MODAL DE CONFIRMAÇÃO ESTILIZADO */}
-        {confirmarExclusao && (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
-                <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-sm text-center shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
-                    <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
-                    <h2 className="text-2xl font-black mb-2 dark:text-white tracking-tighter uppercase">Excluir?</h2>
-                    <p className="text-gray-500 text-sm mb-8 font-medium">Os dados serão removidos permanentemente. Confirmar?</p>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setConfirmarExclusao(null)} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-2xl font-black text-[10px] uppercase text-gray-600 dark:text-gray-300">Não</button>
-                        <button onClick={executarExclusao} className="p-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Sim, excluir</button>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* MODAL FLUTUANTE DO PRONTUÁRIO */}
-        {modalProntuarioAberto && clienteSelecionado && (
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
-                <div className="bg-white dark:bg-gray-950 w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
-                    {/* HEADER DO MODAL */}
-                    <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shrink-0">
-                        <div>
-                            <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
-                                {prontuarioEditId ? "Editar Prontuário" : "Novo Prontuário"}
-                            </h2>
-                            <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
-                        </div>
-                        <button onClick={() => { setModalProntuarioAberto(false); setProntuarioFormData({}); setProntuarioEditId(null); setProntuarioTemplateSelecionado(""); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm">
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    {/* CONTEÚDO SCROLLÁVEL */}
-                    <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                        {/* SELETOR DE TEMPLATE */}
-                        <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo do Prontuário</label>
-                            <select
-                                className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
-                                value={prontuarioTemplateSelecionado}
-                                onChange={e => { setProntuarioTemplateSelecionado(e.target.value); if (!prontuarioEditId) setProntuarioFormData({}); }}
-                            >
-                                <option value="">Selecione um modelo...</option>
-                                {prontuarioTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
-                        </div>
-
-                        {/* CAMPOS DINÂMICOS */}
-                        {prontuarioTemplateSelecionado && (() => {
-                            const template = prontuarioTemplates.find((t: any) => t.id === prontuarioTemplateSelecionado);
-                            if (!template) return null;
-                            return (
-                                <div className="space-y-5">
-                                    {(template.fields as any[]).map((field: any) => (
-                                        <div key={field.id}>
-                                            {field.type === 'header' && (
-                                                <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
-                                            )}
-                                            {field.type === 'text' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                </div>
-                                            )}
-                                            {field.type === 'textarea' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                </div>
-                                            )}
-                                            {field.type === 'number' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                </div>
-                                            )}
-                                            {field.type === 'date' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                </div>
-                                            )}
-                                            {field.type === 'select' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })}>
-                                                        <option value="">Selecione...</option>
-                                                        {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
-                                                    </select>
-                                                </div>
-                                            )}
-                                            {field.type === 'checkbox' && (
-                                                <div className="space-y-3">
-                                                    <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
-                                                        <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
-                                                        <span className="text-sm font-bold dark:text-white">{field.label}</span>
-                                                        {field.required && <span className="text-red-500 text-xs">*</span>}
-                                                    </label>
-
-                                                    {field.allowsDetails && prontuarioFormData[field.id] && (
-                                                        <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
-                                                            <input
-                                                                className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
-                                                                placeholder="Descreva aqui..."
-                                                                value={prontuarioFormData[field.id + "_details"] || ''}
-                                                                onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id + "_details"]: e.target.value })}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                            {field.type === 'checkboxGroup' && (
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {field.options?.map((opt: string, i: number) => (
-                                                            <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
-                                                                <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
-                                                                    const arr = prontuarioFormData[field.id] || [];
-                                                                    setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
-                                                                }} />
-                                                                <span className="font-bold dark:text-white">{opt}</span>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        })()}
-                    </div>
-
-                    {/* BOTÃO SALVAR FIXO NO RODAPÉ */}
-                    {prontuarioTemplateSelecionado && (
-                        <div className="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 shrink-0">
-                            <button
-                                onClick={salvarProntuario}
-                                disabled={prontuarioSalvando}
-                                className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
-                            >
-                                {prontuarioSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
-                                {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Prontuário' : 'Salvar Prontuário')}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )}
-    </div>
-);
+            )}
+        </div>
+    );
 }
