@@ -12,13 +12,46 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
     try {
         const { userId } = await auth();
-        if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+        // 1. Descobre a empresa e o papel do usuário (Robust Check)
+        let companyId = null;
+        let ownerId = "";
 
-        // VERIFICA SE O PLANO É INDIVIDUAL (Bloqueia Financeiro)
-        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+            ownerId = ownerCompany.ownerId;
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId },
+                include: { company: true }
+            });
+            if (member) {
+                companyId = member.companyId;
+                ownerId = member.company.ownerId;
+
+                // Verifica permissão granular de financeiro para profissionais
+                if (!member.permissions || !(member.permissions as any).financeiro) {
+                    return NextResponse.json({ error: "Você não tem permissão para acessar o módulo financeiro." }, { status: 403 });
+                }
+            } else {
+                // FALLBACK: Tenta como Profissional (Professional) - Mesma lógica do checkout
+                const professional = await prisma.professional.findFirst({
+                    where: { userId: userId },
+                    include: { company: true }
+                });
+                if (professional) {
+                    companyId = professional.companyId;
+                    ownerId = professional.company.ownerId;
+                }
+            }
+        }
+
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        // 2. VERIFICA O PLANO (Sempre pelo dono da empresa)
+        const sub = await prisma.subscription.findUnique({ where: { userId: ownerId } });
         if (!sub || sub.plan === "INDIVIDUAL") {
             return NextResponse.json({ error: "O Módulo Financeiro está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
         }
@@ -49,7 +82,7 @@ export async function GET(request: Request) {
         const [todasReceitasGrafico, todasDespesasGrafico] = await Promise.all([
             prisma.invoice.findMany({
                 where: {
-                    companyId: company.id,
+                    companyId: companyId,
                     status: 'PAGO',
                     paidAt: { gte: seisMesesAtras, lte: fimMesAtual }
                 },
@@ -57,7 +90,7 @@ export async function GET(request: Request) {
             }),
             prisma.expense.findMany({
                 where: {
-                    companyId: company.id,
+                    companyId: companyId,
                     date: { gte: seisMesesAtras, lte: fimMesAtual }
                 },
                 select: { value: true, date: true }
@@ -94,20 +127,20 @@ export async function GET(request: Request) {
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
-                where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } }
+                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } }
             }),
             // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
-                where: { companyId: company.id, date: { gte: inicioMes, lte: fimMes } }
+                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } }
             }),
             // 3. Receitas Mês Anterior ao SELECIONADO
             prisma.invoice.findMany({
-                where: { companyId: company.id, status: "PAGO", paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior } }
+                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior } }
             }),
             // 4. Ranking Serviços (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['serviceId'],
-                where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+                where: { companyId: companyId, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
@@ -115,20 +148,20 @@ export async function GET(request: Request) {
             // 5. Ranking Profissionais (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['professionalId'],
-                where: { companyId: company.id, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+                where: { companyId: companyId, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
             }),
             // 6. Despesas LISTGEM - DO MÊS SELECIONADO (Removendo limite 20 pra ver todas do mês)
             prisma.expense.findMany({
-                where: { companyId: company.id, date: { gte: inicioMes, lte: fimMes } },
+                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } },
                 orderBy: { date: 'desc' }
             }),
             // 7. BOLETOS VENCIDOS (Global, pois vencido é vencido independente do mês que eu olho? Ou filtro? Geralmente Vencido mostra tudo que tá pendente pra trás)
             prisma.invoice.findMany({
                 where: {
-                    companyId: company.id,
+                    companyId: companyId,
                     status: "PENDENTE",
                     dueDate: { lt: startOfDay(hoje) } // Vencido em relação a HOJE sempre
                 },
@@ -140,7 +173,7 @@ export async function GET(request: Request) {
             // Para "Contas a Receber" no card, faz sentido mostrar as do mês selecionado se for futuro.
             prisma.invoice.findMany({
                 where: {
-                    companyId: company.id,
+                    companyId: companyId,
                     status: "PENDENTE",
                     // Se a data selecionada for futura, mostra boletos daquele mês. Se for passado/presente, mostra a partir de hoje? 
                     // Vamos simplificar: A receber NAQUELE mês.

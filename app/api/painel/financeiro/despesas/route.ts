@@ -9,10 +9,27 @@ import { addWeeks, addMonths, addYears } from "date-fns";
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     const body = await req.json();
-    const company = await prisma.company.findFirst({ where: { ownerId: userId } });
-    if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+    // 1. Descobre a empresa (Robust Check)
+    let companyId = null;
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+      companyId = ownerCompany.id;
+    } else {
+      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+      if (member) {
+        companyId = member.companyId;
+      } else {
+        const professional = await prisma.professional.findFirst({
+          where: { userId: userId }
+        });
+        if (professional) companyId = professional.companyId;
+      }
+    }
+
+    if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
     const expensesToCreate = [];
     const baseDate = new Date(body.date); // Garante que é Date
@@ -39,7 +56,7 @@ export async function POST(req: Request) {
         category: body.category,
         frequency: body.frequency || "ONCE",
         date: nextDate,
-        companyId: company.id
+        companyId: companyId
       });
     }
 
@@ -60,7 +77,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
     const { id, description, value, category, frequency, date } = body;
@@ -85,7 +102,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const { id, deleteSeries } = await req.json();
 

@@ -90,7 +90,7 @@ export default function DashboardPage() {
                                     Faturamento {format(new Date(), 'MMMM', { locale: ptBR })}
                                 </p>
                                 <p className="text-2xl font-black text-white leading-tight">
-                                    R$ {dados.resumoFinanceiro?.totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    R$ {(dados.resumoFinanceiro?.totalMes || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </p>
                             </div>
                         </div>
@@ -111,14 +111,14 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="space-y-3 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
-                            {dados.agendamentosHoje?.length === 0 ? (
+                            {(!dados.agendamentosHoje || dados.agendamentosHoje.length === 0) ? (
                                 <p className="text-gray-400 text-sm italic">Nenhum agendamento para hoje.</p>
                             ) : (
-                                dados.agendamentosHoje?.map((ag: any) => (
+                                dados.agendamentosHoje.map((ag: any) => (
                                     <div key={ag.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border-l-4 border-blue-500">
                                         <div className="flex items-center gap-4">
                                             <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl font-black text-lg shadow-sm">
-                                                {format(new Date(ag.date), 'HH:mm')}
+                                                {ag.date ? format(new Date(ag.date), 'HH:mm') : '--:--'}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-gray-800 dark:text-white">{ag.customerName}</p>
@@ -135,12 +135,12 @@ export default function DashboardPage() {
                     </div>
 
                     {/* 3. GRÁFICO MENSAL (Apenas Premium/Master + Permissão) */}
-                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
+                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && dados.graficoDados && (
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-6"><TrendingUp className="text-green-500" /> Performance do Mês</h3>
                             <div className="h-[250px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={dados.graficoDados}>
+                                    <AreaChart data={dados.graficoDados || []}>
                                         <defs>
                                             <linearGradient id="colorValor" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -168,13 +168,13 @@ export default function DashboardPage() {
                                 <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-6"><Package className="text-orange-500" /> Estoque Crítico</h3>
 
                                 <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                                    {dados.estoqueBaixo?.length === 0 ? (
+                                    {(!dados.estoqueBaixo || dados.estoqueBaixo.length === 0) ? (
                                         <div className="flex flex-col items-center justify-center h-40 text-green-600">
                                             <CheckCircle2 size={40} className="mb-2 opacity-50" />
                                             <p className="text-xs font-bold uppercase">Estoque Saudável</p>
                                         </div>
                                     ) : (
-                                        dados.estoqueBaixo?.map((prod: any) => (
+                                        dados.estoqueBaixo.map((prod: any) => (
                                             <div key={prod.id} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
                                                 <div>
                                                     <p className="font-bold text-sm text-red-700 dark:text-red-400">{prod.name}</p>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                                 )}
                             </div>
                         ) : null
-                    ) : dados.userRole === "ADMIN" && (
+                    ) : (dados.userRole === "ADMIN") && (
                         <div className="bg-blue-600 p-8 rounded-[2rem] shadow-xl text-white flex flex-col justify-between overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><LayoutDashboard size={120} /></div>
                             <div className="relative z-10">
@@ -211,16 +211,16 @@ export default function DashboardPage() {
                             <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border-l-8 border-red-500 relative overflow-hidden">
                                 <div className="flex justify-between items-center mb-4 relative z-10">
                                     <h3 className="font-black text-red-600 uppercase text-xs tracking-widest flex items-center gap-2"><AlertTriangle size={16} /> Atrasadas</h3>
-                                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-black">{dados.boletosVencidos?.length}</span>
+                                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-black">{dados.boletosVencidos?.length || 0}</span>
                                 </div>
                                 <div className="space-y-2 relative z-10">
                                     {dados.boletosVencidos?.map((b: any) => (
                                         <div key={b.id} className="flex justify-between text-sm">
-                                            <span className="text-gray-600 dark:text-gray-300 truncate w-32">{b.client.name}</span>
-                                            <span className="font-black text-red-500">R$ {Number(b.value).toLocaleString()}</span>
+                                            <span className="text-gray-600 dark:text-gray-300 truncate w-32">{b.client?.name || 'Cliente'}</span>
+                                            <span className="font-black text-red-500">R$ {Number(b.value || 0).toLocaleString()}</span>
                                         </div>
                                     ))}
-                                    {dados.boletosVencidos?.length === 0 && <p className="text-gray-400 text-xs italic">Nenhuma conta atrasada.</p>}
+                                    {(!dados.boletosVencidos || dados.boletosVencidos.length === 0) && <p className="text-gray-400 text-xs italic">Nenhuma conta atrasada.</p>}
                                 </div>
                             </div>
 
@@ -233,13 +233,13 @@ export default function DashboardPage() {
                                     {dados.boletosVencer?.map((b: any) => (
                                         <div key={b.id} className="flex justify-between text-sm items-center">
                                             <div>
-                                                <p className="text-gray-800 dark:text-gray-200 font-bold text-xs">{b.client.name}</p>
-                                                <p className="text-gray-400 text-[9px] font-black uppercase text-gray-400">{format(new Date(b.dueDate), 'dd/MM')}</p>
+                                                <p className="text-gray-800 dark:text-gray-200 font-bold text-xs">{b.client?.name || 'Cliente'}</p>
+                                                <p className="text-gray-400 text-[9px] font-black uppercase">{b.dueDate ? format(new Date(b.dueDate), 'dd/MM') : '--/--'}</p>
                                             </div>
-                                            <span className="font-black text-gray-800 dark:text-white">R$ {Number(b.value).toLocaleString()}</span>
+                                            <span className="font-black text-gray-800 dark:text-white">R$ {Number(b.value || 0).toLocaleString()}</span>
                                         </div>
                                     ))}
-                                    {dados.boletosVencer?.length === 0 && <p className="text-gray-400 text-xs italic">Nada para os próximos dias.</p>}
+                                    {(!dados.boletosVencer || dados.boletosVencer.length === 0) && <p className="text-gray-400 text-xs italic">Nada para os próximos dias.</p>}
                                 </div>
                                 <Link href="/painel/financeiro" className="flex items-center justify-end gap-1 text-[10px] font-black text-yellow-600 uppercase mt-4 hover:underline">Ver tudo <ArrowRight size={12} /></Link>
                             </div>

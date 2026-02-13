@@ -99,7 +99,9 @@ export default function FinanceiroPage() {
             value: exp.value.toString(),
             category: exp.category,
             frequency: exp.frequency || "ONCE",
-            date: new Date(exp.date).toISOString().split('T')[0]
+            date: (exp.date && !isNaN(new Date(exp.date).getTime()))
+                ? new Date(exp.date).toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0]
         });
         setModalDespesa(true);
     }

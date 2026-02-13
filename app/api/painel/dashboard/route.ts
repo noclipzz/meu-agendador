@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const { userId } = await auth();
-        if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        // 1. Busca Empresa e Role
+        // 1. Busca Empresa e Role (Logica Robusta)
         let companyId = null;
         let userRole = "PROFESSIONAL";
         let permissions: any = null;
@@ -31,10 +31,20 @@ export async function GET() {
             if (member) {
                 companyId = member.companyId;
                 permissions = member.permissions || { agenda: true, clientes: true };
+            } else {
+                // FALLBACK: Como Profissional
+                const professional = await prisma.professional.findFirst({
+                    where: { userId: userId },
+                    include: { company: true }
+                });
+                if (professional) {
+                    companyId = professional.companyId;
+                    permissions = { agenda: true, clientes: true }; // Permissões básicas default
+                }
             }
         }
 
-        if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const hoje = new Date();
         const inicioDia = startOfDay(hoje);
@@ -44,8 +54,7 @@ export async function GET() {
 
         // 2. VERIFICA O PLANO (Busca pelo dono da empresa)
         const company = await prisma.company.findUnique({
-            where: { id: companyId },
-            include: { owner: true } // Precisamos do ownerId para ver a assinatura
+            where: { id: companyId }
         });
 
         const sub = await prisma.subscription.findUnique({ where: { userId: company?.ownerId || "" } });
