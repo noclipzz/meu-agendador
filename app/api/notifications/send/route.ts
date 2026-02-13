@@ -5,17 +5,19 @@ import webpush from "web-push";
 
 const prisma = new PrismaClient();
 
-webpush.setVapidDetails(
-    "mailto:suporte@nohud.com.br",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-    process.env.VAPID_PRIVATE_KEY || ""
-);
-
 export async function POST(req: Request) {
     try {
         const { userId: currentUserId } = auth();
-        // Apenas admins podem mandar notificações de teste (ou o próprio usuário para si mesmo)
         if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        const privateKey = process.env.VAPID_PRIVATE_KEY;
+
+        if (!publicKey || !privateKey) {
+            return NextResponse.json({ error: "VAPID keys not configured in environment" }, { status: 500 });
+        }
+
+        webpush.setVapidDetails("mailto:suporte@nohud.com.br", publicKey, privateKey);
 
         const { targetUserId, title, body, url } = await req.json();
 

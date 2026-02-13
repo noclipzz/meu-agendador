@@ -1,13 +1,31 @@
 import webpush from "web-push";
 import { db } from "./db";
 
-webpush.setVapidDetails(
-    "mailto:suporte@nohud.com.br",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "",
-    process.env.VAPID_PRIVATE_KEY || ""
-);
+const ensureWebPushConfigured = () => {
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const privateKey = process.env.VAPID_PRIVATE_KEY;
+
+    if (!publicKey || !privateKey) {
+        console.warn("⚠️ Push Notifications: VAPID keys not found in environment.");
+        return false;
+    }
+
+    try {
+        webpush.setVapidDetails(
+            "mailto:suporte@nohud.com.br",
+            publicKey,
+            privateKey
+        );
+        return true;
+    } catch (err) {
+        console.error("Error setting VAPID details:", err);
+        return false;
+    }
+};
 
 export async function sendPushNotification(userId: string, title: string, body: string, url: string = "/painel") {
+    if (!ensureWebPushConfigured()) return;
+
     try {
         const subs = await db.pushSubscription.findUnique({
             where: { userId },
