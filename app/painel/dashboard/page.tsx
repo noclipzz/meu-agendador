@@ -30,10 +30,9 @@ export default function DashboardPage() {
         setSubscribing(true);
         try {
             await subscribeUserToPush();
-            toast.success("Notificações ativadas! A Apple/Google agora tem sua nova chave.");
+            toast.success("Notificações ativadas com sucesso!");
         } catch (error: any) {
-            toast.error(`Erro: ${error.message || "Falha técnica"}`);
-            console.error(error);
+            toast.error(`Erro: ${error.message || "Falha ao ativar"}`);
         } finally {
             setSubscribing(false);
         }
@@ -90,11 +89,10 @@ export default function DashboardPage() {
                         </button>
                         <button
                             onClick={handleTestNotification}
-                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-gray-400 shadow-sm hover:text-green-600 transition text-xs font-bold flex flex-col items-center justify-center leading-none gap-1"
+                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-gray-400 shadow-sm hover:text-green-600 transition text-xs font-bold"
                             title="Testar Notificação Push"
                         >
-                            <span>Testar Push</span>
-                            <span className="text-[8px] opacity-50 font-normal">v2.0</span>
+                            Testar Notificação
                         </button>
                     </div>
                 </div>
