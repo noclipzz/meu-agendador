@@ -39,11 +39,14 @@ export async function subscribeUserToPush() {
                 // Comparação simples (checamos se os primeiros bytes batem)
                 const currentKeyArray = new Uint8Array(currentKey);
 
-                // Se for diferente, descadastra para fazer de novo
-                if (currentKeyArray[0] !== newKeyArray[0]) {
-                    console.log("Renovando assinatura VAPID antiga...");
+                // Converto o buffer binário para string Base64 para poder comparar corretamente (ignora o padding do meio)
+                const currentKeyBase64 = btoa(String.fromCharCode(...currentKeyArray)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                const newKeyBase64 = VAPID_PUBLIC_KEY.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+                if (currentKeyBase64 !== newKeyBase64) {
+                    console.warn("⚠️ Chave VAPID mudou! Renovando assinatura...");
                     await subscription.unsubscribe();
-                    subscription = null; // Força recriar abaixo
+                    subscription = null; // Força recriar
                 }
             }
         }
