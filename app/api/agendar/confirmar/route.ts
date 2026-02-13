@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { notifyProfessional } from "@/lib/push-server";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -88,8 +89,20 @@ export async function PUT(req: Request) {
       } catch (e) {
         console.error("❌ [DEBUG] Erro fatal e-mail cliente:", e);
       }
-    } else {
-      console.log("⚠️ [DEBUG] Cliente sem e-mail cadastrado, pulando notificação do cliente.");
+    }
+
+    // C. Notificação Push para o Profissional
+    if (booking.professionalId) {
+      try {
+        await notifyProfessional(
+          booking.professionalId,
+          "✅ Agendamento Confirmado!",
+          `${booking.customerName} confirmado para ${dataFormatada}`,
+          "/painel/agenda"
+        );
+      } catch (e) {
+        console.error("❌ Erro ao enviar push de confirmação:", e);
+      }
     }
 
     return NextResponse.json(updated);

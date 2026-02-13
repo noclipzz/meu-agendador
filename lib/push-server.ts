@@ -75,3 +75,18 @@ export async function notifyAdminsOfCompany(companyId: string, title: string, bo
         console.error(`Error notifying admins of company ${companyId}:`, error);
     }
 }
+
+export async function notifyProfessional(professionalId: string, title: string, body: string, url: string = "/painel") {
+    try {
+        const professional = await db.professional.findUnique({
+            where: { id: professionalId },
+            select: { userId: true }
+        });
+
+        if (professional?.userId) {
+            await sendPushNotification(professional.userId, title, body, url);
+        }
+    } catch (error) {
+        console.error(`Error notifying professional ${professionalId}:`, error);
+    }
+}
