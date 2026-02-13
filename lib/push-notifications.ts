@@ -25,21 +25,37 @@ export async function subscribeUserToPush() {
         }
 
         const registration = await navigator.serviceWorker.ready;
-
-        // Força atualização para garantir que o worker mais recente está ativo
         await registration.update();
 
-        // Verifica se já existe uma inscrição
+        // 1. Verifica se já existe uma inscrição
         let subscription = await registration.pushManager.getSubscription();
 
+        // 2. Se existir, vamos verificar se ela usa a chave CERTA ou se está "vencida"
+        if (subscription) {
+            const currentKey = subscription.options.applicationServerKey;
+            // Se a chave mudou ou precisamos forçar renovação, cancelamos a antiga
+            if (currentKey) {
+                const newKeyArray = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+                // Comparação simples (checamos se os primeiros bytes batem)
+                const currentKeyArray = new Uint8Array(currentKey);
+
+                // Se for diferente, descadastra para fazer de novo
+                if (currentKeyArray[0] !== newKeyArray[0]) {
+                    console.log("Renovando assinatura VAPID antiga...");
+                    await subscription.unsubscribe();
+                    subscription = null; // Força recriar abaixo
+                }
+            }
+        }
+
         if (!subscription) {
-            // Solicita permissão
+            // Solicita permissão se ainda não tiver
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
                 throw new Error('Permissão negada');
             }
 
-            // Cria nova inscrição
+            // Cria nova inscrição com a chave NOVA
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
