@@ -12,11 +12,13 @@ export async function POST(req: Request) {
         const { userId: currentUserId } = auth();
         if (!currentUserId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        const privateKey = process.env.VAPID_PRIVATE_KEY;
+        const publicKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").trim();
+        const privateKey = (process.env.VAPID_PRIVATE_KEY || "").trim();
+
+        console.log(`🔑 [DEBUG] Chaves carregadas: Public=${publicKey.substring(0, 5)}... Private=${privateKey.substring(0, 5)}...`);
 
         if (!publicKey || !privateKey) {
-            console.error("❌ [PUSH] Chaves VAPID não configuradas na Vercel!");
+            console.error("❌ [PUSH] Chaves VAPID vazias ou não configuradas!");
             return NextResponse.json({ error: "VAPID keys missing" }, { status: 500 });
         }
 
