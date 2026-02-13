@@ -58,7 +58,6 @@ export default function ClientesPage() {
     const [novaObs, setNovaObs] = useState("");
     const [mostrarInputObs, setMostrarInputObs] = useState(false);
     const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
-    const [salvandoAnexo, setSalvandoAnexo] = useState(false);
 
     // Prontuário
     const [prontuarioTemplates, setProntuarioTemplates] = useState<any[]>([]);
