@@ -47,16 +47,17 @@ export async function subscribeUserToPush() {
         if (permission !== 'granted') throw new Error('Permissão negada pelo navegador');
 
         // 4. CRIAMOS UMA ASSINATURA DO ZERO COM A CHAVE NOVA
-        console.log("🆕 Criando nova assinatura com a chave do servidor...");
+        console.log(`🆕 Criando nova assinatura com a chave: ${publicKey.substring(0, 10)}...`);
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
 
         await saveSubscriptionToServer(subscription);
-        console.log('User is subscribed to Push Notifications');
+        console.log('✅ Inscrição concluída com sucesso!');
     } catch (error) {
-        console.error('Failed to subscribe user:', error);
+        console.error('❌ Erro detalhado na inscrição:', error);
+        throw error; // RE-LANÇA O ERRO para o Dashboard capturar
     }
 }
 
