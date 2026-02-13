@@ -94,6 +94,7 @@ export async function POST(req: Request) {
         city: body.city,
         state: body.state,
         notes: body.notes,
+        maritalStatus: body.maritalStatus,
         status: body.status || "ATIVO",
         companyId: companyId
       }
@@ -139,6 +140,7 @@ export async function PUT(req: Request) {
         city: data.city,
         state: data.state,
         notes: data.notes,
+        maritalStatus: data.maritalStatus,
         status: data.status
       }
     });

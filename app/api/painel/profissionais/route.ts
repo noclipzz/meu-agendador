@@ -119,7 +119,7 @@ export async function POST(req: Request) {
           photoUrl,
           color: color || "#3b82f6",
           companyId: company.id,
-          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status: status || "ATIVO"
+          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO"
         }
       });
 
@@ -203,6 +203,7 @@ export async function PUT(req: Request) {
         cep: body.cep, address: body.address, number: body.number,
         complement: body.complement, neighborhood: body.neighborhood,
         city: body.city, state: body.state, notes: body.notes,
+        maritalStatus: body.maritalStatus,
         status: body.status
       }
     });
