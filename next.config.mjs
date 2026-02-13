@@ -7,7 +7,6 @@ const withPWA = withPWAInit({
   skipWaiting: true,
   reloadOnOnline: true, // Recarrega se voltar online
   workboxOptions: {
-    padding: 1, // Muda o hash do SW
     clientsClaim: true,
     skipWaiting: true
   }
