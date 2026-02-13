@@ -27,41 +27,46 @@ export async function subscribeUserToPush() {
         const registration = await navigator.serviceWorker.ready;
         await registration.update();
 
+        // BUSCA A CHAVE PÚBLICA DIRETO DO SERVIDOR (Corta o cache)
+        const keyResponse = await fetch('/api/notifications/public-key');
+        const { publicKey } = await keyResponse.json();
+
+        if (!publicKey) {
+            throw new Error("Não foi possível obter a chave pública do servidor.");
+        }
+
         // 1. Verifica se já existe uma inscrição
         let subscription = await registration.pushManager.getSubscription();
 
-        // 2. Se existir, vamos verificar se ela usa a chave CERTA ou se está "vencida"
+        // 2. Se existir, verifica se a chave bate
         if (subscription) {
             const currentKey = subscription.options.applicationServerKey;
-            // Se a chave mudou ou precisamos forçar renovação, cancelamos a antiga
+
             if (currentKey) {
-                const newKeyArray = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-                // Comparação simples (checamos se os primeiros bytes batem)
-                const currentKeyArray = new Uint8Array(currentKey);
+                // Converto o buffer binário para string Base64
+                const currentKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(currentKey)))
+                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-                // Converto o buffer binário para string Base64 para poder comparar corretamente (ignora o padding do meio)
-                const currentKeyBase64 = btoa(String.fromCharCode(...currentKeyArray)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-                const newKeyBase64 = VAPID_PUBLIC_KEY.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                const serverKeyBase64 = publicKey
+                    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-                if (currentKeyBase64 !== newKeyBase64) {
-                    console.warn("⚠️ Chave VAPID mudou! Renovando assinatura...");
+                if (currentKeyBase64 !== serverKeyBase64) {
+                    console.warn(`⚠️ Chave VAPID mudou!\nAtual: ${currentKeyBase64}\nNova: ${serverKeyBase64}\nRenovando...`);
                     await subscription.unsubscribe();
-                    subscription = null; // Força recriar
+                    subscription = null;
                 }
             }
         }
 
         if (!subscription) {
-            // Solicita permissão se ainda não tiver
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
                 throw new Error('Permissão negada');
             }
 
-            // Cria nova inscrição com a chave NOVA
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                applicationServerKey: urlBase64ToUint8Array(publicKey),
             });
         }
 
