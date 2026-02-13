@@ -102,8 +102,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(client);
   } catch (error) {
-    console.error("ERRO_POST_CLIENTE:", error);
-    return new NextResponse("Erro ao criar cliente", { status: 500 });
+    return NextResponse.json({ error: "Erro ao criar cliente" }, { status: 500 });
   }
 }
 
@@ -147,8 +146,7 @@ export async function PUT(req: Request) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error("ERRO_PUT_CLIENTE:", error);
-    return new NextResponse("Erro ao atualizar", { status: 500 });
+    return NextResponse.json({ error: "Erro ao atualizar" }, { status: 500 });
   }
 }
 
@@ -172,7 +170,6 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("ERRO_DELETE_CLIENTE:", error);
-    return new NextResponse("Erro ao excluir", { status: 500 });
+    return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 });
   }
 }

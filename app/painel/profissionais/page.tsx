@@ -518,121 +518,126 @@ export default function GestaoEquipe() {
                 </div>
             )}
 
-            {/* MODAL ADICIONAR/EDITAR */}
             {modalAberto && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-5xl relative shadow-2xl border dark:border-gray-800 animate-in zoom-in-95 custom-scrollbar overflow-y-auto max-h-[90vh]">
-                        <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                        <h2 className="text-3xl font-black mb-6 dark:text-white tracking-tighter sm:pl-2">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
+                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                        {/* HEADER FIXO */}
+                        <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
+                            <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
+                            <button onClick={fecharModal} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={24} /></button>
+                        </div>
 
-                        <div className="space-y-8 sm:px-2">
-                            {/* 1. FOTO E IDENTIFICAÇÃO */}
-                            <div className="flex flex-col md:flex-row gap-6 items-start">
-                                <div className="shrink-0 flex flex-col items-center gap-2">
-                                    <div className="w-24 h-24 rounded-[2rem] bg-gray-100 flex items-center justify-center overflow-hidden border-2 dark:border-gray-700 relative group">
-                                        {form.photoUrl ? <img src={form.photoUrl} className="w-full h-full object-cover" /> : <UserCircle size={48} className="text-gray-300" />}
-                                        <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white font-bold text-xs uppercase"><UploadCloud size={24} /><input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" /></label>
+                        {/* CONTEÚDO SCROLLÁVEL */}
+                        <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar">
+                            <div className="space-y-8 sm:px-2">
+                                {/* 1. FOTO E IDENTIFICAÇÃO */}
+                                <div className="flex flex-col md:flex-row gap-6 items-start">
+                                    <div className="shrink-0 flex flex-col items-center gap-2">
+                                        <div className="w-24 h-24 rounded-[2rem] bg-gray-100 flex items-center justify-center overflow-hidden border-2 dark:border-gray-700 relative group">
+                                            {form.photoUrl ? <img src={form.photoUrl} className="w-full h-full object-cover" /> : <UserCircle size={48} className="text-gray-300" />}
+                                            <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white font-bold text-xs uppercase"><UploadCloud size={24} /><input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" /></label>
+                                        </div>
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Foto do<br />Perfil</p>
                                     </div>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Foto do<br />Perfil</p>
-                                </div>
-                                <div className="flex-1 w-full space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Nome Completo (Obrigatório)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Telefone / WhatsApp</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
-                                    </div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">URL da Foto (Opcional)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white text-xs" placeholder="Cole um link de imagem..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} /></div>
-                                </div>
-                            </div>
-
-                            {/* 2. DADOS PESSOAIS */}
-                            <section>
-                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><UserCircle size={16} /> Documentação Pessoal</h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label><input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
-                                    <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data Nasc.</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
-                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
-                                            <option value="">Selecione...</option>
-                                            <option value="Solteiro(a)">Solteiro(a)</option>
-                                            <option value="Casado(a)">Casado(a)</option>
-                                            <option value="Divorciado(a)">Divorciado(a)</option>
-                                            <option value="Viúvo(a)">Viúvo(a)</option>
-                                            <option value="União Estável">União Estável</option>
-                                        </select>
+                                    <div className="flex-1 w-full space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Nome Completo (Obrigatório)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="Ex: Anna Silva" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+                                            <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Telefone / WhatsApp</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
+                                        </div>
+                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">URL da Foto (Opcional)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white text-xs" placeholder="Cole um link de imagem..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} /></div>
                                     </div>
                                 </div>
-                            </section>
 
-                            {/* 3. ENDEREÇO COMPLETO */}
-                            <section>
-                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin size={16} /> Endereço Residencial</h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-4">
-                                    <div className="md:col-span-3 relative"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label><div className="relative"><input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" /><Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} /></div></div>
-                                    <div className="md:col-span-7"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-                                    <div className="md:col-span-2"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} /></div>
-
-                                    <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} /></div>
-                                    <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade / UF</label><div className="flex gap-2"><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" /><input maxLength={2} className="w-20 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white text-center uppercase" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" /></div></div>
-                                </div>
-                            </section>
-
-                            {/* 4. ACESSO E SISTEMA */}
-                            <section>
-                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldCheck size={16} /> Configurações de Acesso</h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 space-y-5">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* E-MAIL PARA LOGIN - Apenas PREMIUM e MASTER */}
-                                        {userPlan === "PREMIUM" || userPlan === "MASTER" ? (
-                                            <div>
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block flex items-center gap-1"><Mail size={12} /> E-mail de Login</label>
-                                                <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="colaborador@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={!!form.id} />
-                                                <p className="text-[9px] text-gray-400 ml-3 mt-1">{form.id ? "E-mail de acesso não pode ser alterado." : "Será enviado um convite para este e-mail."}</p>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl">
-                                                <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 flex items-center gap-2"><ShieldCheck size={14} /> Plano INDIVIDUAL</p>
-                                                <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-1">Faça upgrade para permitir login de colaboradores.</p>
-                                            </div>
-                                        )}
-
+                                {/* 2. DADOS PESSOAIS */}
+                                <section>
+                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><UserCircle size={16} /> Documentação Pessoal</h3>
+                                    <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label><input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" /></div>
+                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} /></div>
+                                        <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data Nasc.</label><input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} /></div>
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Cor na Agenda</label>
-                                            <div className="flex gap-2 bg-white dark:bg-gray-900 p-3 rounded-2xl border-2 dark:border-gray-700 overflow-x-auto">
-                                                {["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#111827", "#6366f1", "#14b8a6"].map(c => (
-                                                    <button key={c} type="button" onClick={() => setForm({ ...form, color: c })} className={`w-8 h-8 rounded-full shrink-0 border-2 transition-all ${form.color === c ? 'border-gray-800 ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`} style={{ backgroundColor: c }} />
-                                                ))}
-                                            </div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
+                                            <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                                                <option value="">Selecione...</option>
+                                                <option value="Solteiro(a)">Solteiro(a)</option>
+                                                <option value="Casado(a)">Casado(a)</option>
+                                                <option value="Divorciado(a)">Divorciado(a)</option>
+                                                <option value="Viúvo(a)">Viúvo(a)</option>
+                                                <option value="União Estável">União Estável</option>
+                                            </select>
                                         </div>
                                     </div>
+                                </section>
 
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Status do Cadastro</label>
-                                        <select className="w-full md:w-1/3 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-blue-500" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                            <option value="ATIVO">ATIVO</option>
-                                            <option value="INATIVO">INATIVO (Bloqueia agendamentos)</option>
-                                        </select>
+                                {/* 3. ENDEREÇO COMPLETO */}
+                                <section>
+                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><MapPin size={16} /> Endereço Residencial</h3>
+                                    <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        <div className="md:col-span-3 relative"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label><div className="relative"><input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" /><Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} /></div></div>
+                                        <div className="md:col-span-7"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+                                        <div className="md:col-span-2"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} /></div>
+
+                                        <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} /></div>
+                                        <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} /></div>
+                                        <div className="md:col-span-4"><label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade / UF</label><div className="flex gap-2"><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" /><input maxLength={2} className="w-20 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white text-center uppercase" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" /></div></div>
                                     </div>
+                                </section>
 
-                                    <div className="md:col-span-8 space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
-                                        <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Dê informações extras sobre o profissional..." />
-                                        <p className="text-[9px] text-gray-400 font-black ml-4 mt-1 leading-none">* Dica: Você pode gerenciar notas rápidas diretamente na ficha do profissional.</p>
+                                {/* 4. ACESSO E SISTEMA */}
+                                <section>
+                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldCheck size={16} /> Configurações de Acesso</h3>
+                                    <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 space-y-5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* E-MAIL PARA LOGIN - Apenas PREMIUM e MASTER */}
+                                            {userPlan === "PREMIUM" || userPlan === "MASTER" ? (
+                                                <div>
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block flex items-center gap-1"><Mail size={12} /> E-mail de Login</label>
+                                                    <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="colaborador@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} disabled={!!form.id} />
+                                                    <p className="text-[9px] text-gray-400 ml-3 mt-1">{form.id ? "E-mail de acesso não pode ser alterado." : "Será enviado um convite para este e-mail."}</p>
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-2xl">
+                                                    <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 flex items-center gap-2"><ShieldCheck size={14} /> Plano INDIVIDUAL</p>
+                                                    <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-1">Faça upgrade para permitir login de colaboradores.</p>
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Cor na Agenda</label>
+                                                <div className="flex gap-2 bg-white dark:bg-gray-900 p-3 rounded-2xl border-2 dark:border-gray-700 overflow-x-auto">
+                                                    {["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#111827", "#6366f1", "#14b8a6"].map(c => (
+                                                        <button key={c} type="button" onClick={() => setForm({ ...form, color: c })} className={`w-8 h-8 rounded-full shrink-0 border-2 transition-all ${form.color === c ? 'border-gray-800 ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`} style={{ backgroundColor: c }} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Status do Cadastro</label>
+                                            <select className="w-full md:w-1/3 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-blue-500" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                                <option value="ATIVO">ATIVO</option>
+                                                <option value="INATIVO">INATIVO (Bloqueia agendamentos)</option>
+                                            </select>
+                                        </div>
+
+                                        <div className="md:col-span-8 space-y-1">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
+                                            <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Dê informações extras sobre o profissional..." />
+                                            <p className="text-[9px] text-gray-400 font-black ml-4 mt-1 leading-none">* Dica: Você pode gerenciar notas rápidas diretamente na ficha do profissional.</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </section>
-                        </div>
+                                </section>
+                            </div>
 
-                        <div className="mt-8 sm:px-2">
-                            <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
-                                {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Dados do Profissional</>}
-                            </button>
+                            {/* RODAPÉ FIXO */}
+                            <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
+                                <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
+                                    {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Alterações</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
             )}
-        </div>
-    );
+                </div>
+            );
 }
