@@ -16,8 +16,17 @@ export default function DashboardPage() {
     const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState(false);
+    const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
     useEffect(() => {
+        if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+                reg.pushManager.getSubscription().then((sub) => {
+                    setHasActiveSubscription(!!sub);
+                });
+            });
+        }
+
         fetch('/api/painel/dashboard')
             .then(res => res.json())
             .then(data => {
@@ -30,7 +39,8 @@ export default function DashboardPage() {
         setSubscribing(true);
         try {
             await subscribeUserToPush();
-            toast.success("Notificações ativadas com sucesso!");
+            setHasActiveSubscription(true);
+            toast.success("Notificações ativadas!");
         } catch (error: any) {
             toast.error(`Erro: ${error.message || "Falha ao ativar"}`);
         } finally {
@@ -38,29 +48,6 @@ export default function DashboardPage() {
         }
     }
 
-    async function handleTestNotification() {
-        try {
-            const res = await fetch('/api/notifications/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: "Teste NOHUD",
-                    body: "Se você recebeu isso, as notificações em segundo plano estão funcionando!",
-                    url: "/painel/dashboard"
-                })
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                toast.success("Notificação enviada!");
-            } else {
-                toast.error(`Erro: ${data.error || "Falha desconhecida"}`);
-            }
-        } catch (error) {
-            toast.error("Erro na conexão com o servidor.");
-        }
-    }
 
     if (loading) return <div className="p-10 text-center animate-pulse text-gray-400 font-bold">Carregando indicadores...</div>;
 
@@ -75,24 +62,19 @@ export default function DashboardPage() {
                         <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
                     </div>
 
-                    {/* BOTÕES DE NOTIFICAÇÃO (APENAS MOBILE/PWA SUGGESTED) */}
-                    <div className="flex gap-2">
+                    {/* BOTÕES DE NOTIFICAÇÃO (APENAS MOBILE) */}
+                    <div className="flex md:hidden gap-2">
                         <button
                             onClick={handleEnableNotifications}
                             disabled={subscribing}
-                            className={`p-3 border rounded-2xl shadow-sm transition flex items-center gap-2 text-xs font-bold ${subscribing ? "bg-gray-100 text-gray-400" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-blue-600 hover:text-green-600"
-                                }`}
-                            title="Ativar Notificações"
+                            className={`p-3 border rounded-2xl shadow-sm transition flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter ${hasActiveSubscription
+                                ? "bg-emerald-500 border-emerald-500 text-white shadow-emerald-200"
+                                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400"
+                                } ${subscribing ? "animate-pulse opacity-50" : ""}`}
+                            title={hasActiveSubscription ? "Notificações Ativas" : "Ativar Notificações"}
                         >
-                            <Bell size={18} className={subscribing ? "animate-pulse text-yellow-500" : "text-current"} />
-                            <span className="hidden md:inline">Notificações</span>
-                        </button>
-                        <button
-                            onClick={handleTestNotification}
-                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-gray-400 shadow-sm hover:text-green-600 transition text-xs font-bold"
-                            title="Testar Notificação Push"
-                        >
-                            Testar Notificação
+                            <Bell size={14} className={hasActiveSubscription ? "fill-current" : ""} />
+                            <span>{hasActiveSubscription ? "Sistema Ativo" : "Ativar Push"}</span>
                         </button>
                     </div>
                 </div>
