@@ -3,16 +3,19 @@
 import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Calendar, AlertTriangle, TrendingUp, Package,
-    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3
+    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
+import { subscribeUserToPush } from "@/lib/push-notifications";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
     const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [subscribing, setSubscribing] = useState(false);
 
     useEffect(() => {
         fetch('/api/painel/dashboard')
@@ -23,6 +26,36 @@ export default function DashboardPage() {
             });
     }, []);
 
+    async function handleEnableNotifications() {
+        setSubscribing(true);
+        try {
+            await subscribeUserToPush();
+            toast.success("Notificações ativadas!");
+        } catch (error) {
+            toast.error("Erro ao ativar notificações.");
+        } finally {
+            setSubscribing(false);
+        }
+    }
+
+    async function handleTestNotification() {
+        try {
+            const res = await fetch('/api/notifications/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: "Teste NOHUD",
+                    body: "Se você recebeu isso, as notificações em segundo plano estão funcionando!",
+                    url: "/painel/dashboard"
+                })
+            });
+            if (res.ok) toast.success("Notificação enviada!");
+            else toast.error("Falha ao enviar notificação.");
+        } catch (error) {
+            toast.error("Erro no teste.");
+        }
+    }
+
     if (loading) return <div className="p-10 text-center animate-pulse text-gray-400 font-bold">Carregando indicadores...</div>;
 
     return (
@@ -30,9 +63,31 @@ export default function DashboardPage() {
 
             {/* BOAS VINDAS */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white">Visão Geral</h1>
-                    <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-800 dark:text-white">Visão Geral</h1>
+                        <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
+                    </div>
+
+                    {/* BOTÕES DE NOTIFICAÇÃO (APENAS MOBILE/PWA SUGGESTED) */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleEnableNotifications}
+                            disabled={subscribing}
+                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-blue-600 shadow-sm hover:bg-blue-50 transition flex items-center gap-2 text-xs font-bold"
+                            title="Ativar Notificações no Celular"
+                        >
+                            <Bell size={18} className={subscribing ? "animate-pulse" : ""} />
+                            <span className="hidden md:inline">Notificações</span>
+                        </button>
+                        <button
+                            onClick={handleTestNotification}
+                            className="p-3 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl text-gray-400 shadow-sm hover:text-green-600 transition text-xs font-bold"
+                            title="Testar Notificação"
+                        >
+                            Testar
+                        </button>
+                    </div>
                 </div>
                 {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && (
                     <div className="relative group cursor-default">

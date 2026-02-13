@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { Resend } from "resend";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { notifyAdminsOfCompany } from "@/lib/push-server";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -156,6 +157,18 @@ export async function POST(req: Request) {
             }
         } else {
             console.log("⚠️ [DEBUG] Empresa não possui email de notificação configurado.");
+        }
+
+        // 5. NOTIFICAÇÃO PUSH (ADMIN)
+        try {
+            await notifyAdminsOfCompany(
+                companyId,
+                "🔔 Novo Agendamento!",
+                `${name} solicitou ${nomeServico} para ${dataFormatada}`,
+                "/painel/agenda"
+            );
+        } catch (pushErr) {
+            console.error("Erro ao enviar push:", pushErr);
         }
 
         return NextResponse.json({ ...booking, warnings });
