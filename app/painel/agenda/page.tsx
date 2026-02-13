@@ -261,41 +261,55 @@ export default function PainelDashboard() {
 
     const porcentagemMeta = metaMensal > 0 ? Math.min(100, Math.round((faturamentoTotal / metaMensal) * 100)) : 0;
 
-    const renderGrid = (dias: Date[]) => (
-        <div className="grid grid-cols-7 bg-gray-200 dark:bg-gray-700 gap-px h-full overflow-y-auto">
-            {dias.map((dia) => {
-                const ags = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dia));
-                // Faturamento do dia também só soma se CONCLUIDO
-                const faturamentoDia = ags
-                    .filter(a => a.status === "CONCLUIDO")
-                    .reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
+    const renderGrid = (dias: Date[]) => {
+        const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-                const ehMes = isSameMonth(dia, dataAtual);
-                const diaSemanaCurto = format(dia, 'EEE', { locale: ptBR }).replace('.', '').toUpperCase();
-                return (
-                    <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1.5 h-[150px] flex flex-col cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}>
-                        <div className="flex justify-between items-center mb-1 border-b dark:border-gray-700 pb-1 flex-shrink-0">
-                            <div className="flex items-center gap-1"><span className="text-[9px] font-black text-gray-400">{diaSemanaCurto}</span><span className={`text-xs font-bold flex items-center justify-center rounded-full w-5 h-5 ${isSameDay(dia, new Date()) ? 'bg-blue-500 text-white' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span></div>
-                            {faturamentoDia > 0 && <span className="text-[9px] font-black text-green-600 bg-green-50 px-1 rounded">R${faturamentoDia}</span>}
-                        </div>
-                        <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
-                            {ags.map(ag => {
-                                const pro = profissionais.find(p => p.id === ag.professionalId);
-                                const isConcluido = ag.status === "CONCLUIDO";
-                                return (
-                                    <div key={ag.id} className={`text-[9px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'}`} style={{ backgroundColor: pro?.color || '#3b82f6' }}>
-                                        {ag.status === "CONFIRMADO" && <CheckCheck size={10} />}
-                                        {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
-                                        {format(new Date(ag.date), "HH:mm")} {ag.customerName}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+        return (
+            <div className="flex flex-col h-full bg-gray-200 dark:bg-gray-700 gap-px overflow-hidden">
+                {/* CABEÇALHO DE DIAS */}
+                <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-800 flex-shrink-0">
+                    {diasSemana.map(d => (
+                        <div key={d} className="py-2 text-center text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">{d}</div>
+                    ))}
+                </div>
+
+                {/* CORPO DO CALENDÁRIO */}
+                <div className="grid grid-cols-7 gap-px flex-1 overflow-y-auto">
+                    {dias.map((dia) => {
+                        const ags = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dia));
+                        const faturamentoDia = ags
+                            .filter(a => a.status === "CONCLUIDO")
+                            .reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
+
+                        const ehMes = isSameMonth(dia, dataAtual);
+
+                        return (
+                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 h-[120px] md:h-[150px] flex flex-col cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}>
+                                <div className="flex justify-between items-start mb-1 shrink-0">
+                                    <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
+                                    {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R${faturamentoDia}</span>}
+                                </div>
+                                <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar">
+                                    {ags.map(ag => {
+                                        const pro = profissionais.find(p => p.id === ag.professionalId);
+                                        const isConcluido = ag.status === "CONCLUIDO";
+                                        return (
+                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'}`} style={{ backgroundColor: pro?.color || '#3b82f6' }}>
+                                                {ag.status === "CONFIRMADO" && <CheckCheck size={10} />}
+                                                {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
+                                                <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
+                                                <span className="truncate">{ag.customerName}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
 
     const renderDia = () => {
         const horas = Array.from({ length: 24 }, (_, i) => i);

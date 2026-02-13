@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList
+    LayoutDashboard, ClipboardList, Menu
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -33,9 +33,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { refreshAgenda, companyId, setCompanyId } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
-    const [hasAccess, setHasAccess] = useState(false); // Novo: controle de acesso
+    const [hasAccess, setHasAccess] = useState(false);
     const [userRole, setUserRole] = useState<"ADMIN" | "PROFESSIONAL">("PROFESSIONAL");
     const [userPlan, setUserPlan] = useState<string | null>(null);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [termoBusca, setTermoBusca] = useState("");
@@ -72,7 +73,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     }, [tipoAgendamento]);
 
     useEffect(() => {
-        if (!isLoaded || !user) return;
+        setIsSidebarOpen(false);
+    }, [pathname]);
+
+    useEffect(() => {
+        if (!isLoaded || !user || !refreshAgenda) return;
 
         async function verificarStatus() {
             try {
@@ -349,12 +354,76 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     return (
         <div className={`min-h-screen flex flex-col md:flex-row font-sans ${theme}`}>
 
-            {/* --- SIDEBAR: ADICIONADO 'print:hidden' PARA SUMIR NA IMPRESSÃO --- */}
-            <aside className="w-full md:w-64 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-20 print:hidden">
-                <div className="p-6 border-b dark:border-gray-800 flex justify-between items-center"><Link href="/" className="flex items-center gap-2"><LogoNohud /></Link></div>
-                <nav className="flex-1 p-4 space-y-2">{menuItems.map(item => (<Link key={item.path} href={item.path} className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}>{item.icon} {item.name}</Link>))}</nav>
-                <div className="p-4"><button onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"><PlusCircle size={20} /> Novo Agendamento</button></div>
-                <div className="p-4 border-t dark:border-gray-800 hidden md:block"><UserButton showName /><div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div></div>
+            {/* --- HEADER MOBILE --- */}
+            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-30 sticky top-0">
+                <Link href="/" className="flex items-center gap-2">
+                    <LogoNohud />
+                </Link>
+                <div className="flex items-center gap-3">
+                    <UserButton />
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                    >
+                        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+            </header>
+
+            {/* --- OVERLAY MOBILE --- */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* --- SIDEBAR --- */}
+            <aside className={`
+                fixed inset-y-0 left-0 w-72 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-50 
+                transition-transform duration-300 transform md:relative md:translate-x-0 md:w-64 md:z-20
+                ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
+                print:hidden
+            `}>
+                <div className="p-6 border-b dark:border-gray-800 flex justify-between items-center">
+                    <Link href="/" className="flex items-center gap-2">
+                        <LogoNohud />
+                    </Link>
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-gray-400 hover:text-red-500 transition">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+                    {menuItems.map(item => (
+                        <Link
+                            key={item.path}
+                            href={item.path}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                        >
+                            {item.icon} {item.name}
+                        </Link>
+                    ))}
+                </nav>
+
+                <div className="p-4 space-y-3">
+                    <button
+                        onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }}
+                        className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"
+                    >
+                        <PlusCircle size={20} /> Novo Agendamento
+                    </button>
+
+                    <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden">
+                        <UserButton showName />
+                        <div className="italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
+                    </div>
+                </div>
+
+                <div className="p-4 border-t dark:border-gray-800 hidden md:block">
+                    <UserButton showName />
+                    <div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
+                </div>
             </aside>
 
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}

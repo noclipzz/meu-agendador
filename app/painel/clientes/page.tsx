@@ -629,26 +629,26 @@ export default function ClientesPage() {
 
             {/* FICHA DO CLIENTE (HORIZONTAL COM ABAS) */}
             {clienteSelecionado && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-4">
-                    <div className="bg-white dark:bg-gray-950 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-0 md:p-4">
+                    <div className="bg-white dark:bg-gray-950 w-full md:max-w-6xl h-full md:max-h-[90vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
 
                         {/* HEADER DA FICHA */}
-                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-white/5 shrink-0">
-                            <div className="flex items-center gap-6">
-                                <div className="w-20 h-20 rounded-3xl bg-blue-600 flex items-center justify-center text-white text-3xl font-black shadow-xl">{clienteSelecionado.name.charAt(0)}</div>
-                                <div><h2 className="text-3xl font-black dark:text-white">{clienteSelecionado.name}</h2>
-                                    <div className="flex gap-4 mt-1">
-                                        <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {clienteSelecionado.phone}</span>
-                                        <span className="text-gray-400 font-bold flex items-center gap-1 text-sm"><CheckCircle2 size={14} className="text-green-500" /> Cliente {clienteSelecionado.status}</span>
+                        <div className="p-4 md:p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 dark:bg-white/5 shrink-0 gap-4">
+                            <div className="flex items-center gap-4 md:gap-6 w-full">
+                                <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-blue-600 flex items-center justify-center text-white text-xl md:text-3xl font-black shadow-xl shrink-0">{clienteSelecionado.name.charAt(0)}</div>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl md:text-3xl font-black dark:text-white truncate" title={clienteSelecionado.name}>{clienteSelecionado.name}</h2>
+                                    <div className="flex flex-col md:flex-row gap-1 md:gap-4 mt-1">
+                                        <span className="text-blue-600 font-bold flex items-center gap-1 text-xs md:text-sm"><Phone size={12} className="md:size-3.5" /> {clienteSelecionado.phone}</span>
+                                        <span className="text-gray-400 font-bold flex items-center gap-1 text-xs md:text-sm"><CheckCircle2 size={12} className="text-green-500 md:size-3.5" /> Cliente {clienteSelecionado.status}</span>
                                     </div>
                                 </div>
                             </div>
                             {/* BOTÕES DE AÇÃO: EDITAR, EXCLUIR, FECHAR */}
-                            <div className="flex gap-3">
-                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm" title="Editar"><Pencil size={20} /></button>
-                                {/* BOTÃO DE EXCLUIR ADICIONADO AQUI */}
-                                <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm" title="Excluir"><Trash2 size={20} /></button>
-                                <button onClick={() => setClienteSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm" title="Fechar"><X size={20} /></button>
+                            <div className="flex gap-2 w-full md:w-auto justify-end">
+                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm flex items-center justify-center" title="Editar"><Pencil size={18} className="md:size-5" /></button>
+                                <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center" title="Excluir"><Trash2 size={18} className="md:size-5" /></button>
+                                <button onClick={() => setClienteSelecionado(null)} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center" title="Fechar"><X size={18} className="md:size-5" /></button>
                             </div>
                         </div>
 

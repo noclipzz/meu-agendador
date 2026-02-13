@@ -2,33 +2,29 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'Meu Agendador',
-        short_name: 'Agendador',
-        description: 'Seu assistente de agendamentos e gestão.',
+        name: 'NOHUD - Meu Agendador',
+        short_name: 'NOHUD',
+        description: 'Sistema Inteligente de Agendamento e Gestão',
         start_url: '/painel',
         display: 'standalone',
-        background_color: '#09090b', // zinc-950
-        theme_color: '#09090b',
-        orientation: 'portrait',
-        scope: '/',
+        background_color: '#ffffff',
+        theme_color: '#2563eb',
         icons: [
+            {
+                src: '/LOGOAPP.png',
+                sizes: 'any',
+                type: 'image/png',
+            },
             {
                 src: '/LOGOAPP.png',
                 sizes: '192x192',
                 type: 'image/png',
-                purpose: 'maskable'
             },
             {
                 src: '/LOGOAPP.png',
                 sizes: '512x512',
                 type: 'image/png',
-                purpose: 'maskable'
             },
-            {
-                src: '/LOGOAPP.png',
-                sizes: 'any',
-                type: 'image/png',
-            }
         ],
     }
 }
