@@ -12,8 +12,29 @@ export async function GET() {
         const { userId } = await auth();
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+        // 1. Busca Empresa e Role
+        let companyId = null;
+        let userRole = "PROFESSIONAL";
+        let permissions: any = null;
+
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+            userRole = "ADMIN";
+            // Admin tem todas as permissões
+            permissions = { dashboard: true, agenda: true, clientes: true, financeiro: true, estoque: true, prontuarios: true, servicos: true, profissionais: true, config: true };
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId },
+                include: { company: true }
+            });
+            if (member) {
+                companyId = member.companyId;
+                permissions = member.permissions || { agenda: true, clientes: true };
+            }
+        }
+
+        if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
 
         const hoje = new Date();
         const inicioDia = startOfDay(hoje);
@@ -21,67 +42,62 @@ export async function GET() {
         const inicioMes = startOfMonth(hoje);
         const fimMes = endOfMonth(hoje);
 
-        // VERIFICA O PLANO
-        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        // 2. VERIFICA O PLANO (Busca pelo dono da empresa)
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            include: { owner: true } // Precisamos do ownerId para ver a assinatura
+        });
+
+        const sub = await prisma.subscription.findUnique({ where: { userId: company?.ownerId || "" } });
         const plano = sub?.plan || "INDIVIDUAL";
 
-        // Executa as consultas permitidas pelo plano
-        const queries: any = [
-            // 1. Agendamentos de Hoje (TODOS OS PLANOS)
-            prisma.booking.findMany({
-                where: {
-                    companyId: company.id,
-                    date: { gte: inicioDia, lte: fimDia },
-                    status: { not: 'CANCELADO' }
-                },
-                include: { service: true, professional: true },
-                orderBy: { date: 'asc' }
-            })
-        ];
+        // 3. Executa as consultas baseadas em PERMISSÃO + PLANO
+        const canSeeFinance = (plano === "PREMIUM" || plano === "MASTER") && permissions?.financeiro;
+        const canSeeStock = (plano === "MASTER") && permissions?.estoque;
 
-        // Se for PREMIUM ou MASTER, pode ver financeiro
-        if (plano === "PREMIUM" || plano === "MASTER") {
-            queries.push(
-                prisma.invoice.findMany({
-                    where: { companyId: company.id, status: 'PENDENTE', dueDate: { lt: inicioDia } },
-                    include: { client: true },
-                    take: 5
-                }),
-                prisma.invoice.findMany({
-                    where: { companyId: company.id, status: 'PENDENTE', dueDate: { gte: inicioDia } },
-                    include: { client: true },
-                    orderBy: { dueDate: 'asc' },
-                    take: 5
-                }),
-                prisma.invoice.findMany({
-                    where: { companyId: company.id, status: 'PAGO', paidAt: { gte: inicioMes, lte: fimMes } }
-                })
-            );
-        } else {
-            // Placeholders para manter a estrutura do array
-            queries.push(Promise.resolve([]), Promise.resolve([]), Promise.resolve([]));
-        }
+        const pAgendamentos = prisma.booking.findMany({
+            where: {
+                companyId: companyId,
+                date: { gte: inicioDia, lte: fimDia },
+                status: { not: 'CANCELADO' }
+            },
+            include: { service: true, professional: true },
+            orderBy: { date: 'asc' }
+        });
 
-        // Se for MASTER, pode ver estoque
-        if (plano === "MASTER") {
-            queries.push(
-                prisma.product.findMany({
-                    where: { companyId: company.id },
-                    select: { id: true, name: true, quantity: true, minStock: true, unit: true }
-                })
-            );
-        } else {
-            queries.push(Promise.resolve([]));
-        }
+        const pBoletosVencidos = canSeeFinance ? prisma.invoice.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { lt: inicioDia } },
+            include: { client: true },
+            take: 5
+        }) : Promise.resolve([]);
 
-        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos] = await Promise.all(queries);
+        const pBoletosVencer = canSeeFinance ? prisma.invoice.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { gte: inicioDia } },
+            include: { client: true },
+            orderBy: { dueDate: 'asc' },
+            take: 5
+        }) : Promise.resolve([]);
+
+        const pFaturasMes = canSeeFinance ? prisma.invoice.findMany({
+            where: { companyId: companyId, status: 'PAGO', paidAt: { gte: inicioMes, lte: fimMes } }
+        }) : Promise.resolve([]);
+
+        const pProdutos = canSeeStock ? prisma.product.findMany({
+            where: { companyId: companyId },
+            select: { id: true, name: true, quantity: true, minStock: true, unit: true }
+        }) : Promise.resolve([]);
+
+        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos] = await Promise.all([
+            pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos
+        ]);
 
         // Filtra estoque baixo via Javascript (Quantity <= MinStock)
         const estoqueBaixo = produtos.filter(p => Number(p.quantity) <= Number(p.minStock));
 
         // Agrupa financeiro por dia para o gráfico
         const graficoDados = faturasMes.reduce((acc: any[], fatura) => {
-            const dia = format(new Date(fatura.paidAt!), "dd/MM");
+            if (!fatura.paidAt) return acc;
+            const dia = format(new Date(fatura.paidAt), "dd/MM");
             const existente = acc.find(i => i.dia === dia);
             if (existente) {
                 existente.valor += Number(fatura.value);
@@ -93,6 +109,8 @@ export async function GET() {
 
         return NextResponse.json({
             plano,
+            userRole,
+            permissions,
             agendamentosHoje,
             boletosVencidos,
             boletosVencer,
@@ -105,7 +123,7 @@ export async function GET() {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("ERRO_DASHBOARD:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
     }
 }

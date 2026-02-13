@@ -78,7 +78,7 @@ export default function DashboardPage() {
                         </button>
                     </div>
                 </div>
-                {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && (
+                {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
                     <div className="relative group cursor-default">
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition duration-500" />
                         <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 px-6 py-4 rounded-2xl shadow-xl flex items-center gap-4">
@@ -134,8 +134,8 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* 3. GRÁFICO MENSAL (Apenas Premium/Master) */}
-                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && (
+                    {/* 3. GRÁFICO MENSAL (Apenas Premium/Master + Permissão) */}
+                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-6"><TrendingUp className="text-green-500" /> Performance do Mês</h3>
                             <div className="h-[250px] w-full">
@@ -163,35 +163,37 @@ export default function DashboardPage() {
                 <div className="space-y-6">
                     {/* 2. ESTOQUE BAIXO ou BANNER UPGRADE */}
                     {dados.plano === "MASTER" ? (
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800">
-                            <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-6"><Package className="text-orange-500" /> Estoque Crítico</h3>
+                        dados.permissions?.estoque ? (
+                            <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800">
+                                <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2 mb-6"><Package className="text-orange-500" /> Estoque Crítico</h3>
 
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                                {dados.estoqueBaixo?.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-40 text-green-600">
-                                        <CheckCircle2 size={40} className="mb-2 opacity-50" />
-                                        <p className="text-xs font-bold uppercase">Estoque Saudável</p>
-                                    </div>
-                                ) : (
-                                    dados.estoqueBaixo?.map((prod: any) => (
-                                        <div key={prod.id} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
-                                            <div>
-                                                <p className="font-bold text-sm text-red-700 dark:text-red-400">{prod.name}</p>
-                                                <p className="text-[10px] font-black text-red-400 uppercase">Mínimo: {Number(prod.minStock)}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xl font-black text-red-600">{Number(prod.quantity)}</p>
-                                                <p className="text-[9px] font-bold text-red-400">{prod.unit}</p>
-                                            </div>
+                                <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                                    {dados.estoqueBaixo?.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-40 text-green-600">
+                                            <CheckCircle2 size={40} className="mb-2 opacity-50" />
+                                            <p className="text-xs font-bold uppercase">Estoque Saudável</p>
                                         </div>
-                                    ))
+                                    ) : (
+                                        dados.estoqueBaixo?.map((prod: any) => (
+                                            <div key={prod.id} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                                                <div>
+                                                    <p className="font-bold text-sm text-red-700 dark:text-red-400">{prod.name}</p>
+                                                    <p className="text-[10px] font-black text-red-400 uppercase">Mínimo: {Number(prod.minStock)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xl font-black text-red-600">{Number(prod.quantity)}</p>
+                                                    <p className="text-[9px] font-bold text-red-400">{prod.unit}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                {dados.estoqueBaixo?.length > 0 && (
+                                    <Link href="/painel/estoque" className="block mt-4 text-center text-xs font-black text-red-500 hover:underline uppercase">Gerenciar Estoque</Link>
                                 )}
                             </div>
-                            {dados.estoqueBaixo?.length > 0 && (
-                                <Link href="/painel/estoque" className="block mt-4 text-center text-xs font-black text-red-500 hover:underline uppercase">Gerenciar Estoque</Link>
-                            )}
-                        </div>
-                    ) : (
+                        ) : null
+                    ) : dados.userRole === "ADMIN" && (
                         <div className="bg-blue-600 p-8 rounded-[2rem] shadow-xl text-white flex flex-col justify-between overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12"><LayoutDashboard size={120} /></div>
                             <div className="relative z-10">
@@ -202,8 +204,8 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    {/* 4. CONTAS (Apenas Premium/Master) */}
-                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && (
+                    {/* 4. CONTAS (Apenas Premium/Master + Permissão) */}
+                    {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* VENCIDAS */}
                             <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border-l-8 border-red-500 relative overflow-hidden">
@@ -246,8 +248,8 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* CTA PARA UPGRADE (CASO SEJA INDIVIDUAL) */}
-            {dados.plano === "INDIVIDUAL" && (
+            {/* CTA PARA UPGRADE (CASO SEJA INDIVIDUAL E ADMIN) */}
+            {dados.plano === "INDIVIDUAL" && dados.userRole === "ADMIN" && (
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
                     <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12 -mr-10"><BarChart3 size={180} /></div>
                     <div className="relative z-10 max-w-xl">
