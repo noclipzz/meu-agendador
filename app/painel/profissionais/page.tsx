@@ -54,7 +54,18 @@ export default function GestaoEquipe() {
         phone: "",
         color: "#3b82f6",
         photoUrl: "",
-        cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
+        cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
+        permissions: {
+            dashboard: false,
+            agenda: true,
+            clientes: true,
+            financeiro: false,
+            estoque: false,
+            prontuarios: false,
+            servicos: false,
+            profissionais: false,
+            config: false
+        }
     });
 
     async function handleCEPChange(cep: string) {
@@ -274,7 +285,18 @@ export default function GestaoEquipe() {
             city: p.city || "",
             state: p.state || "",
             notes: p.notes || "",
-            status: p.status || "ATIVO"
+            status: p.status || "ATIVO",
+            permissions: p.permissions || {
+                dashboard: false,
+                agenda: true,
+                clientes: true,
+                financeiro: false,
+                estoque: false,
+                prontuarios: false,
+                servicos: false,
+                profissionais: false,
+                config: false
+            }
         });
         setModalAberto(true);
     }
@@ -283,7 +305,18 @@ export default function GestaoEquipe() {
         setModalAberto(false);
         setForm({
             id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "",
-            cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
+            cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
+            permissions: {
+                dashboard: false,
+                agenda: true,
+                clientes: true,
+                financeiro: false,
+                estoque: false,
+                prontuarios: false,
+                servicos: false,
+                profissionais: false,
+                config: false
+            }
         });
     }
 
@@ -611,6 +644,47 @@ export default function GestaoEquipe() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* GRID DE PERMISSÕES */}
+                                        {(form.email || form.id) && (userPlan === "PREMIUM" || userPlan === "MASTER") && (
+                                            <div className="animate-in fade-in slide-in-from-top-4">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-3 block">Permissões de Acesso</label>
+                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                                    {[
+                                                        { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} /> },
+                                                        { key: 'agenda', label: 'Agenda', icon: <Calendar size={14} /> },
+                                                        { key: 'clientes', label: 'Clientes', icon: <Users size={14} /> },
+                                                        { key: 'financeiro', label: 'Financeiro', icon: <BarChart3 size={14} /> },
+                                                        { key: 'estoque', label: 'Estoque', icon: <Package size={14} /> },
+                                                        { key: 'prontuarios', label: 'Prontuários', icon: <ClipboardList size={14} /> },
+                                                        { key: 'servicos', label: 'Serviços', icon: <Briefcase size={14} /> },
+                                                        { key: 'profissionais', label: 'Equipe', icon: <UserIcon size={14} /> },
+                                                        { key: 'config', label: 'Configurações', icon: <Settings size={14} /> },
+                                                    ].map((perm) => (
+                                                        <button
+                                                            key={perm.key}
+                                                            type="button"
+                                                            onClick={() => setForm({
+                                                                ...form,
+                                                                permissions: {
+                                                                    ...form.permissions,
+                                                                    [perm.key]: !form.permissions[perm.key as keyof typeof form.permissions]
+                                                                }
+                                                            })}
+                                                            className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left ${form.permissions[perm.key as keyof typeof form.permissions]
+                                                                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300 font-bold'
+                                                                : 'bg-white border-gray-100 text-gray-400 dark:bg-gray-900 dark:border-gray-800'
+                                                                }`}
+                                                        >
+                                                            {perm.icon}
+                                                            <span className="text-[11px] uppercase tracking-tighter">{perm.label}</span>
+                                                            {form.permissions[perm.key as keyof typeof form.permissions] && <Check size={14} className="ml-auto" />}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <p className="text-[9px] text-gray-400 ml-3 mt-3">* Defina o que este colaborador poderá visualizar ou alterar no sistema.</p>
+                                            </div>
+                                        )}
 
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Status do Cadastro</label>

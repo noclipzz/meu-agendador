@@ -225,6 +225,11 @@ export async function GET() {
                 active: !!isActive,
                 plan: subscription?.plan || "INDIVIDUAL",
                 role: "ADMIN",
+                permissions: {
+                    dashboard: true, agenda: true, clientes: true,
+                    financeiro: true, estoque: true, prontuarios: true,
+                    servicos: true, profissionais: true, config: true
+                },
                 companyId: company.id,
                 companyName: company.name
             });
@@ -237,6 +242,10 @@ export async function GET() {
                 where: { userId: professional.company.ownerId }
             }));
 
+            const member = await queryWithRetry(() => prisma.teamMember.findUnique({
+                where: { clerkUserId: userId }
+            }));
+
             const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
             console.log("✅ [CHECKOUT] Identificado como PROFESSIONAL");
 
@@ -244,6 +253,7 @@ export async function GET() {
                 active: !!isActive,
                 plan: subPatrao?.plan,
                 role: "PROFESSIONAL",
+                permissions: member?.permissions || { agenda: true, clientes: true }, // Default se for null
                 companyId: professional.companyId,
                 companyName: professional.company.name
             });

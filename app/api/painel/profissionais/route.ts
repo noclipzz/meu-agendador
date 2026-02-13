@@ -28,17 +28,32 @@ export async function GET() {
 
     if (!companyId) return NextResponse.json([]);
 
-    const profissionais = await prisma.professional.findMany({
-      where: { companyId },
-      include: {
-        bookings: {
-          where: { status: "CONFIRMADO" },
-          include: { service: true }
+    const [profissionais, teamMembers] = await Promise.all([
+      prisma.professional.findMany({
+        where: { companyId },
+        include: {
+          bookings: {
+            where: { status: "CONFIRMADO" },
+            include: { service: true }
+          }
         }
-      }
+      }),
+      prisma.teamMember.findMany({ where: { companyId } })
+    ]);
+
+    // Anexa as permissões do TeamMember ao objeto do Profissional
+    const profissionaisComPermissoes = profissionais.map(p => {
+      const member = teamMembers.find(m =>
+        (p.email && m.email === p.email) ||
+        (p.userId && m.clerkUserId === p.userId)
+      );
+      return {
+        ...p,
+        permissions: member?.permissions || { agenda: true, clientes: true }
+      };
     });
 
-    return NextResponse.json(profissionais);
+    return NextResponse.json(profissionaisComPermissoes);
   } catch (error) {
     return NextResponse.json({ error: "Erro ao buscar equipe" }, { status: 500 });
   }
@@ -105,7 +120,8 @@ export async function POST(req: Request) {
             email: email,
             role: "PROFESSIONAL",
             companyId: company.id,
-            clerkUserId: null
+            clerkUserId: null,
+            permissions: body.permissions || { agenda: true, clientes: true }
           }
         });
       }
@@ -208,8 +224,21 @@ export async function PUT(req: Request) {
       }
     });
 
-    // Se tiver alteração de e-mail, teria que buscar o TeamMember e atualizar lá também
-    // Por simplicidade, mantemos a edição apenas dos dados da agenda aqui.
+    // Se houver e-mail ou userId, atualiza permissões no TeamMember
+    if (updated.email || updated.userId) {
+      await prisma.teamMember.updateMany({
+        where: {
+          OR: [
+            { email: updated.email || undefined },
+            { clerkUserId: updated.userId || undefined }
+          ],
+          companyId: updated.companyId
+        },
+        data: {
+          permissions: body.permissions
+        }
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (e) {

@@ -58,6 +58,7 @@ model TeamMember {
   clerkUserId String?  @unique
   email       String   @unique
   role        String   @default("PROFESSIONAL") // ADMIN ou PROFESSIONAL
+  permissions Json?    // Controle granular: { "dashboard": boolean, "agenda": boolean, ... }
   
   companyId   String
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)

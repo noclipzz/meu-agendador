@@ -36,6 +36,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [hasAccess, setHasAccess] = useState(false);
     const [userRole, setUserRole] = useState<"ADMIN" | "PROFESSIONAL">("PROFESSIONAL");
     const [userPlan, setUserPlan] = useState<string | null>(null);
+    const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -188,6 +189,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 // CASO 3: Acesso liberado (Dono Ativo ou Profissional)
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
+                setUserPermissions(dados.permissions); // <--- CARREGA PERMISSÕES
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
                 setVerificando(false);
@@ -313,33 +315,34 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         c.name.toLowerCase().includes(termoBusca.toLowerCase()) || c.phone?.replace(/\D/g, '').includes(termoBusca.replace(/\D/g, ''))
     );
 
-    const menuItems = [
-        { name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
-        { name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
+    const allItems = [
+        { key: 'dashboard', name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
+        { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
+        { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
+        { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
+        { key: 'prontuarios', name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
+        { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> },
+        { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
+        { key: 'profissionais', name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> },
+        { key: 'config', name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
     ];
 
-    if (userRole === "ADMIN") {
-        // --- DASHBOARD NO TOPO ---
-        menuItems.unshift({ name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> });
+    const menuItems = allItems.filter(item => {
+        // Se ainda não carregou permissões, mostra apenas o básico por segurança
+        if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        // --- EQUIPE: TODOS OS PLANOS (INDIVIDUAL = 1 profissional sem login, PREMIUM/MASTER = múltiplos com login) ---
-        menuItems.push({ name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> });
-
-        // --- FUNÇÕES POR PLANO ---
-        if (userPlan === "PREMIUM" || userPlan === "MASTER") {
-            menuItems.push({ name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> });
+        // Admins tem permissão total (já garantido pela API, mas reforçamos aqui)
+        if (userRole === "ADMIN") {
+            // Regras de plano ainda se aplicam para o menu do Admin
+            if (item.key === 'financeiro' && userPlan === "INDIVIDUAL") return false;
+            if (item.key === 'prontuarios' && userPlan !== "MASTER") return false;
+            if (item.key === 'estoque' && userPlan !== "MASTER") return false;
+            return true;
         }
 
-        if (userPlan === "MASTER") {
-            menuItems.push({ name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> });
-            menuItems.push({ name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> });
-        }
-
-        menuItems.push(
-            { name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
-            { name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> }
-        );
-    }
+        // Para profissionais, depende puramente das permissões setadas
+        return userPermissions[item.key as keyof typeof userPermissions];
+    });
 
     // Bloqueia se estiver verificando OU se não tiver acesso (caso esteja redirecionando)
     if (verificando || !hasAccess) return (
@@ -428,7 +431,27 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
             <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white">
-                {children}
+                {(() => {
+                    const currentRoute = allItems.find(item => pathname === item.path);
+                    const isDenied = currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN";
+
+                    if (isDenied) {
+                        return (
+                            <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
+                                <ShieldCheck size={48} className="text-red-500 mb-4" />
+                                <h1 className="text-3xl font-black dark:text-white">Acesso Restrito</h1>
+                                <p className="text-gray-500 mt-2 font-medium">Contate o administrador para solicitar permissão para esta área.</p>
+                                <button
+                                    onClick={() => router.push('/painel/agenda')}
+                                    className="mt-8 bg-blue-600 text-white px-8 py-3 rounded-2xl font-black hover:bg-blue-700 transition"
+                                >
+                                    Voltar para Agenda
+                                </button>
+                            </div>
+                        );
+                    }
+                    return children;
+                })()}
 
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
