@@ -5,6 +5,12 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
+  reloadOnOnline: true, // Recarrega se voltar online
+  workboxOptions: {
+    padding: 1, // Muda o hash do SW
+    clientsClaim: true,
+    skipWaiting: true
+  }
 });
 
 /** @type {import('next').NextConfig} */
