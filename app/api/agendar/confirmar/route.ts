@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { notifyProfessional } from "@/lib/push-server";
+import { notifyProfessional, notifyAdminsOfCompany } from "@/lib/push-server";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -91,7 +91,7 @@ export async function PUT(req: Request) {
       }
     }
 
-    // C. Notificação Push para o Profissional
+    // C. Notificação Push para o Profissional e Admins
     if (booking.professionalId) {
       try {
         await notifyProfessional(
@@ -101,8 +101,20 @@ export async function PUT(req: Request) {
           "/painel/agenda"
         );
       } catch (e) {
-        console.error("❌ Erro ao enviar push de confirmação:", e);
+        console.error("❌ Erro ao enviar push de confirmação profissional:", e);
       }
+    }
+
+    // Notifica também os Admins
+    try {
+      await notifyAdminsOfCompany(
+        booking.companyId,
+        "✅ Agendamento Confirmado!",
+        `O horário de ${booking.customerName} (${dataFormatada}) foi confirmado.`,
+        "/painel/agenda"
+      );
+    } catch (e) {
+      console.error("❌ Erro ao enviar push de confirmação admin:", e);
     }
 
     return NextResponse.json(updated);

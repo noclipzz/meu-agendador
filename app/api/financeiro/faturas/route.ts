@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
+import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -163,6 +164,33 @@ export async function POST(req: Request) {
                 }
             } catch (e) {
                 console.error("❌ [DEBUG] Erro fatal no envio financeiro:", e);
+            }
+        }
+
+        // 5. NOTIFICAÇÃO PUSH (ADMIN E PROFISSIONAL)
+        if (bookingId) {
+            try {
+                const bookingCompleto = await prisma.booking.findUnique({
+                    where: { id: bookingId },
+                    include: { professional: true }
+                });
+
+                if (bookingCompleto) {
+                    const isPago = status === "PAGO";
+                    const statusTxt = isPago ? "PAGO ✅" : "PENDENTE ⏳";
+                    const titulo = isPago ? "🏁 Atendimento Concluído e Pago!" : "🏁 Atendimento Concluído!";
+                    const corpo = `${bookingCompleto.customerName} finalizou o atendimento. Pagamento: ${statusTxt}`;
+
+                    // Notifica Admins
+                    await notifyAdminsOfCompany(companyId, titulo, corpo, "/painel/financeiro");
+
+                    // Notifica o Profissional
+                    if (bookingCompleto.professionalId) {
+                        await notifyProfessional(bookingCompleto.professionalId, titulo, corpo, "/painel/agenda");
+                    }
+                }
+            } catch (pushErr) {
+                console.error("Erro ao enviar push de conclusão:", pushErr);
             }
         }
 

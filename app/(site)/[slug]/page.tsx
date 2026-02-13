@@ -176,6 +176,39 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     }
   }
 
+  // --- LÓGICA DE CANCELAMENTO PELO CLIENTE ---
+  const [agendamentosExistentes, setAgendamentosExistentes] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function buscarAgendamentos() {
+      if (telefoneCliente.length === 15 && empresa?.id) {
+        try {
+          const res = await fetch(`/api/portal/agendamentos?phone=${telefoneCliente}&companyId=${empresa.id}`);
+          const data = await res.json();
+          if (Array.isArray(data)) setAgendamentosExistentes(data);
+        } catch (e) { console.error(e); }
+      } else {
+        setAgendamentosExistentes([]);
+      }
+    }
+    buscarAgendamentos();
+  }, [telefoneCliente, empresa?.id]);
+
+  async function cancelarAgendamento(id: string) {
+    if (!confirm("Tem certeza que deseja cancelar seu agendamento?")) return;
+    try {
+      const res = await fetch('/api/portal/agendamentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'CANCELAR' })
+      });
+      if (res.ok) {
+        alert("Agendamento cancelado com sucesso.");
+        setAgendamentosExistentes([]);
+      }
+    } catch (e) { alert("Erro ao cancelar."); }
+  }
+
   const dataBonita = format(dataSelecionada, "dd 'de' MMMM", { locale: ptBR });
 
   if (loading) return (
@@ -364,6 +397,34 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                   <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
                   <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
                 </div>
+
+                {/* ALERTA DE AGENDAMENTO EXISTENTE */}
+                {agendamentosExistentes.length > 0 && (
+                  <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2">
+                    <p className="text-xs font-black text-yellow-800 uppercase tracking-tighter text-center">⚠️ Você já possui um horário agendado!</p>
+                    <div className="space-y-3">
+                      {agendamentosExistentes.map(ag => (
+                        <div key={ag.id} className="bg-white p-4 rounded-2xl border border-yellow-100 flex flex-col gap-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-xs font-black text-gray-800 uppercase">{ag.service?.name}</p>
+                              <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5">
+                                {format(new Date(ag.date), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => cancelarAgendamento(ag.id)}
+                              className="text-[9px] font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-200 transition uppercase"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button onClick={finalizar} className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95">Finalizar Agendamento</button>
               </div>
             )}
