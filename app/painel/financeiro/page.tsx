@@ -15,7 +15,6 @@ import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function FinanceiroPage() {
-    const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [dadosResumo, setDadosResumo] = useState<any>(null); // Dados do Cabeçalho e Gráfico
     const [dadosDespesas, setDadosDespesas] = useState<any>(null); // Dados da Lista de Despesas
@@ -460,15 +459,56 @@ export default function FinanceiroPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* HISTÓRICO DE ENTRADAS (REVISÃO DE LANÇAMENTOS) */}
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] shadow-sm border dark:border-gray-700 mx-2">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h3 className="font-black text-xs uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                            <ArrowUpCircle size={18} className="text-blue-500" /> Histórico de Entradas
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {dadosResumo?.allInvoices?.map((inv: any) => (
+                            <div key={inv.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-blue-500 shadow-sm group">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-black text-sm uppercase dark:text-white line-clamp-1">{inv.description}</p>
+                                    </div>
+                                    <div className="flex gap-2 mt-1">
+                                        <span className="text-[9px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg uppercase">
+                                            {inv.method || 'PIX'}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase">
+                                            {inv.client?.name || 'Cliente Avulso'}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-gray-300 uppercase">
+                                            {format(new Date(inv.paidAt || inv.dueDate), 'dd/MM')}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                        <p className="font-black text-blue-600 text-lg">R$ {Number(inv.value).toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {(!dadosResumo?.allInvoices || dadosResumo?.allInvoices.length === 0) && (
+                            <div className="col-span-full py-10 text-center text-gray-400 italic text-sm">Nenhuma entrada registrada neste período.</div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* --- LAYOUT DE IMPRESSÃO (MODO PAISAGEM COMPLETO) --- */}
-            <div className="hidden print:flex flex-col fixed inset-0 bg-white z-[9999] p-6 w-[297mm] h-[210mm] overflow-hidden text-black">
+            <div className="hidden print:flex flex-col bg-white p-10 w-full min-h-screen text-black">
                 <style jsx global>{`
                     @media print {
-                        @page { size: landscape; margin: 5mm; }
-                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        aside { display: none !important; }
+                        @page { size: landscape; margin: 0; }
+                        body { padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        aside, header, .print-hidden { display: none !important; }
+                        main { padding: 0 !important; margin: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+                        .print-only { display: block !important; }
                     }
                 `}</style>
 
@@ -491,15 +531,15 @@ export default function FinanceiroPage() {
                 <div className="flex gap-4 mb-8">
                     <div className="flex-1 border-2 border-gray-100 bg-gray-50 p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Receita Total (Mês)</p>
-                        <p className="text-3xl font-black text-blue-600">R$ {dados?.resumo?.bruto?.toLocaleString()}</p>
+                        <p className="text-3xl font-black text-blue-600">R$ {dadosResumo?.resumo?.bruto?.toLocaleString()}</p>
                     </div>
                     <div className="flex-1 border-2 border-gray-100 bg-gray-50 p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Despesas (Mês)</p>
-                        <p className="text-3xl font-black text-red-600">R$ {dados?.resumo?.despesas?.toLocaleString()}</p>
+                        <p className="text-3xl font-black text-red-600">R$ {dadosResumo?.resumo?.despesas?.toLocaleString()}</p>
                     </div>
                     <div className="flex-1 border-2 border-black bg-black text-white p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Lucro Líquido</p>
-                        <p className="text-3xl font-black">R$ {dados?.resumo?.liquido?.toLocaleString()}</p>
+                        <p className="text-3xl font-black">R$ {dadosResumo?.resumo?.liquido?.toLocaleString()}</p>
                     </div>
                 </div>
 
@@ -519,7 +559,7 @@ export default function FinanceiroPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {dados?.fluxoCaixa?.map((item: any, i: number) => {
+                            {dadosResumo?.fluxoCaixa?.map((item: any, i: number) => {
                                 const saldo = item.receita - item.despesa;
                                 const margem = item.receita > 0 ? ((saldo / item.receita) * 100).toFixed(1) : "0.0";
                                 return (
@@ -538,9 +578,9 @@ export default function FinanceiroPage() {
                         <tfoot className="bg-gray-50 font-black text-xs border-t-2 border-black">
                             <tr>
                                 <td className="p-2 uppercase">Total Acumulado</td>
-                                <td className="p-2 text-right text-green-700">R$ {dados?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0).toLocaleString()}</td>
-                                <td className="p-2 text-right text-red-600">R$ {dados?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0).toLocaleString()}</td>
-                                <td className="p-2 text-right">R$ {(dados?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) - dados?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0)).toLocaleString()}</td>
+                                <td className="p-2 text-right text-green-700">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0).toLocaleString()}</td>
+                                <td className="p-2 text-right text-red-600">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0).toLocaleString()}</td>
+                                <td className="p-2 text-right">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) - dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0)).toLocaleString()}</td>
                                 <td className="p-2"></td>
                             </tr>
                         </tfoot>

@@ -131,11 +131,14 @@ export async function GET(request: Request) {
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
-                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } }
+                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } },
+                include: { client: true },
+                orderBy: { paidAt: 'desc' }
             }),
             // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
-                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } }
+                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } },
+                orderBy: { date: 'desc' }
             }),
             // 3. Receitas Mês Anterior ao SELECIONADO
             prisma.invoice.findMany({
@@ -224,6 +227,7 @@ export async function GET(request: Request) {
             rankingServicos,
             rankingProfissionais,
             allExpenses,
+            allInvoices: receitasMes, // Agora retorna as faturas pagas
             boletosVencidos, // Sempre geral
             boletosAbertos // Agora filtrado pelo mês
         });
