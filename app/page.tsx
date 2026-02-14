@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {
   Check, Star, Zap, Crown, Building2, Loader2, Edit, Calendar, Users,
   DollarSign, Menu, X, LogIn, LayoutDashboard, Copy, ArrowRight,
-  Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown
+  Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown, UserCircle
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
@@ -355,7 +355,7 @@ export default function LandingPage() {
                 { icon: BarChart3, title: "Financeiro & Metas", desc: "Acompanhe seu faturamento em tempo real e saiba exatamente quanto lucra.", color: "bg-purple-100 text-purple-600" },
                 { icon: Users, title: "Gestão de Equipe", desc: "Controle comissões, horários e permissões de acesso para colaboradores.", color: "bg-orange-100 text-orange-600" },
                 { icon: ShieldCheck, title: "Acesso Seguro", desc: "Seus dados protegidos na nuvem com backups automáticos e segurança total.", color: "bg-cyan-100 text-cyan-600" },
-                { icon: Clock, title: "Economia de Tempo", desc: "Ganhe até 10 horas livres na semana automatizando tarefas repetitivas.", color: "bg-red-100 text-red-600" }
+                { icon: UserCircle, title: "Gestão de Clientes", desc: "Prontuários, histórico de atendimentos e preferências de cada cliente.", color: "bg-pink-100 text-pink-600" }
               ].map((f, i) => (
                 <div key={i} className="bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all border border-white/20 group hover:-translate-y-1 duration-300">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-500 ${f.color}`}><f.icon size={28} strokeWidth={2.5} /></div>
