@@ -453,6 +453,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     return children;
                 })()}
 
+                <footer className="mt-auto pt-10 pb-6 text-center text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-600 font-bold print:hidden opacity-60 hover:opacity-100 transition-opacity">
+                    &copy; {new Date().getFullYear()} NOHUD Tecnologia. Todos os direitos reservados.
+                </footer>
+
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
                         <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
