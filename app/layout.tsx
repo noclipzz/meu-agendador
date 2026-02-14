@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
+import { ptBR } from "@clerk/localizations";
 import "./globals.css";
 import { Toaster } from "sonner"; // <--- 1. Importe
 
@@ -28,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider localization={ptBR}>
       <html lang="pt-BR" className="scroll-smooth">
         <body>
           {children}
