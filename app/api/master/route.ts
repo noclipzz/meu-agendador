@@ -15,7 +15,7 @@ export async function GET() {
     const { userId } = await auth();
 
     if (userId !== SUPER_ADMIN_ID) {
-      return NextResponse.json({ error: "Acesso Negado" }, { status: 403 });
+      return NextResponse.json({ error: `Acesso Negado. ID atual: ${userId}` }, { status: 403 });
     }
 
     // Busca dados em paralelo para performance

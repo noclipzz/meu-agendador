@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
     if (userId !== SUPER_ADMIN_ID) {
       console.warn("⛔ [MASTER API] Acesso negado para:", userId);
-      return NextResponse.json({ error: "Acesso Negado" }, { status: 403 });
+      return NextResponse.json({ error: `Acesso Negado. ID atual: ${userId}` }, { status: 403 });
     }
 
     const body = await req.json();
