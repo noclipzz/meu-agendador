@@ -454,7 +454,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 })()}
 
                 <footer className="mt-auto pt-10 pb-6 text-center text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-600 font-bold print:hidden opacity-60 hover:opacity-100 transition-opacity">
-                    &copy; {new Date().getFullYear()} NOHUD Tecnologia. Todos os direitos reservados.
+                    &copy; {new Date().getFullYear()} NOHUD Sistemas. Todos os direitos reservados.
                 </footer>
 
                 {isModalOpen && (
