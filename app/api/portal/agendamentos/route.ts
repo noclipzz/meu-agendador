@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
+import { formatarDataCurta } from "@/app/utils/formatters";
 
 const prisma = db;
 
@@ -63,7 +62,7 @@ export async function POST(req: Request) {
             });
 
             // Notificações
-            const dataFormatada = format(new Date(booking.date), "dd/MM 'às' HH:mm", { locale: ptBR });
+            const dataFormatada = formatarDataCurta(new Date(booking.date));
             const titulo = "🚫 Agendamento Cancelado pelo Cliente";
             const corpo = `${booking.customerName} cancelou o horário de ${dataFormatada} (${booking.service?.name})`;
 

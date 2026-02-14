@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
+import { formatarDataApenas } from "@/app/utils/formatters";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -134,7 +135,7 @@ export async function POST(req: Request) {
                                 <p style="margin: 5px 0;"><strong>Serviço:</strong> ${description}</p>
                                 <p style="margin: 5px 0;"><strong>Valor:</strong> R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                 <p style="margin: 5px 0;"><strong>Forma de Pagamento:</strong> ${method || 'A definir'}</p>
-                                <p style="margin: 5px 0;"><strong>Vencimento:</strong> ${new Date(dueDate).toLocaleDateString('pt-BR')}</p>
+                                <p style="margin: 5px 0;"><strong>Vencimento:</strong> ${formatarDataApenas(new Date(dueDate))}</p>
                             </div>
                             <p style="font-size: 12px; color: #999; text-align: center;">${empresa?.name} - Sistema Automático</p>
                         </div>

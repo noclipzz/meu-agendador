@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { notifyProfessional, notifyAdminsOfCompany } from "@/lib/push-server";
+import { formatarDataCompleta } from "@/app/utils/formatters";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -39,7 +38,7 @@ export async function PUT(req: Request) {
     });
 
     // 3. ENVIA OS E-MAILS
-    const dataFormatada = format(new Date(booking.date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
+    const dataFormatada = formatarDataCompleta(new Date(booking.date));
     const emailCliente = booking.client?.email;
 
     // A. E-mail para o Admin (Sempre que houver notificationEmail)

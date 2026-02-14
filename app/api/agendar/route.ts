@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Resend } from "resend";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
+import { formatarDataCompleta, formatarHorario } from "@/app/utils/formatters";
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -110,7 +109,7 @@ export async function POST(req: Request) {
         }
 
         // 6. ENVIO DE E-MAILS (RESEND)
-        const dataFormatada = format(new Date(date), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
+        const dataFormatada = formatarDataCompleta(new Date(date));
         const nomeServico = service?.name || "Atendimento";
         const nomeProfissional = professional?.name || "Profissional da Equipe";
         const nomeEmpresa = company?.name || "NOHUD Agenda";
@@ -173,7 +172,7 @@ export async function POST(req: Request) {
                 await notifyProfessional(
                     professionalId,
                     "📅 Você tem um novo agendamento!",
-                    `${name} agendou ${nomeServico} para as ${format(new Date(date), 'HH:mm')}`,
+                    `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`,
                     "/painel/agenda"
                 );
             }
