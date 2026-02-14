@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { validateCPF, validateEmail } from "@/lib/validators";
 
 const prisma = db;
 
@@ -65,6 +66,14 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    // VALIDAÇÕES
+    if (body.cpf && !validateCPF(body.cpf)) {
+      return NextResponse.json({ error: "CPF inválido." }, { status: 400 });
+    }
+    if (body.email && !validateEmail(body.email)) {
+      return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
+    }
+
     // Verifica se já existe cliente com esse telefone na empresa (evita duplicidade)
     if (body.phone) {
       const existing = await prisma.client.findFirst({
@@ -117,6 +126,14 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
     const { id, ...data } = body;
+
+    // VALIDAÇÕES
+    if (data.cpf && !validateCPF(data.cpf)) {
+      return NextResponse.json({ error: "CPF inválido." }, { status: 400 });
+    }
+    if (data.email && !validateEmail(data.email)) {
+      return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
+    }
 
     // Garante que só atualiza clientes da MESMA empresa
     const updated = await prisma.client.update({
