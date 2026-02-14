@@ -31,6 +31,8 @@ export default function FinanceiroPage() {
     const [despesaParaExcluir, setDespesaParaExcluir] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
     const [clientes, setClientes] = useState<any[]>([]);
+    const [buscaCliente, setBuscaCliente] = useState("");
+    const [mostrarDropdownBusca, setMostrarDropdownBusca] = useState(false);
 
     // Estado do formulário de despesa
     const [novaDespesa, setNovaDespesa] = useState({
@@ -238,7 +240,17 @@ export default function FinanceiroPage() {
     function fecharModalEntrada() {
         setModalEntrada(false);
         setNovaEntrada({ clientId: "", description: "", value: "", method: "PIX", date: new Date().toISOString().split('T')[0] });
+        setBuscaCliente("");
+        setMostrarDropdownBusca(false);
     }
+
+    const clientesFiltrados = useMemo(() => {
+        if (!buscaCliente) return [];
+        return clientes.filter(c =>
+            c.name.toLowerCase().includes(buscaCliente.toLowerCase()) ||
+            c.phone?.includes(buscaCliente)
+        ).slice(0, 10); // Limita a 10 resultados para performance
+    }, [clientes, buscaCliente]);
 
     // --- FUNÇÃO DE IMPRESSÃO ---
     const handlePrint = () => {
@@ -551,16 +563,56 @@ export default function FinanceiroPage() {
                             <h2 className="text-2xl font-black dark:text-white tracking-tighter">Lançar Entrada</h2>
                         </div>
                         <div className="space-y-5">
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-wider">Cliente (Opcional)</label>
-                                <select
-                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white"
-                                    value={novaEntrada.clientId}
-                                    onChange={e => setNovaEntrada({ ...novaEntrada, clientId: e.target.value })}
-                                >
-                                    <option value="">Nenhum cliente específico</option>
-                                    {clientes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                            <div className="relative">
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-wider">Buscar Cliente</label>
+                                <div className="relative">
+                                    <input
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all pr-12"
+                                        placeholder="Nome ou telefone..."
+                                        value={novaEntrada.clientId ? (clientes.find(c => c.id === novaEntrada.clientId)?.name || buscaCliente) : buscaCliente}
+                                        onChange={e => {
+                                            setBuscaCliente(e.target.value);
+                                            setNovaEntrada({ ...novaEntrada, clientId: "" });
+                                            setMostrarDropdownBusca(true);
+                                        }}
+                                        onFocus={() => setMostrarDropdownBusca(true)}
+                                        onBlur={() => setTimeout(() => setMostrarDropdownBusca(false), 200)}
+                                    />
+                                    {novaEntrada.clientId && (
+                                        <button
+                                            onClick={() => { setNovaEntrada({ ...novaEntrada, clientId: "" }); setBuscaCliente(""); }}
+                                            className="absolute right-4 top-4 text-gray-400 hover:text-red-500"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {mostrarDropdownBusca && buscaCliente && !novaEntrada.clientId && (
+                                    <div className="absolute z-[110] left-0 right-0 mt-2 bg-white dark:bg-gray-800 border-2 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        {clientesFiltrados.length > 0 ? (
+                                            clientesFiltrados.map((c: any) => (
+                                                <button
+                                                    key={c.id}
+                                                    className="w-full p-4 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-between group transition-colors border-b last:border-0 dark:border-gray-700"
+                                                    onClick={() => {
+                                                        setNovaEntrada({ ...novaEntrada, clientId: c.id });
+                                                        setBuscaCliente(c.name);
+                                                        setMostrarDropdownBusca(false);
+                                                    }}
+                                                >
+                                                    <div>
+                                                        <p className="font-black text-sm dark:text-white uppercase">{c.name}</p>
+                                                        <p className="text-[10px] font-bold text-gray-400">{c.phone || "Sem telefone"}</p>
+                                                    </div>
+                                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-blue-500 transform group-hover:translate-x-1 transition-all" />
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="p-4 text-center text-xs text-gray-400 italic">Nenhum cliente encontrado.</div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
