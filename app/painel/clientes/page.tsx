@@ -466,7 +466,7 @@ export default function ClientesPage() {
             sections.push(currentSection);
         }
 
-        // Gerar HTML dos campos em duas colunas
+        // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
         let camposHtml = '';
         sections.forEach(section => {
             if (section.header) {
@@ -490,11 +490,16 @@ export default function ClientesPage() {
         const nomeEmpresa = empresaInfo.name || 'Clínica';
 
         const html = `<!DOCTYPE html><html><head><title>Prontuário - ${clienteSelecionado?.name}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
             * { margin:0; padding:0; box-sizing:border-box; }
             body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; }
-            .page { max-width:800px; margin:0 auto; padding:40px; }
+            .page { max-width:800px; margin:0 auto; padding:20px; }
+            
+            /* BOTÃO VOLTAR (APENAS PARA MOBILE/SCREEN) */
+            .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
+            @media screen and (max-width: 600px) { .back-button { display: flex; } .page { padding: 15px; } }
 
             /* HEADER */
             .header { display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:3px solid #0d9488; margin-bottom:28px; }
@@ -540,12 +545,14 @@ export default function ClientesPage() {
             @media print {
                 body { padding:0; }
                 .page { padding:20px; max-width:100%; }
+                .back-button { display:none !important; }
                 .section-header { break-after:avoid; }
                 .fields-grid { break-inside:auto; }
                 .field-item { break-inside:avoid; }
             }
         </style></head><body>
         <div class="page">
+            <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
             <div class="header">
                 <div class="header-left">
                     ${logoHtml}
@@ -795,10 +802,19 @@ export default function ClientesPage() {
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-3 gap-6">
-                                                <div className="p-8 bg-green-50 dark:bg-green-900/10 rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center"><p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p><p className="text-3xl font-black text-green-600">R$ {(clienteSelecionado.invoices || []).filter((i: any) => i.status === "PAGO").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                                <div className="p-8 bg-red-50 dark:bg-red-900/10 rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center"><p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p><p className="text-3xl font-black text-red-600">R$ {(clienteSelecionado.invoices || []).filter((i: any) => i.status === "PENDENTE").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                                <div className="p-8 bg-blue-50 dark:bg-blue-900/10 rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p><p className="text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc: any, cur: any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                                                <div className="p-4 md:p-8 bg-green-50 dark:bg-green-900/10 rounded-3xl md:rounded-[2.5rem] border border-green-100 dark:border-green-900/30 text-center">
+                                                    <p className="text-[10px] font-black text-green-600 uppercase mb-1">Total Já Pago</p>
+                                                    <p className="text-xl md:text-3xl font-black text-green-600">R$ {(clienteSelecionado.invoices || []).filter((i: any) => i.status === "PAGO").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                </div>
+                                                <div className="p-4 md:p-8 bg-red-50 dark:bg-red-900/10 rounded-3xl md:rounded-[2.5rem] border border-red-100 dark:border-red-900/30 text-center">
+                                                    <p className="text-[10px] font-black text-red-600 uppercase mb-1">Em Aberto</p>
+                                                    <p className="text-xl md:text-3xl font-black text-red-600">R$ {(clienteSelecionado.invoices || []).filter((i: any) => i.status === "PENDENTE").reduce((acc: any, cur: any) => acc + Number(cur.value), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                </div>
+                                                <div className="p-4 md:p-8 bg-blue-50 dark:bg-blue-900/10 rounded-3xl md:rounded-[2.5rem] border border-blue-100 dark:border-blue-800 text-center">
+                                                    <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Acumulado</p>
+                                                    <p className="text-xl md:text-3xl font-black dark:text-white">R$ {(clienteSelecionado.invoices?.reduce((acc: any, cur: any) => acc + Number(cur.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2 ml-2"><Receipt size={18} /> Detalhamento Financeiro</h4>
@@ -808,15 +824,15 @@ export default function ClientesPage() {
                                                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${inv.status === 'PAGO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                                                                 {inv.method === 'PIX' ? <QrCode size={24} /> : inv.method === 'CARTAO' ? <CreditCard size={24} /> : <Banknote size={24} />}
                                                             </div>
-                                                            <div>
-                                                                <p className="font-black text-base dark:text-white uppercase tracking-tight">{inv.description}</p>
+                                                            <div className="min-w-0">
+                                                                <p className="font-black text-xs md:text-base dark:text-white uppercase tracking-tight truncate" title={inv.description}>{inv.description}</p>
                                                                 {inv.status !== 'PAGO' && (
                                                                     <p className="text-[10px] font-bold text-red-400 uppercase">Venc: {format(new Date(inv.dueDate), "dd/MM/yyyy")}</p>
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <p className={`font-black text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                        <div className="text-right shrink-0">
+                                                            <p className={`font-black text-sm md:text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                                             <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
                                                         </div>
                                                     </div>
@@ -838,14 +854,14 @@ export default function ClientesPage() {
                                     {loadingDetalhes && !clienteSelecionado.attachments ? (
                                         <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
                                     ) : (
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                                             {clienteSelecionado.attachments?.map((file: any) => (
-                                                <div key={file.id} className="p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center">{file.type.includes('image') ? <ImageIcon size={24} /> : <FileText size={24} />}</div>
-                                                        <div><p className="font-black text-sm uppercase dark:text-white truncate max-w-[150px]">{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
+                                                <div key={file.id} className="p-4 md:p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-3xl md:rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
+                                                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">{file.type.includes('image') ? <ImageIcon size={20} className="md:size-6" /> : <FileText size={20} className="md:size-6" />}</div>
+                                                        <div className="min-w-0"><p className="font-black text-xs md:text-sm uppercase dark:text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
                                                     </div>
-                                                    <div className="flex gap-2"><a href={file.url} target="_blank" className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={18} /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={18} /></button></div>
+                                                    <div className="flex gap-1 md:gap-2 shrink-0"><a href={file.url} target="_blank" className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={16} className="md:size-[18px]" /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={16} className="md:size-[18px]" /></button></div>
                                                 </div>
                                             )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
                                         </div>
@@ -863,8 +879,10 @@ export default function ClientesPage() {
                                     ) : prontuarioVisualizando ? (
                                         /* VISUALIZAÇÃO DO PRONTUÁRIO PREENCHIDO */
                                         <div>
-                                            <div className="flex justify-between items-center mb-6">
-                                                <button onClick={() => setProntuarioVisualizando(null)} className="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1">&larr; Voltar</button>
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                                                <button onClick={() => setProntuarioVisualizando(null)} className="text-sm text-blue-600 font-extrabold hover:underline flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl transition-all">
+                                                    <ChevronDown className="rotate-90" size={16} /> Voltar para Lista
+                                                </button>
                                                 <button onClick={() => imprimirProntuario(prontuarioVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
                                             </div>
                                             <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-8">
@@ -957,12 +975,12 @@ export default function ClientesPage() {
                         </div>
 
                         {/* RODAPÉ ESTILIZADO */}
-                        <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex justify-between items-center shrink-0">
-                            <div className="flex gap-8">
-                                <div><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0) || "0"}</p></div>
-                                <div className="border-l dark:border-gray-800 pl-8"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Frequência</p><p className="font-black text-2xl text-blue-600">{clienteSelecionado.bookings?.length || 0}x</p></div>
+                        <div className="p-4 md:p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4">
+                            <div className="flex gap-4 md:gap-8 w-full md:w-auto justify-around md:justify-start">
+                                <div><p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase mb-1">Total Gasto</p><p className="font-black text-xl md:text-2xl text-green-600">R$ {clienteSelecionado.bookings?.reduce((acc: any, b: any) => acc + Number(b.service?.price || 0), 0) || "0"}</p></div>
+                                <div className="border-l dark:border-gray-800 pl-4 md:pl-8"><p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase mb-1">Frequência</p><p className="font-black text-xl md:text-2xl text-blue-600">{clienteSelecionado.bookings?.length || 0}x</p></div>
                             </div>
-                            <div className="text-right"><p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[9px] text-gray-500 mt-1 uppercase font-bold">Registro: {clienteSelecionado.createdAt ? format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy") : "---"}</p></div>
+                            <div className="text-center md:text-right w-full md:w-auto"><p className="text-[9px] md:text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] md:tracking-[0.2em]">Ficha atualizada em tempo real</p><p className="text-[8px] md:text-[9px] text-gray-500 mt-0.5 md:mt-1 uppercase font-bold">Registro: {clienteSelecionado.createdAt ? format(new Date(clienteSelecionado.createdAt), "dd/MM/yyyy") : "---"}</p></div>
                         </div>
                     </div>
                 </div>

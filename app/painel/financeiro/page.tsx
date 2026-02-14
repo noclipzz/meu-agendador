@@ -26,9 +26,11 @@ export default function FinanceiroPage() {
     const [abaAtiva, setAbaAtiva] = useState("GERAL");
 
     const [modalDespesa, setModalDespesa] = useState(false);
+    const [modalEntrada, setModalEntrada] = useState(false);
     const [modalExcluir, setModalExcluir] = useState(false);
     const [despesaParaExcluir, setDespesaParaExcluir] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
+    const [clientes, setClientes] = useState<any[]>([]);
 
     // Estado do formulário de despesa
     const [novaDespesa, setNovaDespesa] = useState({
@@ -40,8 +42,25 @@ export default function FinanceiroPage() {
         date: new Date().toISOString().split('T')[0]
     });
 
+    const [novaEntrada, setNovaEntrada] = useState({
+        clientId: "",
+        description: "",
+        value: "",
+        method: "PIX",
+        date: new Date().toISOString().split('T')[0]
+    });
+
     useEffect(() => { carregarResumo(dataResumo); }, [dataResumo]);
     useEffect(() => { carregarDespesas(dataDespesas); }, [dataDespesas]);
+    useEffect(() => { carregarClientes(); }, []);
+
+    async function carregarClientes() {
+        try {
+            const res = await fetch("/api/clientes");
+            const data = await res.json();
+            setClientes(data);
+        } catch (e) { console.error("Erro ao carregar clientes", e); }
+    }
 
     // Função para carregar DADOS DO RESUMO (Gráfico, Cards, Totais)
     async function carregarResumo(dataBase = new Date()) {
@@ -118,11 +137,31 @@ export default function FinanceiroPage() {
             });
             if (res.ok) {
                 toast.success(novaDespesa.id ? "Alteração salva!" : "Gasto registrado!");
-                fecharModal();
+                fecharModalDespesa();
                 carregarResumo(dataResumo); // Atualiza os totais e gráfico
                 carregarDespesas(dataDespesas); // Atualiza a lista
             } else {
                 toast.error("Erro ao processar operação.");
+            }
+        } catch (error) { toast.error("Erro de conexão."); }
+        finally { setSalvando(false); }
+    }
+
+    async function salvarEntrada() {
+        if (!novaEntrada.value) return toast.error("Preencha pelo menos o valor.");
+        setSalvando(true);
+        try {
+            const res = await fetch('/api/painel/financeiro/entradas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(novaEntrada)
+            });
+            if (res.ok) {
+                toast.success("Entrada registrada com sucesso!");
+                fecharModalEntrada();
+                carregarResumo(dataResumo);
+            } else {
+                toast.error("Erro ao salvar entrada.");
             }
         } catch (error) { toast.error("Erro de conexão."); }
         finally { setSalvando(false); }
@@ -191,9 +230,14 @@ export default function FinanceiroPage() {
         window.open(link, '_blank');
     }
 
-    function fecharModal() {
+    function fecharModalDespesa() {
         setModalDespesa(false);
         setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", date: new Date().toISOString().split('T')[0] });
+    }
+
+    function fecharModalEntrada() {
+        setModalEntrada(false);
+        setNovaEntrada({ clientId: "", description: "", value: "", method: "PIX", date: new Date().toISOString().split('T')[0] });
     }
 
     // --- FUNÇÃO DE IMPRESSÃO ---
@@ -225,6 +269,12 @@ export default function FinanceiroPage() {
                         className="bg-white text-gray-700 border border-gray-200 px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-50 transition shadow-sm active:scale-95 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                     >
                         <Printer size={20} /> Relatório
+                    </button>
+                    <button
+                        onClick={() => setModalEntrada(true)}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
+                    >
+                        <ArrowUpCircle size={20} /> Lançar Entrada
                     </button>
                     <button
                         onClick={() => setModalDespesa(true)}
@@ -490,11 +540,90 @@ export default function FinanceiroPage() {
                 </div>
             </div>
 
+            {/* MODAL LANÇAR ENTRADA (NOVO) */}
+            {modalEntrada && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
+                    <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
+                        <button onClick={fecharModalEntrada} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
+
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl"><ArrowUpCircle size={24} /></div>
+                            <h2 className="text-2xl font-black dark:text-white tracking-tighter">Lançar Entrada</h2>
+                        </div>
+                        <div className="space-y-5">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-wider">Cliente (Opcional)</label>
+                                <select
+                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white"
+                                    value={novaEntrada.clientId}
+                                    onChange={e => setNovaEntrada({ ...novaEntrada, clientId: e.target.value })}
+                                >
+                                    <option value="">Nenhum cliente específico</option>
+                                    {clientes.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block tracking-wider">Descrição / Motivo</label>
+                                <input
+                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
+                                    placeholder="Ex: Venda de Produto"
+                                    value={novaEntrada.description}
+                                    onChange={e => setNovaEntrada({ ...novaEntrada, description: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$)</label>
+                                    <input
+                                        type="number"
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
+                                        placeholder="0.00"
+                                        value={novaEntrada.value}
+                                        onChange={e => setNovaEntrada({ ...novaEntrada, value: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Data</label>
+                                    <input
+                                        type="date"
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
+                                        value={novaEntrada.date}
+                                        onChange={e => setNovaEntrada({ ...novaEntrada, date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Forma de Pagamento</label>
+                                <select
+                                    className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
+                                    value={novaEntrada.method}
+                                    onChange={e => setNovaEntrada({ ...novaEntrada, method: e.target.value })}
+                                >
+                                    <option value="PIX">PIX</option>
+                                    <option value="DINHEIRO">Dinheiro</option>
+                                    <option value="CARTAO">Cartão</option>
+                                    <option value="TRANSFERENCIA">Transferência</option>
+                                    <option value="OUTRO">Outros</option>
+                                </select>
+                            </div>
+
+                            <button onClick={salvarEntrada} disabled={salvando} className="w-full mt-4 bg-blue-600 text-white p-5 rounded-[1.8rem] font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
+                                {salvando ? <Loader2 className="animate-spin" /> : <DollarSign size={20} />}
+                                {salvando ? 'Salvando...' : 'Confirmar Recebimento'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* MODAL LANÇAR/EDITAR DESPESA (MANTIDO) */}
             {modalDespesa && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
                     <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
-                        <button onClick={fecharModal} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
+                        <button onClick={fecharModalDespesa} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
 
                         <div className="flex items-center gap-3 mb-8">
                             <div className="p-3 bg-red-100 text-red-600 rounded-2xl"><ArrowDownCircle size={24} /></div>
