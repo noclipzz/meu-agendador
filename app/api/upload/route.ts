@@ -14,17 +14,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     const filename = searchParams.get('filename') || 'upload.png';
 
     // 2. VALIDAÇÃO DO ARQUIVO
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "Arquivo maior que 10mb" }, { status: 400 });
+    }
+
     const blobFile = await request.blob();
 
-    // Limite de tamanho (5MB)
-    if (blobFile.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "Arquivo muito grande (máx 5MB)" }, { status: 400 });
+    // Limite de tamanho (10MB)
+    if (blobFile.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "Arquivo maior que 10mb" }, { status: 400 });
     }
 
     // Validação de tipo (Apenas imagens e PDF)
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedTypes.includes(blobFile.type)) {
-      return NextResponse.json({ error: "Tipo de arquivo não permitido. Apenas imagens e PDF." }, { status: 400 });
+      return NextResponse.json({ error: "Formato de arquivo não compatível" }, { status: 400 });
     }
 
     // 3. UPLOAD SEGURO
