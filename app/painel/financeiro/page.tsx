@@ -51,9 +51,24 @@ export default function FinanceiroPage() {
         date: new Date().toISOString().split('T')[0]
     });
 
+    const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "Empresa", logo: "" });
+
     useEffect(() => { carregarResumo(dataResumo); }, [dataResumo]);
     useEffect(() => { carregarDespesas(dataDespesas); }, [dataDespesas]);
-    useEffect(() => { carregarClientes(); }, []);
+    useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+
+    async function carregarEmpresa() {
+        try {
+            const res = await fetch('/api/painel/config');
+            const data = await res.json();
+            if (data && data.name) {
+                setEmpresaInfo({
+                    name: data.name,
+                    logo: data.logoUrl || ""
+                });
+            }
+        } catch { }
+    }
 
     async function carregarClientes() {
         try {
@@ -518,9 +533,15 @@ export default function FinanceiroPage() {
                 {/* CABEÇALHO */}
                 <div className="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-black text-white flex items-center justify-center font-bold text-2xl rounded-lg">N</div>
+                        {empresaInfo.logo ? (
+                            <img src={empresaInfo.logo} className="w-14 h-14 object-cover rounded-lg border-2 border-black" alt="Logo" />
+                        ) : (
+                            <div className="w-14 h-14 bg-black text-white flex items-center justify-center font-bold text-2xl rounded-lg">
+                                {empresaInfo.name?.charAt(0).toUpperCase() || "E"}
+                            </div>
+                        )}
                         <div>
-                            <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">NOHUD</h1>
+                            <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">{empresaInfo.name}</h1>
                             <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Relatório Financeiro Detalhado</p>
                         </div>
                     </div>
