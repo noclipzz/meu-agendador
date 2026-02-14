@@ -210,7 +210,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       });
       if (res.ok) {
         alert("Agendamento cancelado com sucesso.");
-        setAgendamentosExistentes([]);
+        // Remove apenas o agendamento cancelado da lista, mantendo os outros visíveis
+        setAgendamentosExistentes(prev => prev.filter(ag => ag.id !== id));
       }
     } catch (e) { alert("Erro ao cancelar."); }
   }
