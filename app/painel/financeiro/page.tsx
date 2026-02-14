@@ -504,11 +504,14 @@ export default function FinanceiroPage() {
             <div className="hidden print:flex flex-col bg-white p-10 w-full min-h-screen text-black">
                 <style jsx global>{`
                     @media print {
-                        @page { size: landscape; margin: 0; }
+                        @page { size: landscape; margin: 10mm; }
                         body { padding: 0 !important; margin: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                         aside, header, .print-hidden { display: none !important; }
                         main { padding: 0 !important; margin: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
                         .print-only { display: block !important; }
+                        .page-break-before { page-break-before: always; margin-top: 20mm; }
+                        table { page-break-inside: auto; }
+                        tr { page-break-inside: avoid; page-break-after: auto; }
                     }
                 `}</style>
 
@@ -518,12 +521,12 @@ export default function FinanceiroPage() {
                         <div className="w-14 h-14 bg-black text-white flex items-center justify-center font-bold text-2xl rounded-lg">N</div>
                         <div>
                             <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">NOHUD</h1>
-                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Relatório Financeiro Semestral</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Relatório Financeiro Detalhado</p>
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-[10px] font-bold uppercase text-gray-400">Data de Emissão</p>
-                        <p className="text-lg font-mono font-bold">{format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                        <p className="text-[10px] font-bold uppercase text-gray-400">Emissão em: {format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+                        <p className="text-lg font-mono font-bold uppercase">{format(dataResumo, "MMMM 'de' yyyy", { locale: ptBR })}</p>
                     </div>
                 </div>
 
@@ -543,13 +546,126 @@ export default function FinanceiroPage() {
                     </div>
                 </div>
 
-                {/* TABELA */}
-                <div className="flex-1">
-                    <h3 className="font-bold text-sm uppercase mb-3 flex items-center gap-2 border-b pb-1">
-                        <FileText size={16} /> Demonstrativo de Resultados (6 Meses)
+                {/* SEÇÃO: DETALHAMENTO DE ENTRADAS */}
+                <div className="mb-8">
+                    <h3 className="font-bold text-sm uppercase mb-3 flex items-center gap-2 border-b-2 border-blue-500 pb-1 text-blue-700">
+                        <ArrowUpCircle size={16} /> Detalhamento de Entradas (Receitas)
                     </h3>
-                    <table className="w-full text-xs text-left border-collapse">
-                        <thead className="bg-gray-100 font-black uppercase text-[10px]">
+                    <table className="w-full text-[10px] text-left border-collapse">
+                        <thead className="bg-blue-50 font-black uppercase">
+                            <tr>
+                                <th className="p-2 border-b">Data</th>
+                                <th className="p-2 border-b">Descrição</th>
+                                <th className="p-2 border-b">Cliente</th>
+                                <th className="p-2 border-b">Método</th>
+                                <th className="p-2 border-b text-right">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dadosResumo?.allInvoices?.map((inv: any, i: number) => (
+                                <tr key={i} className="border-b border-gray-100">
+                                    <td className="p-2 font-mono">{format(new Date(inv.paidAt || inv.dueDate), 'dd/MM/yyyy')}</td>
+                                    <td className="p-2 font-bold uppercase">{inv.description}</td>
+                                    <td className="p-2 uppercase">{inv.client?.name || 'Cliente Avulso'}</td>
+                                    <td className="p-2"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">{inv.method || 'PIX'}</span></td>
+                                    <td className="p-2 text-right font-bold text-blue-600">R$ {Number(inv.value).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                            {(!dadosResumo?.allInvoices || dadosResumo?.allInvoices.length === 0) && (
+                                <tr><td colSpan={5} className="p-4 text-center italic text-gray-400">Nenhuma entrada registrada.</td></tr>
+                            )}
+                        </tbody>
+                        <tfoot className="bg-gray-50 font-black">
+                            <tr>
+                                <td colSpan={4} className="p-2 text-right uppercase">Subtotal Entradas:</td>
+                                <td className="p-2 text-right text-blue-700">R$ {dadosResumo?.resumo?.bruto?.toLocaleString()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                {/* SEÇÃO: DETALHAMENTO DE SAÍDAS */}
+                <div className="mb-8">
+                    <h3 className="font-bold text-sm uppercase mb-3 flex items-center gap-2 border-b-2 border-red-500 pb-1 text-red-700">
+                        <ArrowDownCircle size={16} /> Detalhamento de Saídas (Despesas)
+                    </h3>
+                    <table className="w-full text-[10px] text-left border-collapse">
+                        <thead className="bg-red-50 font-black uppercase">
+                            <tr>
+                                <th className="p-2 border-b">Data</th>
+                                <th className="p-2 border-b">Descrição</th>
+                                <th className="p-2 border-b">Categoria</th>
+                                <th className="p-2 border-b">Frequência</th>
+                                <th className="p-2 border-b text-right">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dadosResumo?.allExpenses?.map((exp: any, i: number) => (
+                                <tr key={i} className="border-b border-gray-100">
+                                    <td className="p-2 font-mono">{format(new Date(exp.date), 'dd/MM/yyyy')}</td>
+                                    <td className="p-2 font-bold uppercase">{exp.description}</td>
+                                    <td className="p-2 uppercase text-gray-500">{exp.category}</td>
+                                    <td className="p-2 uppercase text-gray-400">{exp.frequency === 'MONTHLY' ? 'Mensal' : exp.frequency === 'WEEKLY' ? 'Semanal' : exp.frequency === 'YEARLY' ? 'Anual' : 'Único'}</td>
+                                    <td className="p-2 text-right font-bold text-red-600">R$ {Number(exp.value).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                            {(!dadosResumo?.allExpenses || dadosResumo?.allExpenses.length === 0) && (
+                                <tr><td colSpan={5} className="p-4 text-center italic text-gray-400">Nenhuma despesa registrada.</td></tr>
+                            )}
+                        </tbody>
+                        <tfoot className="bg-gray-50 font-black">
+                            <tr>
+                                <td colSpan={4} className="p-2 text-right uppercase">Subtotal Saídas:</td>
+                                <td className="p-2 text-right text-red-700">R$ {dadosResumo?.resumo?.despesas?.toLocaleString()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                {/* SEÇÃO: PENDÊNCIAS E ATRASADOS */}
+                <div className="mb-8 page-break-before">
+                    <h3 className="font-bold text-sm uppercase mb-3 flex items-center gap-2 border-b-2 border-orange-500 pb-1 text-orange-700">
+                        <AlertTriangle size={16} /> Pendências e Inadimplência (Atrasados)
+                    </h3>
+                    <p className="text-[9px] text-gray-500 mb-2 uppercase font-bold italic">* Valores que deveriam ter entrado, mas permanecem em aberto.</p>
+                    <table className="w-full text-[10px] text-left border-collapse">
+                        <thead className="bg-orange-50 font-black uppercase">
+                            <tr>
+                                <th className="p-2 border-b">Vencimento</th>
+                                <th className="p-2 border-b">Cliente</th>
+                                <th className="p-2 border-b">Descrição</th>
+                                <th className="p-2 border-b text-right">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {dadosResumo?.boletosVencidos?.map((fat: any, i: number) => (
+                                <tr key={i} className="border-b border-orange-100 bg-orange-50/30">
+                                    <td className="p-2 font-mono text-red-600 font-bold">{format(new Date(fat.dueDate), 'dd/MM/yyyy')}</td>
+                                    <td className="p-2 font-bold uppercase">{fat.client.name}</td>
+                                    <td className="p-2 uppercase text-gray-500">{fat.description || 'Cobrança Avulsa'}</td>
+                                    <td className="p-2 text-right font-black text-orange-700">R$ {Number(fat.value).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                            {(!dadosResumo?.boletosVencidos || dadosResumo?.boletosVencidos.length === 0) && (
+                                <tr><td colSpan={4} className="p-4 text-center italic text-gray-400">Excelente! Nenhuma fatura atrasada no momento.</td></tr>
+                            )}
+                        </tbody>
+                        <tfoot className="bg-orange-100 font-black">
+                            <tr>
+                                <td colSpan={3} className="p-2 text-right uppercase font-black">Total Inadimplência:</td>
+                                <td className="p-2 text-right text-orange-800">R$ {dadosResumo?.boletosVencidos?.reduce((acc: any, b: any) => acc + Number(b.value), 0).toLocaleString()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                {/* TABELA DE FLUXO (6 MESES) - RESUMO FINAL */}
+                <div className="flex-1 mt-10">
+                    <h3 className="font-bold text-sm uppercase mb-3 flex items-center gap-2 border-b pb-1">
+                        <FileText size={16} /> Fluxo de Caixa Comparativo (Últimos 6 Meses)
+                    </h3>
+                    <table className="w-full text-[10px] text-left border-collapse">
+                        <thead className="bg-gray-100 font-black uppercase">
                             <tr>
                                 <th className="p-2 border-b border-gray-300">Mês de Referência</th>
                                 <th className="p-2 border-b border-gray-300 text-right text-green-700">Entradas (+)</th>
@@ -575,12 +691,12 @@ export default function FinanceiroPage() {
                                 )
                             })}
                         </tbody>
-                        <tfoot className="bg-gray-50 font-black text-xs border-t-2 border-black">
+                        <tfoot className="bg-gray-50 font-black text-[11px] border-t-2 border-black">
                             <tr>
-                                <td className="p-2 uppercase">Total Acumulado</td>
+                                <td className="p-2 uppercase">Performance Acumulada (Período)</td>
                                 <td className="p-2 text-right text-green-700">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0).toLocaleString()}</td>
                                 <td className="p-2 text-right text-red-600">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0).toLocaleString()}</td>
-                                <td className="p-2 text-right">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) - dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0)).toLocaleString()}</td>
+                                <td className="p-2 text-right bg-yellow-50">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) - dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0)).toLocaleString()}</td>
                                 <td className="p-2"></td>
                             </tr>
                         </tfoot>
