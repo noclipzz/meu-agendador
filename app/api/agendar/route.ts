@@ -52,7 +52,11 @@ export async function POST(req: Request) {
             const existingClient = await prisma.client.findFirst({
                 where: {
                     companyId,
-                    phone: { contains: phoneClean }
+                    OR: [
+                        { phone: { contains: phone } },      // Com máscara original
+                        { phone: { contains: phoneClean } }, // Só números
+                        { phone: { contains: phoneClean.slice(-8) } } // Últimos 8 dígitos (fallback)
+                    ]
                 }
             });
 
