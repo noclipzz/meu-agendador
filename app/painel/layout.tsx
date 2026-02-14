@@ -359,17 +359,17 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
             {/* --- HEADER MOBILE --- */}
             <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-30 sticky top-0">
-                <Link href="/" className="flex items-center gap-2">
-                    <LogoNohud />
-                </Link>
-                <div className="flex items-center gap-3">
+                <button
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                >
+                    {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+                <div className="flex items-center gap-4">
                     <UserButton />
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-                    >
-                        {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
+                    <Link href="/" className="flex items-center gap-2">
+                        <LogoNohud />
+                    </Link>
                 </div>
             </header>
 
