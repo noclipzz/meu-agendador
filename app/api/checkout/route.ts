@@ -264,10 +264,12 @@ export async function GET() {
             });
         }
 
-        // CASO 3: USUÁRIO NOVO
-        console.log("✅ [CHECKOUT] Identificado como NEW");
+        // CASO 3: USUÁRIO NOVO (pode ter pago mas não criou empresa ainda)
+        const hasActiveSub = subscription?.status === "ACTIVE" && subscription.expiresAt && new Date(subscription.expiresAt) > new Date();
+        console.log("✅ [CHECKOUT] Identificado como NEW. Assinatura ativa:", hasActiveSub);
+
         return NextResponse.json({
-            active: false,
+            active: !!hasActiveSub,
             role: "NEW",
             plan: subscription?.plan || "INDIVIDUAL"
         });
