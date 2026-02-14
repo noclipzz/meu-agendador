@@ -20,7 +20,6 @@ export async function POST(req: Request) {
             type,
             location,
             clientId,
-            autoCreateClient = true // Default: cria cliente automaticamente (comportamento padrão para agendamento público)
         } = body;
 
         // 1. Validações Básicas
@@ -47,27 +46,22 @@ export async function POST(req: Request) {
 
         let finalClientId = clientId;
 
-        // 3. Lógica de Cliente (Cria ou Atualiza SE solicitado)
-        if (!finalClientId && autoCreateClient) {
-            const phoneClean = phone?.replace(/\D/g, "") || "";
-            let existingClient = null;
-
-            if (phoneClean) {
-                existingClient = await prisma.client.findFirst({
-                    where: { companyId, phone: { contains: phoneClean } }
-                });
-            }
+        // 3. Lógica de Cliente (Somente busca, NÃO CRIA)
+        const phoneClean = phone?.replace(/\D/g, "") || "";
+        if (!finalClientId && phoneClean) {
+            const existingClient = await prisma.client.findFirst({
+                where: {
+                    companyId,
+                    phone: { contains: phoneClean }
+                }
+            });
 
             if (existingClient) {
                 finalClientId = existingClient.id;
+                // Opcional: Atualiza o e-mail se o cliente atual não tiver, mas já existir no banco
                 if (email && !existingClient.email) {
                     await prisma.client.update({ where: { id: existingClient.id }, data: { email } });
                 }
-            } else {
-                const newClient = await prisma.client.create({
-                    data: { name, phone, email, companyId }
-                });
-                finalClientId = newClient.id;
             }
         }
 
