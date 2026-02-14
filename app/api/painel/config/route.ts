@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { validateEmail, validateCNPJ } from "@/lib/validators";
 
 const prisma = db;
 
@@ -60,6 +61,14 @@ export async function POST(req: Request) {
     // 1. Validação do Nome
     if (!body.name) {
       return NextResponse.json({ error: "O nome da empresa é obrigatório." }, { status: 400 });
+    }
+
+    // VALIDAÇÕES EXTRAS
+    if (body.notificationEmail && !validateEmail(body.notificationEmail)) {
+      return NextResponse.json({ error: "E-mail de notificação inválido." }, { status: 400 });
+    }
+    if (body.cnpj && !validateCNPJ(body.cnpj)) {
+      return NextResponse.json({ error: "CNPJ inválido." }, { status: 400 });
     }
 
     const slugDesejado = gerarSlug(body.name);
