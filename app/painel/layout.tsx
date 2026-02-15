@@ -479,7 +479,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
-                        <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800">
 
                             <button
                                 onClick={() => setIsModalOpen(false)}
@@ -488,9 +488,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 <X size={24} />
                             </button>
 
-                            <h3 className="text-2xl font-black mb-6 dark:text-white text-center">O que vamos criar?</h3>
+                            <h3 className="text-xl font-black mb-4 dark:text-white text-center">O que vamos criar?</h3>
 
-                            <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-[1.2rem] mb-8">
+                            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1rem] mb-6">
                                 <button
                                     onClick={() => setTipoAgendamento("CLIENTE")}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "CLIENTE" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
@@ -534,7 +534,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                                         <div className="space-y-3">
                                             <input
-                                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold"
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold text-sm"
                                                 placeholder="Nome do Cliente"
                                                 value={novo.nome}
                                                 onChange={e => setNovo({ ...novo, nome: e.target.value, clientId: e.target.value === "" ? "" : novo.clientId })}
@@ -542,13 +542,13 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                             <input
                                                 type="tel"
                                                 maxLength={15}
-                                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold transition-all"
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold transition-all text-sm"
                                                 placeholder="(00) 00000-0000"
                                                 value={novo.phone}
                                                 onChange={e => setNovo({ ...novo, phone: formatarTelefoneInput(e.target.value) })}
                                             />
                                         </div>
-                                        <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.professionalIds[0] || ""} onChange={e => setNovo({ ...novo, professionalIds: [e.target.value] })}>
+                                        <select className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.professionalIds[0] || ""} onChange={e => setNovo({ ...novo, professionalIds: [e.target.value] })}>
                                             <option value="">Selecione o Profissional...</option>
                                             {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
@@ -557,14 +557,14 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     <>
                                         <div className="space-y-3">
                                             <div className="relative">
-                                                <ClipboardList className="absolute left-4 top-4 text-gray-400" size={20} />
-                                                <input className="w-full border dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Título do Evento (ex: Reunião)" value={novo.nome} onChange={e => setNovo({ ...novo, nome: e.target.value })} />
+                                                <ClipboardList className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                <input className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold text-sm" placeholder="Título do Evento" value={novo.nome} onChange={e => setNovo({ ...novo, nome: e.target.value })} />
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-3">
                                                 <div className="space-y-1">
                                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Categoria / Tipo</label>
-                                                    <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.categoria} onChange={e => setNovo({ ...novo, categoria: e.target.value })}>
+                                                    <select className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.categoria} onChange={e => setNovo({ ...novo, categoria: e.target.value })}>
                                                         <option value="REUNIAO">🏢 Reunião / Alinhamento</option>
                                                         <option value="ALMOCO">🍴 Intervalo / Almoço</option>
                                                         <option value="CURSO">📚 Curso / Treinamento</option>
@@ -574,8 +574,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                                 </div>
 
                                                 <div className="relative">
-                                                    <MapPin className="absolute left-4 top-4 text-gray-400" size={20} />
-                                                    <input className="w-full border dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Onde será o evento? (Opcional)" value={novo.local} onChange={e => setNovo({ ...novo, local: e.target.value })} />
+                                                    <MapPin className="absolute left-4 top-3.5 text-gray-400" size={18} />
+                                                    <input className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold text-sm" placeholder="Onde será o evento? (Opcional)" value={novo.local} onChange={e => setNovo({ ...novo, local: e.target.value })} />
                                                 </div>
                                             </div>
                                         </div>
@@ -624,17 +624,17 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Data</label>
-                                        <input type="date" min={new Date().toISOString().split('T')[0]} className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.date} onChange={e => setNovo({ ...novo, date: e.target.value })} />
+                                        <input type="date" min={new Date().toISOString().split('T')[0]} className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.date} onChange={e => setNovo({ ...novo, date: e.target.value })} />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Horário</label>
-                                        <input type="time" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.time} onChange={e => setNovo({ ...novo, time: e.target.value })} />
+                                        <input type="time" className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.time} onChange={e => setNovo({ ...novo, time: e.target.value })} />
                                     </div>
                                 </div>
 
                                 {tipoAgendamento === "CLIENTE" && (
                                     <div className="grid grid-cols-1 gap-3">
-                                        <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.serviceId} onChange={e => setNovo({ ...novo, serviceId: e.target.value })}>
+                                        <select className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.serviceId} onChange={e => setNovo({ ...novo, serviceId: e.target.value })}>
                                             <option value="">Selecione o Serviço...</option>
                                             {services.map(s => <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>)}
                                         </select>
@@ -644,7 +644,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 <button
                                     onClick={salvarAgendamento}
                                     disabled={salvando}
-                                    className={`w-full p-5 rounded-2xl font-black text-lg shadow-xl transition active:scale-95 flex justify-center items-center gap-2 ${salvando ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                    className={`w-full p-4 rounded-2xl font-black text-lg shadow-xl transition active:scale-95 flex justify-center items-center gap-2 ${salvando ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                                 >
                                     {salvando ? <Loader2 className="animate-spin" /> : tipoAgendamento === "CLIENTE" ? "Confirmar Agendamento" : "Criar Evento"}
                                 </button>
