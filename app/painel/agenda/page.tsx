@@ -374,7 +374,10 @@ export default function PainelDashboard() {
                                         <span className="font-black text-[10px] whitespace-nowrap">{format(data, "HH:mm")}</span>
                                     </div>
                                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="font-black text-[11px] truncate uppercase tracking-tight">{ag.customerName}</span>
+                                        <span className="font-black text-[11px] truncate uppercase tracking-tight">
+                                            <span className="text-[9px] opacity-60 mr-1.5">[{pro?.name || 'GERAL'}]</span>
+                                            {ag.customerName}
+                                        </span>
                                         {ag.location && <span className="text-[9px] font-bold opacity-60 truncate whitespace-nowrap bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-md">📍 {ag.location}</span>}
                                     </div>
                                 </button>
@@ -400,7 +403,12 @@ export default function PainelDashboard() {
                                     </span>
                                     <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/10 text-white ${isEncaixe ? 'bg-white/20' : ''}`}>{isEncaixe ? 'ENCAIXE' : ag.status}</div>
                                 </div>
-                                <span className="font-bold text-[12px] truncate uppercase tracking-tighter mt-1">{ag.customerName}</span>
+                                <span className="font-bold text-[12px] truncate uppercase tracking-tighter mt-1">
+                                    <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
+                                        {pro?.name?.split(' ')[0] || 'GERAL'}
+                                    </span>
+                                    {ag.customerName}
+                                </span>
                             </button>
                         )
                     })}
