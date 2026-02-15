@@ -7,6 +7,8 @@ import { Resend } from 'resend';
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const { userId } = auth();
