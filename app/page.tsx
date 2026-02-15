@@ -72,7 +72,20 @@ function AuthButton() {
         )}
 
         <div className="flex items-center gap-2 p-1 rounded-full">
-          <UserButton afterSignOutUrl="/" />
+          <UserButton afterSignOutUrl="/">
+            <UserButton.MenuItems>
+              <UserButton.Action
+                label="Copiar ID do Usuário"
+                labelIcon={<Copy size={14} />}
+                onClick={() => {
+                  if (user?.id) {
+                    navigator.clipboard.writeText(user.id);
+                    toast.success("ID copiado para a área de transferência!");
+                  }
+                }}
+              />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </div>
     );
