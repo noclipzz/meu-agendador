@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Check, Star, Zap, Crown, Building2, Loader2, Edit, Calendar, Users,
-  DollarSign, Menu, X, LogIn, LayoutDashboard, Copy, ArrowRight,
+  DollarSign, Menu, X, LogIn, LayoutDashboard, Copy, ArrowRight, ArrowDown,
   Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown, UserCircle
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
@@ -244,6 +244,15 @@ function PlanosSection() {
             <Link href="https://wa.me/5511999999999" target="_blank" className="w-full py-4 rounded-xl font-bold border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
           </div>
         </div>
+
+        <div className="mt-20 text-center flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <p className="text-gray-500 font-medium text-lg mb-8 max-w-xl">
+            Ainda na dúvida? Você não precisa pagar nada agora.
+            <br className="hidden md:block" /> Libere seu acesso completo e decida depois.
+          </p>
+          <HeroCTA />
+          <p className="text-sm text-gray-400 mt-4 font-medium">Não pedimos cartão de crédito para iniciar.</p>
+        </div>
       </div>
     </section>
   );
@@ -388,7 +397,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col md:flex-row justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200">
-            <HeroCTA />
+            <Link href="#planos" className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg">
+              Conhecer os Planos <ArrowDown size={20} />
+            </Link>
             <Link href="#funcionalidades" className="bg-white text-gray-700 border border-gray-200 font-bold px-10 py-4 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 flex items-center justify-center text-lg">
               Ver Funcionalidades
             </Link>
