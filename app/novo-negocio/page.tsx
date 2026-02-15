@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +8,44 @@ import { toast } from "sonner";
 export default function NovoNegocio() {
     const [nome, setNome] = useState("");
     const [loading, setLoading] = useState(false);
+    const [verificando, setVerificando] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        async function checkAccess() {
+            try {
+                const res = await fetch('/api/checkout');
+                const data = await res.json();
+
+                if (!data.active) {
+                    toast.error("Você precisa de uma assinatura ativa para criar um negócio.");
+                    router.push('/#planos');
+                    return;
+                }
+
+                // Se já tem empresa, não deveria estar aqui
+                if (data.companyId) {
+                    router.push('/painel/dashboard');
+                    return;
+                }
+
+                setVerificando(false);
+            } catch (error) {
+                console.error("Erro ao verificar acesso:", error);
+                router.push('/');
+            }
+        }
+        checkAccess();
+    }, [router]);
+
+    if (verificando) {
+        return (
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+                <p className="text-gray-500 font-bold animate-pulse text-sm">Verificando sua assinatura...</p>
+            </div>
+        );
+    }
 
     async function criarEmpresa() {
         if (!nome) return toast.error("Digite o nome da sua empresa.");
