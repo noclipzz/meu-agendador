@@ -22,7 +22,7 @@ const formatarTelefone = (value: string) => {
 const calcularLayoutVisual = (agendamentos: any[]) => {
     if (!agendamentos.length) return [];
     const sorted = [...agendamentos].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const result = [];
+    const result: any[] = [];
     let cluster: any[] = [];
     let clusterEnd = 0;
     for (const ag of sorted) {
@@ -582,36 +582,36 @@ export default function PainelDashboard() {
                                 )}
                             </div>
                         </div>
-                    </div>
 
-                    <div className="mt-8 flex flex-col gap-2">
-                        {isEditing ? (
-                            <div className="flex gap-2">
-                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                                <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
-                            </div>
-                        ) : (
-                            <>
-                                {agendamentoSelecionado.type !== "EVENTO" && (
-                                    <>
-                                        {agendamentoSelecionado.status === "CONFIRMADO" && (
-                                            <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
-                                        )}
-
-                                        {agendamentoSelecionado.status === "PENDENTE" && (
-                                            <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
-                                        )}
-                                    </>
-                                )}
-
+                        <div className="mt-8 flex flex-col gap-2">
+                            {isEditing ? (
                                 <div className="flex gap-2">
-                                    {agendamentoSelecionado.customerPhone && (
-                                        <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
-                                    )}
-                                    <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
+                                    <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                                    <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
                                 </div>
-                            </>
-                        )}
+                            ) : (
+                                <>
+                                    {agendamentoSelecionado.type !== "EVENTO" && (
+                                        <>
+                                            {agendamentoSelecionado.status === "CONFIRMADO" && (
+                                                <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
+                                            )}
+
+                                            {agendamentoSelecionado.status === "PENDENTE" && (
+                                                <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
+                                            )}
+                                        </>
+                                    )}
+
+                                    <div className="flex gap-2">
+                                        {agendamentoSelecionado.customerPhone && (
+                                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                                        )}
+                                        <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
