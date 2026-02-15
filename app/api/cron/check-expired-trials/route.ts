@@ -6,6 +6,8 @@ import { clerkClient } from "@clerk/nextjs/server";
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+export const dynamic = 'force-dynamic';
+
 // Essa rota deve ser chamada por um CRON JOB (ex: Vercel Cron)
 // Schedule sugerido: a cada 1 hora ou 1 dia
 export async function GET(req: Request) {
