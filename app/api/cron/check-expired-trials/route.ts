@@ -86,9 +86,65 @@ export async function GET(req: Request) {
             }
         }
 
+        // ... (código existente de expiração)
+
+        // ---------------------------------------------------------
+        // 1.5 AVISO PRÉVIO (2 DIAS ANTES)
+        // ---------------------------------------------------------
+        // Cron roda de hora em hora. Buscamos quem expira daqui a 47-48h.
+        // Assim, pegamos cada usuário apenas UMA vez (naquela hora específica).
+
+        const twoDaysFromNowStart = new Date(now.getTime() + (47 * 60 * 60 * 1000)); // +47h
+        const twoDaysFromNowEnd = new Date(now.getTime() + (48 * 60 * 60 * 1000));   // +48h
+
+        const warningTrials = await prisma.subscription.findMany({
+            where: {
+                status: 'ACTIVE',
+                stripeSubscriptionId: 'TRIAL_PERIOD',
+                expiresAt: {
+                    gte: twoDaysFromNowStart,
+                    lt: twoDaysFromNowEnd
+                }
+            }
+        });
+
+        console.log(`⚠️ [CRON] Encontrados ${warningTrials.length} para aviso de 2 dias.`);
+
+        for (const sub of warningTrials) {
+            try {
+                const user = await clerkClient.users.getUser(sub.userId);
+                const email = user.emailAddresses[0]?.emailAddress;
+                const name = user.firstName || "Usuário";
+
+                if (email) {
+                    await resend.emails.send({
+                        from: 'NOHUD App <nao-responda@nohud.com.br>',
+                        to: email,
+                        subject: '⏳ Faltam 2 dias para seu teste acabar!',
+                        html: `
+                            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                                <h2 style="color: #f59e0b;">Aproveite os últimos dias!</h2>
+                                <p>Olá, <strong>${name}</strong>.</p>
+                                <p>Seu período de teste gratuito do NOHUD expira em <strong>2 dias</strong>.</p>
+                                <p>Não deixe para a última hora. Garanta a continuidade do acesso e mantenha sua empresa organizada.</p>
+                                
+                                <div style="text-align: center; margin-top: 30px;">
+                                    <a href="https://nohud.com.br/#planos" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Escolher Meu Plano</a>
+                                </div>
+                            </div>
+                        `
+                    });
+                    console.log(`📧 [CRON] Aviso de 2 dias enviado para ${email}`);
+                    results.push({ id: sub.id, email, status: 'WARNING_E2D_SENT' });
+                }
+            } catch (err: any) {
+                console.error(`❌ [CRON] Erro ao enviar aviso para sub ${sub.id}:`, err);
+            }
+        }
+
         // ---------------------------------------------------------
         // 2. LIMPEZA DE NOMES (SLUGS) DE TRIALS ABANDONADOS (> 30 DIAS)
-        // ---------------------------------------------------------
+        // ...
         // Apenas para quem NUNCA pagou (stripeCustomerId === 'TRIAL_USER')
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
