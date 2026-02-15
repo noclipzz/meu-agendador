@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -45,7 +45,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [termoBusca, setTermoBusca] = useState("");
     const [salvando, setSalvando] = useState(false);
 
-    const [tipoAgendamento, setTipoAgendamento] = useState<"CLIENTE" | "EVENTO">("CLIENTE");
+    const [tipoAgendamento, setTipoAgendamento] = useState<"CLIENTE" | "EVENTO" | "ENCAIXE">("CLIENTE");
 
     const [services, setServices] = useState<any[]>([]);
     const [profissionais, setProfissionais] = useState<any[]>([]);
@@ -70,7 +70,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             nome: "",
             phone: "",
             local: "",
-            categoria: tipoAgendamento === "EVENTO" ? "REUNIAO" : "",
+            categoria: (tipoAgendamento === "EVENTO" || tipoAgendamento === "ENCAIXE") ? "REUNIAO" : "",
             date: new Date().toISOString().split('T')[0],
             time: "",
             serviceId: "",
@@ -498,6 +498,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     <UserIcon size={14} /> AGENDAMENTO
                                 </button>
                                 <button
+                                    onClick={() => setTipoAgendamento("ENCAIXE")}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${(tipoAgendamento === "ENCAIXE") ? "bg-white dark:bg-gray-700 shadow-sm text-amber-600" : "text-gray-500"}`}
+                                >
+                                    <Zap size={14} /> ENCAIXE
+                                </button>
+                                <button
                                     onClick={() => setTipoAgendamento("EVENTO")}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "EVENTO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
                                 >
@@ -506,7 +512,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             </div>
 
                             <div className="space-y-4">
-                                {tipoAgendamento === "CLIENTE" ? (
+                                {(tipoAgendamento === "CLIENTE" || tipoAgendamento === "ENCAIXE") ? (
                                     <>
                                         {/* SELEÇÃO DE CLIENTE FIXO */}
                                         <div className="space-y-2">
@@ -632,7 +638,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     </div>
                                 </div>
 
-                                {tipoAgendamento === "CLIENTE" && (
+                                {(tipoAgendamento === "CLIENTE" || tipoAgendamento === "ENCAIXE") && (
                                     <div className="grid grid-cols-1 gap-3">
                                         <select className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.serviceId} onChange={e => setNovo({ ...novo, serviceId: e.target.value })}>
                                             <option value="">Selecione o Serviço...</option>
@@ -646,7 +652,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     disabled={salvando}
                                     className={`w-full p-4 rounded-2xl font-black text-lg shadow-xl transition active:scale-95 flex justify-center items-center gap-2 ${salvando ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}`}
                                 >
-                                    {salvando ? <Loader2 className="animate-spin" /> : tipoAgendamento === "CLIENTE" ? "Confirmar Agendamento" : "Criar Evento"}
+                                    {salvando ? <Loader2 className="animate-spin" /> : tipoAgendamento === "EVENTO" ? "Criar Evento" : tipoAgendamento === "ENCAIXE" ? "Confirmar Encaixe" : "Confirmar Agendamento"}
                                 </button>
                             </div>
                         </div>
