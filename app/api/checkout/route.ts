@@ -112,7 +112,7 @@ export async function POST(req: Request) {
         console.log("✅ [CHECKOUT] Assinatura consultada:", subscription ? "Sim" : "Não");
         let stripeCustomerId = subscription?.stripeCustomerId;
 
-        if (!stripeCustomerId) {
+        if (!stripeCustomerId || stripeCustomerId === 'TRIAL_USER') {
             console.log("👤 [CHECKOUT] Criando novo cliente no Stripe...");
             const customer = await stripe.customers.create({
                 email: user.emailAddresses[0].emailAddress,
