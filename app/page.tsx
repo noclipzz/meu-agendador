@@ -265,6 +265,54 @@ function FAQSection() {
   );
 }
 
+// --- HERO CTA (BOTAO COMEÇAR) ---
+function HeroCTA() {
+  const { isSignedIn, user } = useUser();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleStart = async () => {
+    if (!isSignedIn) {
+      router.push('/sign-up');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/trial', { method: 'POST' });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success("Período de teste de 7 dias ativado! 🎉");
+        router.push('/painel/dashboard');
+      } else {
+        // Se já usou trial ou tem assinatura
+        if (data.code === "TRIAL_USED") {
+          // Tenta ir para o dashboard. Se estiver inativo, o layout vai redirecionar para planos.
+          router.push('/painel/dashboard');
+        } else {
+          toast.info(data.message || "Redirecionando...");
+          router.push('/#planos');
+        }
+      }
+    } catch (error) {
+      toast.error("Erro de conexão.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleStart}
+      disabled={loading}
+      className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
+    >
+      {loading ? <Loader2 className="animate-spin" /> : <>Começar Gratuitamente <ArrowRight size={20} /></>}
+    </button>
+  );
+}
+
 // ...
 
 // --- COMPONENTE PRINCIPAL ---
@@ -327,9 +375,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col md:flex-row justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200">
-            <Link href="#planos" className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg">
-              Começar Gratuitamente <ArrowRight size={20} />
-            </Link>
+            <HeroCTA />
             <Link href="#funcionalidades" className="bg-white text-gray-700 border border-gray-200 font-bold px-10 py-4 rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 flex items-center justify-center text-lg">
               Ver Funcionalidades
             </Link>
