@@ -486,67 +486,82 @@ export default function PainelDashboard() {
                                 <div>
                                     {isEditing ? (
                                         <div className="space-y-2 w-full">
-                                            <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} placeholder="Nome" />
-                                            <input className="text-lg font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                            <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} placeholder={agendamentoSelecionado.type === "EVENTO" ? "Título do Evento" : "Nome do Cliente"} />
+                                            {agendamentoSelecionado.type !== "EVENTO" && (
+                                                <input className="text-lg font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                            )}
                                         </div>
                                     ) : (
                                         <>
-                                            <h2 className="text-2xl font-bold dark:text-white">{agendamentoSelecionado.customerName}</h2>
-                                            <p className="text-gray-400 text-xs">Detalhes</p>
-                                            <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone || "N/A"}</p>
+                                            <h2 className="text-2xl font-bold dark:text-white uppercase tracking-tight">{agendamentoSelecionado.customerName}</h2>
+                                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes do Cliente"}</p>
+                                            {agendamentoSelecionado.type !== "EVENTO" && agendamentoSelecionado.customerPhone && (
+                                                <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone}</p>
+                                            )}
                                         </>
                                     )}
                                 </div>
                             </div>
                             {!isEditing && (
                                 <div className="flex items-center gap-1">
-                                    <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar agendamento"><Pencil size={20} /></button>
-                                    {agendamentoSelecionado.clientId ? (
-                                        <button
-                                            onClick={() => {
-                                                setAgendamentoSelecionado(null);
-                                                const params = new URLSearchParams();
-                                                params.set('abrirFicha', agendamentoSelecionado.clientId);
-                                                // Fallback: envia dados do agendamento caso o cliente não seja encontrado (ex: deletado)
-                                                if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
-                                                if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
-                                                params.set('bookingId', agendamentoSelecionado.id);
-                                                router.push(`/painel/clientes?${params.toString()}`);
-                                            }}
-                                            className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
-                                            title="Ver ficha do cliente"
-                                        >
-                                            <FileText size={20} />
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                setAgendamentoSelecionado(null);
-                                                const params = new URLSearchParams();
-                                                params.set('novoCadastro', '1');
-                                                if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
-                                                if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
-                                                params.set('bookingId', agendamentoSelecionado.id);
-                                                router.push(`/painel/clientes?${params.toString()}`);
-                                            }}
-                                            className="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full text-green-600 transition"
-                                            title="Criar cadastro para este cliente"
-                                        >
-                                            <UserPlus size={20} />
-                                        </button>
+                                    <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar"><Pencil size={20} /></button>
+
+                                    {/* Só mostra botões de cliente se NÃO for um evento */}
+                                    {agendamentoSelecionado.type !== "EVENTO" && (
+                                        agendamentoSelecionado.clientId ? (
+                                            <button
+                                                onClick={() => {
+                                                    setAgendamentoSelecionado(null);
+                                                    const params = new URLSearchParams();
+                                                    params.set('abrirFicha', agendamentoSelecionado.clientId);
+                                                    if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                    if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                    params.set('bookingId', agendamentoSelecionado.id);
+                                                    router.push(`/painel/clientes?${params.toString()}`);
+                                                }}
+                                                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
+                                                title="Ver ficha do cliente"
+                                            >
+                                                <FileText size={20} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setAgendamentoSelecionado(null);
+                                                    const params = new URLSearchParams();
+                                                    params.set('novoCadastro', '1');
+                                                    if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                    if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                    params.set('bookingId', agendamentoSelecionado.id);
+                                                    router.push(`/painel/clientes?${params.toString()}`);
+                                                }}
+                                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full text-green-600 transition"
+                                                title="Criar cadastro"
+                                            >
+                                                <UserPlus size={20} />
+                                            </button>
+                                        )
                                     )}
                                 </div>
                             )}
                         </div>
                         <div className="space-y-4">
                             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Serviço</p>
-                                {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceId} onChange={e => setEditForm({ ...editForm, serviceId: e.target.value })}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select> : <p className="font-bold dark:text-gray-200">{agendamentoSelecionado.service?.name || 'Evento'}</p>}
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Categoria / Tipo" : "Serviço"}</p>
+                                {isEditing ? (
+                                    agendamentoSelecionado.type === "EVENTO" ? (
+                                        <input className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceName || 'Evento'} readOnly />
+                                    ) : (
+                                        <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceId} onChange={e => setEditForm({ ...editForm, serviceId: e.target.value })}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                    )
+                                ) : (
+                                    <p className="font-bold dark:text-gray-200">{agendamentoSelecionado.service?.name || (agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Atendimento")}</p>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
                                     <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Data</p>
-                                    {isEditing ? <input type="date" min={format(new Date(), "yyyy-MM-dd")} className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.dataPura} onChange={e => setEditForm({ ...editForm, dataPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>}
+                                    {isEditing ? <input type="date" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.dataPura} onChange={e => setEditForm({ ...editForm, dataPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>}
                                 </div>
                                 <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
                                     <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Horário</p>
@@ -554,8 +569,8 @@ export default function PainelDashboard() {
                                 </div>
                             </div>
                             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Profissional</p>
-                                {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>{profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : <p className="font-bold dark:text-gray-200">{profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || 'N/A'}</p>}
+                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Responsável / Profissional" : "Profissional"}</p>
+                                {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>{profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : <p className="font-bold dark:text-gray-200">{profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || 'Sem responsável definido'}</p>}
                             </div>
                         </div>
 
