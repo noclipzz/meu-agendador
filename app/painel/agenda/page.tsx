@@ -293,6 +293,18 @@ export default function PainelDashboard() {
                                     {ags.map(ag => {
                                         const pro = profissionais.find(p => p.id === ag.professionalId);
                                         const isConcluido = ag.status === "CONCLUIDO";
+                                        const isEvento = ag.type === "EVENTO";
+
+                                        if (isEvento) {
+                                            return (
+                                                <div key={ag.id} className="text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 font-black leading-tight flex items-center gap-0.5">
+                                                    <Calendar size={10} />
+                                                    <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
+                                                    <span className="truncate">{ag.customerName}</span>
+                                                </div>
+                                            );
+                                        }
+
                                         return (
                                             <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'}`} style={{ backgroundColor: pro?.color || '#3b82f6' }}>
                                                 {ag.status === "CONFIRMADO" && <CheckCheck size={10} />}
@@ -345,6 +357,26 @@ export default function PainelDashboard() {
                         const { count, index } = ag._layout;
                         const isConfirmado = ag.status === "CONFIRMADO";
                         const isConcluido = ag.status === "CONCLUIDO";
+                        const isEvento = ag.type === "EVENTO";
+
+                        if (isEvento) {
+                            return (
+                                <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
+                                    className="absolute rounded-xl text-left shadow-sm transition-all border-2 border-dashed flex flex-col justify-center overflow-hidden px-3 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500"
+                                    style={{
+                                        top: `${top}px`, height: `${height}px`,
+                                        width: `calc((100% - 4rem) * ${100 / count / 100})`,
+                                        left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
+                                    }}>
+                                    <div className="flex items-center gap-1">
+                                        <Calendar size={12} />
+                                        <span className="font-black text-[11px]">{format(data, "HH:mm")}</span>
+                                    </div>
+                                    <span className="font-black text-[12px] truncate uppercase tracking-tight mt-0.5">{ag.customerName}</span>
+                                    {ag.location && <span className="text-[9px] font-bold opacity-70 truncate">📍 {ag.location}</span>}
+                                </button>
+                            );
+                        }
 
                         return (
                             <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
@@ -533,17 +565,23 @@ export default function PainelDashboard() {
                                 </div>
                             ) : (
                                 <>
-                                    {agendamentoSelecionado.status === "CONFIRMADO" && (
-                                        <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
-                                    )}
+                                    {agendamentoSelecionado.type !== "EVENTO" && (
+                                        <>
+                                            {agendamentoSelecionado.status === "CONFIRMADO" && (
+                                                <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
+                                            )}
 
-                                    {agendamentoSelecionado.status === "PENDENTE" && (
-                                        <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
+                                            {agendamentoSelecionado.status === "PENDENTE" && (
+                                                <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
+                                            )}
+                                        </>
                                     )}
 
                                     <div className="flex gap-2">
-                                        <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
-                                        <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl hover:bg-red-100 transition">Cancelar</button>
+                                        {agendamentoSelecionado.customerPhone && (
+                                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                                        )}
+                                        <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
                                     </div>
                                 </>
                             )}
