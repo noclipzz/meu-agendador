@@ -19,7 +19,9 @@ export async function GET(req: Request) {
     try {
         const now = new Date();
 
-        // 2. Busca assinaturas ativas que já expiraram E são do tipo TRIAL
+        // ---------------------------------------------------------
+        // 1. EXPIRAÇÃO DE TRIALS VENCIDOS
+        // ---------------------------------------------------------
         const expiredTrials = await prisma.subscription.findMany({
             where: {
                 status: 'ACTIVE',
@@ -84,9 +86,65 @@ export async function GET(req: Request) {
             }
         }
 
+        // ---------------------------------------------------------
+        // 2. LIMPEZA DE NOMES (SLUGS) DE TRIALS ABANDONADOS (> 30 DIAS)
+        // ---------------------------------------------------------
+        // Apenas para quem NUNCA pagou (stripeCustomerId === 'TRIAL_USER')
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const abandonedTrials = await prisma.subscription.findMany({
+            where: {
+                status: 'INACTIVE',
+                stripeCustomerId: 'TRIAL_USER',
+                updatedAt: { lt: thirtyDaysAgo }
+            }
+        });
+
+        console.log(`🧹 [CRON] Buscando trials abandonados há +30 dias: ${abandonedTrials.length} encontrados.`);
+
+        for (const sub of abandonedTrials) {
+            try {
+                // Busca a empresa desse usuário
+                const company = await prisma.company.findFirst({
+                    where: { ownerId: sub.userId }
+                });
+
+                if (company) {
+                    // Se o slug JÁ foi expirado, ignora
+                    if (company.slug.includes('-expired-')) continue;
+
+                    // Renomeia o slug para liberar o nome original
+                    // Ex: "barbearia-top" vira "barbearia-top-expired-17255555"
+                    const newSlug = `${company.slug}-expired-${Math.floor(Date.now() / 1000)}`;
+
+                    await prisma.company.update({
+                        where: { id: company.id },
+                        data: { slug: newSlug }
+                    });
+
+                    // Atualiza a subscription para "ARCHIVED" para não processar novamente
+                    // ou apenas atualiza o updatedAt para sair da lista de < 30 dias na próxima rodada
+                    await prisma.subscription.update({
+                        where: { id: sub.id },
+                        data: {
+                            status: 'ARCHIVED',
+                            updatedAt: new Date()
+                        }
+                    });
+
+                    console.log(`♻️ [CRON] Link liberado: "${company.slug}" agora é "${newSlug}". (Usuário: ${sub.userId})`);
+                    results.push({ id: sub.id, action: 'SLUG_RELEASED', oldSlug: company.slug, newSlug: newSlug });
+                }
+            } catch (err: any) {
+                console.error(`❌ [CRON] Erro ao limpar slug da sub ${sub.id}:`, err);
+            }
+        }
+
         return NextResponse.json({
             success: true,
-            processed: results.length,
+            processed_expirations: results.filter(r => r.status === 'EXPIRED_AND_NOTIFIED').length,
+            processed_cleanups: results.filter(r => r.action === 'SLUG_RELEASED').length,
             details: results
         });
 
