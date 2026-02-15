@@ -16,6 +16,7 @@ import { LogoNohud } from "../components/LogoNohud";
 import { toast } from "sonner";
 import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { InstallPWA, InstallSidebarButton } from "../components/InstallPWA";
+import { UserGuide } from "../components/UserGuide";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
@@ -383,7 +384,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             )}
 
             {/* --- SIDEBAR --- */}
-            <aside className={`
+            <aside
+                id="tour-sidebar"
+                className={`
                 fixed inset-y-0 left-0 w-72 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-50 
                 transition-transform duration-300 transform md:relative md:translate-x-0 md:w-64 md:z-20
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
@@ -402,6 +405,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     {menuItems.map(item => (
                         <Link
                             key={item.path}
+                            id={`tour-nav-${item.key}`}
                             href={item.path}
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                         >
@@ -415,6 +419,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     <InstallSidebarButton />
 
                     <button
+                        id="tour-new-appointment"
                         onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }}
                         className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"
                     >
@@ -462,6 +467,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </footer>
 
                 <InstallPWA />
+                <UserGuide />
 
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
