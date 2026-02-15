@@ -153,54 +153,54 @@ function PlanosSection() {
     const isDark = popular || master;
 
     return (
-      <div className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${master
-          ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-amber-950 text-white ring-2 ring-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.15)] scale-105 z-10'
-          : popular
-            ? 'bg-gray-900 text-white ring-4 ring-blue-500 shadow-xl z-[5]'
-            : 'bg-white text-gray-800 border border-gray-100 shadow-lg'
+      <div className={`relative flex flex-col p-6 rounded-[1.5rem] transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${master
+        ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-amber-950 text-white ring-2 ring-amber-400/60 shadow-[0_0_30px_rgba(251,191,36,0.15)] scale-[1.03] z-10'
+        : popular
+          ? 'bg-gray-900 text-white ring-3 ring-blue-500 shadow-xl z-[5]'
+          : 'bg-white text-gray-800 border border-gray-100 shadow-lg'
         }`}>
         {/* Shimmer effect for Master */}
-        {master && <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none"><div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/5 to-transparent animate-pulse" /></div>}
+        {master && <div className="absolute inset-0 rounded-[1.5rem] overflow-hidden pointer-events-none"><div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/5 to-transparent animate-pulse" /></div>}
 
-        {badge && <div className={`absolute top-0 right-0 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-[2rem] uppercase tracking-widest ${badgeColor || 'bg-blue-500'}`}>{badge}</div>}
+        {badge && <div className={`absolute top-0 right-0 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl rounded-tr-[1.5rem] uppercase tracking-widest ${badgeColor || 'bg-blue-500'}`}>{badge}</div>}
 
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${iconBg || (isDark ? 'bg-white/10' : 'bg-gray-50')} ${iconColor || (isDark ? 'text-blue-400' : 'text-gray-600')}`}>
-          <Icon size={28} />
+        <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-4 ${iconBg || (isDark ? 'bg-white/10' : 'bg-gray-50')} ${iconColor || (isDark ? 'text-blue-400' : 'text-gray-600')}`}>
+          <Icon size={22} />
         </div>
 
-        <h3 className={`text-xl font-black tracking-tight ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500' : ''}`}>{title}</h3>
-        <p className={`text-sm font-medium mt-2 ${textMuted || (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{description}</p>
+        <h3 className={`text-lg font-black tracking-tight ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500' : ''}`}>{title}</h3>
+        <p className={`text-xs font-medium mt-1 ${textMuted || (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{description}</p>
 
-        <div className="my-8">
-          <span className={`text-4xl font-black ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400' : ''}`}>R$ {price}</span>
-          <span className={`text-sm font-bold ml-1 ${priceMuted || (isDark ? 'text-gray-500' : 'text-gray-400')}`}>/mês</span>
+        <div className="my-5">
+          <span className={`text-3xl font-black ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400' : ''}`}>R$ {price}</span>
+          <span className={`text-xs font-bold ml-1 ${priceMuted || (isDark ? 'text-gray-500' : 'text-gray-400')}`}>/mês</span>
         </div>
 
-        <ul className="space-y-4 mb-8 flex-1">
+        <ul className="space-y-3 mb-6 flex-1">
           {features.map((feat: string, i: number) => (
-            <li key={i} className="flex gap-3 text-sm font-medium items-start">
-              <Check size={18} className={`flex-shrink-0 mt-0.5 ${checkColor || (master ? 'text-amber-400' : popular ? 'text-blue-500' : 'text-green-500')}`} />
+            <li key={i} className="flex gap-2 text-xs font-medium items-start">
+              <Check size={15} className={`flex-shrink-0 mt-0.5 ${checkColor || (master ? 'text-amber-400' : popular ? 'text-blue-500' : 'text-green-500')}`} />
               <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{feat}</span>
             </li>
           ))}
         </ul>
 
         {isCurrentPlan ? (
-          <button onClick={gerenciarAssinatura} disabled={!!loading} className="w-full py-4 rounded-xl font-bold bg-green-500 text-white hover:bg-green-600 transition flex justify-center items-center gap-2">
-            {loading === 'gerenciar' ? <Loader2 className="animate-spin" /> : <><Edit size={16} /> Gerenciar Assinatura</>}
+          <button onClick={gerenciarAssinatura} disabled={!!loading} className="w-full py-3 rounded-xl font-bold text-sm bg-green-500 text-white hover:bg-green-600 transition flex justify-center items-center gap-2">
+            {loading === 'gerenciar' ? <Loader2 size={16} className="animate-spin" /> : <><Edit size={14} /> Gerenciar Assinatura</>}
           </button>
         ) : (
           <button
             onClick={() => assinar(planKey)}
             disabled={!!loading}
-            className={`w-full py-4 rounded-xl font-bold transition flex justify-center items-center gap-2 ${btnColor || (master
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-gray-900 shadow-lg shadow-amber-500/25'
-                : popular
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-gray-900 hover:bg-black text-white')
+            className={`w-full py-3 rounded-xl font-bold text-sm transition flex justify-center items-center gap-2 ${btnColor || (master
+              ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-gray-900 shadow-lg shadow-amber-500/25'
+              : popular
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-gray-900 hover:bg-black text-white')
               }`}
           >
-            {loading === planKey ? <Loader2 className="animate-spin" /> : (master ? '🚀 Começar Agora' : 'Começar Agora')}
+            {loading === planKey ? <Loader2 size={16} className="animate-spin" /> : (master ? '🚀 Começar Agora' : 'Começar Agora')}
           </button>
         )}
       </div>
@@ -208,14 +208,14 @@ function PlanosSection() {
   };
 
   return (
-    <section id="planos" className="py-24 px-4 bg-gray-50">
+    <section id="planos" className="py-16 px-4 bg-gray-50">
       <div className="container mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight mb-4">Investimento que se paga</h2>
-          <p className="text-lg text-gray-500 font-medium">Escolha o plano ideal para o tamanho do seu negócio. Cancele a qualquer momento.</p>
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight mb-3">Investimento que se paga</h2>
+          <p className="text-base text-gray-500 font-medium">Escolha o plano ideal para o tamanho do seu negócio. Cancele a qualquer momento.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto items-start">
           <PlanCard
             title="Individual"
             price="35"
@@ -256,17 +256,17 @@ function PlanosSection() {
             features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Prontuários"]}
           />
 
-          <div className="relative flex flex-col p-8 rounded-[2rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-gray-50 text-gray-400"><Building2 size={28} /></div>
-            <h3 className="text-xl font-black tracking-tight">Enterprise</h3>
-            <p className="text-sm font-medium mt-2 text-gray-500">Para franquias e grandes redes.</p>
-            <div className="my-8"><span className="text-2xl font-black">Sob Medida</span></div>
-            <ul className="space-y-4 mb-8 flex-1">
-              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">API Dedicada</span></li>
-              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de Conta</span></li>
-              <li className="flex gap-3 text-sm font-medium items-start"><Check size={18} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Whitelabel (Sua Marca)</span></li>
+          <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4 bg-gray-50 text-gray-400"><Building2 size={22} /></div>
+            <h3 className="text-lg font-black tracking-tight">Enterprise</h3>
+            <p className="text-xs font-medium mt-1 text-gray-500">Para franquias e grandes redes.</p>
+            <div className="my-5"><span className="text-xl font-black">Sob Medida</span></div>
+            <ul className="space-y-3 mb-6 flex-1">
+              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">API Dedicada</span></li>
+              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de Conta</span></li>
+              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Whitelabel (Sua Marca)</span></li>
             </ul>
-            <Link href="https://wa.me/5511999999999" target="_blank" className="w-full py-4 rounded-xl font-bold border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
+            <Link href="https://wa.me/5511999999999" target="_blank" className="w-full py-3 rounded-xl font-bold text-sm border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
           </div>
         </div>
 
