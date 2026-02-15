@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, X, Share, PlusSquare, Smartphone, Bell, BellRing, CheckCircle2 } from "lucide-react";
+import {
+    Download, X, Share, PlusSquare, Smartphone,
+    Bell, BellRing, CheckCircle2, AlertTriangle, Loader2
+} from "lucide-react";
 import { subscribeUserToPush } from "@/lib/push-notifications";
 import { toast } from "sonner";
 
@@ -12,6 +15,7 @@ function usePWAInstall() {
     const [isIOS, setIsIOS] = useState(false);
     const [canInstall, setCanInstall] = useState(false);
     const [hasNotificationPermission, setHasNotificationPermission] = useState(false);
+    const [notificationDenied, setNotificationDenied] = useState(false);
 
     useEffect(() => {
         const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
@@ -37,8 +41,9 @@ function usePWAInstall() {
         }
 
         // Verifica permissão de notificação
-        if ("Notification" in window) {
+        if (typeof window !== "undefined" && "Notification" in window) {
             setHasNotificationPermission(Notification.permission === "granted");
+            setNotificationDenied(Notification.permission === "denied");
         }
 
         return () => {
@@ -60,12 +65,26 @@ function usePWAInstall() {
     };
 
     const enableNotifications = async () => {
+        if (typeof window === "undefined" || !("Notification" in window)) return false;
+
+        if (Notification.permission === "denied") {
+            toast.error("Permissão negada. Você precisa ativar manualmente nos ajustes do seu celular.", {
+                duration: 6000
+            });
+            setNotificationDenied(true);
+            return false;
+        }
+
         try {
             await subscribeUserToPush();
             setHasNotificationPermission(true);
-            toast.success("Alertas ativados com sucesso! 🔔");
+            setNotificationDenied(false);
+            toast.success("Alertas ativos! 🔔");
             return true;
         } catch (error: any) {
+            if (Notification.permission === "denied") {
+                setNotificationDenied(true);
+            }
             toast.error(`Erro ao ativar alertas: ${error.message}`);
             return false;
         }
@@ -77,7 +96,8 @@ function usePWAInstall() {
         isIOS,
         install,
         enableNotifications,
-        hasNotificationPermission
+        hasNotificationPermission,
+        notificationDenied
     };
 }
 
@@ -89,15 +109,16 @@ export function InstallPWA() {
         isIOS,
         install,
         enableNotifications,
-        hasNotificationPermission
+        hasNotificationPermission,
+        notificationDenied
     } = usePWAInstall();
 
     const [showPrompt, setShowPrompt] = useState(false);
     const [isSubscribing, setIsSubscribing] = useState(false);
 
     useEffect(() => {
-        // Se já instalou mas não ativou alertas, mostra o prompt de alertas
-        if (isStandalone && !hasNotificationPermission && !sessionStorage.getItem('pwa-alerts-dismissed')) {
+        // Se já instalou mas não ativou alertas (e não foi negado permanentemente), mostra o prompt de alertas
+        if (isStandalone && !hasNotificationPermission && !notificationDenied && !sessionStorage.getItem('pwa-alerts-dismissed')) {
             const timer = setTimeout(() => setShowPrompt(true), 2000);
             return () => clearTimeout(timer);
         }
@@ -107,10 +128,14 @@ export function InstallPWA() {
             const timer = setTimeout(() => setShowPrompt(true), 5000);
             return () => clearTimeout(timer);
         }
-    }, [canInstall, isStandalone, hasNotificationPermission]);
+    }, [canInstall, isStandalone, hasNotificationPermission, notificationDenied]);
 
     const handleActionClick = async () => {
         if (isStandalone) {
+            if (notificationDenied) {
+                toast.info("Acesse os Ajustes do seu celular para ativar as notificações.");
+                return;
+            }
             setIsSubscribing(true);
             const success = await enableNotifications();
             if (success) {
@@ -133,7 +158,7 @@ export function InstallPWA() {
         }
     };
 
-    if (!showPrompt || (isStandalone && hasNotificationPermission)) return null;
+    if (!showPrompt || (isStandalone && hasNotificationPermission && !notificationDenied)) return null;
 
     return (
         <div className="fixed bottom-6 left-4 right-4 z-[100] md:left-auto md:right-8 md:w-96 animate-in fade-in slide-in-from-bottom-5 duration-500">
@@ -148,20 +173,22 @@ export function InstallPWA() {
                 </button>
 
                 <div className="flex gap-4 items-start">
-                    <div className={`${isStandalone ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-blue-600 shadow-blue-500/20'} p-3 rounded-2xl text-white shadow-lg flex-shrink-0 transition-colors duration-500`}>
-                        {isStandalone ? <BellRing size={24} className="animate-bounce" /> : <Download size={24} />}
+                    <div className={`${isStandalone ? (notificationDenied ? 'bg-amber-500 shadow-amber-500/20' : 'bg-emerald-500 shadow-emerald-500/20') : 'bg-blue-600 shadow-blue-500/20'} p-3 rounded-2xl text-white shadow-lg flex-shrink-0 transition-colors duration-500`}>
+                        {isStandalone ? (notificationDenied ? <AlertTriangle size={24} /> : <BellRing size={24} className="animate-bounce" />) : <Download size={24} />}
                     </div>
 
                     <div className="flex-1 pr-6">
                         <h3 className="font-black text-gray-900 dark:text-white text-lg leading-tight mb-1">
-                            {isStandalone ? "Ativar Alertas" : "Instalar Aplicativo"}
+                            {isStandalone ? (notificationDenied ? "Alertas Bloqueados" : "Ativar Alertas") : "Instalar Aplicativo"}
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400 text-sm font-medium leading-relaxed">
                             {isStandalone
-                                ? "Não perca nenhum agendamento! Ative os alertas para receber notificações em tempo real."
+                                ? notificationDenied
+                                    ? "Você bloqueou as notificações. Para receber alertas, ative-as nas configurações do sistema."
+                                    : "Receba avisos de novos agendamentos e lembretes em tempo real."
                                 : isIOS
-                                    ? "Adicione à sua tela de início para acesso rápido e melhor experiência."
-                                    : "Tenha acesso rápido aos seus agendamentos direto da tela inicial."
+                                    ? "Adicione à tela de início para uma experiência completa de aplicativo."
+                                    : "Tenha acesso rápido direto da tela inicial como um aplicativo."
                             }
                         </p>
                     </div>
@@ -169,14 +196,25 @@ export function InstallPWA() {
 
                 <div className="mt-5">
                     {isStandalone ? (
-                        <button
-                            onClick={handleActionClick}
-                            disabled={isSubscribing}
-                            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-                        >
-                            {isSubscribing ? <Loader2 className="animate-spin" /> : <BellRing size={20} />}
-                            {isSubscribing ? "Ativando..." : "Ativar Alertas Agora"}
-                        </button>
+                        notificationDenied ? (
+                            <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 space-y-2">
+                                <p className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider">Como reativar:</p>
+                                <ol className="text-[10px] font-bold text-amber-600 dark:text-amber-500 space-y-2 list-decimal ml-4">
+                                    <li>Abra os <b>Ajustes</b> do seu celular.</li>
+                                    <li>Vá em <b>Notificações</b>.</li>
+                                    <li>Toque em <b>NOHUD</b> e ative <b>Permitir Notificações</b>.</li>
+                                </ol>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleActionClick}
+                                disabled={isSubscribing}
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                {isSubscribing ? <Loader2 className="animate-spin" /> : <BellRing size={20} />}
+                                {isSubscribing ? "Ativando..." : "Ativar Alertas Agora"}
+                            </button>
+                        )
                     ) : isIOS ? (
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 space-y-3">
                             <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Passo a passo no iPhone:</p>
@@ -209,20 +247,25 @@ export function InstallSidebarButton() {
         isIOS,
         install,
         enableNotifications,
-        hasNotificationPermission
+        hasNotificationPermission,
+        notificationDenied
     } = usePWAInstall();
 
     const [showIOSHint, setShowIOSHint] = useState(false);
     const [isSubscribing, setIsSubscribing] = useState(false);
 
     // Se já instalou E já ativou alertas, não mostra nada
-    if (isStandalone && hasNotificationPermission) return null;
+    if (isStandalone && hasNotificationPermission && !notificationDenied) return null;
 
     // Se não pode instalar e não está em standalone, não mostra nada
-    if (!canInstall && !isStandalone) return null;
+    if (!canInstall && !isStandalone && !notificationDenied) return null;
 
     const handleClick = async () => {
         if (isStandalone) {
+            if (notificationDenied) {
+                toast.info("Acesse Ajustes > Notificações para reativar o NOHUD.");
+                return;
+            }
             setIsSubscribing(true);
             await enableNotifications();
             setIsSubscribing(false);
@@ -242,15 +285,31 @@ export function InstallSidebarButton() {
                 onClick={handleClick}
                 disabled={isSubscribing}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold border ${isStandalone
-                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20 hover:bg-emerald-100"
+                        ? notificationDenied
+                            ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20"
+                            : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/20 hover:bg-emerald-100"
                         : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/20 hover:bg-blue-100"
                     }`}
             >
-                {isStandalone ? <Bell size={20} /> : <Smartphone size={20} />}
+                {isStandalone
+                    ? (notificationDenied ? <AlertTriangle size={20} /> : <Bell size={20} />)
+                    : <Smartphone size={20} />
+                }
                 <div className="flex flex-col items-start leading-tight">
-                    <span className="text-xs">{isStandalone ? (isSubscribing ? "Ativando..." : "Ativar Alertas") : "Instalar App"}</span>
+                    <span className="text-xs">
+                        {isStandalone
+                            ? (notificationDenied ? "Alertas Bloqueados" : (isSubscribing ? "Ativando..." : "Ativar Alertas"))
+                            : "Instalar App"
+                        }
+                    </span>
                 </div>
             </button>
+
+            {isStandalone && notificationDenied && (
+                <p className="mt-1 px-2 text-[9px] font-bold text-amber-500 uppercase tracking-tighter">
+                    Ative nos Ajustes do Celular
+                </p>
+            )}
 
             {isIOS && !isStandalone && showIOSHint && (
                 <div className="mt-2 p-3 bg-white dark:bg-gray-900 rounded-xl border-2 border-blue-200 dark:border-blue-800 text-[10px] font-bold text-gray-500 animate-in zoom-in-95 duration-200">
@@ -262,5 +321,3 @@ export function InstallSidebarButton() {
         </div>
     );
 }
-
-import { Loader2 } from "lucide-react";
