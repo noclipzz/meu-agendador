@@ -11,7 +11,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "NOHUD - Gestão Inteligente",
   description: "Software completo para gestão de agendamentos e financeira.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/LOGOAPP.png",
+    apple: "/LOGOAPP.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
