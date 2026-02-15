@@ -461,7 +461,7 @@ export default function PainelDashboard() {
                     </div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm flex flex-col justify-center">
-                    <p className="text-xs text-gray-500 uppercase font-bold">Faturamento Mensal</p>
+                    <p className="text-xs text-gray-500 uppercase font-bold">Agendamentos do mês</p>
                     <div className="flex items-center gap-2"><DollarSign size={20} className="text-green-500" /><span className="text-2xl font-bold">R$ {faturamentoTotal}</span></div>
                 </div>
                 <div className="hidden md:block bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm">
