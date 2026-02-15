@@ -426,17 +426,30 @@ export default function PainelDashboard() {
 
             {/* HEADER */}
             <div className="flex flex-col md:flex-row gap-4 h-auto flex-shrink-0">
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex items-center gap-3 flex-1 shadow-sm">
-                    <div className="w-12 h-12 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex items-center gap-3 flex-1 shadow-sm overflow-hidden">
+                    <div className="w-12 h-12 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
                         {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={24} />}
                     </div>
-                    <div className="flex-1"><h1 className="text-lg font-bold leading-tight">{empresaInfo.name}</h1><p className="text-xs text-gray-500">Olá, {user?.firstName}</p></div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h1 className="text-lg font-bold leading-tight truncate">{empresaInfo.name}</h1>
+                                <p className="text-xs text-gray-500">Olá, {user?.firstName}</p>
+                            </div>
+                            <div className="md:hidden text-right">
+                                <span className="text-[10px] font-black text-blue-600 uppercase">Meta {porcentagemMeta}%</span>
+                                <div className="w-20 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-1 border dark:border-gray-600">
+                                    <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm flex flex-col justify-center">
                     <p className="text-xs text-gray-500 uppercase font-bold">Faturamento Mensal</p>
                     <div className="flex items-center gap-2"><DollarSign size={20} className="text-green-500" /><span className="text-2xl font-bold">R$ {faturamentoTotal}</span></div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm">
+                <div className="hidden md:block bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm">
                     <div className="flex justify-between items-center mb-1"><p className="text-xs text-gray-500 uppercase font-bold">Meta</p><span className="text-xs font-bold text-blue-600">{porcentagemMeta}%</span></div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1"><div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div></div>
                     <p className="text-xs text-gray-400 text-right">de R$ {metaMensal}</p>
