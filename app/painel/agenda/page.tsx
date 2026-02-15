@@ -362,18 +362,20 @@ export default function PainelDashboard() {
                         if (isEvento) {
                             return (
                                 <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
-                                    className="absolute rounded-xl text-left shadow-sm transition-all border-2 border-dashed flex flex-col justify-center overflow-hidden px-3 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500"
+                                    className="absolute rounded-xl text-left shadow-sm transition-all border-2 border-dashed flex items-center gap-2 overflow-hidden px-3 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 group"
                                     style={{
                                         top: `${top}px`, height: `${height}px`,
                                         width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                         left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
                                     }}>
-                                    <div className="flex items-center gap-1">
-                                        <Calendar size={12} />
-                                        <span className="font-black text-[11px]">{format(data, "HH:mm")}</span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <Calendar size={12} className="text-gray-400 group-hover:text-blue-500" />
+                                        <span className="font-black text-[10px] whitespace-nowrap">{format(data, "HH:mm")}</span>
                                     </div>
-                                    <span className="font-black text-[12px] truncate uppercase tracking-tight mt-0.5">{ag.customerName}</span>
-                                    {ag.location && <span className="text-[9px] font-bold opacity-70 truncate">📍 {ag.location}</span>}
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="font-black text-[11px] truncate uppercase tracking-tight">{ag.customerName}</span>
+                                        {ag.location && <span className="text-[9px] font-bold opacity-60 truncate whitespace-nowrap bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-md">📍 {ag.location}</span>}
+                                    </div>
                                 </button>
                             );
                         }
