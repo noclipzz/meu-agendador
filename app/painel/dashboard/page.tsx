@@ -52,7 +52,7 @@ export default function DashboardPage() {
     if (loading) return <div className="p-10 text-center animate-pulse text-gray-400 font-bold">Carregando indicadores...</div>;
 
     return (
-        <div className="p-6 space-y-8 pb-20 font-sans">
+        <div id="tour-dashboard-content" className="p-6 space-y-8 pb-20 font-sans">
 
             {/* BOAS VINDAS */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
