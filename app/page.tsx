@@ -54,41 +54,32 @@ function AuthButton() {
 
   if (isSignedIn) {
     return (
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         {subStatus.active ? (
           <button
             onClick={handleAcessarPainel}
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full transition flex items-center gap-2 text-sm font-bold shadow-lg shadow-blue-500/20 active:scale-95"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:px-5 md:py-2.5 rounded-full transition flex items-center gap-2 text-xs md:text-sm font-bold shadow-lg shadow-blue-500/20 active:scale-95"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <LayoutDashboard size={18} />}
-            Acessar Painel
+            <span className="hidden sm:inline">Acessar Painel</span>
+            <span className="sm:hidden">Painel</span>
           </button>
         ) : (
-          <div className="flex items-center gap-2 bg-white/5 p-1 pr-3 rounded-full border border-white/10 backdrop-blur-md">
-            <UserButton afterSignOutUrl="/">
-              <UserButton.MenuItems>
-                <UserButton.Action
-                  label="Copiar ID"
-                  labelIcon={<Copy size={14} />}
-                  onClick={() => {
-                    navigator.clipboard.writeText(user?.id || "");
-                    toast.success("ID copiado!");
-                  }}
-                />
-              </UserButton.MenuItems>
-            </UserButton>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Olá, {user?.firstName}</span>
-            </div>
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Olá, {user?.firstName}</span>
           </div>
         )}
+
+        <div className="flex items-center gap-2 p-1 rounded-full">
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </div>
     );
   }
 
   return (
-    <Link href="/sign-in" className="bg-white text-gray-900 px-6 py-2.5 rounded-full hover:bg-gray-100 transition text-sm font-bold shadow-xl active:scale-95">
+    <Link href="/sign-in" className="bg-gray-900 text-white px-5 py-2 md:px-6 md:py-2.5 rounded-full hover:bg-gray-800 transition text-sm font-bold shadow-xl active:scale-95">
       Entrar
     </Link>
   );
@@ -274,6 +265,8 @@ function FAQSection() {
   );
 }
 
+// ...
+
 // --- COMPONENTE PRINCIPAL ---
 export default function LandingPage() {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -284,29 +277,31 @@ export default function LandingPage() {
       {/* NAVBAR */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
         <nav className="container mx-auto flex justify-between items-center py-4 px-4">
-          <Link href="/">
-            <LogoNohud />
-          </Link>
+          <div className="flex items-center gap-8">
+            <Link href="/">
+              <LogoNohud />
+            </Link>
 
-          <div className="hidden md:flex gap-8 items-center">
-            <a href="#funcionalidades" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Funcionalidades</a>
-            <a href="#depoimentos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Clientes</a>
-            <a href="#planos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Preços</a>
-            <AuthButton />
+            <div className="hidden md:flex gap-6 items-center">
+              <a href="#funcionalidades" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Funcionalidades</a>
+              <a href="#depoimentos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Clientes</a>
+              <a href="#planos" className="text-sm font-bold text-gray-500 hover:text-blue-600 transition">Preços</a>
+            </div>
           </div>
 
-          <button className="md:hidden p-2 text-gray-600" onClick={() => setMenuAberto(!menuAberto)}>
-            {menuAberto ? <X /> : <Menu />}
-          </button>
+          <div className="flex items-center gap-3">
+            <AuthButton />
+            <button className="md:hidden p-2 text-gray-600" onClick={() => setMenuAberto(!menuAberto)}>
+              {menuAberto ? <X /> : <Menu />}
+            </button>
+          </div>
         </nav>
         {/* MENU MOBILE */}
         {menuAberto && (
           <div className="md:hidden bg-white border-b border-gray-100 absolute left-0 right-0 top-full p-6 shadow-xl flex flex-col gap-4 animate-in slide-in-from-top-2">
             <a href="#funcionalidades" onClick={() => setMenuAberto(false)} className="font-bold text-gray-600 py-2">Funcionalidades</a>
             <a href="#planos" onClick={() => setMenuAberto(false)} className="font-bold text-gray-600 py-2">Preços</a>
-            <div className="pt-4 border-t border-gray-100">
-              <AuthButton />
-            </div>
+            <a href="#depoimentos" onClick={() => setMenuAberto(false)} className="font-bold text-gray-600 py-2">Clientes</a>
           </div>
         )}
       </header>
