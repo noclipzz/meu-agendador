@@ -162,7 +162,7 @@ model Booking {
   customerPhone   String?
   userId          String?
   
-  type            String   @default("CLIENTE") // CLIENTE ou EVENTO
+  type            String   @default("CLIENTE") // CLIENTE, EVENTO ou ENCAIXE
   location        String?  
 
   status          String   @default("PENDENTE") // PENDENTE, CONFIRMADO, CONCLUIDO, CANCELADO

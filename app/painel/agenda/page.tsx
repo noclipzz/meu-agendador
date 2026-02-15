@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -306,8 +306,8 @@ export default function PainelDashboard() {
                                         }
 
                                         return (
-                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'}`} style={{ backgroundColor: pro?.color || '#3b82f6' }}>
-                                                {ag.status === "CONFIRMADO" && <CheckCheck size={10} />}
+                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`} style={{ backgroundColor: ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
+                                                {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
                                                 {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
                                                 <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
                                                 <span className="truncate">{ag.customerName}</span>
@@ -357,6 +357,7 @@ export default function PainelDashboard() {
                         const { count, index } = ag._layout;
                         const isConfirmado = ag.status === "CONFIRMADO";
                         const isConcluido = ag.status === "CONCLUIDO";
+                        const isEncaixe = ag.type === "ENCAIXE";
                         const isEvento = ag.type === "EVENTO";
 
                         if (isEvento) {
@@ -384,9 +385,10 @@ export default function PainelDashboard() {
                             <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
                                 className={`absolute rounded-xl text-left text-white shadow-md transition-all border-l-[6px] flex flex-col justify-center overflow-hidden px-3
                                 ${isConcluido ? 'opacity-50 grayscale' : isConfirmado ? 'opacity-100 scale-100' : 'opacity-75 hover:opacity-100'} 
+                                ${isEncaixe ? 'ring-2 ring-amber-400' : ''}
                             `}
                                 style={{
-                                    top: `${top}px`, height: `${height}px`, backgroundColor: pro?.color || '#3b82f6',
+                                    top: `${top}px`, height: `${height}px`, backgroundColor: isEncaixe ? '#f59e0b' : (pro?.color || '#3b82f6'),
                                     borderColor: 'rgba(0,0,0,0.1)',
                                     width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                     left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
@@ -394,9 +396,9 @@ export default function PainelDashboard() {
                                 <div className="flex items-center justify-between gap-1">
                                     <span className="font-black text-[11px] flex items-center gap-1">
                                         {format(data, "HH:mm")}
-                                        {isConcluido ? <CheckCircle2 size={14} /> : isConfirmado ? <CheckCheck size={14} className="text-green-300" /> : <Clock size={12} className="text-white/60" />}
+                                        {isEncaixe ? <Zap size={14} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={14} /> : isConfirmado ? <CheckCheck size={14} className="text-green-300" /> : <Clock size={12} className="text-white/60" />)}
                                     </span>
-                                    <div className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/10 text-white">{ag.status}</div>
+                                    <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/10 text-white ${isEncaixe ? 'bg-white/20' : ''}`}>{isEncaixe ? 'ENCAIXE' : ag.status}</div>
                                 </div>
                                 <span className="font-bold text-[12px] truncate uppercase tracking-tighter mt-1">{ag.customerName}</span>
                             </button>
