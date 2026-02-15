@@ -148,30 +148,39 @@ function PlanosSection() {
     }
   }
 
-  const PlanCard = ({ title, price, description, features, planKey, popular = false, icon: Icon, colorClass, btnColor }: any) => {
+  const PlanCard = ({ title, price, description, features, planKey, popular = false, master = false, icon: Icon, colorClass, btnColor, badge, badgeColor, iconBg, iconColor, checkColor, textMuted, priceMuted }: any) => {
     const isCurrentPlan = assinatura.active && assinatura.plan === planKey;
+    const isDark = popular || master;
 
     return (
-      <div className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${popular ? 'bg-gray-900 text-white ring-4 ring-blue-500 shadow-xl scale-105 z-10' : 'bg-white text-gray-800 border border-gray-100 shadow-lg'}`}>
-        {popular && <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-[2rem] uppercase tracking-widest">Mais Escolhido</div>}
+      <div className={`relative flex flex-col p-8 rounded-[2rem] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${master
+          ? 'bg-gradient-to-br from-gray-900 via-gray-900 to-amber-950 text-white ring-2 ring-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.15)] scale-105 z-10'
+          : popular
+            ? 'bg-gray-900 text-white ring-4 ring-blue-500 shadow-xl z-[5]'
+            : 'bg-white text-gray-800 border border-gray-100 shadow-lg'
+        }`}>
+        {/* Shimmer effect for Master */}
+        {master && <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none"><div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/5 to-transparent animate-pulse" /></div>}
 
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${popular ? 'bg-white/10 text-blue-400' : 'bg-gray-50 text-gray-600'}`}>
+        {badge && <div className={`absolute top-0 right-0 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl rounded-tr-[2rem] uppercase tracking-widest ${badgeColor || 'bg-blue-500'}`}>{badge}</div>}
+
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${iconBg || (isDark ? 'bg-white/10' : 'bg-gray-50')} ${iconColor || (isDark ? 'text-blue-400' : 'text-gray-600')}`}>
           <Icon size={28} />
         </div>
 
-        <h3 className="text-xl font-black tracking-tight">{title}</h3>
-        <p className={`text-sm font-medium mt-2 ${popular ? 'text-gray-400' : 'text-gray-500'}`}>{description}</p>
+        <h3 className={`text-xl font-black tracking-tight ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500' : ''}`}>{title}</h3>
+        <p className={`text-sm font-medium mt-2 ${textMuted || (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{description}</p>
 
         <div className="my-8">
-          <span className="text-4xl font-black">R$ {price}</span>
-          <span className={`text-sm font-bold ml-1 ${popular ? 'text-gray-500' : 'text-gray-400'}`}>/mês</span>
+          <span className={`text-4xl font-black ${master ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-400' : ''}`}>R$ {price}</span>
+          <span className={`text-sm font-bold ml-1 ${priceMuted || (isDark ? 'text-gray-500' : 'text-gray-400')}`}>/mês</span>
         </div>
 
         <ul className="space-y-4 mb-8 flex-1">
           {features.map((feat: string, i: number) => (
             <li key={i} className="flex gap-3 text-sm font-medium items-start">
-              <Check size={18} className={`flex-shrink-0 mt-0.5 ${popular ? 'text-blue-500' : 'text-green-500'}`} />
-              <span className={popular ? 'text-gray-300' : 'text-gray-600'}>{feat}</span>
+              <Check size={18} className={`flex-shrink-0 mt-0.5 ${checkColor || (master ? 'text-amber-400' : popular ? 'text-blue-500' : 'text-green-500')}`} />
+              <span className={isDark ? 'text-gray-300' : 'text-gray-600'}>{feat}</span>
             </li>
           ))}
         </ul>
@@ -184,9 +193,14 @@ function PlanosSection() {
           <button
             onClick={() => assinar(planKey)}
             disabled={!!loading}
-            className={`w-full py-4 rounded-xl font-bold transition flex justify-center items-center gap-2 ${btnColor || (popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-black text-white')}`}
+            className={`w-full py-4 rounded-xl font-bold transition flex justify-center items-center gap-2 ${btnColor || (master
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-gray-900 shadow-lg shadow-amber-500/25'
+                : popular
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-gray-900 hover:bg-black text-white')
+              }`}
           >
-            {loading === planKey ? <Loader2 className="animate-spin" /> : 'Começar Agora'}
+            {loading === planKey ? <Loader2 className="animate-spin" /> : (master ? '🚀 Começar Agora' : 'Começar Agora')}
           </button>
         )}
       </div>
@@ -208,6 +222,9 @@ function PlanosSection() {
             description="Perfeito para profissionais autônomos."
             planKey="INDIVIDUAL"
             icon={Star}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-500"
+            checkColor="text-blue-500"
             features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail"]}
           />
 
@@ -218,17 +235,25 @@ function PlanosSection() {
             planKey="PREMIUM"
             popular={true}
             icon={Zap}
+            badge="Mais Escolhido"
+            badgeColor="bg-blue-500"
+            iconBg="bg-white/10"
+            iconColor="text-blue-400"
             features={["Até 5 Profissionais", "Gestão Financeira", "Controle de Comissão", "Relatórios Básicos", "Tudo do Individual"]}
           />
 
           <PlanCard
             title="Master"
             price="99"
-            description="Para negócios em expansão acelerada."
+            description="O plano definitivo para seu negócio."
             planKey="MASTER"
+            master={true}
             icon={Crown}
-            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque"]}
-            btnColor="bg-purple-600 hover:bg-purple-700 text-white"
+            badge="Mais Completo"
+            badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
+            iconBg="bg-amber-500/10"
+            iconColor="text-amber-400"
+            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Prontuários"]}
           />
 
           <div className="relative flex flex-col p-8 rounded-[2rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
