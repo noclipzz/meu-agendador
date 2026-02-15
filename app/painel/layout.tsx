@@ -15,6 +15,7 @@ import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
 import { LogoNohud } from "../components/LogoNohud";
 import { toast } from "sonner";
 import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-fns";
+import { InstallPWA, InstallSidebarButton } from "../components/InstallPWA";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
@@ -410,6 +411,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </nav>
 
                 <div className="p-4 space-y-3">
+                    {/* Botão de Instalação (PWA) - Visível apenas se puder instalar */}
+                    <InstallSidebarButton />
+
                     <button
                         onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }}
                         className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"
@@ -456,6 +460,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 <footer className="mt-auto pt-10 pb-6 text-center text-[10px] uppercase tracking-widest text-gray-400 dark:text-gray-600 font-bold print:hidden opacity-60 hover:opacity-100 transition-opacity">
                     &copy; {new Date().getFullYear()} NOHUD Sistemas. Todos os direitos reservados.
                 </footer>
+
+                <InstallPWA />
 
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
