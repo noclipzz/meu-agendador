@@ -56,10 +56,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         nome: "",
         phone: "",
         local: "",
+        categoria: "REUNIAO", // Default para eventos
         date: new Date().toISOString().split('T')[0],
         time: "",
         serviceId: "",
-        professionalId: ""
+        professionalId: "", // Se vazio em evento, notifica GERAL
+        notificarGeral: true
     });
 
     useEffect(() => {
@@ -68,10 +70,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             nome: "",
             phone: "",
             local: "",
+            categoria: tipoAgendamento === "EVENTO" ? "REUNIAO" : "",
             date: new Date().toISOString().split('T')[0],
             time: "",
             serviceId: "",
-            professionalId: ""
+            professionalId: "",
+            notificarGeral: true
         });
     }, [tipoAgendamento]);
 
@@ -279,12 +283,14 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     phone: novo.phone,
                     date: dataFinal.toISOString(),
                     serviceId: tipoAgendamento === "CLIENTE" ? novo.serviceId : null,
-                    professionalId: tipoAgendamento === "CLIENTE" ? novo.professionalId : null,
+                    professionalId: (tipoAgendamento === "EVENTO" && novo.notificarGeral) ? null : novo.professionalId,
                     clientId: novo.clientId || null,
                     type: tipoAgendamento,
                     location: novo.local || null,
+                    category: tipoAgendamento === "EVENTO" ? novo.categoria : null,
+                    notificarGeral: tipoAgendamento === "EVENTO" ? novo.notificarGeral : false,
                     companyId: companyId,
-                    autoCreateClient: false // No painel, não queremos criar cliente automático se for avulso
+                    autoCreateClient: false
                 })
             });
 
@@ -301,7 +307,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 }
 
                 setIsModalOpen(false);
-                setNovo({ clientId: "", nome: "", phone: "", local: "", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "" });
+                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "", notificarGeral: true });
                 if (refreshAgenda) refreshAgenda();
             } else {
                 toast.error(data.error || "Erro ao salvar agendamento.");
@@ -543,10 +549,54 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     </>
                                 ) : (
                                     <>
-                                        <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Nome do Evento (ex: Reunião)" value={novo.nome} onChange={e => setNovo({ ...novo, nome: e.target.value })} />
-                                        <div className="relative">
-                                            <MapPin className="absolute left-4 top-4 text-gray-400" size={20} />
-                                            <input className="w-full border dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Onde será o evento?" value={novo.local} onChange={e => setNovo({ ...novo, local: e.target.value })} />
+                                        <div className="space-y-3">
+                                            <div className="relative">
+                                                <ClipboardList className="absolute left-4 top-4 text-gray-400" size={20} />
+                                                <input className="w-full border dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Título do Evento (ex: Reunião)" value={novo.nome} onChange={e => setNovo({ ...novo, nome: e.target.value })} />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Categoria / Tipo</label>
+                                                    <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.categoria} onChange={e => setNovo({ ...novo, categoria: e.target.value })}>
+                                                        <option value="REUNIAO">🏢 Reunião / Alinhamento</option>
+                                                        <option value="ALMOCO">🍴 Intervalo / Almoço</option>
+                                                        <option value="CURSO">📚 Curso / Treinamento</option>
+                                                        <option value="PESSOAL">🏠 Compromisso Pessoal</option>
+                                                        <option value="OUTRO">✨ Outro</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="relative">
+                                                    <MapPin className="absolute left-4 top-4 text-gray-400" size={20} />
+                                                    <input className="w-full border dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold" placeholder="Onde será o evento? (Opcional)" value={novo.local} onChange={e => setNovo({ ...novo, local: e.target.value })} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl space-y-3">
+                                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase ml-1">Quem deve ser notificado?</p>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setNovo({ ...novo, notificarGeral: true, professionalId: "" })}
+                                                    className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black transition ${novo.notificarGeral ? 'bg-blue-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-500'}`}
+                                                >
+                                                    📢 TODOS (GERAL)
+                                                </button>
+                                                <button
+                                                    onClick={() => setNovo({ ...novo, notificarGeral: false })}
+                                                    className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black transition ${!novo.notificarGeral ? 'bg-blue-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-500'}`}
+                                                >
+                                                    👤 CADASTRAR PARA...
+                                                </button>
+                                            </div>
+
+                                            {!novo.notificarGeral && (
+                                                <select className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-xs animate-in slide-in-from-top-2" value={novo.professionalId} onChange={e => setNovo({ ...novo, professionalId: e.target.value })}>
+                                                    <option value="">Escolha o Profissional...</option>
+                                                    {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                                </select>
+                                            )}
                                         </div>
                                     </>
                                 )}
