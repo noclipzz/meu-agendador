@@ -254,9 +254,8 @@ export default function PainelDashboard() {
         else setDataAtual(addDays(dataAtual, direcao));
     };
 
-    // --- CORREÇÃO AQUI: Faturamento só soma se status for CONCLUIDO ---
     const faturamentoTotal = agendamentosFiltrados
-        .filter(a => isSameMonth(new Date(a.date), dataAtual) && a.status === "CONCLUIDO")
+        .filter(a => isSameMonth(new Date(a.date), dataAtual) && a.status !== "CANCELADO")
         .reduce((acc, item) => acc + Number(item.service?.price || 0), 0);
 
     const porcentagemMeta = metaMensal > 0 ? Math.min(100, Math.round((faturamentoTotal / metaMensal) * 100)) : 0;
@@ -306,11 +305,14 @@ export default function PainelDashboard() {
                                         }
 
                                         return (
-                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`} style={{ backgroundColor: ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
-                                                {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
-                                                {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
-                                                <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
-                                                <span className="truncate">{ag.customerName}</span>
+                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center justify-between gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`} style={{ backgroundColor: ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
+                                                <div className="flex items-center gap-0.5 min-w-0 truncate">
+                                                    {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
+                                                    {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
+                                                    <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
+                                                    <span className="truncate">{ag.customerName}</span>
+                                                </div>
+                                                <span className="text-[7px] md:text-[9px] opacity-80 shrink-0 font-black">R${Number(ag.service?.price || 0)}</span>
                                             </div>
                                         )
                                     })}
@@ -403,12 +405,15 @@ export default function PainelDashboard() {
                                     </span>
                                     <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/10 text-white ${isEncaixe ? 'bg-white/20' : ''}`}>{isEncaixe ? 'ENCAIXE' : ag.status}</div>
                                 </div>
-                                <span className="font-bold text-[12px] truncate uppercase tracking-tighter mt-1">
-                                    <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
-                                        {pro?.name?.split(' ')[0] || 'GERAL'}
+                                <div className="flex items-center justify-between mt-1">
+                                    <span className="font-bold text-[12px] truncate uppercase tracking-tighter">
+                                        <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
+                                            {pro?.name?.split(' ')[0] || 'GERAL'}
+                                        </span>
+                                        {ag.customerName}
                                     </span>
-                                    {ag.customerName}
-                                </span>
+                                    <span className="text-[10px] font-black opacity-90 bg-black/10 px-2 py-0.5 rounded-full">R$ {Number(ag.service?.price || 0)}</span>
+                                </div>
                             </button>
                         )
                     })}
