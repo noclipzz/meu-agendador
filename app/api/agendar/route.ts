@@ -15,11 +15,14 @@ export async function POST(req: Request) {
             email,
             date,
             serviceId,
-            professionalId,
+            professionalId, // Legado / Individual
+            professionalIds, // Array de múltiplos
+            notificarGeral,
             companyId,
             type,
             location,
             clientId,
+            category
         } = body;
 
         // 1. Validações Básicas
@@ -30,64 +33,84 @@ export async function POST(req: Request) {
         const dataAgendamento = new Date(date);
         const agora = new Date();
 
-        // Se a data for anterior ao momento atual (com margem de 1 minuto)
         if (dataAgendamento < new Date(agora.getTime() - 60000)) {
             return new NextResponse("Não é possível agendar um horário que já passou.", { status: 400 });
         }
 
         // 2. Busca dados auxiliares
-        const [service, professional, company] = await Promise.all([
+        const [service, company] = await Promise.all([
             serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
-            professionalId ? prisma.professional.findUnique({ where: { id: professionalId } }) : null,
             prisma.company.findUnique({ where: { id: companyId } })
         ]);
 
-        console.log("🔍 [DEBUG] Empresa encontrada:", company?.name, "| Email de Notificação:", company?.notificationEmail);
-
         let finalClientId = clientId;
-
-        // 3. Lógica de Cliente (Somente busca, NÃO CRIA)
         const phoneClean = phone?.replace(/\D/g, "") || "";
         if (!finalClientId && phoneClean) {
             const existingClient = await prisma.client.findFirst({
                 where: {
                     companyId,
                     OR: [
-                        { phone: { contains: phone } },      // Com máscara original
-                        { phone: { contains: phoneClean } }, // Só números
-                        { phone: { contains: phoneClean.slice(-8) } } // Últimos 8 dígitos (fallback)
+                        { phone: { contains: phone } },
+                        { phone: { contains: phoneClean } },
+                        { phone: { contains: phoneClean.slice(-8) } }
                     ]
                 }
             });
 
             if (existingClient) {
                 finalClientId = existingClient.id;
-                // Opcional: Atualiza o e-mail se o cliente atual não tiver, mas já existir no banco
                 if (email && !existingClient.email) {
                     await prisma.client.update({ where: { id: existingClient.id }, data: { email } });
                 }
             }
         }
 
-        // 4. Cria o Agendamento (AGORA COMO PENDENTE)
-        const booking = await prisma.booking.create({
-            data: {
-                date: new Date(date),
-                companyId,
-                clientId: finalClientId,
-                serviceId: serviceId || null,
-                professionalId: professionalId || null,
-                customerName: name,
-                customerPhone: phone,
-                type: type || "CLIENTE",
-                location: location || null,
+        // 4. Lógica de Criação (Pode ser múltiplo para eventos)
+        const isEvento = type === "EVENTO";
+        const bookingsCreated = [];
 
-                // --- ALTERAÇÃO AQUI: STATUS INICIAL PENDENTE ---
-                status: "PENDENTE"
+        // Definir lista de profissionais para as entradas na agenda
+        let targetProfessionalIds: (string | null)[] = [];
+
+        if (isEvento) {
+            if (notificarGeral) {
+                // Se for GERAL, criamos apenas um com ID null
+                targetProfessionalIds = [null];
+            } else if (Array.isArray(professionalIds) && professionalIds.length > 0) {
+                // Se selecionou específicos, cria um para cada
+                targetProfessionalIds = professionalIds;
+            } else if (professionalId) {
+                // Fallback para individual
+                targetProfessionalIds = [professionalId];
+            } else {
+                // Fallback se não selecionou nada mas é evento
+                targetProfessionalIds = [null];
             }
-        });
+        } else {
+            // Agendamento normal sempre tem 1 profissional
+            targetProfessionalIds = [professionalId || (Array.isArray(professionalIds) ? professionalIds[0] : null)];
+        }
 
-        // 5. VERIFICAÇÃO DE ESTOQUE CRÍTICO
+        // Criar as entradas
+        for (const pId of targetProfessionalIds) {
+            const b = await prisma.booking.create({
+                data: {
+                    date: new Date(date),
+                    companyId,
+                    clientId: finalClientId,
+                    serviceId: serviceId || null,
+                    professionalId: pId,
+                    customerName: name,
+                    customerPhone: phone,
+                    type: type || "CLIENTE",
+                    location: location || null,
+                    status: "PENDENTE"
+                }
+            });
+            bookingsCreated.push(b);
+        }
+
+        // 5. VERIFICAÇÃO DE ESTOQUE (Só no primeiro se for múltiplo)
         const warnings: string[] = [];
         if (serviceId) {
             const serviceWithProducts = await prisma.service.findUnique({
@@ -98,7 +121,6 @@ export async function POST(req: Request) {
             if (serviceWithProducts?.products) {
                 for (const sp of serviceWithProducts.products) {
                     const p = sp.product;
-                    // Se o estoque atual for menor ou igual ao mínimo
                     if (Number(p.quantity) <= Number(p.minStock)) {
                         warnings.push(`⚠️ Atenção: O produto "${p.name}" está com estoque baixo (${Number(p.quantity)} ${p.unit}).`);
                     }
@@ -106,30 +128,20 @@ export async function POST(req: Request) {
             }
         }
 
-        // 6. ENVIO DE NOTIFICAÇÕES (E-MAIL E PUSH)
+        // 6. ENVIO DE NOTIFICAÇÕES
         const dataFormatada = formatarDataCompleta(new Date(date));
-        const nomeServico = service?.name || (type === "EVENTO" ? "Evento" : "Atendimento");
-        const isEvento = type === "EVENTO";
+        const nomeServico = service?.name || (isEvento ? `Evento (${category || "Interno"})` : "Atendimento");
 
-        // A) E-mail para a EMPRESA/ADMIN
+        // A) E-mail para Admin
         if (company?.notificationEmail) {
             try {
                 const subject = isEvento
-                    ? `📅 Novo Evento Adicionado: ${name}`
+                    ? `📅 Novo Evento (${category || 'Interno'}): ${name}`
                     : `🔔 Novo Agendamento Pendente: ${name}`;
 
                 const introText = isEvento
-                    ? `Um novo evento interno foi adicionado à sua agenda.`
+                    ? `Um novo evento interno foi adicionado à agenda da empresa.`
                     : `Você tem uma nova solicitação de agendamento de cliente!`;
-
-                const warningHtml = warnings.length > 0
-                    ? `<div style="background:#fff7ed; border-left:4px solid #f97316; padding:15px; margin:20px 0;">
-                       <p style="color:#c2410c; margin:0; font-weight:bold;">Avisos de Estoque:</p>
-                       <ul style="color:#c2410c; margin:5px 0 0 20px; padding:0;">
-                         ${warnings.map(w => `<li>${w}</li>`).join('')}
-                       </ul>
-                     </div>`
-                    : '';
 
                 await resend.emails.send({
                     from: `NOHUD App <nao-responda@nohud.com.br>`,
@@ -141,7 +153,6 @@ export async function POST(req: Request) {
                     ${!isEvento ? `<p><strong>Serviço:</strong> ${nomeServico}</p>` : ''}
                     <p><strong>Data:</strong> ${dataFormatada}</p>
                     ${location ? `<p><strong>Local:</strong> ${location}</p>` : ''}
-                    ${warningHtml}
                     <br/>
                     <a href="https://meu-agendador-kappa.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel</a>
                 `
@@ -151,27 +162,30 @@ export async function POST(req: Request) {
             }
         }
 
-        // B) NOTIFICAÇÃO PUSH (ADMIN E PROFISSIONAL)
+        // B) PUSH NOTIFICATIONS
         try {
             const pushTitle = isEvento ? "📅 Novo Evento!" : "🔔 Novo Agendamento!";
             const pushBody = isEvento
                 ? `Evento: "${name}" para ${dataFormatada}`
                 : `${name} solicitou ${nomeServico} para ${dataFormatada}`;
 
+            // Notifica Admins
             await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
 
-            if (professionalId) {
-                const proPushTitle = isEvento ? "📅 Novo Evento na sua Agenda!" : "📅 Você tem um novo agendamento!";
+            // Notifica Profissionais específicos
+            const notificationTargets = targetProfessionalIds.filter(id => id !== null) as string[];
+            for (const proId of notificationTargets) {
+                const proPushTitle = isEvento ? "📅 Novo Evento na sua Agenda!" : "📅 Novo Agendamento!";
                 const proPushBody = isEvento
-                    ? `Você tem um evento: "${name}" às ${formatarHorario(new Date(date))}`
+                    ? `Evento: "${name}" às ${formatarHorario(new Date(date))}`
                     : `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`;
-                await notifyProfessional(professionalId, proPushTitle, proPushBody, "/painel/agenda");
+                await notifyProfessional(proId, proPushTitle, proPushBody, "/painel/agenda");
             }
         } catch (pushErr) {
             console.error("Erro push:", pushErr);
         }
 
-        return NextResponse.json({ ...booking, warnings });
+        return NextResponse.json({ ...bookingsCreated[0], warnings, count: bookingsCreated.length });
 
     } catch (error) {
         console.error("ERRO_AGENDAR:", error);

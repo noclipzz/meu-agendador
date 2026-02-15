@@ -32,11 +32,14 @@ export async function GET() {
     });
 
     if (professionalAccount) {
-      // É PROFISSIONAL: Busca apenas os agendamentos vinculados ao ID dele
+      // É PROFISSIONAL: Busca apenas os agendamentos vinculados ao ID dele ou GERAL
       const bookings = await prisma.booking.findMany({
         where: {
           companyId: professionalAccount.companyId,
-          professionalId: professionalAccount.id // FILTRO DE EQUIPE
+          OR: [
+            { professionalId: professionalAccount.id },
+            { professionalId: null }
+          ]
         },
         include: { service: true, professional: true },
         orderBy: { date: 'asc' }

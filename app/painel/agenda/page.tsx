@@ -570,39 +570,48 @@ export default function PainelDashboard() {
                             </div>
                             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
                                 <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Responsável / Profissional" : "Profissional"}</p>
-                                {isEditing ? <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>{profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select> : <p className="font-bold dark:text-gray-200">{profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || 'Sem responsável definido'}</p>}
+                                {isEditing ? (
+                                    <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>
+                                        <option value="">(Geral / Sem Responsável)</option>
+                                        {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                ) : (
+                                    <p className="font-bold dark:text-gray-200">
+                                        {profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || (agendamentoSelecionado.type === "EVENTO" ? '📢 TODOS (GERAL)' : 'Sem responsável definido')}
+                                    </p>
+                                )}
                             </div>
                         </div>
+                    </div>
 
-                        <div className="mt-8 flex flex-col gap-2">
-                            {isEditing ? (
-                                <div className="flex gap-2">
-                                    <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                                    <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
-                                </div>
-                            ) : (
-                                <>
-                                    {agendamentoSelecionado.type !== "EVENTO" && (
-                                        <>
-                                            {agendamentoSelecionado.status === "CONFIRMADO" && (
-                                                <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
-                                            )}
-
-                                            {agendamentoSelecionado.status === "PENDENTE" && (
-                                                <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
-                                            )}
-                                        </>
-                                    )}
-
-                                    <div className="flex gap-2">
-                                        {agendamentoSelecionado.customerPhone && (
-                                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                    <div className="mt-8 flex flex-col gap-2">
+                        {isEditing ? (
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                                <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
+                            </div>
+                        ) : (
+                            <>
+                                {agendamentoSelecionado.type !== "EVENTO" && (
+                                    <>
+                                        {agendamentoSelecionado.status === "CONFIRMADO" && (
+                                            <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
                                         )}
-                                        <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+
+                                        {agendamentoSelecionado.status === "PENDENTE" && (
+                                            <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
+                                        )}
+                                    </>
+                                )}
+
+                                <div className="flex gap-2">
+                                    {agendamentoSelecionado.customerPhone && (
+                                        <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                                    )}
+                                    <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

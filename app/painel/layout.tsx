@@ -56,11 +56,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         nome: "",
         phone: "",
         local: "",
-        categoria: "REUNIAO", // Default para eventos
+        categoria: "REUNIAO",
         date: new Date().toISOString().split('T')[0],
         time: "",
         serviceId: "",
-        professionalId: "", // Se vazio em evento, notifica GERAL
+        professionalIds: [] as string[], // Alterado para array
         notificarGeral: true
     });
 
@@ -74,7 +74,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             date: new Date().toISOString().split('T')[0],
             time: "",
             serviceId: "",
-            professionalId: "",
+            professionalIds: [],
             notificarGeral: true
         });
     }, [tipoAgendamento]);
@@ -222,7 +222,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        if (tipoAgendamento === "CLIENTE" && (!novo.serviceId || !novo.professionalId)) {
+        if (tipoAgendamento === "CLIENTE" && (!novo.serviceId || !novo.professionalIds[0])) {
             toast.error("Selecione um serviço e um profissional.");
             return;
         }
@@ -253,7 +253,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 if (Array.isArray(agendamentosExistentes)) {
                     const conflito = agendamentosExistentes.find((ag: any) => {
                         if (ag.status === "CANCELADO") return false;
-                        if (ag.professionalId !== novo.professionalId) return false;
+                        if (ag.professionalId !== novo.professionalIds[0]) return false;
 
                         const inicioExistente = new Date(ag.date);
                         const fimExistente = addMinutes(inicioExistente, ag.service?.duration || 30);
@@ -283,7 +283,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     phone: novo.phone,
                     date: dataFinal.toISOString(),
                     serviceId: tipoAgendamento === "CLIENTE" ? novo.serviceId : null,
-                    professionalId: (tipoAgendamento === "EVENTO" && novo.notificarGeral) ? null : novo.professionalId,
+                    professionalIds: tipoAgendamento === "EVENTO"
+                        ? (novo.notificarGeral ? [] : novo.professionalIds)
+                        : [novo.professionalIds[0]],
                     clientId: novo.clientId || null,
                     type: tipoAgendamento,
                     location: novo.local || null,
@@ -307,7 +309,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 }
 
                 setIsModalOpen(false);
-                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalId: "", notificarGeral: true });
+                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalIds: [], notificarGeral: true });
                 if (refreshAgenda) refreshAgenda();
             } else {
                 toast.error(data.error || "Erro ao salvar agendamento.");
@@ -546,6 +548,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                                 onChange={e => setNovo({ ...novo, phone: formatarTelefoneInput(e.target.value) })}
                                             />
                                         </div>
+                                        <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.professionalIds[0] || ""} onChange={e => setNovo({ ...novo, professionalIds: [e.target.value] })}>
+                                            <option value="">Selecione o Profissional...</option>
+                                            {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
                                     </>
                                 ) : (
                                     <>
@@ -578,7 +584,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                             <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase ml-1">Quem deve ser notificado?</p>
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => setNovo({ ...novo, notificarGeral: true, professionalId: "" })}
+                                                    onClick={() => setNovo({ ...novo, notificarGeral: true, professionalIds: [] })}
                                                     className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black transition ${novo.notificarGeral ? 'bg-blue-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-500'}`}
                                                 >
                                                     📢 TODOS (GERAL)
@@ -587,15 +593,29 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                                     onClick={() => setNovo({ ...novo, notificarGeral: false })}
                                                     className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black transition ${!novo.notificarGeral ? 'bg-blue-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-500'}`}
                                                 >
-                                                    👤 CADASTRAR PARA...
+                                                    👤 SELECIONAR...
                                                 </button>
                                             </div>
 
                                             {!novo.notificarGeral && (
-                                                <select className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-xs animate-in slide-in-from-top-2" value={novo.professionalId} onChange={e => setNovo({ ...novo, professionalId: e.target.value })}>
-                                                    <option value="">Escolha o Profissional...</option>
-                                                    {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                                </select>
+                                                <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                                                    {profissionais.map(p => (
+                                                        <label key={p.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition group">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                checked={novo.professionalIds.includes(p.id)}
+                                                                onChange={(e) => {
+                                                                    const ids = e.target.checked
+                                                                        ? [...novo.professionalIds, p.id]
+                                                                        : novo.professionalIds.filter(id => id !== p.id);
+                                                                    setNovo({ ...novo, professionalIds: ids });
+                                                                }}
+                                                            />
+                                                            <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">{p.name}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
                                     </>
@@ -617,10 +637,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                         <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.serviceId} onChange={e => setNovo({ ...novo, serviceId: e.target.value })}>
                                             <option value="">Selecione o Serviço...</option>
                                             {services.map(s => <option key={s.id} value={s.id}>{s.name} - R$ {s.price}</option>)}
-                                        </select>
-                                        <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold" value={novo.professionalId} onChange={e => setNovo({ ...novo, professionalId: e.target.value })}>
-                                            <option value="">Selecione o Profissional...</option>
-                                            {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                     </div>
                                 )}
