@@ -106,16 +106,21 @@ export async function POST(req: Request) {
             }
         }
 
-        // 6. ENVIO DE E-MAILS (RESEND)
+        // 6. ENVIO DE NOTIFICAÇÕES (E-MAIL E PUSH)
         const dataFormatada = formatarDataCompleta(new Date(date));
-        const nomeServico = service?.name || "Atendimento";
-        const nomeProfissional = professional?.name || "Profissional da Equipe";
-        const nomeEmpresa = company?.name || "NOHUD Agenda";
+        const nomeServico = service?.name || (type === "EVENTO" ? "Evento" : "Atendimento");
+        const isEvento = type === "EVENTO";
 
-        // A) E-mail para a EMPRESA/ADMIN (Alerta para APROVAR)
+        // A) E-mail para a EMPRESA/ADMIN
         if (company?.notificationEmail) {
             try {
-                console.log("📨 [DEBUG] Tentando enviar e-mail para admin:", company.notificationEmail);
+                const subject = isEvento
+                    ? `📅 Novo Evento Adicionado: ${name}`
+                    : `🔔 Novo Agendamento Pendente: ${name}`;
+
+                const introText = isEvento
+                    ? `Um novo evento interno foi adicionado à sua agenda.`
+                    : `Você tem uma nova solicitação de agendamento de cliente!`;
 
                 const warningHtml = warnings.length > 0
                     ? `<div style="background:#fff7ed; border-left:4px solid #f97316; padding:15px; margin:20px 0;">
@@ -126,56 +131,44 @@ export async function POST(req: Request) {
                      </div>`
                     : '';
 
-                const { data, error } = await resend.emails.send({
+                await resend.emails.send({
                     from: `NOHUD App <nao-responda@nohud.com.br>`,
                     to: company.notificationEmail,
-                    subject: `🔔 Novo Agendamento Pendente: ${name}`,
+                    subject,
                     html: `
-                    <p>Você tem uma nova solicitação de agendamento!</p>
-                    <p><strong>Cliente:</strong> ${name} (${phone})</p>
-                    <p><strong>Serviço:</strong> ${nomeServico}</p>
+                    <p>${introText}</p>
+                    <p><strong>${isEvento ? 'Título' : 'Cliente'}:</strong> ${name} ${phone ? `(${phone})` : ''}</p>
+                    ${!isEvento ? `<p><strong>Serviço:</strong> ${nomeServico}</p>` : ''}
                     <p><strong>Data:</strong> ${dataFormatada}</p>
-                    
+                    ${location ? `<p><strong>Local:</strong> ${location}</p>` : ''}
                     ${warningHtml}
-
                     <br/>
                     <a href="https://meu-agendador-kappa.vercel.app/painel" style="background:#2563eb; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Acessar Painel</a>
                 `
                 });
-
-                if (error) {
-                    console.error("❌ [DEBUG] Erro Resend:", error);
-                } else {
-                    console.log("✅ [DEBUG] E-mail enviado! ID:", data?.id);
-                }
             } catch (error) {
-                console.error("❌ [DEBUG] Erro fatal no envio:", error);
+                console.error("❌ Erro e-mail:", error);
             }
-        } else {
-            console.log("⚠️ [DEBUG] Empresa não possui email de notificação configurado.");
         }
 
-        // 5. NOTIFICAÇÃO PUSH (ADMIN E PROFISSIONAL)
+        // B) NOTIFICAÇÃO PUSH (ADMIN E PROFISSIONAL)
         try {
-            // Notifica os Admins
-            await notifyAdminsOfCompany(
-                companyId,
-                "🔔 Novo Agendamento!",
-                `${name} solicitou ${nomeServico} para ${dataFormatada}`,
-                "/painel/agenda"
-            );
+            const pushTitle = isEvento ? "📅 Novo Evento!" : "🔔 Novo Agendamento!";
+            const pushBody = isEvento
+                ? `Evento: "${name}" para ${dataFormatada}`
+                : `${name} solicitou ${nomeServico} para ${dataFormatada}`;
 
-            // Notifica o Profissional designado (se houver)
+            await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
+
             if (professionalId) {
-                await notifyProfessional(
-                    professionalId,
-                    "📅 Você tem um novo agendamento!",
-                    `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`,
-                    "/painel/agenda"
-                );
+                const proPushTitle = isEvento ? "📅 Novo Evento na sua Agenda!" : "📅 Você tem um novo agendamento!";
+                const proPushBody = isEvento
+                    ? `Você tem um evento: "${name}" às ${formatarHorario(new Date(date))}`
+                    : `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`;
+                await notifyProfessional(professionalId, proPushTitle, proPushBody, "/painel/agenda");
             }
         } catch (pushErr) {
-            console.error("Erro ao enviar push:", pushErr);
+            console.error("Erro push:", pushErr);
         }
 
         return NextResponse.json({ ...booking, warnings });
