@@ -119,10 +119,13 @@ export function InstallPWA() {
 
                 <div className="mt-5">
                     {isIOS ? (
-                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-                            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 flex flex-wrap items-center gap-2">
-                                Toque em <Share size={16} className="text-blue-500" /> e depois em <span className="flex items-center gap-1 bg-white dark:bg-gray-800 border dark:border-gray-700 px-2 py-0.5 rounded text-[10px]"><PlusSquare size={12} /> Adicionar à Tela de Início</span>
-                            </p>
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 space-y-3">
+                            <p className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Passo a passo no iPhone:</p>
+                            <ol className="text-[11px] font-bold text-gray-600 dark:text-gray-300 space-y-2 list-decimal ml-4">
+                                <li>Pressione os <span className="inline-flex items-center bg-white dark:bg-gray-800 border px-1.5 rounded ml-1 italic">...</span> (três pontinhos)</li>
+                                <li>Escolha <span className="inline-flex items-center bg-white dark:bg-gray-800 border px-1.5 rounded ml-1"><Share size={12} className="mr-1 text-blue-500" /> Compartilhar</span></li>
+                                <li>Role e toque em <span className="inline-flex items-center bg-white dark:bg-gray-800 border px-1.5 rounded ml-1"><PlusSquare size={12} className="mr-1" /> Adicionar à Tela de Início</span></li>
+                            </ol>
                         </div>
                     ) : (
                         <button
@@ -168,8 +171,8 @@ export function InstallSidebarButton() {
 
             {isIOS && showIOSHint && (
                 <div className="mt-2 p-3 bg-white dark:bg-gray-900 rounded-xl border-2 border-blue-200 dark:border-blue-800 text-[10px] font-bold text-gray-500 animate-in zoom-in-95 duration-200">
-                    <p className="flex items-center flex-wrap gap-1">
-                        Toque em <Share size={14} className="text-blue-500" /> e <span className="bg-gray-100 dark:bg-gray-800 px-1 rounded">Adicionar à Tela de Início</span> no Safari.
+                    <p className="leading-relaxed">
+                        Toque em <span className="italic">...</span>, depois em <span className="text-blue-500 italic">Compartilhar</span> e selecione <span className="underline">Adicionar à Tela de Início</span>.
                     </p>
                 </div>
             )}
