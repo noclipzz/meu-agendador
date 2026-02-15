@@ -1,145 +1,93 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { X, ChevronRight, ChevronLeft, CheckCircle2, Sparkles, HelpCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+    X, ChevronRight, ChevronLeft, CheckCircle2,
+    Sparkles, LayoutDashboard, Calendar, Users,
+    Settings, PlusCircle, Briefcase, ShieldCheck
+} from "lucide-react";
 import { createPortal } from "react-dom";
 
 type Step = {
-    targetId: string;
     title: string;
     content: string;
-    position: 'bottom' | 'top' | 'left' | 'right' | 'center';
+    icon: React.ReactNode;
+    color: string;
 };
 
 const steps: Step[] = [
     {
-        targetId: "",
         title: "Bem-vindo ao NOHUD! 🚀",
         content: "Olá! Estamos felizes em ter você aqui. Preparamos este guia rápido para você dominar todas as ferramentas do seu novo painel de gestão.",
-        position: 'center'
+        icon: <Sparkles size={48} />,
+        color: "bg-blue-600"
     },
     {
-        targetId: "tour-dashboard-content",
         title: "Sua Visão Geral 📊",
-        content: "Aqui você tem um resumo em tempo real do faturamento, agendamentos do dia e alertas de estoque. Tudo o que você precisa para começar o dia!",
-        position: 'bottom'
+        content: "No Dashboard, você tem um resumo em tempo real do faturamento, agendamentos do dia e alertas de estoque. Tudo o que você precisa em uma única tela.",
+        icon: <LayoutDashboard size={48} />,
+        color: "bg-emerald-600"
     },
     {
-        targetId: "tour-sidebar",
-        title: "Menu de Navegação 🧭",
-        content: "É por aqui que você acessa todas as áreas do sistema: Clientes, Financeiro, Serviços e Equipe.",
-        position: 'right'
+        title: "Sua Agenda Inteligente 📅",
+        content: "Gerencie todos os seus horários com facilidade. O sistema já verifica conflitos automaticamente e avisa você em tempo real.",
+        icon: <Calendar size={48} />,
+        color: "bg-purple-600"
     },
     {
-        targetId: "tour-new-appointment",
-        title: "O Coração do Negócio ❤️",
-        content: "Sempre que precisar marcar um novo cliente, use este botão. Ele é rápido, inteligente e já verifica conflitos de horário automaticamente.",
-        position: 'right'
+        title: "Gestores de Clientes 👥",
+        content: "Mantenha o histórico completo de seus clientes, com telefone, prontuários e frequência de visitas sempre à mão.",
+        icon: <Users size={48} />,
+        color: "bg-amber-600"
     },
     {
-        targetId: "tour-nav-profissionais",
-        title: "Sua Equipe 👥",
-        content: "Em 'Equipe', você cadastra seus profissionais e define os horários de trabalho e comissões de cada um.",
-        position: 'right'
+        title: "Novo Agendamento ➕",
+        content: "Sempre que precisar marcar um novo cliente, use o botão azul na lateral. Ele é rápido e intuitivo para não tomar o seu tempo.",
+        icon: <PlusCircle size={48} />,
+        color: "bg-blue-600"
     },
     {
-        targetId: "tour-nav-config",
-        title: "Personalização ⚙️",
-        content: "Aqui você define o nome da sua empresa, horários de pausa, logo e as mensagens automáticas de WhatsApp para seus clientes.",
-        position: 'right'
+        title: "Equipe e Serviços 💼",
+        content: "Cadastre seus profissionais, defina horários de trabalho e crie sua lista de serviços com preços e durações personalizadas.",
+        icon: <Briefcase size={48} />,
+        color: "bg-indigo-600"
     },
     {
-        targetId: "",
+        title: "Personalização Completa ⚙️",
+        content: "Em Configurações, você define o nome do negócio, logo e ativa os Alertas de WhatsApp para reduzir as faltas dos seus clientes.",
+        icon: <Settings size={48} />,
+        color: "bg-gray-700"
+    },
+    {
         title: "Pronto para Decolar! ✨",
-        content: "O guia terminou, mas o suporte nunca acaba. Se precisar de ajuda, basta explorar as ferramentas. Sucesso nos seus negócios!",
-        position: 'center'
+        content: "O guia terminou, mas o suporte nunca acaba. Explore as ferramentas e sinta-se à vontade. Sucesso nos seus negócios!",
+        icon: <ShieldCheck size={48} />,
+        color: "bg-green-600"
     }
 ];
 
 export function UserGuide() {
     const [currentStep, setCurrentStep] = useState(-1);
     const [mounted, setMounted] = useState(false);
-    const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({});
-    const [spotlightStyle, setSpotlightStyle] = useState<React.CSSProperties>({});
 
     useEffect(() => {
         setMounted(true);
-        const hasCompleted = localStorage.getItem("nohud-guide-completed");
+        const hasCompleted = localStorage.getItem("nohud-guide-completed-v2");
         if (!hasCompleted) {
-            const timer = setTimeout(() => setCurrentStep(0), 1500);
+            const timer = setTimeout(() => setCurrentStep(0), 1000);
             return () => clearTimeout(timer);
         }
     }, []);
 
+    // Bloqueia Scroll quando o guia está aberto
     useEffect(() => {
-        if (currentStep >= 0 && currentStep < steps.length) {
-            updateStyles();
-            window.addEventListener('resize', updateStyles);
-            return () => window.removeEventListener('resize', updateStyles);
+        if (currentStep !== -1) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "unset";
         }
+        return () => { document.body.style.overflow = "unset"; };
     }, [currentStep]);
-
-    const updateStyles = () => {
-        const step = steps[currentStep];
-        if (!step.targetId) {
-            setSpotlightStyle({ display: 'none' });
-            setPopoverStyle({
-                position: 'fixed',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 1000
-            });
-            return;
-        }
-
-        const element = document.getElementById(step.targetId);
-        if (element) {
-            const rect = element.getBoundingClientRect();
-            const padding = 8;
-
-            setSpotlightStyle({
-                position: 'fixed',
-                top: rect.top - padding,
-                left: rect.left - padding,
-                width: rect.width + (padding * 2),
-                height: rect.height + (padding * 2),
-                borderRadius: '16px',
-                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7), 0 0 15px rgba(37, 99, 235, 0.5)',
-                zIndex: 998,
-                pointerEvents: 'none',
-                transition: 'all 0.3s ease-in-out'
-            });
-
-            const popPadding = 20;
-            let top = rect.bottom + popPadding;
-            let left = rect.left + (rect.width / 2);
-            let transform = 'translateX(-50%)';
-
-            if (step.position === 'right') {
-                top = rect.top + (rect.height / 2);
-                left = rect.right + popPadding;
-                transform = 'translateY(-50%)';
-            } else if (step.position === 'top') {
-                top = rect.top - popPadding;
-                left = rect.left + (rect.width / 2);
-                transform = 'translate(-50%, -100%)';
-            }
-
-            // Boundary checks
-            if (left + 150 > window.innerWidth) left = window.innerWidth - 170;
-            if (left - 150 < 0) left = 170;
-
-            setPopoverStyle({
-                position: 'fixed',
-                top: top,
-                left: left,
-                transform: transform,
-                zIndex: 1000,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            });
-        }
-    };
 
     const nextStep = () => {
         if (currentStep < steps.length - 1) {
@@ -157,7 +105,7 @@ export function UserGuide() {
 
     const finish = () => {
         setCurrentStep(-1);
-        localStorage.setItem("nohud-guide-completed", "true");
+        localStorage.setItem("nohud-guide-completed-v2", "true");
     };
 
     if (!mounted || currentStep === -1) return null;
@@ -165,69 +113,76 @@ export function UserGuide() {
     const step = steps[currentStep];
 
     return createPortal(
-        <div className="fixed inset-0 z-[999] pointer-events-none overflow-hidden">
-            {/* Spotlight */}
-            <div style={spotlightStyle} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop Negro Blur (Impede cliques/scroll no fundo) */}
+            <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-md" />
 
-            {/* Popover */}
-            <div
-                style={popoverStyle}
-                className="w-[320px] pointer-events-auto animate-in zoom-in-95 duration-300"
-            >
-                <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-white dark:border-gray-800 shadow-2xl rounded-[2.5rem] p-6 relative overflow-hidden group">
-                    <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors" />
+            {/* Modal de Tutorial */}
+            <div className="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-[3rem] shadow-2xl overflow-hidden border border-white/20 dark:border-gray-800 animate-in zoom-in-95 duration-500">
+
+                {/* Cabeçalho de Cor */}
+                <div className={`${step.color} h-48 flex items-center justify-center text-white transition-colors duration-500 relative`}>
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent" />
+                    <div className="relative z-10 animate-bounce">
+                        {step.icon}
+                    </div>
 
                     <button
                         onClick={finish}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+                        className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition"
                     >
                         <X size={20} />
                     </button>
+                </div>
 
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/30">
-                            {currentStep === 0 || currentStep === steps.length - 1 ? <Sparkles size={18} /> : <HelpCircle size={18} />}
-                        </div>
-                        <h4 className="font-black text-gray-900 dark:text-white text-base">
-                            {step.title}
-                        </h4>
-                    </div>
-
-                    <p className="text-gray-600 dark:text-gray-300 text-sm font-medium leading-relaxed mb-6">
+                {/* Conteúdo */}
+                <div className="p-8 md:p-10 text-center">
+                    <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-4 leading-tight">
+                        {step.title}
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold text-sm md:text-base leading-relaxed mb-10 min-h-[80px]">
                         {step.content}
                     </p>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex gap-1">
-                            {steps.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`h-1 rounded-full transition-all duration-300 ${i === currentStep ? 'w-4 bg-blue-600' : 'w-1 bg-gray-200 dark:bg-gray-700'}`}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="flex gap-2">
-                            {currentStep > 0 && (
-                                <button
-                                    onClick={prevStep}
-                                    className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-200 transition"
-                                >
-                                    <ChevronLeft size={20} />
-                                </button>
-                            )}
-                            <button
-                                onClick={nextStep}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-black px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition"
-                            >
-                                {currentStep === steps.length - 1 ? (
-                                    <>Começar <CheckCircle2 size={18} /></>
-                                ) : (
-                                    <>Próximo <ChevronRight size={18} /></>
-                                )}
-                            </button>
-                        </div>
+                    {/* Barra de Progresso */}
+                    <div className="flex justify-center gap-1.5 mb-10">
+                        {steps.map((_, i) => (
+                            <div
+                                key={i}
+                                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-blue-600' : 'w-2 bg-gray-200 dark:bg-gray-800'}`}
+                            />
+                        ))}
                     </div>
+
+                    {/* Navegação */}
+                    <div className="flex gap-4">
+                        {currentStep > 0 ? (
+                            <button
+                                onClick={prevStep}
+                                className="flex-1 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                            >
+                                <ChevronLeft size={20} /> Voltar
+                            </button>
+                        ) : null}
+
+                        <button
+                            onClick={nextStep}
+                            className={`${currentStep > 0 ? 'flex-[2]' : 'w-full'} bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition flex items-center justify-center gap-2`}
+                        >
+                            {currentStep === steps.length - 1 ? (
+                                <>Começar Agora <CheckCircle2 size={20} /></>
+                            ) : (
+                                <>Próximo Passo <ChevronRight size={20} /></>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Footer Decorativo */}
+                <div className="pb-6 text-center">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest opacity-50">
+                        Tutorial NOHUD • Passo {currentStep + 1} de {steps.length}
+                    </span>
                 </div>
             </div>
         </div>,
