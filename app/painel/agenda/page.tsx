@@ -285,7 +285,7 @@ export default function PainelDashboard() {
                 </div>
 
                 {/* CORPO DO CALENDÁRIO */}
-                <div className="grid grid-cols-7 gap-px flex-1 overflow-y-auto">
+                <div className="grid grid-cols-7 gap-px flex-1 overflow-hidden" style={{ gridAutoRows: '1fr' }}>
                     {dias.map((dia) => {
                         const ags = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dia));
                         const faturamentoDia = ags
@@ -295,7 +295,7 @@ export default function PainelDashboard() {
                         const ehMes = isSameMonth(dia, dataAtual);
 
                         return (
-                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 h-[120px] md:h-[95px] flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'}`}>
+                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 min-h-[80px] h-full flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'}`}>
                                 <div className="flex justify-between items-start mb-1 shrink-0">
                                     <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
                                     {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R${faturamentoDia}</span>}
@@ -448,9 +448,9 @@ export default function PainelDashboard() {
     if (loading) return <div className="p-20 text-center text-gray-400 font-bold animate-pulse">Sincronizando Agenda...</div>;
 
     return (
-        <div className="h-screen flex flex-col p-2 md:p-3 gap-2 md:gap-3 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
+        <div className="h-screen flex flex-col p-0 gap-0 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
-            <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 p-2.5 rounded-xl border dark:border-gray-700 shadow-sm">
+            <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
                     <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
                         {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={18} />}
@@ -480,7 +480,7 @@ export default function PainelDashboard() {
             </div>
 
             {/* FILTROS */}
-            <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0">
+            <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0 px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
                 <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border dark:border-gray-700 shadow-sm">
                     {['month', 'week', 'day'].map((v) => (
                         <button key={v} onClick={() => setView(v as any)} className={`px-4 py-2.5 text-[11px] font-black rounded-lg transition capitalize shadow-sm ${view === v ? 'bg-blue-600 text-white shadow-blue-500/20' : 'text-gray-500 hover:bg-gray-50'}`}>
@@ -500,8 +500,9 @@ export default function PainelDashboard() {
                 </div>
             </div>
 
+
             {/* ÁREA DA AGENDA */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 flex flex-col flex-1 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
                 <div className="p-1 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                     <div className="flex items-center gap-2 mx-auto">
                         <button onClick={() => navegar(-1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronLeft size={16} /></button>
@@ -513,180 +514,184 @@ export default function PainelDashboard() {
             </div>
 
             {/* MODAL DETALHES / EDITAR */}
-            {agendamentoSelecionado && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                    <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative">
-                        <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><X /></button>
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500"><Calendar size={32} /></div>
-                                <div>
-                                    {isEditing ? (
-                                        <div className="space-y-2 w-full">
-                                            <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} placeholder={agendamentoSelecionado.type === "EVENTO" ? "Título do Evento" : "Nome do Cliente"} />
-                                            {agendamentoSelecionado.type !== "EVENTO" && (
-                                                <input className="text-lg font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <h2 className="text-2xl font-bold dark:text-white uppercase tracking-tight">{agendamentoSelecionado.customerName}</h2>
-                                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes do Cliente"}</p>
-                                            {agendamentoSelecionado.type !== "EVENTO" && agendamentoSelecionado.customerPhone && (
-                                                <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone}</p>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            {!isEditing && (
-                                <div className="flex items-center gap-1">
-                                    <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar"><Pencil size={20} /></button>
-
-                                    {/* Só mostra botões de cliente se NÃO for um evento */}
-                                    {agendamentoSelecionado.type !== "EVENTO" && (
-                                        agendamentoSelecionado.clientId ? (
-                                            <button
-                                                onClick={() => {
-                                                    setAgendamentoSelecionado(null);
-                                                    const params = new URLSearchParams();
-                                                    params.set('abrirFicha', agendamentoSelecionado.clientId);
-                                                    if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
-                                                    if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
-                                                    params.set('bookingId', agendamentoSelecionado.id);
-                                                    router.push(`/painel/clientes?${params.toString()}`);
-                                                }}
-                                                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
-                                                title="Ver ficha do cliente"
-                                            >
-                                                <FileText size={20} />
-                                            </button>
+            {
+                agendamentoSelecionado && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative">
+                            <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><X /></button>
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500"><Calendar size={32} /></div>
+                                    <div>
+                                        {isEditing ? (
+                                            <div className="space-y-2 w-full">
+                                                <input className="text-2xl font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerName} onChange={e => setEditForm({ ...editForm, customerName: e.target.value })} placeholder={agendamentoSelecionado.type === "EVENTO" ? "Título do Evento" : "Nome do Cliente"} />
+                                                {agendamentoSelecionado.type !== "EVENTO" && (
+                                                    <input className="text-lg font-bold bg-gray-100 dark:bg-gray-800 p-1 rounded w-full outline-blue-500" value={editForm.customerPhone} onChange={e => setEditForm({ ...editForm, customerPhone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                                )}
+                                            </div>
                                         ) : (
-                                            <button
-                                                onClick={() => {
-                                                    setAgendamentoSelecionado(null);
-                                                    const params = new URLSearchParams();
-                                                    params.set('novoCadastro', '1');
-                                                    if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
-                                                    if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
-                                                    params.set('bookingId', agendamentoSelecionado.id);
-                                                    router.push(`/painel/clientes?${params.toString()}`);
-                                                }}
-                                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full text-green-600 transition"
-                                                title="Criar cadastro"
-                                            >
-                                                <UserPlus size={20} />
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <div className="space-y-4">
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Categoria / Tipo" : "Serviço"}</p>
-                                {isEditing ? (
-                                    agendamentoSelecionado.type === "EVENTO" ? (
-                                        <input className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceName || 'Evento'} readOnly />
-                                    ) : (
-                                        <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceId} onChange={e => setEditForm({ ...editForm, serviceId: e.target.value })}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
-                                    )
-                                ) : (
-                                    <p className="font-bold dark:text-gray-200">{agendamentoSelecionado.service?.name || (agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Atendimento")}</p>
-                                )}
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Data</p>
-                                    {isEditing ? <input type="date" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.dataPura} onChange={e => setEditForm({ ...editForm, dataPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>}
-                                </div>
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Horário</p>
-                                    {isEditing ? <input type="time" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.horaPura} onChange={e => setEditForm({ ...editForm, horaPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "HH:mm")}h</p>}
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
-                                <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Responsável / Profissional" : "Profissional"}</p>
-                                {isEditing ? (
-                                    <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>
-                                        <option value="">(Geral / Sem Responsável)</option>
-                                        {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                    </select>
-                                ) : (
-                                    <p className="font-bold dark:text-gray-200">
-                                        {profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || (agendamentoSelecionado.type === "EVENTO" ? '📢 TODOS (GERAL)' : 'Sem responsável definido')}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex flex-col gap-2">
-                            {isEditing ? (
-                                <div className="flex gap-2">
-                                    <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
-                                    <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
-                                </div>
-                            ) : (
-                                <>
-                                    {agendamentoSelecionado.type !== "EVENTO" && (
-                                        <>
-                                            {agendamentoSelecionado.status === "CONFIRMADO" && (
-                                                <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
-                                            )}
-
-                                            {agendamentoSelecionado.status === "PENDENTE" && (
-                                                <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
-                                            )}
-                                        </>
-                                    )}
-
-                                    <div className="flex gap-2">
-                                        {agendamentoSelecionado.customerPhone && (
-                                            <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                                            <>
+                                                <h2 className="text-2xl font-bold dark:text-white uppercase tracking-tight">{agendamentoSelecionado.customerName}</h2>
+                                                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes do Cliente"}</p>
+                                                {agendamentoSelecionado.type !== "EVENTO" && agendamentoSelecionado.customerPhone && (
+                                                    <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone}</p>
+                                                )}
+                                            </>
                                         )}
-                                        <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
                                     </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+                                </div>
+                                {!isEditing && (
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={iniciarEdicao} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-blue-600 transition" title="Editar"><Pencil size={20} /></button>
 
-            {/* MODAL CHECKOUT FINANCEIRO */}
-            {modalCheckout && agendamentoSelecionado && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                    <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
-                        <button onClick={() => setModalCheckout(false)} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                        <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><DollarSign size={32} /></div>
-                            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">Fechar Conta</h2>
-                            <p className="text-gray-500 text-sm font-bold">{agendamentoSelecionado.customerName}</p>
-                        </div>
-                        <div className="space-y-6">
-                            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-[2rem] text-center border-2 border-dashed dark:border-gray-700">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Valor do Serviço</p>
-                                <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">R$ {Number(agendamentoSelecionado.service?.price || 0).toLocaleString()}</h3>
+                                        {/* Só mostra botões de cliente se NÃO for um evento */}
+                                        {agendamentoSelecionado.type !== "EVENTO" && (
+                                            agendamentoSelecionado.clientId ? (
+                                                <button
+                                                    onClick={() => {
+                                                        setAgendamentoSelecionado(null);
+                                                        const params = new URLSearchParams();
+                                                        params.set('abrirFicha', agendamentoSelecionado.clientId);
+                                                        if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                        if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                        params.set('bookingId', agendamentoSelecionado.id);
+                                                        router.push(`/painel/clientes?${params.toString()}`);
+                                                    }}
+                                                    className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full text-blue-600 transition"
+                                                    title="Ver ficha do cliente"
+                                                >
+                                                    <FileText size={20} />
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        setAgendamentoSelecionado(null);
+                                                        const params = new URLSearchParams();
+                                                        params.set('novoCadastro', '1');
+                                                        if (agendamentoSelecionado.customerName) params.set('nome', agendamentoSelecionado.customerName);
+                                                        if (agendamentoSelecionado.customerPhone) params.set('telefone', agendamentoSelecionado.customerPhone);
+                                                        params.set('bookingId', agendamentoSelecionado.id);
+                                                        router.push(`/painel/clientes?${params.toString()}`);
+                                                    }}
+                                                    className="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full text-green-600 transition"
+                                                    title="Criar cadastro"
+                                                >
+                                                    <UserPlus size={20} />
+                                                </button>
+                                            )
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Forma de Pagamento</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[{ id: 'PIX', icon: <QrCode size={16} /> }, { id: 'CARTAO', icon: <CreditCard size={16} /> }, { id: 'DINHEIRO', icon: <Banknote size={16} /> }, { id: 'FATURADO', icon: <Clock size={16} /> }].map(m => (
-                                        <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: m.id === 'FATURADO' ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {m.id}</button>
-                                    ))}
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Categoria / Tipo" : "Serviço"}</p>
+                                    {isEditing ? (
+                                        agendamentoSelecionado.type === "EVENTO" ? (
+                                            <input className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceName || 'Evento'} readOnly />
+                                        ) : (
+                                            <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.serviceId} onChange={e => setEditForm({ ...editForm, serviceId: e.target.value })}>{servicosDisponiveis.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                                        )
+                                    ) : (
+                                        <p className="font-bold dark:text-gray-200">{agendamentoSelecionado.service?.name || (agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Atendimento")}</p>
+                                    )}
                                 </div>
-                                {checkoutData.method === 'FATURADO' && (
-                                    <div className="animate-in fade-in slide-in-from-top-2">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento</label>
-                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl dark:bg-gray-800 font-bold dark:text-white" value={checkoutData.dueDate} onChange={e => setCheckoutData({ ...checkoutData, dueDate: e.target.value })} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Data</p>
+                                        {isEditing ? <input type="date" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.dataPura} onChange={e => setEditForm({ ...editForm, dataPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "dd/MM/yyyy")}</p>}
                                     </div>
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Horário</p>
+                                        {isEditing ? <input type="time" className="w-full bg-white dark:bg-gray-900 p-1 rounded outline-none" value={editForm.horaPura} onChange={e => setEditForm({ ...editForm, horaPura: e.target.value })} /> : <p className="font-bold dark:text-gray-200">{format(new Date(agendamentoSelecionado.date), "HH:mm")}h</p>}
+                                    </div>
+                                </div>
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Responsável / Profissional" : "Profissional"}</p>
+                                    {isEditing ? (
+                                        <select className="w-full bg-white dark:bg-gray-900 p-2 rounded border outline-none" value={editForm.professionalId} onChange={e => setEditForm({ ...editForm, professionalId: e.target.value })}>
+                                            <option value="">(Geral / Sem Responsável)</option>
+                                            {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    ) : (
+                                        <p className="font-bold dark:text-gray-200">
+                                            {profissionais.find(p => p.id === agendamentoSelecionado.professionalId)?.name || (agendamentoSelecionado.type === "EVENTO" ? '📢 TODOS (GERAL)' : 'Sem responsável definido')}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex flex-col gap-2">
+                                {isEditing ? (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-100 dark:bg-gray-800 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                                        <button onClick={salvarAlteracoesAgendamento} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition flex items-center justify-center gap-2"><Save size={18} /> Salvar</button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {agendamentoSelecionado.type !== "EVENTO" && (
+                                            <>
+                                                {agendamentoSelecionado.status === "CONFIRMADO" && (
+                                                    <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
+                                                )}
+
+                                                {agendamentoSelecionado.status === "PENDENTE" && (
+                                                    <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
+                                                )}
+                                            </>
+                                        )}
+
+                                        <div className="flex gap-2">
+                                            {agendamentoSelecionado.customerPhone && (
+                                                <a href={getWhatsappLink(agendamentoSelecionado)} target="_blank" className="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg shadow-green-500/20 hover:bg-green-600 transition font-black"><Phone size={18} /> WhatsApp</a>
+                                            )}
+                                            <button onClick={() => cancelar(agendamentoSelecionado.id, agendamentoSelecionado.customerName)} className={`flex-1 font-bold py-3 rounded-xl transition ${agendamentoSelecionado.customerPhone ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-red-600 text-white hover:bg-red-700'}`}>Cancelar {agendamentoSelecionado.type === "EVENTO" ? "Evento" : ""}</button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
-                            <button onClick={finalizarCheckout} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl shadow-green-500/20 hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">{loading ? <Loader2 className="animate-spin" /> : "Finalizar e Receber"}</button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            {/* MODAL CHECKOUT FINANCEIRO */}
+            {
+                modalCheckout && agendamentoSelecionado && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                        <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
+                            <button onClick={() => setModalCheckout(false)} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><DollarSign size={32} /></div>
+                                <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">Fechar Conta</h2>
+                                <p className="text-gray-500 text-sm font-bold">{agendamentoSelecionado.customerName}</p>
+                            </div>
+                            <div className="space-y-6">
+                                <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-[2rem] text-center border-2 border-dashed dark:border-gray-700">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Valor do Serviço</p>
+                                    <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">R$ {Number(agendamentoSelecionado.service?.price || 0).toLocaleString()}</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Forma de Pagamento</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[{ id: 'PIX', icon: <QrCode size={16} /> }, { id: 'CARTAO', icon: <CreditCard size={16} /> }, { id: 'DINHEIRO', icon: <Banknote size={16} /> }, { id: 'FATURADO', icon: <Clock size={16} /> }].map(m => (
+                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: m.id === 'FATURADO' ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {m.id}</button>
+                                        ))}
+                                    </div>
+                                    {checkoutData.method === 'FATURADO' && (
+                                        <div className="animate-in fade-in slide-in-from-top-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento</label>
+                                            <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl dark:bg-gray-800 font-bold dark:text-white" value={checkoutData.dueDate} onChange={e => setCheckoutData({ ...checkoutData, dueDate: e.target.value })} />
+                                        </div>
+                                    )}
+                                </div>
+                                <button onClick={finalizarCheckout} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl shadow-green-500/20 hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">{loading ? <Loader2 className="animate-spin" /> : "Finalizar e Receber"}</button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 }
