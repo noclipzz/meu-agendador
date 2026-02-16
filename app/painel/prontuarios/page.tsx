@@ -171,7 +171,7 @@ export default function ProntuariosPage() {
     // --- EDITOR DE TEMPLATE ---
     if (editando) {
         return (
-            <div className="space-y-6 pb-20 p-2 font-sans">
+            <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
                 {/* HEADER */}
                 <div className="flex justify-between items-center">
                     <div>
@@ -212,18 +212,22 @@ export default function ProntuariosPage() {
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Campos do Formulário</h3>
 
                     {campos.map((campo, index) => (
-                        <div key={campo.id} className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-5 flex gap-4 items-start group hover:border-blue-500 transition-all">
-                            {/* DRAG HANDLE */}
-                            <div className="flex flex-col items-center gap-1 pt-2">
-                                <button onClick={() => moverCampo(index, -1)} className="text-gray-300 hover:text-blue-500 transition" disabled={index === 0}>▲</button>
-                                <GripVertical size={16} className="text-gray-300" />
-                                <button onClick={() => moverCampo(index, 1)} className="text-gray-300 hover:text-blue-500 transition" disabled={index === campos.length - 1}>▼</button>
+                        <div key={campo.id} className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-4 items-start group hover:border-blue-500 transition-all overflow-hidden">
+                            {/* DRAG HANDLE (MOBILE: HORIZONTAL) */}
+                            <div className="flex flex-row md:flex-col items-center gap-2 md:gap-1 pt-0 md:pt-2 w-full md:w-auto border-b md:border-b-0 pb-2 md:pb-0 dark:border-gray-800">
+                                <button onClick={() => moverCampo(index, -1)} className="text-gray-300 hover:text-blue-500 transition p-1" disabled={index === 0}>▲</button>
+                                <GripVertical size={16} className="text-gray-300 hidden md:block" />
+                                <button onClick={() => moverCampo(index, 1)} className="text-gray-300 hover:text-blue-500 transition p-1" disabled={index === campos.length - 1}>▼</button>
+                                <div className="flex-1 md:hidden"></div>
+                                <button onClick={() => removerCampo(campo.id)} className="p-2 text-red-400 md:hidden">
+                                    <Trash2 size={18} />
+                                </button>
                             </div>
 
                             {/* CONTEÚDO DO CAMPO */}
-                            <div className="flex-1 space-y-3">
-                                <div className="flex gap-3 items-center">
-                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-lg uppercase">
+                            <div className="flex-1 space-y-3 w-full min-w-0">
+                                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                                    <span className="text-[9px] font-black bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-lg uppercase shrink-0">
                                         {FIELD_TYPES.find(f => f.type === campo.type)?.label}
                                     </span>
                                     <input
@@ -295,8 +299,8 @@ export default function ProntuariosPage() {
                                 )}
                             </div>
 
-                            {/* BOTÃO REMOVER */}
-                            <button onClick={() => removerCampo(campo.id)} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
+                            {/* BOTÃO REMOVER (DESKTOP) */}
+                            <button onClick={() => removerCampo(campo.id)} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 md:group-hover:opacity-100 hidden md:block">
                                 <Trash2 size={18} />
                             </button>
                         </div>
@@ -312,7 +316,7 @@ export default function ProntuariosPage() {
                         </button>
 
                         {showFieldPicker && (
-                            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl shadow-2xl p-4 z-50 grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl shadow-2xl p-4 z-50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                                 {FIELD_TYPES.map(ft => (
                                     <button
                                         key={ft.type}
