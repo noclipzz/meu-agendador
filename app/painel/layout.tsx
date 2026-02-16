@@ -462,7 +462,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             </aside>
 
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
-            <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto h-full relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
+            <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden h-full relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
                 {(() => {
                     const currentRoute = allItems.find(item => pathname === item.path);
                     const isDenied = currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN";

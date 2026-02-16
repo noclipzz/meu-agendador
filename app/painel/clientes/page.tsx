@@ -610,7 +610,7 @@ export default function ClientesPage() {
     if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse uppercase text-xs">Sincronizando CRM...</div>;
 
     return (
-        <div className="space-y-6 pb-20 p-2 font-sans">
+        <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
             <div className="flex justify-between items-center px-2">
                 <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Gestão de Clientes</h1>
                 <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
@@ -899,9 +899,9 @@ export default function ClientesPage() {
                                                         const valor = (prontuarioVisualizando.data as any)?.[field.id];
                                                         if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
                                                         return (
-                                                            <div key={field.id} className="grid grid-cols-3 gap-4 py-2 border-b dark:border-gray-800/50">
-                                                                <p className="text-xs font-bold text-gray-500 col-span-1">{field.label}</p>
-                                                                <p className="text-sm font-bold dark:text-white col-span-2">
+                                                            <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b dark:border-gray-800/50">
+                                                                <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case">{field.label}</p>
+                                                                <p className="text-sm font-bold dark:text-white sm:col-span-2">
                                                                     {field.type === 'checkbox' ? (
                                                                         <span>
                                                                             {valor ? '✅ Sim' : '❌ Não'}
@@ -1239,7 +1239,7 @@ export default function ClientesPage() {
                                                 {field.type === 'checkboxGroup' && (
                                                     <div>
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                        <div className="grid grid-cols-2 gap-2">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                             {field.options?.map((opt: string, i: number) => (
                                                                 <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
                                                                     <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
