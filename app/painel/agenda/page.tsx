@@ -311,7 +311,7 @@ export default function PainelDashboard() {
                                                 <div key={ag.id} className="text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 font-black leading-tight flex items-center gap-0.5">
                                                     <Calendar size={10} />
                                                     <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
-                                                    <span className="truncate text-[8px] opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
+                                                    <span className="truncate text-[8px] hidden md:inline opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
                                                     <span className="truncate">{ag.customerName}</span>
                                                 </div>
                                             );
@@ -322,9 +322,9 @@ export default function PainelDashboard() {
                                                 <div className="flex items-center gap-0.5 min-w-0 truncate">
                                                     {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
                                                     {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
-                                                    <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
+                                                    <span className="shrink-0 mr-1">{format(new Date(ag.date), "HH:mm")}</span>
                                                     <span className="truncate">
-                                                        <span className="opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
+                                                        <span className="hidden md:inline opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
                                                         {ag.customerName}
                                                     </span>
                                                 </div>
@@ -455,58 +455,60 @@ export default function PainelDashboard() {
     if (loading) return <div className="p-20 text-center text-gray-400 font-bold animate-pulse">Sincronizando Agenda...</div>;
 
     return (
-        <div className="h-screen flex flex-col p-0 gap-0 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
+        <div className="h-auto md:h-screen flex flex-col p-0 gap-0 text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
-            <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 shadow-sm">
-                <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
-                    <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
-                        {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={18} />}
+            {/* BARRA FIXA SUPERIOR (HEADER + FILTROS) */}
+            <div className="sticky top-0 z-50 flex flex-col shadow-sm">
+                <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
+                    <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
+                        <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
+                            {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={18} />}
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-sm md:text-base font-bold truncate leading-tight">{empresaInfo.name}</h1>
+                            <p className="text-[10px] md:text-xs text-gray-500">Olá, {user?.firstName}</p>
+                        </div>
                     </div>
-                    <div className="min-w-0">
-                        <h1 className="text-sm md:text-base font-bold truncate leading-tight">{empresaInfo.name}</h1>
-                        <p className="text-[10px] md:text-xs text-gray-500">Olá, {user?.firstName}</p>
+
+                    <div className="flex-1 flex flex-col justify-center border-r dark:border-gray-700 pr-2">
+                        <p className="text-[10px] text-gray-400 uppercase font-black leading-none mb-1">Faturamento</p>
+                        <div className="flex items-center gap-1"><DollarSign size={16} className="text-green-500" /><span className="text-base font-black">R$ {faturamentoTotal}</span></div>
+                    </div>
+
+                    <div className="flex-1 hidden md:block">
+                        <div className="flex justify-between items-center mb-0.5"><p className="text-[9px] text-gray-500 uppercase font-black">Meta</p><span className="text-[9px] font-black text-blue-600">{porcentagemMeta}%</span></div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"><div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div></div>
+                    </div>
+
+                    <div className="md:hidden flex flex-col items-center">
+                        <span className="text-[9px] font-black text-blue-600 uppercase">{porcentagemMeta}%</span>
+                        <div className="w-12 bg-gray-100 dark:bg-gray-700 rounded-full h-1 mt-0.5 border dark:border-gray-600">
+                            <div className="bg-blue-600 h-1 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-center border-r dark:border-gray-700 pr-2">
-                    <p className="text-[10px] text-gray-400 uppercase font-black leading-none mb-1">Faturamento</p>
-                    <div className="flex items-center gap-1"><DollarSign size={16} className="text-green-500" /><span className="text-base font-black">R$ {faturamentoTotal}</span></div>
-                </div>
-
-                <div className="flex-1 hidden md:block">
-                    <div className="flex justify-between items-center mb-0.5"><p className="text-[9px] text-gray-500 uppercase font-black">Meta</p><span className="text-[9px] font-black text-blue-600">{porcentagemMeta}%</span></div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"><div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div></div>
-                </div>
-
-                <div className="md:hidden flex flex-col items-center">
-                    <span className="text-[9px] font-black text-blue-600 uppercase">{porcentagemMeta}%</span>
-                    <div className="w-12 bg-gray-100 dark:bg-gray-700 rounded-full h-1 mt-0.5 border dark:border-gray-600">
-                        <div className="bg-blue-600 h-1 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div>
+                {/* FILTROS */}
+                <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0 px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+                    <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border dark:border-gray-700 shadow-sm">
+                        {['month', 'week', 'day'].map((v) => (
+                            <button key={v} onClick={() => setView(v as any)} className={`px-4 py-2.5 text-[11px] font-black rounded-lg transition capitalize shadow-sm ${view === v ? 'bg-blue-600 text-white shadow-blue-500/20' : 'text-gray-500 hover:bg-gray-50'}`}>
+                                {v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 flex-1 max-w-md">
+                        <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 flex-1 shadow-sm focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+                            <Search size={16} className="text-gray-400 mr-2" />
+                            <input type="text" placeholder="Buscar..." className="bg-transparent outline-none text-sm w-full font-bold" value={busca} onChange={(e) => setBusca(e.target.value)} />
+                        </div>
+                        <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 text-xs shadow-sm outline-none font-black uppercase tracking-tighter appearance-none border-r-8 border-transparent" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
+                            <option value="todos">Todos</option>
+                            {profissionais.map(p => <option key={p.id} value={p.id}>{p.name.split(' ')[0]}</option>)}
+                        </select>
                     </div>
                 </div>
             </div>
-
-            {/* FILTROS */}
-            <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0 px-4 py-2 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
-                <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border dark:border-gray-700 shadow-sm">
-                    {['month', 'week', 'day'].map((v) => (
-                        <button key={v} onClick={() => setView(v as any)} className={`px-4 py-2.5 text-[11px] font-black rounded-lg transition capitalize shadow-sm ${view === v ? 'bg-blue-600 text-white shadow-blue-500/20' : 'text-gray-500 hover:bg-gray-50'}`}>
-                            {v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex gap-2 flex-1 max-w-md">
-                    <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 flex-1 shadow-sm focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                        <Search size={16} className="text-gray-400 mr-2" />
-                        <input type="text" placeholder="Buscar..." className="bg-transparent outline-none text-sm w-full font-bold" value={busca} onChange={(e) => setBusca(e.target.value)} />
-                    </div>
-                    <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 text-xs shadow-sm outline-none font-black uppercase tracking-tighter appearance-none border-r-8 border-transparent" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
-                        <option value="todos">Todos</option>
-                        {profissionais.map(p => <option key={p.id} value={p.id}>{p.name.split(' ')[0]}</option>)}
-                    </select>
-                </div>
-            </div>
-
 
             {/* ÁREA DA AGENDA */}
             <div className="bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
