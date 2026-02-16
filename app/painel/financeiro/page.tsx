@@ -166,11 +166,18 @@ export default function FinanceiroPage() {
     async function salvarEntrada() {
         if (!novaEntrada.value) return toast.error("Preencha pelo menos o valor.");
         setSalvando(true);
+
+        // Se o usuário digitou um nome mas não selecionou no dropdown, usamos esse nome na descrição
+        const dadosParaEnviar = {
+            ...novaEntrada,
+            description: novaEntrada.description || (buscaCliente && !novaEntrada.clientId ? `Entrada: ${buscaCliente}` : "Entrada Manual")
+        };
+
         try {
             const res = await fetch('/api/painel/financeiro/entradas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(novaEntrada)
+                body: JSON.stringify(dadosParaEnviar)
             });
             if (res.ok) {
                 toast.success("Entrada registrada com sucesso!");
@@ -229,6 +236,7 @@ export default function FinanceiroPage() {
     }
 
     function handleCobrar(fatura: any, tipo: 'ATRASADO' | 'LEMBRETE') {
+        if (!fatura.client) return toast.error("Esta entrada não possui um cliente vinculado para cobrança.");
         const telefone = fatura.client.phone?.replace(/\D/g, "");
         if (!telefone) return toast.error("Cliente sem telefone cadastrado.");
 
@@ -380,7 +388,7 @@ export default function FinanceiroPage() {
                             {dadosResumo?.boletosVencidos?.map((fat: any) => (
                                 <div key={fat.id} className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center group">
                                     <div>
-                                        <p className="font-bold text-sm text-red-700 dark:text-red-300">{fat.client.name}</p>
+                                        <p className="font-bold text-sm text-red-700 dark:text-red-300">{fat.client?.name || 'Cliente Avulso'}</p>
                                         <p className="text-[10px] font-black text-red-400 uppercase">Venceu: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
@@ -407,7 +415,7 @@ export default function FinanceiroPage() {
                             {dadosResumo?.boletosAbertos?.map((fat: any) => (
                                 <div key={fat.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border dark:border-gray-800 flex justify-between items-center group">
                                     <div>
-                                        <p className="font-bold text-sm dark:text-white">{fat.client.name}</p>
+                                        <p className="font-bold text-sm dark:text-white">{fat.client?.name || 'Cliente Avulso'}</p>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase">Vence: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
