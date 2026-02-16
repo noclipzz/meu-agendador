@@ -412,7 +412,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
                 print:hidden
             `}>
-                <div className="p-4 border-b dark:border-gray-800 flex justify-between items-center shrink-0">
+                <div className="p-6 border-b dark:border-gray-800 flex justify-between items-center shrink-0">
                     <Link href="/" className="flex items-center gap-2">
                         <LogoNohud />
                     </Link>
@@ -421,39 +421,39 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </button>
                 </div>
 
-                <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto custom-scrollbar">
                     {menuItems.map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
                             href={item.path}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[15px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                         >
                             {item.icon} {item.name}
                         </Link>
                     ))}
                 </nav>
 
-                <div className="p-3 space-y-2 shrink-0">
+                <div className="p-4 space-y-3 shrink-0">
                     <InstallSidebarButton />
 
                     <button
                         id="tour-new-appointment"
                         onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }}
-                        className="w-full bg-blue-600 text-white font-black py-3 rounded-xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95 text-sm"
+                        className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl flex justify-center items-center gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95"
                     >
-                        <PlusCircle size={18} /> Novo Agendamento
+                        <PlusCircle size={20} /> Novo Agendamento
                     </button>
 
-                    <div className="p-3 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
+                    <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
                         <UserButton showName />
-                        <div className="italic text-[9px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
+                        <div className="italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                     </div>
                 </div>
 
-                <div className="p-3 border-t dark:border-gray-800 hidden md:block shrink-0">
+                <div className="p-4 border-t dark:border-gray-800 hidden md:block shrink-0">
                     <UserButton showName />
-                    <div className="mt-1 px-1 italic text-[9px] text-gray-400 uppercase tracking-widest leading-none">Modo: {userRole}</div>
+                    <div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                 </div>
             </aside>
 
