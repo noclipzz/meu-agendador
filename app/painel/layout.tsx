@@ -479,39 +479,42 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 print:hidden">
-                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800">
-
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="absolute top-6 right-6 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all z-[60]"
-                            >
-                                <X size={24} />
-                            </button>
-
-                            <h3 className="text-xl font-black mb-4 dark:text-white text-center">O que vamos criar?</h3>
-
-                            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1rem] mb-6">
+                        <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 flex flex-col max-h-[95vh]">
+                            {/* HEADER FIXO */}
+                            <div className="p-6 pb-0 shrink-0">
                                 <button
-                                    onClick={() => setTipoAgendamento("CLIENTE")}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "CLIENTE" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="absolute top-6 right-6 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all z-[60]"
                                 >
-                                    <UserIcon size={14} /> AGENDAMENTO
+                                    <X size={24} />
                                 </button>
-                                <button
-                                    onClick={() => setTipoAgendamento("ENCAIXE")}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${(tipoAgendamento === "ENCAIXE") ? "bg-white dark:bg-gray-700 shadow-sm text-amber-600" : "text-gray-500"}`}
-                                >
-                                    <Zap size={14} /> ENCAIXE
-                                </button>
-                                <button
-                                    onClick={() => setTipoAgendamento("EVENTO")}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "EVENTO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
-                                >
-                                    <Calendar size={14} /> EVENTO
-                                </button>
+
+                                <h3 className="text-xl font-black mb-4 dark:text-white text-center">O que vamos criar?</h3>
+
+                                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-[1rem] mb-6">
+                                    <button
+                                        onClick={() => setTipoAgendamento("CLIENTE")}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "CLIENTE" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
+                                    >
+                                        <UserIcon size={14} /> AGENDAMENTO
+                                    </button>
+                                    <button
+                                        onClick={() => setTipoAgendamento("ENCAIXE")}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${(tipoAgendamento === "ENCAIXE") ? "bg-white dark:bg-gray-700 shadow-sm text-amber-600" : "text-gray-500"}`}
+                                    >
+                                        <Zap size={14} /> ENCAIXE
+                                    </button>
+                                    <button
+                                        onClick={() => setTipoAgendamento("EVENTO")}
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-black rounded-xl transition ${tipoAgendamento === "EVENTO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-500"}`}
+                                    >
+                                        <Calendar size={14} /> EVENTO
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
+                            {/* CONTEÚDO ROLÁVEL */}
+                            <div className="p-6 pt-0 overflow-y-auto custom-scrollbar space-y-4">
                                 {(tipoAgendamento === "CLIENTE" || tipoAgendamento === "ENCAIXE") ? (
                                     <>
                                         {/* SELEÇÃO DE CLIENTE FIXO */}

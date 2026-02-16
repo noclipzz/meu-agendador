@@ -173,7 +173,7 @@ export default function GestaoEquipe() {
         if (!proSelecionado) return;
         const notasArray = (proSelecionado.notes || "").split('\n').filter((n: string) => n.trim() !== "");
         const indexOriginal = notasArray.length - 1 - index; // Adjust index for reversed display
-        const novasNotasArr = notasArray.filter((_, i) => i !== indexOriginal);
+        const novasNotasArr = notasArray.filter((_: any, i: number) => i !== indexOriginal);
         const novaStringNotas = novasNotasArr.join('\n');
 
         const res = await fetch('/api/painel/profissionais', {
