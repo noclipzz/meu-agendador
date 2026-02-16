@@ -278,7 +278,7 @@ export default function ClientesPage() {
         const notasArray = (clienteSelecionado.notes || "").split('\n');
         // Como exibimos em reverse(), o index aqui precisa ser mapeado de volta
         const indexOriginal = notasArray.length - 1 - index;
-        const novasNotasArr = notasArray.filter((_, i) => i !== indexOriginal);
+        const novasNotasArr = notasArray.filter((_: any, i: number) => i !== indexOriginal);
         const novaStringNotas = novasNotasArr.join('\n');
 
         const res = await fetch('/api/clientes', {
@@ -639,7 +639,7 @@ export default function ClientesPage() {
 
             {/* FICHA DO CLIENTE (HORIZONTAL COM ABAS) */}
             {clienteSelecionado && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[70] p-0 md:p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-0 md:p-4">
                     <div className="bg-white dark:bg-gray-950 w-full md:max-w-6xl h-full md:max-h-[90vh] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
 
                         {/* HEADER DA FICHA */}
