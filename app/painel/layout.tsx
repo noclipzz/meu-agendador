@@ -421,16 +421,16 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </button>
                 </div>
 
-                <nav className="flex-1 p-4 md:px-3 md:py-2 space-y-2 md:space-y-0.5 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-2 md:space-y-2 overflow-y-auto custom-scrollbar">
                     {menuItems.map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
                             href={item.path}
-                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-1.5 rounded-xl transition text-base md:text-sm ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[15px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                         >
                             {/* Ícone adaptável */}
-                            <div className="md:scale-90 scale-110 flex items-center justify-center">
+                            <div className="md:scale-100 scale-110 flex items-center justify-center">
                                 {item.icon}
                             </div>
                             {item.name}
