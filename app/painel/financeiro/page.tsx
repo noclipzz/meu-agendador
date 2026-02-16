@@ -190,6 +190,25 @@ export default function FinanceiroPage() {
         finally { setSalvando(false); }
     }
 
+    async function deletarEntrada(id: string) {
+        if (!confirm("Deseja realmente remover esta entrada?")) return;
+        setSalvando(true);
+        try {
+            const res = await fetch('/api/painel/financeiro/entradas', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) {
+                toast.success("Entrada removida!");
+                carregarResumo(dataResumo);
+            } else {
+                toast.error("Erro ao excluir.");
+            }
+        } catch (error) { toast.error("Erro de conexão."); }
+        finally { setSalvando(false); }
+    }
+
     function abrirModalExclusao(exp: any) {
         setDespesaParaExcluir(exp);
         setModalExcluir(true);
@@ -509,10 +528,17 @@ export default function FinanceiroPage() {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
                                     <div className="text-right">
                                         <p className="font-black text-blue-600 text-lg">R$ {Number(inv.value).toLocaleString()}</p>
                                     </div>
+                                    <button
+                                        onClick={() => deletarEntrada(inv.id)}
+                                        className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition ml-2"
+                                        title="Excluir Entrada"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
                                 </div>
                             </div>
                         ))}
