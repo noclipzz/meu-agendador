@@ -339,7 +339,7 @@ export default function PainelDashboard() {
 
     const renderDia = () => {
         const horas = Array.from({ length: 24 }, (_, i) => i);
-        const PIXELS_POR_HORA = 80;
+        const PIXELS_POR_HORA = 50;
         const agsDoDia = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dataAtual));
         const agsProcessados = calcularLayoutVisual(agsDoDia);
         const isToday = isSameDay(dataAtual, new Date());
@@ -350,7 +350,7 @@ export default function PainelDashboard() {
             <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative">
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                     {horas.map(h => (
-                        <div key={h} className="flex border-b dark:border-gray-700 h-[80px]">
+                        <div key={h} className="flex border-b dark:border-gray-700 h-[50px]">
                             <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-10">{h.toString().padStart(2, '0')}:00</div>
                             <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
                         </div>
@@ -449,67 +449,65 @@ export default function PainelDashboard() {
     if (loading) return <div className="p-20 text-center text-gray-400 font-bold animate-pulse">Sincronizando Agenda...</div>;
 
     return (
-        <div className="h-screen flex flex-col p-2 md:p-4 gap-2 md:gap-4 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
+        <div className="h-screen flex flex-col p-1 md:p-2 gap-1 md:gap-2 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
-            {/* HEADER */}
-            <div className="flex flex-col md:flex-row gap-2 h-auto flex-shrink-0">
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex items-center gap-3 flex-1 shadow-sm overflow-hidden">
-                    <div className="w-12 h-12 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
-                        {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={24} />}
+            <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 shadow-sm">
+                <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
+                    <div className="w-8 h-8 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
+                        {empresaInfo.logo ? <img src={empresaInfo.logo} className="w-full h-full object-cover" /> : <Building2 className="text-gray-400" size={16} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h1 className="text-lg font-bold leading-tight truncate">{empresaInfo.name}</h1>
-                                <p className="text-xs text-gray-500">Olá, {user?.firstName}</p>
-                            </div>
-                            <div className="md:hidden text-right">
-                                <span className="text-[10px] font-black text-blue-600 uppercase">Meta {porcentagemMeta}%</span>
-                                <div className="w-20 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 mt-1 border dark:border-gray-600">
-                                    <div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div>
-                                </div>
-                            </div>
-                        </div>
+                    <div className="min-w-0">
+                        <h1 className="text-sm font-bold truncate leading-tight">{empresaInfo.name}</h1>
+                        <p className="text-[10px] text-gray-500">Olá, {user?.firstName}</p>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 py-2 px-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm flex flex-col justify-center">
-                    <p className="text-xs text-gray-500 uppercase font-bold">Agendamentos do mês</p>
-                    <div className="flex items-center gap-2"><DollarSign size={20} className="text-green-500" /><span className="text-2xl font-bold">R$ {faturamentoTotal}</span></div>
+
+                <div className="flex-1 flex flex-col justify-center border-r dark:border-gray-700 pr-2">
+                    <p className="text-[9px] text-gray-500 uppercase font-black leading-none mb-1">Faturamento</p>
+                    <div className="flex items-center gap-1"><DollarSign size={14} className="text-green-500" /><span className="text-sm font-black">R$ {faturamentoTotal}</span></div>
                 </div>
-                <div className="hidden md:block bg-white dark:bg-gray-800 py-2 px-4 rounded-xl border dark:border-gray-700 flex-1 shadow-sm">
-                    <div className="flex justify-between items-center mb-1"><p className="text-xs text-gray-500 uppercase font-bold">Meta</p><span className="text-xs font-bold text-blue-600">{porcentagemMeta}%</span></div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1"><div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div></div>
-                    <p className="text-xs text-gray-400 text-right">de R$ {metaMensal}</p>
+
+                <div className="flex-1 hidden md:block">
+                    <div className="flex justify-between items-center mb-0.5"><p className="text-[9px] text-gray-500 uppercase font-black">Meta</p><span className="text-[9px] font-black text-blue-600">{porcentagemMeta}%</span></div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"><div className="bg-blue-600 h-1.5 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div></div>
+                </div>
+
+                <div className="md:hidden flex flex-col items-center">
+                    <span className="text-[9px] font-black text-blue-600 uppercase">{porcentagemMeta}%</span>
+                    <div className="w-12 bg-gray-100 dark:bg-gray-700 rounded-full h-1 mt-0.5 border dark:border-gray-600">
+                        <div className="bg-blue-600 h-1 rounded-full transition-all" style={{ width: `${porcentagemMeta}%` }}></div>
+                    </div>
                 </div>
             </div>
 
             {/* FILTROS */}
-            <div className="flex flex-col md:flex-row gap-2 items-center justify-between">
-                <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700 shadow-sm w-full md:w-auto">
+            <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0">
+                <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700 shadow-sm">
                     {['month', 'week', 'day'].map((v) => (
-                        <button key={v} onClick={() => setView(v as any)} className={`px-4 py-1.5 text-xs font-bold rounded-md transition capitalize ${view === v ? 'bg-blue-100 text-blue-700 dark:bg-blue-900' : 'text-gray-500'}`}>
+                        <button key={v} onClick={() => setView(v as any)} className={`px-3 py-1 text-[10px] font-black rounded-md transition capitalize ${view === v ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
                             {v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}
                         </button>
                     ))}
                 </div>
-                <div className="flex gap-3 w-full md:w-auto">
-                    <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-3 py-1.5 flex-1 shadow-sm">
-                        <Search size={16} className="text-gray-400 mr-2" /><input type="text" placeholder="Buscar cliente..." className="bg-transparent outline-none text-sm w-full" value={busca} onChange={(e) => setBusca(e.target.value)} />
+                <div className="flex gap-2 flex-1 max-w-md">
+                    <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 py-1 flex-1 shadow-sm">
+                        <Search size={14} className="text-gray-400 mr-2" />
+                        <input type="text" placeholder="Buscar..." className="bg-transparent outline-none text-xs w-full font-bold" value={busca} onChange={(e) => setBusca(e.target.value)} />
                     </div>
-                    <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 text-sm shadow-sm outline-none font-bold" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
-                        <option value="todos">Todos Profissionais</option>
-                        {profissionais.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 text-[10px] shadow-sm outline-none font-black uppercase tracking-tighter" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
+                        <option value="todos">Todos</option>
+                        {profissionais.map(p => <option key={p.id} value={p.id}>{p.name.split(' ')[0]}</option>)}
                     </select>
                 </div>
             </div>
 
             {/* ÁREA DA AGENDA */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 flex flex-col flex-1 overflow-hidden shadow-sm">
-                <div className="p-2 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+                <div className="p-1 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                     <div className="flex items-center gap-2 mx-auto">
-                        <button onClick={() => navegar(-1)} className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronLeft size={18} /></button>
-                        <span className="text-sm font-bold capitalize w-40 text-center">{tituloCalendario}</span>
-                        <button onClick={() => navegar(1)} className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronRight size={18} /></button>
+                        <button onClick={() => navegar(-1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronLeft size={16} /></button>
+                        <span className="text-[11px] font-black uppercase tracking-tighter w-32 text-center">{tituloCalendario}</span>
+                        <button onClick={() => navegar(1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronRight size={16} /></button>
                     </div>
                 </div>
                 <div className="flex-1 overflow-hidden">{view === 'day' ? renderDia() : renderGrid(diasParaMostrar)}</div>
