@@ -517,7 +517,7 @@ export default function PainelDashboard() {
 
             {/* MODAL DETALHES / EDITAR */}
             {agendamentoSelecionado && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative">
                         <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><X /></button>
                         <div className="flex items-center justify-between mb-6">

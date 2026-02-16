@@ -380,7 +380,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         <div className={`h-screen flex flex-col md:flex-row font-sans ${theme} overflow-hidden`}>
 
             {/* --- HEADER MOBILE --- */}
-            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-[45] shrink-0 sticky top-0 shadow-sm">
+            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-20 shrink-0 sticky top-0 shadow-sm">
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
@@ -398,7 +398,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             {/* --- OVERLAY MOBILE --- */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm transition-opacity"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
@@ -407,7 +407,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             <aside
                 id="tour-sidebar"
                 className={`
-                fixed inset-y-0 left-0 w-72 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-50 
+                fixed inset-y-0 left-0 w-72 bg-white dark:bg-gray-950 border-r dark:border-gray-800 flex flex-col z-40 
                 transition-transform duration-300 transform md:relative md:translate-x-0 md:w-64 md:z-20
                 ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
                 print:hidden
