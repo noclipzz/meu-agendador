@@ -27,10 +27,18 @@ export default function FinanceiroPage() {
     const [modalDespesa, setModalDespesa] = useState(false);
     const [modalEntrada, setModalEntrada] = useState(false);
     const [modalExcluir, setModalExcluir] = useState(false);
+    const [modalConfirm, setModalConfirm] = useState({
+        aberto: false,
+        titulo: "",
+        mensagem: "",
+        onConfirm: () => { },
+        tipo: "danger" as "danger" | "success" | "info"
+    });
     const [despesaParaExcluir, setDespesaParaExcluir] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
     const [clientes, setClientes] = useState<any[]>([]);
     const [buscaCliente, setBuscaCliente] = useState("");
+    const [idParaAcao, setIdParaAcao] = useState<string | null>(null);
     const [mostrarDropdownBusca, setMostrarDropdownBusca] = useState(false);
 
     // Estado do formulário de despesa
@@ -191,7 +199,17 @@ export default function FinanceiroPage() {
     }
 
     async function deletarEntrada(id: string) {
-        if (!confirm("Deseja realmente remover esta entrada?")) return;
+        setModalConfirm({
+            aberto: true,
+            titulo: "Excluir Entrada",
+            mensagem: "Tem certeza que deseja remover este registro financeiro? Esta ação não pode ser desfeita.",
+            tipo: "danger",
+            onConfirm: () => executarExclusaoEntrada(id)
+        });
+    }
+
+    async function executarExclusaoEntrada(id: string) {
+        setModalConfirm(prev => ({ ...prev, aberto: false }));
         setSalvando(true);
         try {
             const res = await fetch('/api/painel/financeiro/entradas', {
@@ -203,7 +221,7 @@ export default function FinanceiroPage() {
                 toast.success("Entrada removida!");
                 carregarResumo(dataResumo);
             } else {
-                toast.error("Erro ao excluir.");
+                toast.error("Erro ao excluir. Verifique sua permissão.");
             }
         } catch (error) { toast.error("Erro de conexão."); }
         finally { setSalvando(false); }
@@ -238,7 +256,17 @@ export default function FinanceiroPage() {
 
 
     async function baixarBoleto(id: string) {
-        if (!confirm("Confirmar recebimento deste valor?")) return;
+        setModalConfirm({
+            aberto: true,
+            titulo: "Confirmar Recebimento",
+            mensagem: "Deseja marcar esta fatura como PAGA e dar entrada no caixa hoje?",
+            tipo: "success",
+            onConfirm: () => executarBaixaBoleto(id)
+        });
+    }
+
+    async function executarBaixaBoleto(id: string) {
+        setModalConfirm(prev => ({ ...prev, aberto: false }));
         try {
             const res = await fetch('/api/financeiro/faturas/baixar', {
                 method: 'POST',
@@ -249,7 +277,7 @@ export default function FinanceiroPage() {
                 toast.success("Recebimento confirmado!");
                 carregarResumo(dataResumo); // Atualiza os cards de recebimento e totais
             } else {
-                toast.error("Erro ao baixar.");
+                toast.error("Erro ao dar baixa.");
             }
         } catch (e) { toast.error("Erro de conexão."); }
     }
@@ -1027,6 +1055,37 @@ export default function FinanceiroPage() {
                     </div>
                 )
             }
+            {/* --- MODAL DE CONFIRMAÇÃO GENÉRICO --- */}
+            {modalConfirm.aberto && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 border dark:border-gray-700">
+                        <div className="flex flex-col items-center text-center">
+                            <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 ${modalConfirm.tipo === 'danger' ? 'bg-red-100 text-red-600' : modalConfirm.tipo === 'success' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                                {modalConfirm.tipo === 'danger' ? <Trash2 size={32} /> : modalConfirm.tipo === 'success' ? <CheckCircle2 size={32} /> : <AlertTriangle size={32} />}
+                            </div>
+                            <h3 className="text-2xl font-black text-gray-800 dark:text-white tracking-tighter mb-2">{modalConfirm.titulo}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-8">
+                                {modalConfirm.mensagem}
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <button
+                                onClick={modalConfirm.onConfirm}
+                                className={`w-full py-4 rounded-2xl font-black text-white transition active:scale-95 shadow-lg ${modalConfirm.tipo === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : modalConfirm.tipo === 'success' ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`}
+                            >
+                                Confirmar
+                            </button>
+                            <button
+                                onClick={() => setModalConfirm(prev => ({ ...prev, aberto: false }))}
+                                className="w-full py-4 rounded-2xl font-bold text-gray-400 hover:text-gray-600 dark:hover:text-white transition"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
