@@ -311,6 +311,7 @@ export default function PainelDashboard() {
                                                 <div key={ag.id} className="text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 font-black leading-tight flex items-center gap-0.5">
                                                     <Calendar size={10} />
                                                     <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
+                                                    <span className="truncate text-[8px] opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
                                                     <span className="truncate">{ag.customerName}</span>
                                                 </div>
                                             );
@@ -322,7 +323,10 @@ export default function PainelDashboard() {
                                                     {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
                                                     {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
                                                     <span className="shrink-0">{format(new Date(ag.date), "HH:mm")}</span>
-                                                    <span className="truncate">{ag.customerName}</span>
+                                                    <span className="truncate">
+                                                        <span className="opacity-70 mr-1">[{pro?.name?.split(' ')[0] || 'GERAL'}]</span>
+                                                        {ag.customerName}
+                                                    </span>
                                                 </div>
                                                 <span className="text-[7px] md:text-[9px] opacity-80 shrink-0 font-black">R${Number(ag.service?.price || 0)}</span>
                                             </div>
@@ -421,6 +425,9 @@ export default function PainelDashboard() {
                                 </div>
                                 <div className="flex items-center justify-between mt-0.5">
                                     <span className="font-bold text-[11px] truncate uppercase tracking-tighter">
+                                        <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
+                                            {pro?.name?.split(' ')[0] || 'GERAL'}
+                                        </span>
                                         {ag.customerName}
                                     </span>
                                     <span className="text-[10px] font-black opacity-90 bg-black/10 px-1.5 py-0.5 rounded-full">R${Number(ag.service?.price || 0)}</span>
