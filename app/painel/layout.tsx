@@ -421,30 +421,32 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </button>
                 </div>
 
-                <nav className="flex-1 p-4 md:px-3 md:py-2 space-y-2 md:space-y-1 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 p-4 md:px-3 md:py-2 space-y-2 md:space-y-0.5 overflow-y-auto custom-scrollbar">
                     {menuItems.map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
                             href={item.path}
-                            className={`flex items-center gap-4 md:gap-3 px-4 py-3.5 md:py-2.5 rounded-xl transition text-base md:text-[15px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-1.5 rounded-xl transition text-base md:text-sm ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                         >
-                            {/* Ícone um pouco maior no mobile */}
-                            <span className="md:scale-100 scale-110">{item.icon}</span>
+                            {/* Ícone adaptável */}
+                            <div className="md:scale-90 scale-110 flex items-center justify-center">
+                                {item.icon}
+                            </div>
                             {item.name}
                         </Link>
                     ))}
                 </nav>
 
-                <div className="p-4 md:p-4 space-y-4 md:space-y-3 shrink-0">
+                <div className="p-4 md:p-3 space-y-4 md:space-y-2 shrink-0">
                     <InstallSidebarButton />
 
                     <button
                         id="tour-new-appointment"
                         onClick={() => { setTipoAgendamento("CLIENTE"); setIsModalOpen(true); }}
-                        className="w-full bg-blue-600 text-white font-black py-5 md:py-4 rounded-2xl flex justify-center items-center gap-3 md:gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95 text-base md:text-sm"
+                        className="w-full bg-blue-600 text-white font-black py-4 md:py-2.5 rounded-2xl flex justify-center items-center gap-3 md:gap-2 shadow-lg hover:bg-blue-700 transition active:scale-95 text-base md:text-[13px]"
                     >
-                        <PlusCircle size={22} className="md:size-20" /> Novo Agendamento
+                        <PlusCircle className="md:size-4 size-6" /> Novo Agendamento
                     </button>
 
                     <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
