@@ -244,7 +244,7 @@ export default function EstoquePage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Estoque Mínimo (Alerta)</label>
                                             <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} />
@@ -270,9 +270,17 @@ export default function EstoquePage() {
                                             <button onClick={() => setOperacao("REMOVE")} className={`px-4 py-2 rounded-lg text-xs font-black uppercase flex items-center gap-2 transition ${operacao === "REMOVE" ? "bg-red-100 text-red-700" : "text-gray-400"}`}><ArrowDownCircle size={16} /> Baixa/Correção</button>
                                         </div>
 
-                                        <div className="flex gap-3">
-                                            <input type="number" autoFocus className="flex-1 p-4 rounded-2xl border-2 border-blue-100 dark:border-blue-900 bg-white dark:bg-gray-900 font-black text-lg outline-none focus:border-blue-500" placeholder="Quantidade" value={qtdInput} onChange={e => setQtdInput(e.target.value)} />
-                                            {operacao === "ADD" && <input type="date" className="w-40 p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />}
+                                        <div className="flex flex-col md:flex-row gap-3">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Quantidade</label>
+                                                <input type="number" autoFocus className="w-full p-4 rounded-2xl border-2 border-blue-100 dark:border-blue-900 bg-white dark:bg-gray-900 font-black text-lg outline-none focus:border-blue-500" placeholder="Quantidade" value={qtdInput} onChange={e => setQtdInput(e.target.value)} />
+                                            </div>
+                                            {operacao === "ADD" && (
+                                                <div className="md:w-48">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
+                                                    <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
+                                                </div>
+                                            )}
                                         </div>
 
                                         {operacao === "REMOVE" && (
