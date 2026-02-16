@@ -458,7 +458,7 @@ export default function PainelDashboard() {
         <div className="h-auto md:h-screen flex flex-col p-0 gap-0 text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
             {/* BARRA FIXA SUPERIOR (HEADER + FILTROS) */}
-            <div className="sticky top-0 z-50 flex flex-col shadow-sm">
+            <div className="sticky top-0 z-10 flex flex-col shadow-sm">
                 <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
                     <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
                         <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
