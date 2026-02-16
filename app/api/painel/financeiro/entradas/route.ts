@@ -52,3 +52,40 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 });
     }
 }
+export async function DELETE(req: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+        const { id } = await req.json();
+        if (!id) return NextResponse.json({ error: "ID não fornecido" }, { status: 400 });
+
+        // 1. Busca a fatura e verifica a empresa
+        const invoice = await prisma.invoice.findUnique({
+            where: { id },
+            include: { company: true }
+        });
+
+        if (!invoice) return NextResponse.json({ error: "Fatura não encontrada" }, { status: 404 });
+
+        // 2. Verifica se o usuário é o dono ou membro da empresa (Segurança básica)
+        const isOwner = invoice.company.ownerId === userId;
+        if (!isOwner) {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId, companyId: invoice.companyId }
+            });
+            if (!member || !(member.permissions as any).financeiro) {
+                return NextResponse.json({ error: "Sem permissão para excluir esta fatura." }, { status: 403 });
+            }
+        }
+
+        // 3. Remove a fatura
+        await prisma.invoice.delete({ where: { id } });
+
+        return NextResponse.json({ success: true });
+
+    } catch (error) {
+        console.error("ERRO_DELETAR_ENTRADA:", error);
+        return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 });
+    }
+}
