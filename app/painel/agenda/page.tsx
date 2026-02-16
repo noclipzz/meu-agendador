@@ -339,7 +339,7 @@ export default function PainelDashboard() {
 
     const renderDia = () => {
         const horas = Array.from({ length: 24 }, (_, i) => i);
-        const PIXELS_POR_HORA = 65;
+        const PIXELS_POR_HORA = 90;
         const agsDoDia = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dataAtual));
         const agsProcessados = calcularLayoutVisual(agsDoDia);
         const isToday = isSameDay(dataAtual, new Date());
@@ -350,7 +350,7 @@ export default function PainelDashboard() {
             <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative">
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                     {horas.map(h => (
-                        <div key={h} className="flex border-b dark:border-gray-700 h-[65px]">
+                        <div key={h} className="flex border-b dark:border-gray-700 h-[90px]">
                             <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-10">{h.toString().padStart(2, '0')}:00</div>
                             <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
                         </div>
@@ -449,7 +449,7 @@ export default function PainelDashboard() {
     if (loading) return <div className="p-20 text-center text-gray-400 font-bold animate-pulse">Sincronizando Agenda...</div>;
 
     return (
-        <div className="h-screen flex flex-col p-1.5 md:p-2 gap-1.5 md:gap-2 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
+        <div className="h-screen flex flex-col p-2 md:p-3 gap-2 md:gap-3 overflow-hidden text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
             <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 p-2.5 rounded-xl border dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
@@ -482,19 +482,19 @@ export default function PainelDashboard() {
 
             {/* FILTROS */}
             <div className="flex flex-row gap-2 items-center justify-between flex-shrink-0">
-                <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700 shadow-sm">
+                <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border dark:border-gray-700 shadow-sm">
                     {['month', 'week', 'day'].map((v) => (
-                        <button key={v} onClick={() => setView(v as any)} className={`px-4 py-1.5 text-xs font-black rounded-md transition capitalize ${view === v ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <button key={v} onClick={() => setView(v as any)} className={`px-4 py-2.5 text-[11px] font-black rounded-lg transition capitalize shadow-sm ${view === v ? 'bg-blue-600 text-white shadow-blue-500/20' : 'text-gray-500 hover:bg-gray-50'}`}>
                             {v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}
                         </button>
                     ))}
                 </div>
                 <div className="flex gap-2 flex-1 max-w-md">
-                    <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-3 py-2 flex-1 shadow-sm">
-                        <Search size={14} className="text-gray-400 mr-2" />
-                        <input type="text" placeholder="Buscar..." className="bg-transparent outline-none text-xs w-full font-bold" value={busca} onChange={(e) => setBusca(e.target.value)} />
+                    <div className="flex items-center bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 flex-1 shadow-sm focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+                        <Search size={16} className="text-gray-400 mr-2" />
+                        <input type="text" placeholder="Buscar..." className="bg-transparent outline-none text-sm w-full font-bold" value={busca} onChange={(e) => setBusca(e.target.value)} />
                     </div>
-                    <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-2 text-xs shadow-sm outline-none font-black uppercase tracking-tighter" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
+                    <select className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl px-3 py-3 text-xs shadow-sm outline-none font-black uppercase tracking-tighter appearance-none border-r-8 border-transparent" value={filtroProfissional} onChange={(e) => setFiltroProfissional(e.target.value)}>
                         <option value="todos">Todos</option>
                         {profissionais.map(p => <option key={p.id} value={p.id}>{p.name.split(' ')[0]}</option>)}
                     </select>
