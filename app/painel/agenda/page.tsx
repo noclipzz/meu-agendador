@@ -355,13 +355,13 @@ export default function PainelDashboard() {
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                     {horas.map(h => (
                         <div key={h} className="flex border-b dark:border-gray-700 h-[var(--hour-h)]">
-                            <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-10">{h.toString().padStart(2, '0')}:00</div>
+                            <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-[5]">{h.toString().padStart(2, '0')}:00</div>
                             <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
                         </div>
                     ))}
 
                     {isToday && (
-                        <div className="absolute left-16 right-0 z-30 flex items-center pointer-events-none" style={{ top: `calc(((${getHours(agora)} * 60 + ${getMinutes(agora)}) / 60) * var(--hour-h))` }}>
+                        <div className="absolute left-16 right-0 z-[10] flex items-center pointer-events-none" style={{ top: `calc(((${getHours(agora)} * 60 + ${getMinutes(agora)}) / 60) * var(--hour-h))` }}>
                             <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-sm"></div>
                             <div className="h-[2px] w-full bg-red-500 shadow-sm opacity-80"></div>
                         </div>
@@ -458,7 +458,7 @@ export default function PainelDashboard() {
         <div className="h-auto md:h-screen flex flex-col p-0 gap-0 text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
             {/* BARRA FIXA SUPERIOR (HEADER + FILTROS) */}
-            <div className="sticky top-0 z-10 flex flex-col shadow-sm bg-gray-50 dark:bg-gray-950">
+            <div className="sticky top-0 z-[25] flex flex-col shadow-sm bg-white dark:bg-gray-950 border-b dark:border-gray-800">
                 <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
                     <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
                         <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
