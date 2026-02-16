@@ -4,10 +4,15 @@ import { auth } from "@clerk/nextjs/server";
 
 const prisma = db;
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const { userId } = await auth();
-        if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+        if (!userId) {
+            console.error("⛔ [DELETE_ENTRADA] Usuário não autenticado pelo Clerk.");
+            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+        }
 
         const body = await req.json();
         const { clientId, value, description, method, date } = body;
@@ -55,7 +60,10 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
     try {
         const { userId } = await auth();
-        if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+        if (!userId) {
+            console.error("⛔ [DELETE_ENTRADA] Clerk não encontrou userId.");
+            return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+        }
 
         const { id } = await req.json();
         if (!id) return NextResponse.json({ error: "ID não fornecido" }, { status: 400 });
