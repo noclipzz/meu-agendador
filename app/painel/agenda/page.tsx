@@ -295,7 +295,7 @@ export default function PainelDashboard() {
                         const ehMes = isSameMonth(dia, dataAtual);
 
                         return (
-                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 h-[120px] md:h-[150px] flex flex-col cursor-pointer hover:bg-gray-50 transition ${!ehMes && 'opacity-30'}`}>
+                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 h-[120px] md:h-[95px] flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'}`}>
                                 <div className="flex justify-between items-start mb-1 shrink-0">
                                     <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
                                     {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R${faturamentoDia}</span>}
@@ -347,17 +347,17 @@ export default function PainelDashboard() {
         const topLinha = (getHours(agora) * 60 + getMinutes(agora)) / 60 * PIXELS_POR_HORA;
 
         return (
-            <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative">
+            <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative [--hour-h:90px] md:[--hour-h:55px]">
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                     {horas.map(h => (
-                        <div key={h} className="flex border-b dark:border-gray-700 h-[90px]">
+                        <div key={h} className="flex border-b dark:border-gray-700 h-[var(--hour-h)]">
                             <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-10">{h.toString().padStart(2, '0')}:00</div>
                             <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
                         </div>
                     ))}
 
                     {isToday && (
-                        <div className="absolute left-16 right-0 z-30 flex items-center pointer-events-none" style={{ top: `${topLinha}px` }}>
+                        <div className="absolute left-16 right-0 z-30 flex items-center pointer-events-none" style={{ top: `calc(((${getHours(agora)} * 60 + ${getMinutes(agora)}) / 60) * var(--hour-h))` }}>
                             <div className="w-3 h-3 bg-red-500 rounded-full -ml-1.5 shadow-sm"></div>
                             <div className="h-[2px] w-full bg-red-500 shadow-sm opacity-80"></div>
                         </div>
@@ -366,8 +366,9 @@ export default function PainelDashboard() {
                     {agsProcessados.map(ag => {
                         const data = new Date(ag.date);
                         const pro = profissionais.find(p => p.id === ag.professionalId);
-                        const top = (getHours(data) * 60 + getMinutes(data)) / 60 * PIXELS_POR_HORA;
-                        const height = (ag.service?.duration / 60 * PIXELS_POR_HORA) || 40;
+                        const topCalc = (getHours(data) * 60 + getMinutes(data)) / 60;
+                        const heightCalc = (ag.service?.duration / 60) || 0.5;
+
                         const { count, index } = ag._layout;
                         const isConfirmado = ag.status === "CONFIRMADO";
                         const isConcluido = ag.status === "CONCLUIDO";
@@ -379,7 +380,8 @@ export default function PainelDashboard() {
                                 <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
                                     className="absolute rounded-xl text-left shadow-sm transition-all border-2 border-dashed flex items-center gap-2 overflow-hidden px-3 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400 hover:text-blue-500 group"
                                     style={{
-                                        top: `${top}px`, height: `${height}px`,
+                                        top: `calc(${topCalc} * var(--hour-h))`,
+                                        height: `calc(${heightCalc} * var(--hour-h))`,
                                         width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                         left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
                                     }}>
@@ -392,7 +394,6 @@ export default function PainelDashboard() {
                                             <span className="text-[9px] opacity-60 mr-1.5">[{pro?.name || 'GERAL'}]</span>
                                             {ag.customerName}
                                         </span>
-                                        {ag.location && <span className="text-[9px] font-bold opacity-60 truncate whitespace-nowrap bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-md">📍 {ag.location}</span>}
                                     </div>
                                 </button>
                             );
@@ -405,7 +406,9 @@ export default function PainelDashboard() {
                                 ${isEncaixe ? 'ring-2 ring-amber-400' : ''}
                             `}
                                 style={{
-                                    top: `${top}px`, height: `${height}px`, backgroundColor: isEncaixe ? '#f59e0b' : (pro?.color || '#3b82f6'),
+                                    top: `calc(${topCalc} * var(--hour-h))`,
+                                    height: `calc(${heightCalc} * var(--hour-h))`,
+                                    backgroundColor: isEncaixe ? '#f59e0b' : (pro?.color || '#3b82f6'),
                                     borderColor: 'rgba(0,0,0,0.1)',
                                     width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                     left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
@@ -415,16 +418,12 @@ export default function PainelDashboard() {
                                         {format(data, "HH:mm")}
                                         {isEncaixe ? <Zap size={14} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={14} /> : isConfirmado ? <CheckCheck size={14} className="text-green-300" /> : <Clock size={12} className="text-white/60" />)}
                                     </span>
-                                    <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black/10 text-white ${isEncaixe ? 'bg-white/20' : ''}`}>{isEncaixe ? 'ENCAIXE' : ag.status}</div>
                                 </div>
-                                <div className="flex items-center justify-between mt-1">
-                                    <span className="font-bold text-[12px] truncate uppercase tracking-tighter">
-                                        <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
-                                            {pro?.name?.split(' ')[0] || 'GERAL'}
-                                        </span>
+                                <div className="flex items-center justify-between mt-0.5">
+                                    <span className="font-bold text-[11px] truncate uppercase tracking-tighter">
                                         {ag.customerName}
                                     </span>
-                                    <span className="text-[10px] font-black opacity-90 bg-black/10 px-2 py-0.5 rounded-full">R$ {Number(ag.service?.price || 0)}</span>
+                                    <span className="text-[10px] font-black opacity-90 bg-black/10 px-1.5 py-0.5 rounded-full">R${Number(ag.service?.price || 0)}</span>
                                 </div>
                             </button>
                         )
