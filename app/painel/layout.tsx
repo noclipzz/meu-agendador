@@ -64,6 +64,18 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         notificarGeral: true
     });
 
+    // --- TRAVA SCROLL DO FUNDO AO ABRIR MODAL ---
+    useEffect(() => {
+        const mainEl = document.getElementById("main-content-panel");
+        if (!mainEl) return;
+
+        if (isModalOpen || isSidebarOpen || isSearchModalOpen) {
+            mainEl.style.overflow = "hidden";
+        } else {
+            mainEl.style.overflow = "auto";
+        }
+    }, [isModalOpen, isSidebarOpen, isSearchModalOpen]);
+
     useEffect(() => {
         setNovo({
             clientId: "",
@@ -365,10 +377,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <div className={`min-h-screen flex flex-col md:flex-row font-sans ${theme}`}>
+        <div className={`h-screen flex flex-col md:flex-row font-sans ${theme} overflow-hidden`}>
 
             {/* --- HEADER MOBILE --- */}
-            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-30 sticky top-0">
+            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-[45] shrink-0 sticky top-0 shadow-sm">
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
@@ -422,8 +434,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     ))}
                 </nav>
 
-                <div className="p-4 space-y-3">
-                    {/* Botão de Instalação (PWA) - Visível apenas se puder instalar */}
+                <div className="p-4 space-y-3 shrink-0">
                     <InstallSidebarButton />
 
                     <button
@@ -434,20 +445,20 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         <PlusCircle size={20} /> Novo Agendamento
                     </button>
 
-                    <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden">
+                    <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
                         <UserButton showName />
                         <div className="italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                     </div>
                 </div>
 
-                <div className="p-4 border-t dark:border-gray-800 hidden md:block">
+                <div className="p-4 border-t dark:border-gray-800 hidden md:block shrink-0">
                     <UserButton showName />
                     <div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                 </div>
             </aside>
 
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
-            <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white">
+            <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto h-full relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
                 {(() => {
                     const currentRoute = allItems.find(item => pathname === item.path);
                     const isDenied = currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN";

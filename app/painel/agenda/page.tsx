@@ -105,6 +105,18 @@ export default function PainelDashboard() {
 
     useEffect(() => { carregarDados(); }, [refreshKey]);
 
+    // --- TRAVA SCROLL DO FUNDO AO ABRIR MODAL ---
+    useEffect(() => {
+        const mainEl = document.getElementById("main-content-panel");
+        if (!mainEl) return;
+
+        if (agendamentoSelecionado) {
+            mainEl.style.overflow = "hidden";
+        } else {
+            mainEl.style.overflow = "auto";
+        }
+    }, [agendamentoSelecionado]);
+
     // POLLING (Atualização Automática)
     useEffect(() => {
         const intervaloSincronia = setInterval(() => {
