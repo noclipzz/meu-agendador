@@ -412,10 +412,10 @@ export default function GestaoEquipe() {
                                     <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
                                     <div className="flex gap-4 mt-1">
                                         <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {proSelecionado.phone || "Sem telefone"}</span>
-                                        <span className={`font-bold flex items-center gap-1 text-sm ${proSelecionado.status === 'INATIVO' ? 'text-red-500' : 'text-gray-400'}`}>
-                                            {proSelecionado.status === 'INATIVO' ? <X size={14} /> : <Check size={14} className="text-green-500" />}
+                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${proSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${proSelecionado.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                                             {proSelecionado.status === 'INATIVO' ? 'Inativo' : 'Ativo'}
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

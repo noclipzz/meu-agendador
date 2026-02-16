@@ -624,9 +624,12 @@ export default function ClientesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-2">
                 {filtrados.map(c => (
                     <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
-                        <div className="flex justify-between mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600">{c.name.charAt(0)}</div>
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${c.status === 'ATIVO' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{c.status}</span>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600 shadow-sm border border-blue-100 dark:border-blue-800/30">{c.name.charAt(0)}</div>
+                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${c.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                <span className="text-[9px] font-black uppercase tracking-wider">{c.status}</span>
+                            </div>
                         </div>
                         <h3 className="font-black text-lg group-hover:text-blue-600 transition dark:text-white">{c.name}</h3>
                         <p className="text-sm text-gray-500">{c.phone || 'Sem telefone'}</p>
@@ -647,7 +650,10 @@ export default function ClientesPage() {
                                     <h2 className="text-xl md:text-3xl font-black dark:text-white truncate" title={clienteSelecionado.name}>{clienteSelecionado.name}</h2>
                                     <div className="flex flex-col md:flex-row gap-1 md:gap-4 mt-1">
                                         <span className="text-blue-600 font-bold flex items-center gap-1 text-xs md:text-sm"><Phone size={12} className="md:size-3.5" /> {clienteSelecionado.phone}</span>
-                                        <span className="text-gray-400 font-bold flex items-center gap-1 text-xs md:text-sm"><CheckCircle2 size={12} className="text-green-500 md:size-3.5" /> Cliente {clienteSelecionado.status}</span>
+                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${clienteSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${clienteSelecionado.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                            Cliente {clienteSelecionado.status}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
