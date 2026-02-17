@@ -405,7 +405,7 @@ export default function GestaoEquipe() {
 
             {/* FICHA DO PROFISSIONAL (TABBED) */}
             {proSelecionado && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
                         {/* HEADER DA FICHA */}

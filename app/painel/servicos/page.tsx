@@ -170,7 +170,7 @@ export default function ServicosPage() {
 
             {/* MODAL */}
             {modalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-8 pb-4 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-white/5 flex justify-between items-center">
                             <h2 className="text-2xl font-black dark:text-white">{form.id ? "Editar Serviço" : "Novo Serviço"}</h2>
