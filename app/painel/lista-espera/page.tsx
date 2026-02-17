@@ -128,28 +128,28 @@ export default function ListaEsperaPage() {
                                 </div>
 
                                 <div className="space-y-3 mb-6">
-                                    {item.service && (
-                                        <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                                <Calendar size={16} />
+                                    <div className="flex flex-wrap gap-2">
+                                        {item.service && (
+                                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                                <Calendar size={14} className="shrink-0" />
+                                                <span className="truncate max-w-[150px]">{item.service.name}</span>
                                             </div>
-                                            <span>Quer: <strong>{item.service.name}</strong></span>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {item.desiredDate && (
-                                        <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl">
-                                            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
-                                                <Clock size={16} />
+                                        {item.desiredDate && (
+                                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1.5 rounded-lg border border-red-100 dark:border-red-800/50">
+                                                <Clock size={14} className="shrink-0" />
+                                                <span className="whitespace-nowrap">{format(new Date(item.desiredDate), "dd 'de' MMM", { locale: ptBR })}</span>
                                             </div>
-                                            <span>Para: <strong>{format(new Date(item.desiredDate), "dd 'de' MMMM", { locale: ptBR })}</strong></span>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
 
                                     {item.preferences && (
-                                        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-xl">
-                                            <p className="text-[10px] font-black text-yellow-600 dark:text-yellow-500 uppercase mb-1">Preferências</p>
-                                            <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 italic">"{item.preferences}"</p>
+                                        <div className="p-2.5 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-xl relative">
+                                            <div className="absolute -top-2 left-2 px-1 bg-yellow-50 dark:bg-gray-800 text-[9px] font-black text-yellow-600 dark:text-yellow-500 uppercase tracking-widest leading-none">
+                                                Obs
+                                            </div>
+                                            <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 italic line-clamp-2 leading-relaxed">"{item.preferences}"</p>
                                         </div>
                                     )}
                                 </div>

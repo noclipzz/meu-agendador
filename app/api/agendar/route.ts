@@ -34,8 +34,41 @@ export async function POST(req: Request) {
         const agora = new Date();
 
         if (dataAgendamento < new Date(agora.getTime() - 60000)) {
-            return new NextResponse("Não é possível agendar um horário que já passou.", { status: 400 });
+            return new NextResponse({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
         }
+
+        // --- PROTEÇÃO ANTI-SPAM / GRIEFING ---
+        const phoneClean = phone?.replace(/\D/g, "") || "";
+
+        // Regra 1: Cooldown de 10 minutos entre agendamentos do mesmo número
+        const ultimoAgendamento = await prisma.booking.findFirst({
+            where: {
+                companyId,
+                customerPhone: phone,
+                createdAt: {
+                    gte: new Date(Date.now() - 10 * 60 * 1000) // 10 minutos atrás
+                }
+            }
+        });
+
+        if (ultimoAgendamento) {
+            return NextResponse.json({ error: "Você já realizou um agendamento recentemente. Aguarde 10 minutos." }, { status: 429 });
+        }
+
+        // Regra 2: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
+        const agendamentosFuturos = await prisma.booking.count({
+            where: {
+                companyId,
+                customerPhone: phone,
+                date: { gte: agora },
+                status: { in: ["PENDENTE", "CONFIRMADO"] }
+            }
+        });
+
+        if (agendamentosFuturos >= 2) {
+            return NextResponse.json({ error: "Você atingiu o limite de agendamentos ativos. Cancele um horário ou aguarde." }, { status: 429 });
+        }
+        // -------------------------------------
 
         // 2. Busca dados auxiliares
         const [service, company] = await Promise.all([
@@ -44,7 +77,7 @@ export async function POST(req: Request) {
         ]);
 
         let finalClientId = clientId;
-        const phoneClean = phone?.replace(/\D/g, "") || "";
+        // const phoneClean já definido acima
         if (!finalClientId && phoneClean) {
             const existingClient = await prisma.client.findFirst({
                 where: {
