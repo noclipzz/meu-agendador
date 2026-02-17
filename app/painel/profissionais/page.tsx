@@ -58,6 +58,7 @@ export default function GestaoEquipe() {
         permissions: {
             dashboard: false,
             agenda: true,
+            listaEspera: false,
             clientes: true,
             financeiro: false,
             estoque: false,
@@ -289,6 +290,7 @@ export default function GestaoEquipe() {
             permissions: p.permissions || {
                 dashboard: false,
                 agenda: true,
+                listaEspera: false,
                 clientes: true,
                 financeiro: false,
                 estoque: false,
@@ -309,6 +311,7 @@ export default function GestaoEquipe() {
             permissions: {
                 dashboard: false,
                 agenda: true,
+                listaEspera: false,
                 clientes: true,
                 financeiro: false,
                 estoque: false,
@@ -653,6 +656,7 @@ export default function GestaoEquipe() {
                                                     {[
                                                         { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} /> },
                                                         { key: 'agenda', label: 'Agenda', icon: <Calendar size={14} /> },
+                                                        { key: 'listaEspera', label: 'Lista Espera', icon: <Clock size={14} /> },
                                                         { key: 'clientes', label: 'Clientes', icon: <Users size={14} /> },
                                                         { key: 'financeiro', label: 'Financeiro', icon: <BarChart3 size={14} /> },
                                                         { key: 'estoque', label: 'Estoque', icon: <Package size={14} /> },

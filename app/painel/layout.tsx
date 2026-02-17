@@ -340,7 +340,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const allItems = [
         { key: 'dashboard', name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
-        { key: 'lista-espera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
+        { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
         { key: 'prontuarios', name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
