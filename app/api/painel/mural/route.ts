@@ -86,6 +86,65 @@ export async function POST(req: Request) {
             }
         });
 
+        // --- NOTIFICAÇÃO PUSH PARA A EQUIPE ---
+        try {
+            // 1. Busca todos os usuários da empresa (Dono + Membros)
+            const members = await prisma.teamMember.findMany({
+                where: { companyId },
+                select: { clerkUserId: true }
+            });
+
+            const company = await prisma.company.findUnique({
+                where: { id: companyId },
+                select: { ownerId: true }
+            });
+
+            // Lista de IDs para notificar (evita notificar quem postou)
+            const userIdsToNotify = new Set<string>();
+            if (company?.ownerId && company.ownerId !== userId) userIdsToNotify.add(company.ownerId);
+            members.forEach(m => {
+                if (m.clerkUserId && m.clerkUserId !== userId) userIdsToNotify.add(m.clerkUserId);
+            });
+
+            // 2. Busca as inscrições Push desses usuários
+            if (userIdsToNotify.size > 0) {
+                const subscriptions = await prisma.pushSubscription.findMany({
+                    where: { userId: { in: Array.from(userIdsToNotify) } }
+                });
+
+                // 3. Configura WebPush
+                const webpush = require("web-push");
+                const publicKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").trim();
+                const privateKey = (process.env.VAPID_PRIVATE_KEY || "").trim();
+
+                if (publicKey && privateKey) {
+                    webpush.setVapidDetails("mailto:suporte@nohud.com.br", publicKey, privateKey);
+
+                    const payload = JSON.stringify({
+                        title: `📢 Mural: ${type || "Novo Aviso"}`,
+                        body: `${authorName}: ${title}`,
+                        url: "/painel/mural",
+                    });
+
+                    // 4. Dispara em paralelo
+                    await Promise.allSettled(subscriptions.map(sub => {
+                        return webpush.sendNotification({
+                            endpoint: sub.endpoint,
+                            keys: { auth: sub.auth, p256dh: sub.p256dh }
+                        }, payload).catch((e: any) => {
+                            if (e.statusCode === 410) {
+                                // Inscrição inválida, remove do banco
+                                prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => { });
+                            }
+                        });
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error("ERRO_PUSH_MURAL:", error);
+            // Não deve falhar o request se o push falhar
+        }
+
         return NextResponse.json(post);
 
     } catch (error) {
