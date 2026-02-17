@@ -9,6 +9,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+        console.log("PAYLOAD_AGENDAR", body);
         const {
             name,
             phone,
@@ -34,28 +35,14 @@ export async function POST(req: Request) {
         const agora = new Date();
 
         if (dataAgendamento < new Date(agora.getTime() - 60000)) {
-            return new NextResponse({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
+            return NextResponse.json({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
         }
 
         // --- PROTEÇÃO ANTI-SPAM / GRIEFING ---
         const phoneClean = phone?.replace(/\D/g, "") || "";
 
-        // Regra 1: Cooldown de 10 minutos entre agendamentos do mesmo número
-        const ultimoAgendamento = await prisma.booking.findFirst({
-            where: {
-                companyId,
-                customerPhone: phone,
-                createdAt: {
-                    gte: new Date(Date.now() - 10 * 60 * 1000) // 10 minutos atrás
-                }
-            }
-        });
-
-        if (ultimoAgendamento) {
-            return NextResponse.json({ error: "Você já realizou um agendamento recentemente. Aguarde 10 minutos." }, { status: 429 });
-        }
-
-        // Regra 2: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
+        // Regra: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
+        // Isso evita que uma pessoa bloqueie a agenda inteira
         const agendamentosFuturos = await prisma.booking.count({
             where: {
                 companyId,
@@ -66,7 +53,9 @@ export async function POST(req: Request) {
         });
 
         if (agendamentosFuturos >= 2) {
-            return NextResponse.json({ error: "Você atingiu o limite de agendamentos ativos. Cancele um horário ou aguarde." }, { status: 429 });
+            return NextResponse.json({
+                error: "Você já possui agendamentos ativos. Por favor, aguarde ou cancele um horário existente."
+            }, { status: 429 });
         }
         // -------------------------------------
 
@@ -220,8 +209,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ ...bookingsCreated[0], warnings, count: bookingsCreated.length });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("ERRO_AGENDAR:", error);
-        return new NextResponse("Erro interno ao agendar", { status: 500 });
+        return new NextResponse(JSON.stringify({ error: "Erro interno ao agendar", details: error.message }), { status: 500 });
     }
 }

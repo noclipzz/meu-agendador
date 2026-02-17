@@ -23,7 +23,8 @@ export async function POST(req: Request) {
         date: {
           gte: startOfDay(dataBusca),
           lte: endOfDay(dataBusca)
-        }
+        },
+        status: { not: "CANCELADO" }
       },
       // IMPORTANTE: Inclui os dados do serviço para sabermos a duração
       include: {
