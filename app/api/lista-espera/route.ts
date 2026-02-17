@@ -12,7 +12,8 @@ export async function POST(req: Request) {
             preferences,
             serviceId,
             professionalId,
-            companyId
+            companyId,
+            date
         } = body;
 
         if (!name || !phone || !companyId) {
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
                 serviceId: serviceId || null,
                 professionalId: professionalId || null,
                 companyId: companyId,
+                desiredDate: date ? new Date(date) : null,
                 status: "ATIVO"
             }
         });

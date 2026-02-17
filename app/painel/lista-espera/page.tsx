@@ -116,6 +116,15 @@ export default function ListaEsperaPage() {
                                         </div>
                                     )}
 
+                                    {item.desiredDate && (
+                                        <div className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-red-50 dark:bg-red-900/20 p-3 rounded-xl">
+                                            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                                                <Clock size={16} />
+                                            </div>
+                                            <span>Para: <strong>{format(new Date(item.desiredDate), "dd 'de' MMMM", { locale: ptBR })}</strong></span>
+                                        </div>
+                                    )}
+
                                     {item.preferences && (
                                         <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-xl">
                                             <p className="text-[10px] font-black text-yellow-600 dark:text-yellow-500 uppercase mb-1">Preferências</p>
