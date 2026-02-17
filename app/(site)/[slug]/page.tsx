@@ -412,9 +412,17 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
               />
             </div>
 
-            <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={16} className="text-blue-600" /> Horários para {format(dataSelecionada, 'dd/MM')}
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                <Clock size={16} className="text-blue-600" /> Horários
+              </h3>
+              <button
+                onClick={() => setShowWaitingList(true)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+              >
+                Não achou horário?
+              </button>
+            </div>
 
             <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar mb-8">
               {horariosDisponiveis.map(h => (
