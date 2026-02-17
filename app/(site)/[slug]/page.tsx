@@ -5,7 +5,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin } from "lucide-react";
+import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
 import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 // --- HELPER: MÁSCARA DE TELEFONE ---
@@ -176,8 +176,12 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       setAgendamentoConcluido(true);
     } else {
       const err = await res.json();
-      alert(err.error || "Ops! Este horário não está mais disponível.");
       setHorarioSelecionado(null);
+      setErrorModal({
+        isOpen: true,
+        title: "Não foi possível agendar",
+        message: err.error || "Ocorreu um erro ao processar seu agendamento. Por favor, tente novamente."
+      });
     }
   }
 
@@ -239,6 +243,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   // --- ESTADOS DE CONFIRMAÇÃO ---
   const [modalConfirmacao, setModalConfirmacao] = useState<{ isOpen: boolean, id: string | null }>({ isOpen: false, id: null });
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean, title: string, message: string }>({ isOpen: false, title: "", message: "" });
   const [cancelando, setCancelando] = useState(false);
 
   function solicitarCancelamento(id: string) {
@@ -574,6 +579,33 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 <p className="text-gray-500 font-medium">Fique de olho no seu WhatsApp, entraremos em contato assim que surgir uma vaga.</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ERRO */}
+      {errorModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-8 text-center animate-in zoom-in duration-300 border-2 border-red-50 relative">
+            <button
+              onClick={() => setErrorModal({ ...errorModal, isOpen: false })}
+              className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"
+            >
+              <X size={24} />
+            </button>
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-inner">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tighter leading-tight">{errorModal.title}</h3>
+            <p className="text-gray-500 font-medium mb-8 leading-relaxed">
+              {errorModal.message}
+            </p>
+            <button
+              onClick={() => setErrorModal({ ...errorModal, isOpen: false })}
+              className="w-full bg-red-500 text-white font-black py-4 rounded-2xl hover:bg-red-600 transition shadow-xl shadow-red-500/20 active:scale-95"
+            >
+              OK, Entendi
+            </button>
           </div>
         </div>
       )}
