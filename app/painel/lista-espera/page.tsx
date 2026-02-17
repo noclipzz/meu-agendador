@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loader2, Trash2, CheckCircle, MessageSquare, Clock, User, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -52,7 +52,20 @@ export default function ListaEsperaPage() {
     function gerarLinkWhatsapp(cliente: any) {
         if (!cliente.customerPhone) return "";
         const phone = cliente.customerPhone.replace(/\D/g, "");
-        const texto = `Olá ${cliente.customerName}! 🌟\n\nTenho uma excelente notícia: surgiu uma vaga para o serviço que você queria (${cliente.service?.name || "atendimento"}).\n\nPodemos agendar para hoje? Responda agora para garantir o horário! ⏳`;
+
+        let dataTexto = "";
+        if (cliente.desiredDate) {
+            const dataDesejada = new Date(cliente.desiredDate);
+            if (isToday(dataDesejada)) {
+                dataTexto = "para hoje";
+            } else {
+                dataTexto = `para o dia ${format(dataDesejada, "dd 'de' MMMM", { locale: ptBR })}`;
+            }
+        } else {
+            dataTexto = "para a data que você queria";
+        }
+
+        const texto = `Olá ${cliente.customerName}! 🌟\n\nTenho uma excelente notícia: surgiu uma vaga para o serviço que você queria (${cliente.service?.name || "atendimento"}) ${dataTexto}.\n\nVamos agendar? Responda agora para garantir o horário! ⏳`;
         return `https://wa.me/55${phone}?text=${encodeURIComponent(texto)}`;
     }
 
