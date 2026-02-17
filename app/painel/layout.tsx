@@ -348,7 +348,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
         { key: 'profissionais', name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> },
-        { key: 'config', name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
     ];
 
     const menuItems = allItems.filter(item => {
@@ -396,6 +395,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </button>
                 <div className="flex items-center gap-4">
                     <UserButton />
+                    {(userRole === "ADMIN" || userPermissions?.config) && (
+                        <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
+                            <Settings size={22} />
+                        </Link>
+                    )}
                     <Link href="/" className="flex items-center gap-2">
                         <LogoNohud />
                     </Link>
@@ -457,14 +461,28 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </button>
 
                     <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
-                        <UserButton showName />
+                        <div className="flex items-center gap-2">
+                            <UserButton showName />
+                            {(userRole === "ADMIN" || userPermissions?.config) && (
+                                <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
+                                    <Settings size={20} />
+                                </Link>
+                            )}
+                        </div>
                         <div className="italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                     </div>
                 </div>
 
                 <div className="p-4 border-t dark:border-gray-800 hidden md:block shrink-0">
-                    <UserButton showName />
-                    <div className="mt-2 px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
+                    <div className="flex items-center justify-between mb-2">
+                        <UserButton showName />
+                        {(userRole === "ADMIN" || userPermissions?.config) && (
+                            <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition" title="Configurações">
+                                <Settings size={18} />
+                            </Link>
+                        )}
+                    </div>
+                    <div className="px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                 </div>
             </aside>
 
