@@ -386,7 +386,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         <div className={`h-screen flex flex-col md:flex-row font-sans ${theme} overflow-hidden`}>
 
             {/* --- HEADER MOBILE --- */}
-            <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-[60] shrink-0 sticky top-0 shadow-sm">
+            <div className="md:hidden h-[73px] shrink-0 print:hidden" /> {/* Placeholder para o header fixo */}
+            <header className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-4 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b dark:border-gray-800 z-[60] h-[73px] shadow-sm">
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
@@ -499,7 +500,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 <UserGuide />
 
                 {isModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[90] p-4 print:hidden">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 print:hidden">
                         <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 flex flex-col max-h-[95vh]">
                             {/* HEADER FIXO */}
                             <div className="p-6 pb-0 shrink-0">
@@ -684,7 +685,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 )}
 
                 {isSearchModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[120] p-4 print:hidden">
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
                             <div className="flex justify-between items-center mb-4 dark:text-white">
                                 <h3 className="font-black text-xl ml-2">Buscar Cliente</h3>
