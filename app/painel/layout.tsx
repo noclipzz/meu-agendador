@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -341,6 +341,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'dashboard', name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
+        { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
         { key: 'prontuarios', name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
@@ -351,6 +352,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     ];
 
     const menuItems = allItems.filter(item => {
+        // Mural é visível para todos da equipe
+        if (item.key === 'mural') return true;
+
         // Admins tem permissão total (já garantido pela API, mas reforçamos aqui)
         if (userRole === "ADMIN") {
             // Regras de plano ainda se aplicam para o menu do Admin

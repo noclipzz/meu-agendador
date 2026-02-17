@@ -51,6 +51,25 @@ model Company {
   products          Product[]      // Estoque da empresa
   formTemplates     FormTemplate[] // Templates de prontuário
   waitingList       WaitingList[]  // Lista de espera
+  posts             OrganizationPost[] // Mural de Avisos
+}
+
+// --- MURAL DE AVISOS (REDE SOCIAL CORPORATIVA) ---
+model OrganizationPost {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  type      String   @default("AVISO") // AVISO, EVENTO, URGENTE, CELEBRACAO
+  imageUrl  String?
+  
+  authorId  String?  // Clerk User ID de quem postou
+  authorName String? // Nome cacheado para exibição rápida
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- MEMBROS DA EQUIPE ---
