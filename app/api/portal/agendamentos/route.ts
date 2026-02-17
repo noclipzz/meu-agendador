@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCurta } from "@/app/utils/formatters";
+import { checkWaitingList } from "@/lib/waiting-list";
 
 const prisma = db;
 
@@ -73,6 +74,9 @@ export async function POST(req: Request) {
             if (booking.professionalId) {
                 await notifyProfessional(booking.professionalId, titulo, corpo, "/painel/agenda");
             }
+
+            // 3. Notifica se houver LISTA DE ESPERA
+            await checkWaitingList(booking);
 
             return NextResponse.json({ success: true });
         }
