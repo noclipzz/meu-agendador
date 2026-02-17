@@ -82,6 +82,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   const [nomeCliente, setNomeCliente] = useState("");
   const [telefoneCliente, setTelefoneCliente] = useState("");
+  const [isIdentified, setIsIdentified] = useState(false);
   const [agendamentoConcluido, setAgendamentoConcluido] = useState(false);
 
   // --- ESTADOS LISTA DE ESPERA ---
@@ -371,9 +372,70 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       {/* FLUXO DE AGENDAMENTO */}
       <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all">
 
-        {/* PASSO 1: SERVIÇOS */}
-        {!servicoSelecionado && (
+        {/* PASSO 1: IDENTIFICAÇÃO (NOME E TELEFONE) */}
+        {!isIdentified && (
           <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <User size={20} className="text-blue-600" /> Seus Dados
+            </h2>
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Seu Nome</label>
+                <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="Nome completo" value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
+                <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
+              </div>
+
+              {/* ALERTA DE AGENDAMENTO EXISTENTE */}
+              {agendamentosExistentes.length > 0 && (
+                <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2">
+                  <p className="text-xs font-black text-yellow-800 uppercase tracking-tighter text-center">⚠️ Você já possui um horário agendado!</p>
+                  <div className="space-y-3">
+                    {agendamentosExistentes.map(ag => (
+                      <div key={ag.id} className="bg-white p-4 rounded-2xl border border-yellow-100 flex flex-col gap-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-xs font-black text-gray-800 uppercase">{ag.service?.name}</p>
+                            <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5">
+                              {format(new Date(ag.date), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => solicitarCancelamento(ag.id)}
+                            className="text-[9px] font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-200 transition uppercase"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  if (nomeCliente.length < 3 || telefoneCliente.length < 11) {
+                    alert("Por favor, preencha seu nome e telefone corretamente.");
+                    return;
+                  }
+                  setIsIdentified(true);
+                }}
+                className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-blue-700 transition active:scale-95 mt-4"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 2: SERVIÇOS */}
+        {isIdentified && !servicoSelecionado && (
+          <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
+            <button onClick={() => setIsIdentified(false)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
             <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
               <Building2 size={20} className="text-blue-600" /> Selecione o Serviço
             </h2>
@@ -393,8 +455,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* PASSO 2: PROFISSIONAL */}
-        {servicoSelecionado && !profissionalSelecionado && (
+        {/* PASSO 3: PROFISSIONAL */}
+        {isIdentified && servicoSelecionado && !profissionalSelecionado && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <button onClick={() => setServicoSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
             <h2 className="text-xl font-black text-gray-900 mb-6">Com quem você deseja agendar?</h2>
@@ -414,10 +476,17 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* PASSO 3: CALENDÁRIO E HORÁRIOS */}
-        {servicoSelecionado && profissionalSelecionado && (
+        {/* PASSO 4: CALENDÁRIO E HORÁRIOS */}
+        {isIdentified && servicoSelecionado && profissionalSelecionado && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <button onClick={() => setProfissionalSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
+
+            <div className="mb-6">
+              <p className="text-sm font-black text-gray-900">Resumo</p>
+              <div className="text-xs text-gray-500 font-medium">
+                {nomeCliente} • {servicoSelecionado.name}
+              </div>
+            </div>
 
             <div className="mb-8 p-4 bg-gray-50 rounded-[2rem]">
               <Calendar
@@ -487,42 +556,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             {/* FORMULÁRIO FINAL */}
             {horarioSelecionado && (
               <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 border-t pt-8">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Seu Nome</label>
-                  <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="Nome completo" value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
-                  <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
-                </div>
-
-                {/* ALERTA DE AGENDAMENTO EXISTENTE */}
-                {agendamentosExistentes.length > 0 && (
-                  <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2">
-                    <p className="text-xs font-black text-yellow-800 uppercase tracking-tighter text-center">⚠️ Você já possui um horário agendado!</p>
-                    <div className="space-y-3">
-                      {agendamentosExistentes.map(ag => (
-                        <div key={ag.id} className="bg-white p-4 rounded-2xl border border-yellow-100 flex flex-col gap-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-xs font-black text-gray-800 uppercase">{ag.service?.name}</p>
-                              <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5">
-                                {format(new Date(ag.date), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => solicitarCancelamento(ag.id)}
-                              className="text-[9px] font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-200 transition uppercase"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <button onClick={finalizar} className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95">Finalizar Agendamento</button>
               </div>
             )}
