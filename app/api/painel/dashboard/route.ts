@@ -96,11 +96,13 @@ export async function GET() {
             select: { id: true, name: true, quantity: true, minStock: true, unit: true }
         }) : Promise.resolve([]);
 
-        const pPosts = prisma.organizationPost.findMany({
+        const canSeeMural = plano !== "INDIVIDUAL";
+
+        const pPosts = canSeeMural ? prisma.organizationPost.findMany({
             where: { companyId: companyId },
             orderBy: { createdAt: 'desc' },
             take: 3
-        });
+        }) : Promise.resolve([]);
 
         const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos, posts] = await Promise.all([
             pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos, pPosts
