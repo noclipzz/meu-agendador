@@ -32,7 +32,8 @@ export async function POST(req: Request) {
     if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
     const expensesToCreate = [];
-    const baseDate = new Date(body.date); // Garante que é Date
+    // Adiciona T12:00:00 para evitar que o fuso horário (ex: -3h) jogue para o dia anterior
+    const baseDate = new Date(`${body.date}T12:00:00`);
 
     // Definição de quantas repetições criar
     let occurrences = 1;
@@ -89,7 +90,7 @@ export async function PUT(req: Request) {
         value: parseFloat(value),
         category,
         frequency,
-        date: new Date(date),
+        date: new Date(`${date}T12:00:00`),
       }
     });
 

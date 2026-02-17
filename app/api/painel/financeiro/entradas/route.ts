@@ -45,8 +45,8 @@ export async function POST(req: Request) {
                 description: description || "Entrada Manual",
                 method: method || "OUTRO",
                 status: "PAGO",
-                dueDate: new Date(date),
-                paidAt: new Date(date),
+                dueDate: new Date(`${date}T12:00:00`),
+                paidAt: new Date(`${date}T12:00:00`),
             }
         });
 
