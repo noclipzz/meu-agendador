@@ -412,38 +412,60 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
               />
             </div>
 
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                <Clock size={16} className="text-blue-600" /> Horários
-              </h3>
-              <button
-                onClick={() => setShowWaitingList(true)}
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
-              >
-                Não achou horário?
-              </button>
-            </div>
+            {(() => {
+              const diaSemana = dataSelecionada.getDay().toString();
+              const diasTrabalho = empresa?.workDays ? empresa.workDays.split(',') : [];
+              const isDiaDeTrabalho = diasTrabalho.includes(diaSemana);
 
-            <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar mb-8">
-              {horariosDisponiveis.map(h => (
-                <button key={h} onClick={() => setHorarioSelecionado(h)} className={`py-3 rounded-2xl font-bold text-sm transition-all ${horarioSelecionado === h ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {h}
-                </button>
-              ))}
-            </div>
+              if (!isDiaDeTrabalho) {
+                return (
+                  <div className="text-center py-10 bg-gray-50 rounded-[2rem] border border-gray-100 mb-8 px-6 animate-in fade-in">
+                    <div className="w-16 h-16 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Clock size={24} />
+                    </div>
+                    <p className="text-gray-900 font-black text-sm mb-2">Não atendemos neste dia.</p>
+                    <p className="text-gray-500 text-xs font-bold">Por favor, selecione outra data no calendário.</p>
+                  </div>
+                );
+              }
 
-            {horariosDisponiveis.length === 0 && (
-              <div className="text-center py-10 bg-blue-50 rounded-[2rem] border border-blue-100 mb-8 px-6">
-                <p className="text-blue-900 font-black text-sm mb-2">Poxa! Não temos horários para este dia.</p>
-                <p className="text-blue-600 text-xs font-bold mb-6">Quer ser avisado se alguém cancelar ou se abrirmos uma vaga?</p>
-                <button
-                  onClick={() => setShowWaitingList(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 transition"
-                >
-                  Entrar na Lista de Espera 🚀
-                </button>
-              </div>
-            )}
+              return (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                      <Clock size={16} className="text-blue-600" /> Horários
+                    </h3>
+                    <button
+                      onClick={() => setShowWaitingList(true)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                    >
+                      Não achou horário?
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar mb-8">
+                    {horariosDisponiveis.map(h => (
+                      <button key={h} onClick={() => setHorarioSelecionado(h)} className={`py-3 rounded-2xl font-bold text-sm transition-all ${horarioSelecionado === h ? 'bg-blue-600 text-white shadow-lg scale-105' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        {h}
+                      </button>
+                    ))}
+                  </div>
+
+                  {horariosDisponiveis.length === 0 && (
+                    <div className="text-center py-10 bg-blue-50 rounded-[2rem] border border-blue-100 mb-8 px-6">
+                      <p className="text-blue-900 font-black text-sm mb-2">Poxa! Não temos horários para este dia.</p>
+                      <p className="text-blue-600 text-xs font-bold mb-6">Quer ser avisado se alguém cancelar ou se abrirmos uma vaga?</p>
+                      <button
+                        onClick={() => setShowWaitingList(true)}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 transition"
+                      >
+                        Entrar na Lista de Espera 🚀
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* FORMULÁRIO FINAL */}
             {horarioSelecionado && (
