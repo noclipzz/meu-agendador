@@ -320,7 +320,7 @@ export default function PainelDashboard() {
                                         return (
                                             <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center justify-between gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`} style={{ backgroundColor: ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
                                                 <div className="flex items-center gap-0.5 min-w-0 truncate">
-                                                    {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" && <CheckCheck size={10} />)}
+                                                    {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" ? <CheckCheck size={10} /> : (ag.status === "CONCLUIDO" ? null : <Clock size={10} className="opacity-70" />))}
                                                     {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
                                                     <span className="shrink-0 mr-1">{format(new Date(ag.date), "HH:mm")}</span>
                                                     <span className="truncate">
@@ -421,7 +421,7 @@ export default function PainelDashboard() {
                                     {/* HORÁRIO + ÍCONES */}
                                     <div className="flex items-center gap-1 shrink-0 bg-black/10 px-1.5 py-0.5 rounded-md">
                                         <span className="font-black text-[10px] md:text-[11px] leading-none">{format(data, "HH:mm")}</span>
-                                        {isEncaixe ? <Zap size={10} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={10} /> : isConfirmado ? <CheckCheck size={10} className="text-green-300" /> : null)}
+                                        {isEncaixe ? <Zap size={10} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={10} /> : isConfirmado ? <CheckCheck size={10} className="text-green-300" /> : <Clock size={10} className="opacity-70" />)}
                                     </div>
 
                                     {/* NOME DO CLIENTE E PROFISSIONAL */}
@@ -535,11 +535,18 @@ export default function PainelDashboard() {
             {
                 agendamentoSelecionado && (
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative">
+                        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><X /></button>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500"><Calendar size={32} /></div>
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg ${agendamentoSelecionado.status === 'CONCLUIDO' ? 'bg-green-500' :
+                                        agendamentoSelecionado.status === 'CONFIRMADO' ? 'bg-blue-600' :
+                                            'bg-yellow-400'
+                                        }`}>
+                                        {agendamentoSelecionado.status === 'CONCLUIDO' ? <CheckCircle2 size={32} /> :
+                                            agendamentoSelecionado.status === 'CONFIRMADO' ? <CheckCheck size={32} /> :
+                                                <Clock size={32} />}
+                                    </div>
                                     <div>
                                         {isEditing ? (
                                             <div className="space-y-2 w-full">
@@ -551,7 +558,15 @@ export default function PainelDashboard() {
                                         ) : (
                                             <>
                                                 <h2 className="text-2xl font-bold dark:text-white uppercase tracking-tight">{agendamentoSelecionado.customerName}</h2>
-                                                <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes do Cliente"}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${agendamentoSelecionado.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700' :
+                                                        agendamentoSelecionado.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-yellow-100 text-yellow-700'
+                                                        }`}>
+                                                        {agendamentoSelecionado.status || 'PENDENTE'}
+                                                    </span>
+                                                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes"}</p>
+                                                </div>
                                                 {agendamentoSelecionado.type !== "EVENTO" && agendamentoSelecionado.customerPhone && (
                                                     <p className="text-gray-500 text-sm font-bold flex items-center gap-1 mt-0.5"><Phone size={12} /> {agendamentoSelecionado.customerPhone}</p>
                                                 )}
@@ -654,7 +669,7 @@ export default function PainelDashboard() {
                                                     <button onClick={() => setModalCheckout(true)} className="w-full bg-green-600 text-white font-black py-4 rounded-2xl mb-2 flex items-center justify-center gap-2 shadow-lg shadow-green-500/20 active:scale-95"><CheckCircle2 size={20} /> Concluir Atendimento e Cobrar</button>
                                                 )}
 
-                                                {agendamentoSelecionado.status === "PENDENTE" && (
+                                                {(agendamentoSelecionado.status === "PENDENTE" || !agendamentoSelecionado.status) && (
                                                     <button onClick={() => confirmarAgendamentoManual(agendamentoSelecionado.id)} className="w-full bg-blue-100 text-blue-700 font-black py-3 rounded-xl hover:bg-blue-200 transition mb-2">Marcar como Confirmado</button>
                                                 )}
                                             </>

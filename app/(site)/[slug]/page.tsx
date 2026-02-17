@@ -367,6 +367,11 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             )}
           </div>
         )}
+
+        {/* CHAMADA PARA AÇÃO */}
+        <h3 className="mt-8 text-sm font-black text-gray-900 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 delay-500 flex items-center gap-2 mb-2">
+          👇 Realize seu agendamento:
+        </h3>
       </div>
 
       {/* FLUXO DE AGENDAMENTO */}
