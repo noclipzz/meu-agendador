@@ -96,8 +96,14 @@ export async function GET() {
             select: { id: true, name: true, quantity: true, minStock: true, unit: true }
         }) : Promise.resolve([]);
 
-        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos] = await Promise.all([
-            pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos
+        const pPosts = prisma.organizationPost.findMany({
+            where: { companyId: companyId },
+            orderBy: { createdAt: 'desc' },
+            take: 3
+        });
+
+        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos, posts] = await Promise.all([
+            pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos, pPosts
         ]);
 
         // Filtra estoque baixo via Javascript (Quantity <= MinStock)
@@ -125,6 +131,7 @@ export async function GET() {
             boletosVencer,
             estoqueBaixo,
             graficoDados,
+            posts,
             resumoFinanceiro: {
                 totalMes: faturasMes.reduce((acc, i) => acc + Number(i.value), 0),
                 qtdVencidos: boletosVencidos.length

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Calendar, AlertTriangle, TrendingUp, Package,
-    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell
+    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell, Megaphone
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from "date-fns";
@@ -159,8 +159,33 @@ export default function DashboardPage() {
                     )}
                 </div>
 
-                {/* COLUNA DIREITA (Estoque + Contas) */}
+                {/* COLUNA DIREITA (Estoque + Contas + Mural) */}
                 <div className="space-y-6">
+
+                    {/* 0. MURAL DE AVISOS (Recente) */}
+                    {dados.posts && dados.posts.length > 0 && (
+                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-black text-gray-700 dark:text-gray-200 flex items-center gap-2"><Megaphone className="text-blue-500" /> Mural da Equipe</h3>
+                                <Link href="/painel/mural" className="text-xs font-bold text-blue-600 hover:underline">Ver tudo</Link>
+                            </div>
+                            <div className="space-y-4">
+                                {dados.posts.map((post: any) => (
+                                    <div key={post.id} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase ${post.type === 'URGENTE' ? 'bg-red-100 text-red-600' : post.type === 'CELEBRACAO' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                {post.type}
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 font-bold">{format(new Date(post.createdAt), 'dd/MM')}</span>
+                                        </div>
+                                        <h4 className="font-black text-sm text-gray-800 dark:text-white line-clamp-1 mb-1">{post.title}</h4>
+                                        <p className="text-xs text-gray-500 line-clamp-2">{post.content}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* 2. ESTOQUE BAIXO ou BANNER UPGRADE */}
                     {dados.plano === "MASTER" ? (
                         dados.permissions?.estoque ? (
