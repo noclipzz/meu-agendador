@@ -194,7 +194,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           preferences,
           serviceId: servicoSelecionado?.id,
           professionalId: profissionalSelecionado?.id,
-          companyId: empresa.id
+          companyId: empresa.id,
+          date: dataSelecionada
         })
       });
       if (res.ok) {

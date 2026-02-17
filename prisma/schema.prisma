@@ -325,6 +325,7 @@ model WaitingList {
   customerName    String
   customerPhone   String
   preferences     String?  // Ex: "Segundas e Quartas, Manhã"
+  desiredDate     DateTime? // Data que o cliente queria
   status          String   @default("ATIVO") // ATIVO, ATENDIDO, CANCELADO
   
   serviceId       String?
