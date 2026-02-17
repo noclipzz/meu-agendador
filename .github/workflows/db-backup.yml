@@ -24,8 +24,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           # Extrai os dados e salva num arquivo com a data de hoje
-          # Adicionamos sslmode=require para garantir a conexão com a Neon
-          pg_dump "$DATABASE_URL" > backup_$(date +%Y-%m-%d).sql
+          # Usamos o caminho absoluto para garantir que a versão 17 seja usada
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" > backup_$(date +%Y-%m-%d).sql
 
       - name: Upload Backup to GitHub Artifacts
         uses: actions/upload-artifact@v4
