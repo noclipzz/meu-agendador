@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario } from "@/app/utils/formatters";
+import { auth } from "@clerk/nextjs/server";
+
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -39,23 +41,27 @@ export async function POST(req: Request) {
         }
 
         // --- PROTEÇÃO ANTI-SPAM / GRIEFING ---
+        const { userId } = await auth();
         const phoneClean = phone?.replace(/\D/g, "") || "";
 
-        // Regra: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
-        // Isso evita que uma pessoa bloqueie a agenda inteira
-        const agendamentosFuturos = await prisma.booking.count({
-            where: {
-                companyId,
-                customerPhone: phone,
-                date: { gte: agora },
-                status: { in: ["PENDENTE", "CONFIRMADO"] }
-            }
-        });
+        // Apenas para usuários públicos (não logados)
+        if (!userId) {
+            // Regra: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
+            // Isso evita que uma pessoa bloqueie a agenda inteira
+            const agendamentosFuturos = await prisma.booking.count({
+                where: {
+                    companyId,
+                    customerPhone: phone,
+                    date: { gte: agora },
+                    status: { in: ["PENDENTE", "CONFIRMADO"] }
+                }
+            });
 
-        if (agendamentosFuturos >= 2) {
-            return NextResponse.json({
-                error: "Você já possui agendamentos ativos. Por favor, aguarde ou cancele um horário existente."
-            }, { status: 429 });
+            if (agendamentosFuturos >= 2) {
+                return NextResponse.json({
+                    error: "Você já possui agendamentos ativos. Por favor, aguarde ou cancele um horário existente."
+                }, { status: 429 });
+            }
         }
         // -------------------------------------
 
