@@ -417,20 +417,29 @@ export default function PainelDashboard() {
                                     width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                     left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
                                 }}>
-                                <div className="flex items-center justify-between gap-1">
-                                    <span className="font-black text-[11px] flex items-center gap-1">
-                                        {format(data, "HH:mm")}
-                                        {isEncaixe ? <Zap size={14} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={14} /> : isConfirmado ? <CheckCheck size={14} className="text-green-300" /> : <Clock size={12} className="text-white/60" />)}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between mt-0.5">
-                                    <span className="font-bold text-[11px] truncate uppercase tracking-tighter">
-                                        <span className="text-[9px] opacity-70 mr-1.5 font-black bg-black/10 px-1 rounded">
-                                            {pro?.name?.split(' ')[0] || 'GERAL'}
+                                <div className="flex items-center gap-1.5 w-full h-full px-1">
+                                    {/* HORÁRIO + ÍCONES */}
+                                    <div className="flex items-center gap-1 shrink-0 bg-black/10 px-1.5 py-0.5 rounded-md">
+                                        <span className="font-black text-[10px] md:text-[11px] leading-none">{format(data, "HH:mm")}</span>
+                                        {isEncaixe ? <Zap size={10} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={10} /> : isConfirmado ? <CheckCheck size={10} className="text-green-300" /> : null)}
+                                    </div>
+
+                                    {/* NOME DO CLIENTE E PROFISSIONAL */}
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                                        <span className="text-[9px] opacity-80 font-bold hidden md:inline shrink-0">
+                                            [{pro?.name?.split(' ')[0] || 'GERAL'}]
                                         </span>
-                                        {ag.customerName}
-                                    </span>
-                                    <span className="text-[10px] font-black opacity-90 bg-black/10 px-1.5 py-0.5 rounded-full">R${Number(ag.service?.price || 0)}</span>
+                                        <span className="font-bold text-[10px] md:text-[11px] truncate uppercase tracking-tight leading-none">
+                                            {ag.customerName}
+                                        </span>
+                                    </div>
+
+                                    {/* PREÇO */}
+                                    <div className="shrink-0">
+                                        <span className="text-[9px] md:text-[10px] font-black opacity-90 bg-black/10 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                            R$ {Number(ag.service?.price || 0)}
+                                        </span>
+                                    </div>
                                 </div>
                             </button>
                         )
