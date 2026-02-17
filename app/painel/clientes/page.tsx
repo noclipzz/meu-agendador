@@ -993,7 +993,7 @@ export default function ClientesPage() {
             )}
 
             {modalAberto && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[80] p-4">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
                     <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                         {/* HEADER FIXO */}
                         <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
