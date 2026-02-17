@@ -7,8 +7,7 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin } from "lucide-react";
 import Image from 'next/image';
-import Link from 'next/link';
-
+import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
   const raw = value.replace(/\D/g, "").slice(0, 11);
@@ -238,20 +237,32 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     buscarAgendamentos();
   }, [telefoneCliente, empresa?.id]);
 
-  async function cancelarAgendamento(id: string) {
-    if (!confirm("Tem certeza que deseja cancelar seu agendamento?")) return;
+  // --- ESTADOS DE CONFIRMAÇÃO ---
+  const [modalConfirmacao, setModalConfirmacao] = useState<{ isOpen: boolean, id: string | null }>({ isOpen: false, id: null });
+  const [cancelando, setCancelando] = useState(false);
+
+  function solicitarCancelamento(id: string) {
+    setModalConfirmacao({ isOpen: true, id });
+  }
+
+  async function confirmarCancelamento() {
+    if (!modalConfirmacao.id) return;
+    setCancelando(true);
     try {
       const res = await fetch('/api/portal/agendamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action: 'CANCELAR' })
+        body: JSON.stringify({ id: modalConfirmacao.id, action: 'CANCELAR' })
       });
       if (res.ok) {
-        alert("Agendamento cancelado com sucesso.");
         // Remove apenas o agendamento cancelado da lista, mantendo os outros visíveis
-        setAgendamentosExistentes(prev => prev.filter(ag => ag.id !== id));
+        setAgendamentosExistentes(prev => prev.filter(ag => ag.id !== modalConfirmacao.id));
+        setModalConfirmacao({ isOpen: false, id: null });
+      } else {
+        alert("Erro ao cancelar.");
       }
     } catch (e) { alert("Erro ao cancelar."); }
+    finally { setCancelando(false); }
   }
 
   const dataBonita = format(dataSelecionada, "dd 'de' MMMM", { locale: ptBR });
@@ -495,7 +506,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                               </p>
                             </div>
                             <button
-                              onClick={() => cancelarAgendamento(ag.id)}
+                              onClick={() => solicitarCancelamento(ag.id)}
                               className="text-[9px] font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-full hover:bg-red-200 transition uppercase"
                             >
                               Cancelar
@@ -566,6 +577,19 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         </div>
       )}
+
+      {/* MODAL DE CONFIRMAÇÃO */}
+      <ConfirmationModal
+        isOpen={modalConfirmacao.isOpen}
+        onClose={() => setModalConfirmacao({ isOpen: false, id: null })}
+        onConfirm={confirmarCancelamento}
+        title="Cancelar Agendamento?"
+        description="Tem certeza que deseja cancelar este horário? Essa ação não pode ser desfeita."
+        confirmText="Sim, Cancelar"
+        cancelText="Não, Voltar"
+        variant="danger"
+        isLoading={cancelando}
+      />
 
       <footer className="mt-12 text-gray-400 text-center">
         <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>

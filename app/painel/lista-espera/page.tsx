@@ -6,11 +6,13 @@ import { ptBR } from "date-fns/locale";
 import { Loader2, Trash2, CheckCircle, MessageSquare, Clock, User, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "@/contexts/AgendaContext";
+import { ConfirmationModal } from "@/app/components/ConfirmationModal";
 
 export default function ListaEsperaPage() {
     const { companyId } = useAgenda();
     const [lista, setLista] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [modalConfirmacao, setModalConfirmacao] = useState<{ isOpen: boolean, id: string | null }>({ isOpen: false, id: null });
 
     async function carregarLista() {
         setLoading(true);
@@ -31,11 +33,17 @@ export default function ListaEsperaPage() {
         carregarLista();
     }, []);
 
-    async function marcarComoAtendido(id: string) {
-        if (!confirm("Tem certeza que este cliente já foi atendido ou desistiu?")) return;
+    function solicitarAtendimento(id: string) {
+        setModalConfirmacao({ isOpen: true, id });
+    }
 
+    async function confirmarAtendimento() {
+        if (!modalConfirmacao.id) return;
+
+        const id = modalConfirmacao.id;
         const optimisticLista = lista.filter(item => item.id !== id);
         setLista(optimisticLista);
+        setModalConfirmacao({ isOpen: false, id: null });
 
         try {
             await fetch('/api/painel/lista-espera', {
@@ -156,7 +164,7 @@ export default function ListaEsperaPage() {
                                         <MessageSquare size={18} /> Chamar no Zap
                                     </a>
                                     <button
-                                        onClick={() => marcarComoAtendido(item.id)}
+                                        onClick={() => solicitarAtendimento(item.id)}
                                         className="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl transition"
                                         title="Marcar como atendido / Remover"
                                     >
@@ -168,6 +176,16 @@ export default function ListaEsperaPage() {
                     ))}
                 </div>
             )}
+            <ConfirmationModal
+                isOpen={modalConfirmacao.isOpen}
+                onClose={() => setModalConfirmacao({ isOpen: false, id: null })}
+                onConfirm={confirmarAtendimento}
+                title="Marcar como Atendido?"
+                description="Tem certeza que este cliente já foi atendido ou desistiu? Ele será removido da lista."
+                confirmText="Sim, Concluir"
+                cancelText="Cancelar"
+                variant="success"
+            />
         </div>
     );
 }
