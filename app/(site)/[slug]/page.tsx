@@ -85,6 +85,12 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   const [telefoneCliente, setTelefoneCliente] = useState("");
   const [agendamentoConcluido, setAgendamentoConcluido] = useState(false);
 
+  // --- ESTADOS LISTA DE ESPERA ---
+  const [showWaitingList, setShowWaitingList] = useState(false);
+  const [waitingListLoading, setWaitingListLoading] = useState(false);
+  const [waitingListSuccess, setWaitingListSuccess] = useState(false);
+  const [preferences, setPreferences] = useState("");
+
   // 1. Carrega dados da empresa
   useEffect(() => {
     async function carregarDados() {
@@ -173,6 +179,37 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       const err = await res.json();
       alert(err.error || "Ops! Este horário não está mais disponível.");
       setHorarioSelecionado(null);
+    }
+  }
+
+  async function entrarListaEspera() {
+    if (!nomeCliente || !telefoneCliente) return alert("Preencha seu nome e telefone!");
+    setWaitingListLoading(true);
+    try {
+      const res = await fetch('/api/lista-espera', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: nomeCliente,
+          phone: telefoneCliente,
+          preferences,
+          serviceId: servicoSelecionado?.id,
+          professionalId: profissionalSelecionado?.id,
+          companyId: empresa.id
+        })
+      });
+      if (res.ok) {
+        setWaitingListSuccess(true);
+        setTimeout(() => {
+          setShowWaitingList(false);
+          setWaitingListSuccess(false);
+        }, 3000);
+      } else {
+        alert("Erro ao entrar na lista.");
+      }
+    } catch (e) {
+      alert("Erro de conexão.");
+    } finally {
+      setWaitingListLoading(false);
     }
   }
 
@@ -388,8 +425,15 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             </div>
 
             {horariosDisponiveis.length === 0 && (
-              <div className="text-center py-10 bg-red-50 rounded-[2rem] border border-red-100 mb-8">
-                <p className="text-red-600 font-bold text-sm">Não há horários para este dia.</p>
+              <div className="text-center py-10 bg-blue-50 rounded-[2rem] border border-blue-100 mb-8 px-6">
+                <p className="text-blue-900 font-black text-sm mb-2">Poxa! Não temos horários para este dia.</p>
+                <p className="text-blue-600 text-xs font-bold mb-6">Quer ser avisado se alguém cancelar ou se abrirmos uma vaga?</p>
+                <button
+                  onClick={() => setShowWaitingList(true)}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 transition"
+                >
+                  Entrar na Lista de Espera 🚀
+                </button>
               </div>
             )}
 
@@ -438,6 +482,59 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
       </div>
+
+      {/* MODAL LISTA DE ESPERA */}
+      {showWaitingList && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in duration-300 relative">
+            <button onClick={() => setShowWaitingList(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 transition">
+              <X size={24} />
+            </button>
+
+            {!waitingListSuccess ? (
+              <>
+                <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tighter">Fila de espera Smart</h2>
+                <p className="text-gray-500 text-sm font-medium mb-6">Avisaremos você no WhatsApp assim que uma vaga abrir para este serviço!</p>
+
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Seu Nome</label>
+                    <input className="w-full border p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="Nome completo" value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
+                    <input className="w-full border p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Preferências (Opcional)</label>
+                    <textarea
+                      className="w-full border p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all resize-none"
+                      rows={2}
+                      placeholder="Ex: Prefiro segundas à tarde..."
+                      value={preferences}
+                      onChange={e => setPreferences(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    onClick={entrarListaEspera}
+                    disabled={waitingListLoading}
+                    className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-blue-700 transition active:scale-95 disabled:opacity-50"
+                  >
+                    {waitingListLoading ? "Processando..." : "Quero ser avisado! 🚀"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-10">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">✓</div>
+                <h2 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Você está na lista!</h2>
+                <p className="text-gray-500 font-medium">Fique de olho no seu WhatsApp, entraremos em contato assim que surgir uma vaga.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <footer className="mt-12 text-gray-400 text-center">
         <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>

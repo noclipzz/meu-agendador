@@ -50,6 +50,7 @@ model Company {
   invoices          Invoice[]
   products          Product[]      // Estoque da empresa
   formTemplates     FormTemplate[] // Templates de prontuário
+  waitingList       WaitingList[]  // Lista de espera
 }
 
 // --- MEMBROS DA EQUIPE ---
@@ -78,6 +79,7 @@ model Professional {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings  Booking[]
+  waitingList WaitingList[]
   
   // Dados completos (Espelho do Cliente)
   cpf         String?
@@ -111,6 +113,7 @@ model Service {
   company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   
   bookings    Booking[]
+  waitingList WaitingList[]
   
   // Produtos consumidos por este serviço (Receita)
   products    ServiceProduct[] 
@@ -314,6 +317,27 @@ model FormTemplate {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// --- NOVO: LISTA DE ESPERA (SMART FILL) ---
+model WaitingList {
+  id              String   @id @default(cuid())
+  customerName    String
+  customerPhone   String
+  preferences     String?  // Ex: "Segundas e Quartas, Manhã"
+  status          String   @default("ATIVO") // ATIVO, ATENDIDO, CANCELADO
+  
+  serviceId       String?
+  service         Service? @relation(fields: [serviceId], references: [id])
+  
+  professionalId  String?
+  professional    Professional? @relation(fields: [professionalId], references: [id])
+
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model PushSubscription {

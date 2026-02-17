@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { isBefore } from "date-fns";
+import { checkWaitingList } from "@/lib/waiting-list";
 
 const prisma = db;
 
@@ -166,6 +167,10 @@ export async function DELETE(req: Request) {
     }
 
     await prisma.booking.delete({ where: { id } });
+
+    // Notifica se houver fila de espera
+    await checkWaitingList(agendamento);
+
     return new NextResponse("Deletado", { status: 200 });
   } catch (error) {
     return new NextResponse("Erro", { status: 500 });
