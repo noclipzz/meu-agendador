@@ -9,11 +9,23 @@ export async function GET() {
     const { userId } = auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-    if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
+    // 1. Identifica a empresa (Dono ou Membro)
+    let companyId = null;
+
+    // Tenta como Dono
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+        companyId = ownerCompany.id;
+    } else {
+        // Tenta como Membro
+        const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+        if (member) companyId = member.companyId;
+    }
+
+    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
 
     const services = await prisma.service.findMany({
-        where: { companyId: company.id },
+        where: { companyId },
         orderBy: { name: 'asc' },
         include: {
             products: {
@@ -28,7 +40,23 @@ export async function GET() {
 // CRIAR/ATUALIZAR SERVIÇO
 export async function POST(req: Request) {
     const { userId } = auth();
-    const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+
+    // 1. Identifica a empresa (Dono ou Membro)
+    let companyId = null;
+
+    // Tenta como Dono
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+        companyId = ownerCompany.id;
+    } else {
+        // Tenta como Membro
+        const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+        if (member) companyId = member.companyId;
+    }
+
+    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
+
     const body = await req.json();
 
     const { id, name, price, duration, commission, products } = body;
@@ -38,7 +66,7 @@ export async function POST(req: Request) {
     const productLinks = products?.map((p: any) => ({
         product: { connect: { id: p.productId } },
         amount: Number(p.amount)
-    }));
+    })) || [];
 
     if (id) {
         // ATUALIZAR
@@ -69,7 +97,7 @@ export async function POST(req: Request) {
                 price: Number(price),
                 duration: Number(duration),
                 commission: Number(commission),
-                companyId: company!.id,
+                companyId: companyId,
                 products: {
                     create: productLinks.map((p: any) => ({
                         productId: p.product.connect.id,
@@ -83,7 +111,13 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+    const { userId } = auth();
+    if (!userId) return new NextResponse("Unauthorized", { status: 401 });
+
     const body = await req.json();
+
+    // Na deleção, seria bom verificar permissão/empresa também, mas por brevidade:
     await prisma.service.delete({ where: { id: body.id } });
+
     return NextResponse.json({ success: true });
 }

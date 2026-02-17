@@ -10,8 +10,31 @@ export async function GET(req: Request) {
         const { userId } = await auth();
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-        // VERIFICA SE É PLANO MASTER (Bloqueia Estoque se não for)
-        const sub = await prisma.subscription.findUnique({ where: { userId } });
+        // 1. Identifica a empresa (Dono ou Membro)
+        let companyId = null;
+        let ownerId = null;
+
+        // Tenta como Dono
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+            ownerId = userId;
+        } else {
+            // Tenta como Membro
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId },
+                include: { company: true }
+            });
+            if (member) {
+                companyId = member.companyId;
+                ownerId = member.company.ownerId;
+            }
+        }
+
+        if (!companyId || !ownerId) return new NextResponse("Empresa não encontrada", { status: 404 });
+
+        // 2. VERIFICA SE O DONO TEM PLANO MASTER
+        const sub = await prisma.subscription.findUnique({ where: { userId: ownerId } });
         if (!sub || sub.plan !== "MASTER") {
             return NextResponse.json({ error: "O Módulo de Estoque está disponível apenas para o plano MASTER." }, { status: 403 });
         }
@@ -29,12 +52,9 @@ export async function GET(req: Request) {
             return NextResponse.json(logs);
         }
 
-        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (!company) return new NextResponse("Empresa não encontrada", { status: 404 });
-
         // Lista produtos com lotes ordenados por validade
         const products = await prisma.product.findMany({
-            where: { companyId: company.id },
+            where: { companyId },
             orderBy: { name: 'asc' },
             include: {
                 batches: {
