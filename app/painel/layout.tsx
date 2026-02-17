@@ -358,6 +358,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         // Admins tem permissão total (já garantido pela API, mas reforçamos aqui)
         if (userRole === "ADMIN") {
             // Regras de plano ainda se aplicam para o menu do Admin
+            if (item.key === 'mural' && userPlan === "INDIVIDUAL") return false;
             if (item.key === 'financeiro' && userPlan === "INDIVIDUAL") return false;
             if (item.key === 'prontuarios' && userPlan !== "MASTER") return false;
             if (item.key === 'estoque' && userPlan !== "MASTER") return false;
