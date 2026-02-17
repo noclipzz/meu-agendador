@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
     Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
     Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon, Search,
-    MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon
+    MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon, Megaphone
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -65,7 +65,8 @@ export default function GestaoEquipe() {
             prontuarios: false,
             servicos: false,
             profissionais: false,
-            config: false
+            config: false,
+            mural: true
         }
     });
 
@@ -297,7 +298,8 @@ export default function GestaoEquipe() {
                 prontuarios: false,
                 servicos: false,
                 profissionais: false,
-                config: false
+                config: false,
+                mural: true
             }
         });
         setModalAberto(true);
@@ -318,7 +320,8 @@ export default function GestaoEquipe() {
                 prontuarios: false,
                 servicos: false,
                 profissionais: false,
-                config: false
+                config: false,
+                mural: true
             }
         });
     }
@@ -664,6 +667,7 @@ export default function GestaoEquipe() {
                                                         { key: 'servicos', label: 'Serviços', icon: <Briefcase size={14} /> },
                                                         { key: 'profissionais', label: 'Equipe', icon: <UserIcon size={14} /> },
                                                         { key: 'config', label: 'Configurações', icon: <Settings size={14} /> },
+                                                        { key: 'mural', label: 'Mural', icon: <Megaphone size={14} /> },
                                                     ].map((perm) => (
                                                         <button
                                                             key={perm.key}
