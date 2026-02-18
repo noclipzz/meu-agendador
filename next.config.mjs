@@ -5,10 +5,24 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
-  reloadOnOnline: true, // Recarrega se voltar online
+  reloadOnOnline: false, // Desativado para evitar loops em conexões instáveis
   workboxOptions: {
     clientsClaim: true,
-    skipWaiting: true
+    skipWaiting: true,
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/accounts\.nohud\.com\.br\/.*/i,
+        handler: 'NetworkOnly',
+      },
+      {
+        urlPattern: /\/_next\/data\/.+/,
+        handler: 'NetworkFirst',
+      },
+      {
+        urlPattern: /\/api\/.+/,
+        handler: 'NetworkOnly',
+      }
+    ]
   }
 });
 
