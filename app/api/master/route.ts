@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 
 const prisma = db;
 
@@ -13,6 +13,7 @@ const SUPER_ADMIN_ID = process.env.SUPER_ADMIN_ID || "user_39S9qNrKwwgObMZffifdZ
 export async function GET() {
   try {
     const { userId } = await auth();
+    const client = await clerkClient();
 
     if (userId !== SUPER_ADMIN_ID) {
       return NextResponse.json({ error: `Acesso Negado. ID atual: ${userId}` }, { status: 403 });
@@ -56,17 +57,31 @@ export async function GET() {
       "MANUAL": 0
     };
 
-    // Combina dados de empresa + assinatura
-    const dadosCompletos = empresas.map((emp: any) => {
+    // Combina dados de empresa + assinatura + Clerk Email
+    const dadosCompletos = await Promise.all(empresas.map(async (emp: any) => {
       const assinatura = assinaturas.find(s => s.userId === emp.ownerId);
       const plano = assinatura?.plan || "SEM PLANO";
       const preco = precos[plano] || 0;
+
+      let ownerEmail = emp.notificationEmail || null;
+
+      // Tenta buscar email do Clerk se não tiver notificationEmail ou para garantir o email de login
+      if (emp.ownerId) {
+        try {
+          const userClerk = await client.users.getUser(emp.ownerId);
+          const email = userClerk.emailAddresses.find(e => e.id === userClerk.primaryEmailAddressId)?.emailAddress;
+          if (email) ownerEmail = email;
+        } catch (e) {
+          console.warn(`Erro ao buscar user Clerk ${emp.ownerId}`, e);
+        }
+      }
 
       return {
         id: emp.id,
         name: emp.name,
         slug: emp.slug,
         ownerId: emp.ownerId,
+        email: ownerEmail, // <--- CAMPO NOVO
         createdAt: emp.createdAt,
         plano,
         status: assinatura?.status || "INACTIVE",
@@ -80,7 +95,7 @@ export async function GET() {
         totalProfissionais: emp._count.professionals,
         totalServicos: emp._count.services,
       };
-    });
+    }));
 
     // MÉTRICAS AGREGADAS
     const totalEmpresas = dadosCompletos.length;
