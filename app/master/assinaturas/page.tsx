@@ -302,6 +302,7 @@ export default function MasterAssinaturas() {
                         <thead className="bg-gray-900">
                             <tr>
                                 <th className="text-left p-4 text-xs font-black text-gray-400 uppercase">Cliente</th>
+                                <th className="text-left p-4 text-xs font-black text-gray-400 uppercase">Contato</th>
                                 <th className="text-left p-4 text-xs font-black text-gray-400 uppercase">Plano</th>
                                 <th className="text-right p-4 text-xs font-black text-gray-400 uppercase">Valor Mensal</th>
                                 <th className="text-left p-4 text-xs font-black text-gray-400 uppercase">Próximo Vencimento</th>
@@ -319,6 +320,10 @@ export default function MasterAssinaturas() {
                                         <td className="p-4">
                                             <p className="font-bold text-white">{emp.name}</p>
                                             <p className="text-xs text-gray-500">{emp.slug}</p>
+                                        </td>
+                                        <td className="p-4">
+                                            <p className="text-xs font-bold text-gray-300 select-all">{emp.email || '-'}</p>
+                                            <p className="text-[9px] text-gray-600 font-mono truncate max-w-[100px] select-all cursor-help" title={emp.ownerId}>{emp.ownerId}</p>
                                         </td>
                                         <td className="p-4">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${emp.plano === 'MASTER' ? 'bg-yellow-600/20 text-yellow-400' :
