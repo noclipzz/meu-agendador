@@ -160,8 +160,24 @@ export async function POST(req: Request) {
         const dataFormatada = formatarDataCompleta(new Date(date));
         const nomeServico = service?.name || (isEvento ? `Evento (${category || "Interno"})` : "Atendimento");
 
-        // A) E-mail para Admin
-        if (company?.notificationEmail) {
+        // VERIFICA SE QUEM AGENDOU É DA EQUIPE INTERNA (Dono, Admin, Profissional)
+        let isInternalUser = false;
+        if (userId && company) {
+            if (company.ownerId === userId) {
+                isInternalUser = true;
+            } else {
+                const teamMember = await prisma.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
+                if (teamMember) isInternalUser = true;
+
+                if (!isInternalUser) {
+                    const prof = await prisma.professional.findFirst({ where: { userId, companyId } });
+                    if (prof) isInternalUser = true;
+                }
+            }
+        }
+
+        // A) E-mail para Admin (Apenas se for CLIENTE agendando)
+        if (company?.notificationEmail && !isInternalUser) {
             try {
                 const subject = isEvento
                     ? `📅 Novo Evento (${category || 'Interno'}): ${name}`
@@ -197,16 +213,25 @@ export async function POST(req: Request) {
                 ? `Evento: "${name}" para ${dataFormatada}`
                 : `${name} solicitou ${nomeServico} para ${dataFormatada}`;
 
-            // Notifica Admins
-            await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
+            // Notifica Admins (Apenas se for CLIENTE agendando)
+            if (!isInternalUser) {
+                await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
+            }
 
-            // Notifica Profissionais específicos
+            // Notifica Profissionais específicos (SEMPRE, exceto se for o próprio profissional agendando para si mesmo - opcional, mas vamos manter simples por enquanto)
             const notificationTargets = targetProfessionalIds.filter(id => id !== null) as string[];
             for (const proId of notificationTargets) {
+                // Evita notificar o próprio usuário se ele for o profissional agendado
+                // Precisamos saber o userId do profissional alvo para comparar. 
+                // A função notifyProfessional busca o userId internamente.
+                // Vamos deixar notificar por enquanto, ou podemos otimizar depois.
+                // O pedido principal era sobre a notificação de "solicitou agendamento" (Admin).
+
                 const proPushTitle = isEvento ? "📅 Novo Evento na sua Agenda!" : "📅 Novo Agendamento!";
                 const proPushBody = isEvento
                     ? `Evento: "${name}" às ${formatarHorario(new Date(date))}`
                     : `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`;
+
                 await notifyProfessional(proId, proPushTitle, proPushBody, "/painel/agenda");
             }
         } catch (pushErr) {
