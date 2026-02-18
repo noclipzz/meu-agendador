@@ -191,7 +191,7 @@ export function InstallPWA() {
                         notificationDenied ? (
                             <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 space-y-2 text-[10px] font-bold">
                                 <p className="text-amber-700 dark:text-amber-400 uppercase tracking-wider">Como reativar:</p>
-                                <p className="text-amber-600 dark:text-amber-500">Ajustes > Notificações > NOHUD > Permitir</p>
+                                <p className="text-amber-600 dark:text-amber-500">Ajustes &gt; Notificações &gt; NOHUD &gt; Permitir</p>
                             </div>
                         ) : (
                             <button onClick={handleActionClick} disabled={isSubscribing} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2">
@@ -241,8 +241,19 @@ export function InstallSidebarButton() {
     const [showHint, setShowHint] = useState(false);
     const [isSubscribing, setIsSubscribing] = useState(false);
 
-    if (isStandalone && hasNotificationPermission && !notificationDenied) return null;
-    if (!canInstall && !isStandalone && !notificationDenied) return null;
+    // Se já tem permissão de notificação, esconde o botão lateral (conforme pedido)
+    if (hasNotificationPermission) return null;
+
+    // Se estiver em modo App (Standalone) mas sem permissão (e não negado), mostra para ativar.
+    // Se for navegador e puder instalar, mostra para instalar.
+    if (isStandalone && !notificationDenied) {
+        // Mostra botão para ativar notificações
+    } else if (canInstall && !isStandalone) {
+        // Mostra botão para instalar
+    } else {
+        // Caso contrário, esconde (ex: navegador desktop que não suporta install ou já negou)
+        return null;
+    }
 
     const handleClick = async () => {
         if (isStandalone) {
@@ -268,8 +279,8 @@ export function InstallSidebarButton() {
                 onClick={handleClick}
                 disabled={isSubscribing}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold border ${isStandalone
-                        ? notificationDenied ? "text-amber-600 bg-amber-50 border-amber-100" : "text-emerald-600 bg-emerald-50 border-emerald-100 hover:bg-emerald-100"
-                        : "text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-900/20"
+                    ? notificationDenied ? "text-amber-600 bg-amber-50 border-amber-100" : "text-emerald-600 bg-emerald-50 border-emerald-100 hover:bg-emerald-100"
+                    : "text-blue-600 bg-blue-50 border-blue-100 hover:bg-blue-100 dark:bg-blue-900/20 dark:border-blue-900/20"
                     }`}
             >
                 {isStandalone ? (notificationDenied ? <AlertTriangle size={20} /> : <Bell size={20} />) : <Smartphone size={20} />}

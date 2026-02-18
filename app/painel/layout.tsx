@@ -515,6 +515,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </footer>
 
                 <InstallPWA />
+
                 <UserGuide />
 
                 {isModalOpen && (
