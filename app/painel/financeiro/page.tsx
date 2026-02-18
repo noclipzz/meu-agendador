@@ -496,7 +496,7 @@ export default function FinanceiroPage() {
                             <button onClick={() => setDataDespesas(prev => addMonths(prev, 1))} className="p-3 hover:bg-white dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={16} /></button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
                         {despesasAgrupadas.map((exp: any) => (
                             <div key={exp.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-red-500 shadow-sm group">
                                 <div>
@@ -537,7 +537,7 @@ export default function FinanceiroPage() {
                             <ArrowUpCircle size={18} className="text-blue-500" /> Histórico de Entradas
                         </h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[460px] overflow-y-auto pr-2 custom-scrollbar">
                         {dadosResumo?.allInvoices?.map((inv: any) => (
                             <div key={inv.id} className="flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-l-8 border-blue-500 shadow-sm group">
                                 <div>
