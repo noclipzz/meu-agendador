@@ -9,14 +9,11 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { subscribeUserToPush } from "@/lib/push-notifications";
 import { toast } from "sonner";
 
 export default function DashboardPage() {
     const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [subscribing, setSubscribing] = useState(false);
-    const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -27,14 +24,6 @@ export default function DashboardPage() {
     }, []);
 
     useEffect(() => {
-        if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-            navigator.serviceWorker.ready.then((reg) => {
-                reg.pushManager.getSubscription().then((sub) => {
-                    setHasActiveSubscription(!!sub);
-                });
-            });
-        }
-
         fetch('/api/painel/dashboard')
             .then(res => res.json())
             .then(data => {
@@ -43,18 +32,6 @@ export default function DashboardPage() {
             });
     }, []);
 
-    async function handleEnableNotifications() {
-        setSubscribing(true);
-        try {
-            await subscribeUserToPush();
-            setHasActiveSubscription(true);
-            toast.success("Notificações ativadas!");
-        } catch (error: any) {
-            toast.error(`Erro: ${error.message || "Falha ao ativar"}`);
-        } finally {
-            setSubscribing(false);
-        }
-    }
 
 
     if (loading) return <div className="p-10 text-center animate-pulse text-gray-400 font-bold">Carregando indicadores...</div>;
@@ -70,21 +47,7 @@ export default function DashboardPage() {
                         <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
                     </div>
 
-                    {/* BOTÕES DE NOTIFICAÇÃO (APENAS MOBILE) */}
-                    <div className="flex md:hidden gap-2">
-                        <button
-                            onClick={handleEnableNotifications}
-                            disabled={subscribing}
-                            className={`p-3 border rounded-2xl shadow-sm transition flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter ${hasActiveSubscription
-                                ? "bg-emerald-500 border-emerald-500 text-white shadow-emerald-200"
-                                : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400"
-                                } ${subscribing ? "animate-pulse opacity-50" : ""}`}
-                            title={hasActiveSubscription ? "Notificações Ativas" : "Ativar Notificações"}
-                        >
-                            <Bell size={14} className={hasActiveSubscription ? "fill-current" : ""} />
-                            <span>{hasActiveSubscription ? "Sistema Ativo" : "Ativar Push"}</span>
-                        </button>
-                    </div>
+
                 </div>
                 {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
                     <div className="relative group cursor-default">
