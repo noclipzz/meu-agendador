@@ -6,6 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: 'NOHUD',
         description: 'Sistema Inteligente de Agendamento e Gestão',
         start_url: '/painel',
+        scope: '/',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#2563eb',
