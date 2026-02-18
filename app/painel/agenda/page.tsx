@@ -466,8 +466,8 @@ export default function PainelDashboard() {
     return (
         <div className="h-auto md:h-screen flex flex-col p-0 gap-0 text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 font-sans">
 
-            {/* BARRA FIXA SUPERIOR (HEADER + FILTROS) */}
-            <div className="sticky top-0 z-[25] flex flex-col shadow-sm bg-white dark:bg-gray-950 border-b dark:border-gray-800">
+            {/* BARRA FIXA SUPERIOR (HEADER + FILTROS + DATA) */}
+            <div className="sticky top-0 z-30 flex flex-col shadow-sm bg-white dark:bg-gray-950 border-b dark:border-gray-800">
                 <div className="flex flex-row gap-2 h-auto flex-shrink-0 items-center bg-white dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
                     <div className="flex items-center gap-2 flex-1 border-r dark:border-gray-700 pr-2">
                         <div className="w-10 h-10 rounded-full border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 flex items-center justify-center overflow-hidden shrink-0">
@@ -517,17 +517,19 @@ export default function PainelDashboard() {
                         </select>
                     </div>
                 </div>
-            </div>
 
-            {/* ÁREA DA AGENDA */}
-            <div className="bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
-                <div className="p-1 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
+                {/* DIA SELETOR - AGORA FIXO NO HEADER */}
+                <div className="p-1 border-t dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                     <div className="flex items-center gap-2 mx-auto">
                         <button onClick={() => navegar(-1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronLeft size={16} /></button>
                         <span className="text-[11px] font-black uppercase tracking-tighter w-32 text-center">{tituloCalendario}</span>
                         <button onClick={() => navegar(1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronRight size={16} /></button>
                     </div>
                 </div>
+            </div>
+
+            {/* ÁREA DA AGENDA */}
+            <div className="bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
                 <div className="flex-1 overflow-hidden">{view === 'day' ? renderDia() : renderGrid(diasParaMostrar)}</div>
             </div>
 
