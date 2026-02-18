@@ -17,6 +17,14 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [subscribing, setSubscribing] = useState(false);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 60000); // Atualiza o relógio interno a cada minuto para o pulso da agenda
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (typeof window !== "undefined" && "serviceWorker" in navigator) {
@@ -114,22 +122,42 @@ export default function DashboardPage() {
                             {(!dados.agendamentosHoje || dados.agendamentosHoje.length === 0) ? (
                                 <p className="text-gray-400 text-sm italic">Nenhum agendamento para hoje.</p>
                             ) : (
-                                dados.agendamentosHoje.map((ag: any) => (
-                                    <div key={ag.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border-l-4 border-blue-500">
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-white dark:bg-gray-900 px-3 py-2 rounded-xl font-black text-lg shadow-sm">
-                                                {ag.date ? format(new Date(ag.date), 'HH:mm') : '--:--'}
+                                dados.agendamentosHoje.map((ag: any) => {
+                                    const dataAg = new Date(ag.date);
+                                    const diff = (dataAg.getTime() - currentTime.getTime()) / (1000 * 60);
+                                    const isProximo = diff > 0 && diff <= 30 && ag.status !== 'CONCLUIDO' && ag.status !== 'CANCELADO';
+
+                                    return (
+                                        <div
+                                            key={ag.id}
+                                            className={`flex items-center justify-between p-4 rounded-2xl border-l-4 transition-all duration-500 ${isProximo
+                                                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400 animate-soft-pulse-yellow'
+                                                : 'bg-gray-50 dark:bg-gray-800 border-blue-500'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className={`px-3 py-2 rounded-xl font-black text-lg shadow-sm transition-colors ${isProximo ? 'bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-200' : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-white'}`}>
+                                                    {ag.date ? format(new Date(ag.date), 'HH:mm') : '--:--'}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="font-bold text-gray-800 dark:text-white">{ag.customerName}</p>
+                                                        {isProximo && (
+                                                            <span className="flex h-2 w-2 rounded-full bg-yellow-500 animate-ping" />
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 uppercase font-bold">{ag.service?.name} • {ag.professional?.name}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-gray-800 dark:text-white">{ag.customerName}</p>
-                                                <p className="text-xs text-gray-500 uppercase font-bold">{ag.service?.name} • {ag.professional?.name}</p>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className={`text-[10px] px-2 py-1 rounded-lg font-black uppercase ${ag.status === 'CONCLUIDO' ? 'bg-green-100 text-green-600' : isProximo ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-600'
+                                                    }`}>
+                                                    {isProximo ? 'Em breve' : ag.status}
+                                                </span>
                                             </div>
                                         </div>
-                                        <span className={`text-[10px] px-2 py-1 rounded-lg font-black uppercase ${ag.status === 'CONCLUIDO' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
-                                            {ag.status}
-                                        </span>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </div>

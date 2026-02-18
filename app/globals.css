@@ -10,6 +10,7 @@
   font-family: inherit !important;
   line-height: 1.125em !important;
 }
+
 .react-calendar__navigation button {
   min-width: 44px;
   background: none;
@@ -17,38 +18,48 @@
   font-weight: bold;
   margin-top: 8px;
 }
+
 .react-calendar__month-view__weekdays {
   text-align: center;
   text-transform: uppercase;
   font-weight: bold;
   font-size: 0.75em;
-  color: #9ca3af; /* Cinza claro */
+  color: #9ca3af;
+  /* Cinza claro */
   text-decoration: none !important;
 }
+
 .react-calendar__tile {
   padding: 12px 6px !important;
   border-radius: 8px !important;
   font-weight: 500;
   transition: all 0.2s;
 }
+
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
-  background-color: #eff6ff !important; /* Azul bem claro */
+  background-color: #eff6ff !important;
+  /* Azul bem claro */
   color: #2563eb !important;
 }
+
 .react-calendar__tile--now {
   background: #f3f4f6 !important;
   color: black !important;
 }
+
 .react-calendar__tile--active {
-  background: #2563eb !important; /* Azul Principal */
+  background: #2563eb !important;
+  /* Azul Principal */
   color: white !important;
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
 }
+
 .react-calendar__tile--active:enabled:hover,
 .react-calendar__tile--active:enabled:focus {
   background: #1d4ed8 !important;
 }
+
 /* Tira o sublinhado feio dos dias da semana */
 abbr[title] {
   text-decoration: none !important;
@@ -65,19 +76,42 @@ abbr[title] {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1; /* Slate 300 */
+  background: #cbd5e1;
+  /* Slate 300 */
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8; /* Slate 400 */
+  background: #94a3b8;
+  /* Slate 400 */
 }
 
 /* Dark mode scrollbar */
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155; /* Slate 700 */
+  background: #334155;
+  /* Slate 700 */
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569; /* Slate 600 */
+  background: #475569;
+  /* Slate 600 */
+}
+
+/* --- ANIMAÇÕES CUSTOMIZADAS --- */
+@keyframes soft-pulse-yellow {
+
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4);
+  }
+
+  50% {
+    transform: scale(1.01);
+    box-shadow: 0 0 15px 5px rgba(234, 179, 8, 0.2);
+  }
+}
+
+.animate-soft-pulse-yellow {
+  animation: soft-pulse-yellow 2s ease-in-out infinite;
 }
