@@ -656,7 +656,13 @@ export default function ClientesPage() {
                 {filtrados.map(c => (
                     <div key={c.id} onClick={() => abrirFichaCliente(c)} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-transparent hover:border-blue-500 shadow-sm transition-all cursor-pointer group">
                         <div className="flex justify-between items-start mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600 shadow-sm border border-blue-100 dark:border-blue-800/30">{c.name.charAt(0)}</div>
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center font-bold text-xl text-blue-600 shadow-sm border border-blue-100 dark:border-blue-800/30 overflow-hidden">
+                                {c.photoUrl ? (
+                                    <img src={c.photoUrl} alt={c.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    c.name.charAt(0)
+                                )}
+                            </div>
                             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${c.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
                                 <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                                 <span className="text-[9px] font-black uppercase tracking-wider">{c.status}</span>
