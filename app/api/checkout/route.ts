@@ -179,6 +179,22 @@ export async function GET() {
             // Busca apenas a empresa para ter o ID correto no painel
             const myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
 
+            if (myCompany && (!myCompany.evolutionServerUrl || !myCompany.evolutionApiKey)) {
+                try {
+                    await prisma.company.update({
+                        where: { id: myCompany.id },
+                        data: {
+                            evolutionServerUrl: "http://178.156.245.199:8080",
+                            evolutionApiKey: "NohudGlobalKey2026@XYZ",
+                            whatsappMessage: myCompany.whatsappMessage || "Olá {nome}, seu agendamento está confirmado para {dia} às {hora}."
+                        }
+                    });
+                    console.log("✅ [AUTO-CONFIG] WhatsApp configurado para SUPER_ADMIN");
+                } catch (e) {
+                    console.error("Erro config whatsapp:", e);
+                }
+            }
+
             return NextResponse.json({
                 active: true, // Sempre ATIVO
                 plan: "MASTER", // Sempre MASTER
@@ -225,10 +241,28 @@ export async function GET() {
         // CASO 1: É DONO
         if (company) {
             const isActive = subscription?.status === "ACTIVE" && subscription.expiresAt && new Date(subscription.expiresAt) > new Date();
+            const currentPlan = subscription?.plan || "INDIVIDUAL";
+
+            if (currentPlan === "MASTER" && (!company.evolutionServerUrl || !company.evolutionApiKey)) {
+                try {
+                    await prisma.company.update({
+                        where: { id: company.id },
+                        data: {
+                            evolutionServerUrl: "http://178.156.245.199:8080",
+                            evolutionApiKey: "NohudGlobalKey2026@XYZ",
+                            whatsappMessage: company.whatsappMessage || "Olá {nome}, seu agendamento está confirmado para {dia} às {hora}."
+                        }
+                    });
+                    console.log("✅ [AUTO-CONFIG] WhatsApp configurado para MASTER");
+                } catch (e) {
+                    console.error("Erro config whatsapp:", e);
+                }
+            }
+
             console.log("✅ [CHECKOUT] Identificado como ADMIN");
             return NextResponse.json({
                 active: !!isActive,
-                plan: subscription?.plan || "INDIVIDUAL",
+                plan: currentPlan,
                 role: "ADMIN",
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
