@@ -33,7 +33,7 @@ export async function GET() {
     const companyId = await getCompanyId(userId);
     if (!companyId) return NextResponse.json([]); // Retorna lista vazia se não tiver empresa vinculada
 
-    const clients = await prisma.client.findMany({
+    const clients = await (prisma.client as any).findMany({
       where: { companyId },
       orderBy: { name: 'asc' },
       include: {
@@ -43,15 +43,16 @@ export async function GET() {
             professional: true
           },
           orderBy: { date: 'desc' },
-          take: 5 // Traz apenas os 5 últimos para não pesar a listagem
-        }
+          take: 5
+        },
+        attachments: true
       }
     });
 
     return NextResponse.json(clients);
-  } catch (error) {
+  } catch (error: any) {
     console.error("ERRO_GET_CLIENTES:", error);
-    return NextResponse.json({ error: "Erro ao buscar clientes" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao buscar clientes", details: error.message }, { status: 500 });
   }
 }
 

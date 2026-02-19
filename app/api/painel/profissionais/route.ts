@@ -55,8 +55,9 @@ export async function GET() {
     });
 
     return NextResponse.json(profissionaisComPermissoes);
-  } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar equipe" }, { status: 500 });
+  } catch (error: any) {
+    console.error("ERRO_BUSCAR_EQUIPE:", error);
+    return NextResponse.json({ error: "Erro ao buscar equipe", details: error.message }, { status: 500 });
   }
 }
 
