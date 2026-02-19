@@ -254,7 +254,7 @@ function PlanosSection() {
             badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
             iconBg="bg-amber-500/10"
             iconColor="text-amber-400"
-            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Fichas Técnicas", "Maior banco de dados"]}
+            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Fichas Técnicas", "Bot Whatsapp", "Maior banco de dados"]}
           />
 
           <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
