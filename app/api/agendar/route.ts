@@ -8,8 +8,33 @@ import { auth } from "@clerk/nextjs/server";
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Cache em memória para o Rate Limiter (Simples, por IP)
+const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
+function checkRateLimit(ip: string): boolean {
+    const limit = 5; // Limite de 5 tentativas
+    const windowMs = 60 * 1000; // Por 1 minuto
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+    if (!record || now > record.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+        return true;
+    }
+    if (record.count >= limit) return false;
+    record.count += 1;
+    rateLimitMap.set(ip, record);
+    return true;
+}
+
 export async function POST(req: Request) {
     try {
+        const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "ip_desconhecido";
+        // Pega o primeiro IP caso seja uma lista enviada por proxies
+        const clientIp = ip.split(',')[0].trim();
+
+        if (clientIp !== "ip_desconhecido" && !checkRateLimit(clientIp)) {
+            return NextResponse.json({ error: "Muitas requisições. Tente novamente em alguns minutos (Proteção Anti-DDoS)." }, { status: 429 });
+        }
+
         const body = await req.json();
         console.log("PAYLOAD_AGENDAR", body);
         const {
