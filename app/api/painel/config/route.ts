@@ -115,7 +115,15 @@ export async function POST(req: Request) {
       complement: body.complement || null,
       neighborhood: body.neighborhood || null,
       city: body.city || null,
-      state: body.state || null
+      state: body.state || null,
+      // Focus NFe
+      inscricaoMunicipal: body.inscricaoMunicipal || null,
+      regimeTributario: body.regimeTributario ? Number(body.regimeTributario) : 1,
+      naturezaOperacao: body.naturezaOperacao ? Number(body.naturezaOperacao) : 1,
+      codigoServico: body.codigoServico || null,
+      aliquotaServico: body.aliquotaServico ? Number(body.aliquotaServico) : 0,
+      certificadoA1Url: body.certificadoA1Url || null,
+      certificadoSenha: body.certificadoSenha || null
     };
 
     if (existingConfig) {
