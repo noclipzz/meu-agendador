@@ -42,6 +42,16 @@ export default function Configuracoes() {
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
 
+    // --- CAMPOS FISCAIS (FOCUS NFe) ---
+    const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
+    const [regimeTributario, setRegimeTributario] = useState("1");
+    const [naturezaOperacao, setNaturezaOperacao] = useState("1");
+    const [codigoServico, setCodigoServico] = useState("");
+    const [aliquotaServico, setAliquotaServico] = useState("");
+    const [certificadoA1Url, setCertificadoA1Url] = useState("");
+    const [certificadoSenha, setCertificadoSenha] = useState("");
+    const inputCertRef = useRef<HTMLInputElement>(null);
+
     const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
 
     useEffect(() => { carregarTudo(); }, []);
@@ -76,6 +86,15 @@ export default function Configuracoes() {
                 setNeighborhood(dataConfig.neighborhood || "");
                 setCity(dataConfig.city || "");
                 setState(dataConfig.state || "");
+
+                // Popula campos fiscais
+                setInscricaoMunicipal(dataConfig.inscricaoMunicipal || "");
+                setRegimeTributario(String(dataConfig.regimeTributario || "1"));
+                setNaturezaOperacao(String(dataConfig.naturezaOperacao || "1"));
+                setCodigoServico(dataConfig.codigoServico || "");
+                setAliquotaServico(String(dataConfig.aliquotaServico || ""));
+                setCertificadoA1Url(dataConfig.certificadoA1Url || "");
+                setCertificadoSenha(dataConfig.certificadoSenha || "");
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
@@ -116,6 +135,23 @@ export default function Configuracoes() {
         finally { setIsUploading(false); }
     }
 
+    async function handleCertUpload() {
+        if (!inputCertRef.current?.files?.[0]) return;
+        const file = inputCertRef.current.files[0];
+        setIsUploading(true);
+        try {
+            const response = await fetch(`/api/upload?filename=cert_${file.name}`, { method: 'POST', body: file });
+            if (!response.ok) throw new Error("Falha no servidor");
+            const newBlob = await response.json();
+            setCertificadoA1Url(newBlob.url);
+            toast.success("Certificado enviado com sucesso!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Falha ao enviar certificado.");
+        }
+        finally { setIsUploading(false); }
+    }
+
     async function salvarConfig() {
         try {
             const res = await fetch('/api/painel/config', {
@@ -123,7 +159,9 @@ export default function Configuracoes() {
                 body: JSON.stringify({
                     name, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), whatsappMessage,
-                    cnpj, phone, cep, address, number, complement, neighborhood, city, state
+                    cnpj, phone, cep, address, number, complement, neighborhood, city, state,
+                    inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
+                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha
                 })
             });
 
@@ -283,6 +321,13 @@ export default function Configuracoes() {
                         </div>
                     </div>
 
+                    {/* --- SEÇÃO FISCAL (OCULTA POR ENQUANTO) --- */}
+                    {/* 
+                    <div className="pt-10 border-t dark:border-gray-700 space-y-6">
+                        ... (conteúdo fiscal oculto) ...
+                    </div>
+                    */}
+
                     <div className="border-t dark:border-gray-700 pt-6">
                         <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Logo da Empresa</label>
                         <div className="flex items-center gap-6">
@@ -342,8 +387,7 @@ export default function Configuracoes() {
                         </div>
                     </div>
                 </div>
-            )
-            }
-        </div >
+            )}
+        </div>
     );
 }

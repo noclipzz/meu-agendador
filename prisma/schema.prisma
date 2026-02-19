@@ -39,6 +39,15 @@ model Company {
   neighborhood      String?
   city              String?
   state             String?
+
+  // --- DADOS FISCAIS (Focus NFe) ---
+  inscricaoMunicipal String?
+  regimeTributario   Int?     @default(1) // 1: Simples Nacional, 3: Normal
+  naturezaOperacao   Int?     @default(1) // 1: Tributação no município
+  codigoServico      String?  // Código da lista de serviços (ex: 07.02)
+  aliquotaServico    Decimal? @default(0)
+  certificadoA1Url   String?
+  certificadoSenha   String?
    
   // Relações
   services          Service[]
