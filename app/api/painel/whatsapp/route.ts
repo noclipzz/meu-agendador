@@ -90,8 +90,25 @@ export async function POST(req: Request) {
             headers: { 'apikey': targetCompany.evolutionApiKey }
         });
 
-        if (res.status === 404 || res.status === 400) {
-            // Instancia não encontrada ou não gerada, recria ou cria
+        let data = res.ok ? await res.json() : null;
+
+        // Se retornar 404, ou se retornar {"count": 0} (comum quando esta travada ou sem gerar QR), recriamos a instancia
+        if (!res.ok || (res.status === 200 && data?.count === 0) || !data) {
+            // Desconecta e deleta instancia antiga (se houver) para garantir a geracao limpa
+            try {
+                await fetch(`${serverUrl}/instance/logout/${instanceId}`, {
+                    method: 'DELETE',
+                    headers: { 'apikey': targetCompany.evolutionApiKey }
+                });
+                await fetch(`${serverUrl}/instance/delete/${instanceId}`, {
+                    method: 'DELETE',
+                    headers: { 'apikey': targetCompany.evolutionApiKey }
+                });
+            } catch (e) {
+                // Ignore errors during cleanup
+            }
+
+            // Recria a instancia
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: { 'apikey': targetCompany.evolutionApiKey, 'Content-Type': 'application/json' },
@@ -101,14 +118,36 @@ export async function POST(req: Request) {
                     integration: "WHATSAPP-BAILEYS"
                 })
             });
-            if (!createRes.ok) return NextResponse.json({ error: "Falha ao criar instância na API" }, { status: 500 });
-            res = createRes;
+            if (!createRes.ok) return NextResponse.json({ error: "Falha ao criar instancia na API" }, { status: 500 });
+            data = await createRes.json();
+
+            // Evolution API V2 pode demorar alguns segundos para inicializar o Baileys e liberar o QR
+            if (data?.qrcode?.count === 0 || !data?.base64) {
+                let attempts = 0;
+                while (attempts < 4) {
+                    await new Promise(r => setTimeout(r, 1500));
+                    const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
+                        headers: { 'apikey': targetCompany.evolutionApiKey }
+                    });
+                    if (retryRes.ok) {
+                        const retryData = await retryRes.json();
+                        if (retryData?.base64 || retryData?.qrcode?.base64) {
+                            data = retryData;
+                            break;
+                        }
+                    }
+                    attempts++;
+                }
+            }
         }
 
-        const data = await res.json();
-        const base64Qr = data.base64 || data.qrcode?.base64 || "";
+        const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
 
         await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "CONNECTING" } });
+
+        if (!base64Qr) {
+            return NextResponse.json({ error: "A API esta demorando para gerar o QR Code. Aguarde uns instantes e tente novamente." }, { status: 400 });
+        }
 
         return NextResponse.json({ qrCode: base64Qr });
     }
