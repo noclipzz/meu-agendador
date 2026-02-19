@@ -6,7 +6,8 @@ import Image from 'next/image';
 import {
   Check, Star, Zap, Crown, Building2, Loader2, Edit, Calendar, Users,
   DollarSign, Menu, X, LogIn, LayoutDashboard, Copy, ArrowRight, ArrowDown,
-  Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown, UserCircle
+  Smartphone, ShieldCheck, Clock, BarChart3, HelpCircle, ChevronDown, UserCircle,
+  MessageSquare
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
@@ -262,9 +263,9 @@ function PlanosSection() {
             <p className="text-xs font-medium mt-1 text-gray-500">Para franquias e grandes redes.</p>
             <div className="my-5"><span className="text-xl font-black">Sob Medida</span></div>
             <ul className="space-y-3 mb-6 flex-1">
+              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Profissionais ilimitados</span></li>
               <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">API Dedicada</span></li>
-              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de Conta</span></li>
-              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Whitelabel (Sua Marca)</span></li>
+              <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de conta</span></li>
             </ul>
             <Link href="https://wa.me/553197289584" target="_blank" className="w-full py-3 rounded-xl font-bold text-sm border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
           </div>
@@ -287,7 +288,7 @@ function PlanosSection() {
 function FAQSection() {
   const items = [
     { q: "Preciso instalar algo no computador?", a: "Não! O NOHUD é 100% online. Você acessa pelo navegador do seu computador, tablet ou celular, de onde estiver." },
-    { q: "Os lembretes são enviados automaticamente?", a: "Sim. Assim que você confirma um agendamento, seu cliente recebe um e-mail com todos os detalhes. Você não precisa fazer nada manual." },
+    { q: "Os lembretes são enviados automaticamente?", a: "Sim. Assim que você confirma um agendamento, seu cliente recebe um e-mail com todos os detalhes. Você não precisa fazer nada manual. (No Whatsapp apenas o plano Master é automático)" },
     { q: "Posso cancelar quando quiser?", a: "Com certeza. Sem fidelidade, sem multas. Você tem total liberdade sobre sua assinatura." },
     { q: "Consigo gerenciar as comissões da equipe?", a: "Sim! O NOHUD calcula automaticamente as comissões com base nos serviços realizados por cada profissional." }
   ];
@@ -307,6 +308,20 @@ function FAQSection() {
             </div>
           ))}
         </div>
+
+        {/* CTA SUPORTE */}
+        <div className="mt-20 text-center bg-gray-50 p-12 rounded-[3rem] border border-gray-100">
+          <MessageSquare className="mx-auto text-blue-500 mb-4" size={40} />
+          <h3 className="text-2xl font-black text-gray-900 mb-2">Ainda com dúvida?</h3>
+          <p className="text-gray-500 mb-8 font-medium">Nosso time está pronto para te ajudar a escolher o melhor plano.</p>
+          <Link
+            href="https://wa.me/553197289584"
+            target="_blank"
+            className="inline-flex items-center gap-2 bg-green-500 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-green-500/20 hover:scale-105 transition active:scale-95"
+          >
+            Falar com Suporte no WhatsApp
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -322,7 +337,7 @@ function ComparacaoPlanos() {
         { name: "Agenda Online 24h", individual: true, premium: true, master: true },
         { name: "Link de Agendamento", individual: true, premium: true, master: true },
         { name: "Gestão de Equipe", individual: false, premium: true, master: true },
-        { name: "App no Celular (Instalável)", individual: true, premium: true, master: true },
+        { name: "App no Celular", individual: true, premium: true, master: true },
       ]
     },
     {
