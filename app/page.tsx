@@ -613,7 +613,7 @@ export default function LandingPage() {
 
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black tracking-tight mb-4">Quem usa, recomenda</h2>
+            <h2 className="text-4xl font-black tracking-tight mb-4">Quem usa, recomenda!</h2>
             <p className="text-gray-400 max-w-2xl mx-auto text-lg">Junte-se a centenas de empresas que modernizaram sua gestão.</p>
           </div>
 
