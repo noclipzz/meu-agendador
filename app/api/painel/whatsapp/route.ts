@@ -85,107 +85,56 @@ export async function POST(req: Request) {
             await db.company.update({ where: { id: targetCompany.id }, data: { whatsappInstanceId: instanceId } });
         }
 
-        // 1. Tenta conectar na instancia existente
-        let res = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-            headers: { 'apikey': targetCompany.evolutionApiKey }
-        });
+        const connectToInstance = async () => {
+            return await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
+                headers: { 'apikey': targetCompany.evolutionApiKey }
+            });
+        };
 
+        let res = await connectToInstance();
         let data = res.ok ? await res.json() : null;
 
-        // 2. Se a instancia existe mas o QR nao esta pronto (count: 0), tenta esperar um pouco antes de desistir ou recriar
-        if (res.status === 200 && (!data?.base64 && !data?.qrcode?.base64)) {
-            console.log(`[WA] Instance exists but QR not ready. Polling existing instance...`);
-            let attempts = 0;
-            while (attempts < 5) {
-                await new Promise(r => setTimeout(r, 2000));
-                const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-                    headers: { 'apikey': targetCompany.evolutionApiKey }
-                });
-                if (retryRes.ok) {
-                    const retryData = await retryRes.json();
-                    if (retryData?.base64 || retryData?.qrcode?.base64) {
-                        data = retryData;
-                        console.log(`[WA] QR recovered from existing instance.`);
-                        break;
-                    }
-                }
-                attempts++;
-            }
-        }
-
-        // 3. Se retornar 404, ou se ainda estiver travada com count 0 após polling, recriamos do zero
-        const stillNoQR = !data?.base64 && !data?.qrcode?.base64;
-        if (!res.ok || (res.status === 200 && stillNoQR) || !data) {
-            console.log(`[WA] Instance ${instanceId} missing or stuck. Forcing recreation...`);
-
-            try {
-                // Tenta limpar apenas se não for 404
-                if (res.status !== 404) {
-                    await fetch(`${serverUrl}/instance/logout/${instanceId}`, {
-                        method: 'DELETE',
-                        headers: { 'apikey': targetCompany.evolutionApiKey }
-                    }).catch(() => { });
-                    await fetch(`${serverUrl}/instance/delete/${instanceId}`, {
-                        method: 'DELETE',
-                        headers: { 'apikey': targetCompany.evolutionApiKey }
-                    }).catch(() => { });
-                }
-            } catch (e) { }
-
-            // Recria a instancia
+        // Se a instancia nao existir ou estiver em erro, vamos criar/recriar com configuracoes de performance
+        if (res.status === 404 || !data) {
+            // Cria a instancia com flags de performance (syncFullHistory: false)
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: { 'apikey': targetCompany.evolutionApiKey, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     instanceName: instanceId,
                     qrcode: true,
-                    integration: "WHATSAPP-BAILEYS"
+                    integration: "WHATSAPP-BAILEYS",
+                    // PERFORMANCE: Desativa a sincronizacao de historico para o QR aparecer muito mais rapido
+                    syncFullHistory: false,
+                    readMessages: false,
+                    readStatus: false
                 })
             });
 
             if (!createRes.ok) {
                 const errorData = await createRes.json().catch(() => ({}));
                 return NextResponse.json({
-                    error: `Erro na Evolution API: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
+                    error: `Erro Evolution: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
                 }, { status: 500 });
             }
 
             data = await createRes.json();
-
-            // Polling mais longo para nova instancia (até 40 segundos)
-            if (!data?.base64 && !data?.qrcode?.base64) {
-                let attempts = 0;
-                while (attempts < 15) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-                        headers: { 'apikey': targetCompany.evolutionApiKey }
-                    });
-                    if (retryRes.ok) {
-                        const retryData = await retryRes.json();
-                        if (retryData?.base64 || retryData?.qrcode?.base64) {
-                            data = retryData;
-                            break;
-                        }
-                    }
-                    attempts++;
-                }
-            }
         }
 
         const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
 
+        // Se nao temos o QR de primeira, nao tem problema. 
+        // Atualizamos o status e o FRONTEND vai perguntar novamente em 2 segundos.
         await db.company.update({
             where: { id: targetCompany.id },
-            data: { whatsappStatus: base64Qr ? "CONNECTING" : "DISCONNECTED" }
+            data: { whatsappStatus: "CONNECTING" }
         });
 
-        if (!base64Qr) {
-            return NextResponse.json({
-                error: "A API esta demorando muito para gerar o QR. Por favor, aguarde 1 minuto e tente clicar em conectar novamente."
-            }, { status: 400 });
-        }
-
-        return NextResponse.json({ qrCode: base64Qr });
+        return NextResponse.json({
+            qrCode: base64Qr,
+            status: "CONNECTING",
+            message: base64Qr ? "QR Code Gerado" : "Iniciando motor de conexao..."
+        });
     }
 
     if (action === 'DISCONNECT') {

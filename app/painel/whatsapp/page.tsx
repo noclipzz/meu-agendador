@@ -19,19 +19,36 @@ export default function WhatsappPage() {
         fetchStatus();
     }, []);
 
+    // Polling automático para buscar o QR Code enquanto estiver conectando
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (status === "CONNECTING" && !qrCode) {
+            interval = setInterval(() => {
+                fetchStatus();
+            }, 2500); // 2.5s entre tentativas
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [status, qrCode]);
+
     async function fetchStatus() {
         try {
             const res = await fetch('/api/painel/whatsapp');
             const data = await res.json();
             if (data.configured) {
                 setConfigured(true);
+                // Se o servidor ja deu o QR, pegamos aqui
+                if (data.qrCode) setQrCode(data.qrCode);
                 setStatus(data.status);
                 setWhatsappMessage(data.whatsappMessage || "");
             } else {
                 setConfigured(false);
             }
         } catch (error) {
-            toast.error("Erro ao carregar configurações do WhatsApp.");
+            console.error("Erro ao carregar status:", error);
         } finally {
             setLoading(false);
         }
@@ -47,9 +64,10 @@ export default function WhatsappPage() {
                 body: JSON.stringify({ action: 'CONNECT' })
             });
             const data = await res.json();
-            if (res.ok && data.qrCode) {
-                setQrCode(data.qrCode);
+            if (res.ok) {
+                if (data.qrCode) setQrCode(data.qrCode);
                 setStatus("CONNECTING");
+                toast.info(data.message || "Iniciando conexão...");
             } else {
                 toast.error(data.error || "Erro ao conectar com servidor.");
             }
