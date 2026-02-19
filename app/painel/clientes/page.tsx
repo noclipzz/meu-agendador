@@ -12,6 +12,7 @@ import {
 import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
@@ -326,8 +327,10 @@ export default function ClientesPage() {
         const file = e.target.files[0];
         toast.info("Enviando foto...");
         try {
-            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-            const blob = await resUpload.json();
+            const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             if (blob.url) {
                 setForm(prev => ({ ...prev, photoUrl: blob.url }));
                 toast.success("Foto enviada!");
@@ -342,8 +345,10 @@ export default function ClientesPage() {
         const file = e.target.files[0];
         setSalvandoAnexo(true);
         try {
-            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-            const blob = await resUpload.json();
+            const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             const resBanco = await fetch('/api/clientes/anexos', {
                 method: 'POST',
                 body: JSON.stringify({ name: file.name, url: blob.url, type: file.type, size: file.size, clientId: clienteSelecionado.id })
