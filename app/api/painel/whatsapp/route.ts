@@ -94,6 +94,8 @@ export async function POST(req: Request) {
 
         // Se retornar 404, ou se retornar {"count": 0} (comum quando esta travada ou sem gerar QR), recriamos a instancia
         if (!res.ok || (res.status === 200 && data?.count === 0) || !data) {
+            console.log(`[WA] Instance ${instanceId} seems stuck or missing. Attempting recreation...`);
+
             // Desconecta e deleta instancia antiga (se houver) para garantir a geracao limpa
             try {
                 await fetch(`${serverUrl}/instance/logout/${instanceId}`, {
@@ -105,27 +107,40 @@ export async function POST(req: Request) {
                     headers: { 'apikey': targetCompany.evolutionApiKey }
                 });
             } catch (e) {
-                // Ignore errors during cleanup
+                console.error(`[WA] Cleanup error for ${instanceId}:`, e);
             }
 
             // Recria a instancia
+            console.log(`[WA] Creating instance ${instanceId}...`);
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: { 'apikey': targetCompany.evolutionApiKey, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     instanceName: instanceId,
                     qrcode: true,
-                    integration: "WHATSAPP-BAILEYS"
+                    integration: "WHATSAPP-BAILEYS",
+                    // Garantir que a instancia seja criada com as configuracoes corretas
+                    token: targetCompany.id.slice(0, 10) // Um token interno se necessario
                 })
             });
-            if (!createRes.ok) return NextResponse.json({ error: "Falha ao criar instancia na API" }, { status: 500 });
+
+            if (!createRes.ok) {
+                const errorData = await createRes.json().catch(() => ({}));
+                console.error(`[WA] Evolution Create Error:`, errorData);
+                return NextResponse.json({
+                    error: `Falha ao criar instancia na API: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
+                }, { status: 500 });
+            }
+
             data = await createRes.json();
+            console.log(`[WA] Instance created successfully. Setting CONNECTING status.`);
 
             // Evolution API V2 pode demorar alguns segundos para inicializar o Baileys e liberar o QR
             if (data?.qrcode?.count === 0 || !data?.base64) {
+                console.log(`[WA] QR not ready yet, polling...`);
                 let attempts = 0;
-                while (attempts < 4) {
-                    await new Promise(r => setTimeout(r, 1500));
+                while (attempts < 6) { // Aumentado para 6 tentativas
+                    await new Promise(r => setTimeout(r, 2000)); // Aumentado para 2s
                     const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
                         headers: { 'apikey': targetCompany.evolutionApiKey }
                     });
@@ -133,6 +148,7 @@ export async function POST(req: Request) {
                         const retryData = await retryRes.json();
                         if (retryData?.base64 || retryData?.qrcode?.base64) {
                             data = retryData;
+                            console.log(`[WA] QR received after ${attempts + 1} attempts.`);
                             break;
                         }
                     }
