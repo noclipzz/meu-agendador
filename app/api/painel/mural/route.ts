@@ -9,21 +9,27 @@ export async function GET(req: Request) {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-        // Identifica a empresa do usuário
-        let companyId = null;
-        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (ownerCompany) {
-            companyId = ownerCompany.id;
-        } else {
-            const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-            if (member) companyId = member.companyId;
-            else {
-                const prof = await prisma.professional.findFirst({ where: { userId } });
-                if (prof) companyId = prof.companyId;
-            }
+        // Identifica a empresa e o dono (verificar plano)
+        const company = await prisma.company.findFirst({
+            where: {
+                OR: [
+                    { ownerId: userId || "" },
+                    { teamMembers: { some: { clerkUserId: userId || "" } } },
+                    { professionals: { some: { userId: userId || "" } } }
+                ]
+            },
+            select: { id: true, ownerId: true }
+        });
+
+        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        // VERIFICA PLANO (Sempre pelo dono da empresa)
+        const sub = await prisma.subscription.findUnique({ where: { userId: company.ownerId } });
+        if (!sub || sub.plan === "INDIVIDUAL") {
+            return NextResponse.json({ error: "O Mural está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
         }
 
-        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        const companyId = company.id;
 
         const posts = await prisma.organizationPost.findMany({
             where: { companyId },
@@ -49,30 +55,28 @@ export async function POST(req: Request) {
 
         if (!title || !content) return NextResponse.json({ error: "Campos obrigatórios faltando" }, { status: 400 });
 
-        // Identifica a empresa do usuário
-        let companyId = null;
-        let authorName = "Colaborador";
+        // Identifica a empresa e o dono (verificar plano)
+        const company = await prisma.company.findFirst({
+            where: {
+                OR: [
+                    { ownerId: userId || "" },
+                    { teamMembers: { some: { clerkUserId: userId || "" } } },
+                    { professionals: { some: { userId: userId || "" } } }
+                ]
+            },
+            select: { id: true, ownerId: true }
+        });
 
-        // Tenta pegar nome do Clerk
-        try {
-            const user = await clerkClient.users.getUser(userId);
-            authorName = `${user.firstName} ${user.lastName || ''}`.trim() || "Usuário do Sistema";
-        } catch (e) { console.error("Erro ao pegar nome do Clerk", e); }
+        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (ownerCompany) {
-            companyId = ownerCompany.id;
-            // Se for dono, pode querer usar nome da empresa ou o próprio nome
-        } else {
-            const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-            if (member) companyId = member.companyId;
-            else {
-                const prof = await prisma.professional.findFirst({ where: { userId } });
-                if (prof) companyId = prof.companyId;
-            }
+        // VERIFICA PLANO (Sempre pelo dono da empresa)
+        const sub = await prisma.subscription.findUnique({ where: { userId: company.ownerId } });
+        if (!sub || sub.plan === "INDIVIDUAL") {
+            return NextResponse.json({ error: "O Mural está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
         }
 
-        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        const companyId = company.id;
+        let authorName = "Colaborador";
 
         const post = await prisma.organizationPost.create({
             data: {

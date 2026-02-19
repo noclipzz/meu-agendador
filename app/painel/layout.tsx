@@ -351,23 +351,26 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     ];
 
     const menuItems = allItems.filter(item => {
-        // Mural é visível para todos da equipe
+        // 1. REGRAS DE PLANO (SUPERIOR A TUDO)
+        if (userPlan === "INDIVIDUAL") {
+            if (["mural", "financeiro", "prontuarios", "estoque"].includes(item.key)) return false;
+        }
+        if (userPlan === "PREMIUM") {
+            if (["prontuarios", "estoque"].includes(item.key)) return false;
+        }
+
+        // 2. REGRAS DE CARGO E PERMISSÃO
+
+        // Mural é visível para todos da equipe que tenham plano permitido
         if (item.key === 'mural') return true;
 
-        // Admins tem permissão total (já garantido pela API, mas reforçamos aqui)
-        if (userRole === "ADMIN") {
-            // Regras de plano ainda se aplicam para o menu do Admin
-            if (item.key === 'mural' && userPlan === "INDIVIDUAL") return false;
-            if (item.key === 'financeiro' && userPlan === "INDIVIDUAL") return false;
-            if (item.key === 'prontuarios' && userPlan !== "MASTER") return false;
-            if (item.key === 'estoque' && userPlan !== "MASTER") return false;
-            return true;
-        }
+        // Admins tem permissão total nas demais áreas permitidas pelo plano
+        if (userRole === "ADMIN") return true;
 
         // Se ainda não carregou permissões (para Profissionais), mostra apenas o básico por segurança
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        // Para profissionais, depende puramente das permissões setadas
+        // Para profissionais, depende puramente das permissões granulares no banco
         return userPermissions[item.key as keyof typeof userPermissions];
     });
 

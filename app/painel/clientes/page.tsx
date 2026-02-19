@@ -72,6 +72,7 @@ export default function ClientesPage() {
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", cpf: "", rg: "",
+        photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
     });
 
@@ -315,6 +316,22 @@ export default function ClientesPage() {
         }
     }
 
+    async function handleUploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        toast.info("Enviando foto...");
+        try {
+            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
+            const blob = await resUpload.json();
+            if (blob.url) {
+                setForm(prev => ({ ...prev, photoUrl: blob.url }));
+                toast.success("Foto enviada!");
+            } else {
+                toast.error("Erro ao processar imagem.");
+            }
+        } catch (error) { toast.error("Erro no upload."); }
+    }
+
     async function handleUploadAnexo(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files?.[0]) return;
         const file = e.target.files[0];
@@ -324,7 +341,7 @@ export default function ClientesPage() {
             const blob = await resUpload.json();
             const resBanco = await fetch('/api/clientes/anexos', {
                 method: 'POST',
-                body: JSON.stringify({ name: file.name, url: blob.url, type: file.type, clientId: clienteSelecionado.id })
+                body: JSON.stringify({ name: file.name, url: blob.url, type: file.type, size: file.size, clientId: clienteSelecionado.id })
             });
             if (resBanco.ok) {
                 const novoAnexo = await resBanco.json();
@@ -358,6 +375,7 @@ export default function ClientesPage() {
             phone: formatarTelefone(cliente.phone || ""),
             cpf: formatarCPF(cliente.cpf || ""),
             cep: formatarCEP(cliente.cep || ""),
+            photoUrl: cliente.photoUrl || "",
             birthDate: cliente.birthDate || "",
             rg: cliente.rg || "",
             number: cliente.number || "",
@@ -369,7 +387,7 @@ export default function ClientesPage() {
         setIsEditing(true);
         setModalAberto(true);
     }
-    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
+    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
 
     // === PRONTUÁRIO ===
     async function carregarProntuario() {
@@ -645,7 +663,13 @@ export default function ClientesPage() {
                         {/* HEADER DA FICHA */}
                         <div className="p-4 md:p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 dark:bg-white/5 shrink-0 gap-4">
                             <div className="flex items-center gap-4 md:gap-6 w-full">
-                                <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-blue-600 flex items-center justify-center text-white text-xl md:text-3xl font-black shadow-xl shrink-0">{clienteSelecionado.name.charAt(0)}</div>
+                                <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-blue-600 flex items-center justify-center text-white text-xl md:text-3xl font-black shadow-xl shrink-0 overflow-hidden">
+                                    {clienteSelecionado.photoUrl ? (
+                                        <img src={clienteSelecionado.photoUrl} alt={clienteSelecionado.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        clienteSelecionado.name.charAt(0)
+                                    )}
+                                </div>
                                 <div className="min-w-0">
                                     <h2 className="text-xl md:text-3xl font-black dark:text-white truncate" title={clienteSelecionado.name}>{clienteSelecionado.name}</h2>
                                     <div className="flex flex-col md:flex-row gap-1 md:gap-4 mt-1">
@@ -860,17 +884,34 @@ export default function ClientesPage() {
                                     {loadingDetalhes && !clienteSelecionado.attachments ? (
                                         <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                                            {clienteSelecionado.attachments?.map((file: any) => (
-                                                <div key={file.id} className="p-4 md:p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-3xl md:rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
-                                                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                                                        <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">{file.type.includes('image') ? <ImageIcon size={20} className="md:size-6" /> : <FileText size={20} className="md:size-6" />}</div>
-                                                        <div className="min-w-0"><p className="font-black text-xs md:text-sm uppercase dark:text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
-                                                    </div>
-                                                    <div className="flex gap-1 md:gap-2 shrink-0"><a href={file.url} target="_blank" className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={16} className="md:size-[18px]" /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={16} className="md:size-[18px]" /></button></div>
+                                        <>
+                                            <div className="bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] p-8 border dark:border-gray-800">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Armazenamento Utilizado</p>
+                                                    <p className="text-[10px] font-black text-purple-600 uppercase">
+                                                        {((clienteSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
+                                                    </p>
                                                 </div>
-                                            )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
-                                        </div>
+                                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-purple-600 transition-all duration-500"
+                                                        style={{ width: `${Math.min(100, ((clienteSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (10 * 1024 * 1024)) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                                                {clienteSelecionado.attachments?.map((file: any) => (
+                                                    <div key={file.id} className="p-4 md:p-6 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-3xl md:rounded-[2.5rem] flex justify-between items-center group hover:border-purple-500 transition-all">
+                                                        <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">{file.type.includes('image') ? <ImageIcon size={20} className="md:size-6" /> : <FileText size={20} className="md:size-6" />}</div>
+                                                            <div className="min-w-0"><p className="font-black text-xs md:text-sm uppercase dark:text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
+                                                        </div>
+                                                        <div className="flex gap-1 md:gap-2 shrink-0"><a href={file.url} target="_blank" className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={16} className="md:size-[18px]" /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={16} className="md:size-[18px]" /></button></div>
+                                                    </div>
+                                                )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -1004,21 +1045,46 @@ export default function ClientesPage() {
                         {/* CONTEÚDO SCROLLÁVEL */}
                         <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar">
                             <div className="space-y-8 px-2">
+                                {/* SEÇÃO 0: FOTO E IDENTIFICAÇÃO */}
+                                <div className="flex flex-col md:flex-row gap-6 items-start px-2">
+                                    <div className="shrink-0 flex flex-col items-center gap-2">
+                                        <div className="w-24 h-24 rounded-[2rem] bg-gray-100 flex items-center justify-center overflow-hidden border-2 dark:border-gray-700 relative group">
+                                            {form.photoUrl ? (
+                                                <img src={form.photoUrl} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UserCircle size={48} className="text-gray-300" />
+                                            )}
+                                            <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white font-bold text-xs uppercase">
+                                                <UploadCloud size={24} />
+                                                <input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" />
+                                            </label>
+                                        </div>
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Foto do<br />Cliente</p>
+                                    </div>
+                                    <div className="flex-1 w-full space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
+                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
+                                                <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">URL da Foto (Opcional)</label>
+                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition text-xs" value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} placeholder="Cole um link de imagem..." />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* SEÇÃO 1: DADOS PESSOAIS */}
                                 <section>
                                     <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                        <UserCircle size={16} /> Dados Pessoais
+                                        <UserCircle size={16} /> Documentação Pessoal
                                     </h3>
                                     <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                        <div className="md:col-span-8 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
-                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
-                                        </div>
-                                        <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
-                                            <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
-                                        </div>
-
                                         <div className="md:col-span-4 space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
                                             <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />

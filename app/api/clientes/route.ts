@@ -87,7 +87,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const client = await prisma.client.create({
+    const client = await (prisma.client as any).create({
       data: {
         name: body.name,
         phone: body.phone,
@@ -104,6 +104,7 @@ export async function POST(req: Request) {
         state: body.state,
         notes: body.notes,
         maritalStatus: body.maritalStatus,
+        photoUrl: body.photoUrl,
         status: body.status || "ATIVO",
         companyId: companyId
       }
@@ -136,7 +137,7 @@ export async function PUT(req: Request) {
     }
 
     // Garante que só atualiza clientes da MESMA empresa
-    const updated = await prisma.client.update({
+    const updated = await (prisma.client as any).update({
       where: {
         id,
         companyId // Trava de segurança
@@ -157,6 +158,7 @@ export async function PUT(req: Request) {
         state: data.state,
         notes: data.notes,
         maritalStatus: data.maritalStatus,
+        photoUrl: data.photoUrl,
         status: data.status
       }
     });
