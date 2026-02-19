@@ -263,6 +263,42 @@ export async function POST(req: Request) {
             console.error("Erro push:", pushErr);
         }
 
+        // C) WHATSAPP - EVOLUTION API (Se estiver conectado)
+        if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone) {
+            try {
+                const messageText = company.whatsappMessage
+                    ? company.whatsappMessage
+                        .replace("{nome}", name)
+                        .replace("{dia}", formatarDataCompleta(new Date(date)))
+                        .replace("{hora}", formatarHorario(new Date(date)))
+                    : `Olá ${name}, recebemos sua solicitação de agendamento para ${formatarDataCompleta(new Date(date))} às ${formatarHorario(new Date(date))}.`;
+
+                const phoneCleanNumber = phone.replace(/\D/g, ""); // Apenas números
+
+                // Formato exigido pela Evolution API (ex: 5511999999999) - Assumindo Brasil DDI 55 se vier sem
+                const remoteJid = phoneCleanNumber.startsWith("55") ? phoneCleanNumber : `55${phoneCleanNumber}`;
+
+                const evolutionEndpoint = `${company.evolutionServerUrl}/message/sendText/${company.whatsappInstanceId}`;
+
+                // POST Request (Tratamento Async sem "await" travando a resposta - manda e esquece "fire and forget")
+                fetch(evolutionEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': company.evolutionApiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        number: remoteJid,
+                        text: messageText,
+                        options: { delay: 1200, presence: "composing" } // Simula "digitando..."
+                    })
+                }).catch(err => console.error("Falha ao notificar via WhatsApp silenciosamente:", err));
+
+            } catch (wppErr) {
+                console.error("Erro preparando webhook whatsapp:", wppErr);
+            }
+        }
+
         return NextResponse.json({ ...bookingsCreated[0], warnings, count: bookingsCreated.length });
 
     } catch (error: any) {

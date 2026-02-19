@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -341,6 +341,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'dashboard', name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
+        { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
@@ -353,10 +354,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const menuItems = allItems.filter(item => {
         // 1. REGRAS DE PLANO (SUPERIOR A TUDO)
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "prontuarios", "estoque"].includes(item.key)) return false;
+            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
         }
         if (userPlan === "PREMIUM") {
-            if (["prontuarios", "estoque"].includes(item.key)) return false;
+            if (["prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
         }
 
         // 2. REGRAS DE CARGO E PERMISSÃO

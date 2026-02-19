@@ -1,6 +1,6 @@
-declare let self: ServiceWorkerGlobalScope;
+// @ts-nocheck
 
-self.addEventListener("push", (event) => {
+self.addEventListener("push", (event: any) => {
     const data = event.data?.json();
     const title = data?.title || "Nova Notificação";
     const options = {
@@ -15,9 +15,9 @@ self.addEventListener("push", (event) => {
     event.waitUntil(self.registration.showNotification(title, options));
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", (event: any) => {
     event.notification.close();
     event.waitUntil(
-        self.clients.openWindow(event.notification.data.url)
+        self.clients.openWindow(event.notification.data?.url || "/painel")
     );
 });

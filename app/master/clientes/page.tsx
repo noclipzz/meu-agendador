@@ -71,7 +71,7 @@ export default function MasterClientes() {
     function exportarCSV() {
         const csv = [
             ['Nome', 'Slug', 'Owner ID', 'Plano', 'Status', 'MRR', 'Clientes', 'Profissionais', 'Agendamentos', 'Data Cadastro'].join(','),
-            ...empresasFiltradas.map(emp => [
+            ...empresasFiltradas.map((emp: any) => [
                 emp.name,
                 emp.slug,
                 emp.ownerId,

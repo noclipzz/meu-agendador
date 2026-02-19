@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
   return (
-    <ClerkProvider localization={ptBR}>
+    <ClerkProvider localization={ptBR as any}>
       <html lang="pt-BR" className="scroll-smooth">
         <body>
           {children}

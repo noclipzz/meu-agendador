@@ -1,0 +1,10 @@
+app/components/InstallPWA.tsx(86,17): error TS2367: This comparison appears to be unintentional because the types '"default" | "granted"' and '"denied"' have no overlap.
+app/layout.tsx(39,20): error TS2322: Type 'LocalizationResource' is not assignable to type 'DeepPartial<_LocalizationResource>'.
+  Types of property 'socialButtonsBlockButton' are incompatible.
+    Type 'DeepPartial<string & { __params: UnionToRecordWithPrimitives<"provider">; }> | undefined' is not assignable to type 'string | undefined'.
+      Type 'DeepPartial<string & { __params: UnionToRecordWithPrimitives<"provider">; }>' is not assignable to type 'string'.
+app/master/clientes/page.tsx(74,38): error TS7006: Parameter 'emp' implicitly has an 'any' type.
+worker/index.ts(1,13): error TS2451: Cannot redeclare block-scoped variable 'self'.
+worker/index.ts(1,19): error TS2304: Cannot find name 'ServiceWorkerGlobalScope'.
+worker/index.ts(15,26): error TS2339: Property 'registration' does not exist on type 'Window & typeof globalThis'.
+worker/index.ts(21,14): error TS2339: Property 'clients' does not exist on type 'Window & typeof globalThis'.

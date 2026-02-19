@@ -29,6 +29,12 @@ model Company {
   instagramUrl      String?        @default("")
   facebookUrl       String?        @default("")
   
+  // --- INTEGRAÇÃO WHATSAPP (Evolution API) ---
+  whatsappInstanceId String?       // Nome da instância na VPS (Ex: 'nohud-wpp')
+  whatsappStatus     String?       @default("DISCONNECTED") // CONNECTING, CONNECTED, DISCONNECTED
+  evolutionServerUrl String?       // URL da VPS (Ex: 'http://123.45.67.89:8080')
+  evolutionApiKey    String?       // Chave Global da VPS
+  
   // Dados de Endereço e Contato (Novo)
   cnpj              String?
   phone             String?
