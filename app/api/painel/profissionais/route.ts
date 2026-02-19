@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json([], { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     // Busca empresa do dono OU a empresa onde o usuário é funcionário
     let companyId = null;
@@ -34,7 +34,8 @@ export async function GET() {
         include: {
           bookings: {
             where: { status: { in: ["CONFIRMADO", "CONCLUIDO"] } },
-            include: { service: true }
+            include: { service: true },
+            take: 10 // Limite para evitar resposta muito grande
           },
           // attachments: true
         }

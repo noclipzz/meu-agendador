@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { validateCPF, validateEmail } from "@/lib/validators";
 
 const prisma = db;
+export const dynamic = "force-dynamic";
 
 // FUNÇÃO AUXILIAR: Descobre o ID da empresa (seja Dono ou Funcionário)
 async function getCompanyId(userId: string) {
@@ -28,7 +29,7 @@ async function getCompanyId(userId: string) {
 export async function GET() {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const companyId = await getCompanyId(userId);
     if (!companyId) return NextResponse.json([]); // Retorna lista vazia se não tiver empresa vinculada
@@ -60,10 +61,10 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const companyId = await getCompanyId(userId);
-    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
+    if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
     const body = await req.json();
 
@@ -121,10 +122,10 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const companyId = await getCompanyId(userId);
-    if (!companyId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!companyId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
     const { id, ...data } = body;
@@ -174,10 +175,10 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const companyId = await getCompanyId(userId);
-    if (!companyId) return new NextResponse("Não autorizado", { status: 401 });
+    if (!companyId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
 
