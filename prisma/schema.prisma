@@ -133,6 +133,7 @@ model Professional {
   updatedAt   DateTime  @default(now()) @updatedAt
   
   services    Service[] // Services performed by this professional
+  attachments Attachment[]
 }
 
 // --- SERVIÇOS ---
@@ -260,7 +261,8 @@ model Client {
   state       String?
   notes       String?
   maritalStatus String?
-  status      String    @default("ATIVO")
+  photoUrl      String?
+  status        String    @default("ATIVO")
   
   companyId   String
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -277,8 +279,14 @@ model Attachment {
   name      String
   url       String
   type      String   // Ex: image/png, application/pdf
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  size      Int      @default(0) // Tamanho em bytes
+  
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 }
 

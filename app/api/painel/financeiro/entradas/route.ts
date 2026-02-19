@@ -18,39 +18,33 @@ export async function POST(req: Request) {
         const { clientId, value, description, method, date } = body;
 
         // 1. Descobre a empresa (Robust Check)
-        let companyId = null;
-        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (ownerCompany) {
-            companyId = ownerCompany.id;
-        } else {
-            const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-            if (member) {
-                companyId = member.companyId;
-            } else {
-                const professional = await prisma.professional.findFirst({
-                    where: { userId: userId }
-                });
-                if (professional) companyId = professional.companyId;
+        const company = await (prisma.company as any).findFirst({
+            where: {
+                OR: [
+                    { ownerId: userId },
+                    { teamMembers: { some: { clerkUserId: userId } } },
+                    { professionals: { some: { userId: userId } } }
+                ]
             }
-        }
+        });
 
-        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         // 2. Cálculo de Taxas (Abate)
         const valorBruto = parseFloat(value);
         let valorTaxa = 0;
 
-        if ((method === 'CREDITO' || method === 'DEBITO') && ownerCompany) {
-            const taxPerc = method === 'CREDITO' ? Number(ownerCompany.creditCardTax || 0) : Number(ownerCompany.debitCardTax || 0);
+        if (method === 'CREDITO' || method === 'DEBITO') {
+            const taxPerc = method === 'CREDITO' ? Number(company.creditCardTax || 0) : Number(company.debitCardTax || 0);
             valorTaxa = (valorBruto * taxPerc) / 100;
         }
 
         const valorLiquido = valorBruto - valorTaxa;
 
         // Cria a fatura já como PAGA
-        const invoice = await prisma.invoice.create({
+        const invoice = await (prisma.invoice as any).create({
             data: {
-                companyId,
+                companyId: company.id,
                 clientId: clientId || null,
                 value: valorBruto,
                 cardTax: valorTaxa,

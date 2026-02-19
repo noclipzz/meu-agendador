@@ -10,6 +10,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
+        // VERIFICA PLANO
+        const sub = await db.subscription.findUnique({ where: { userId } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+        }
+
         const { id } = await params;
 
         const template = await db.formTemplate.findUnique({

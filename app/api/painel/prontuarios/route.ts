@@ -10,6 +10,12 @@ export async function GET() {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
+        // VERIFICA PLANO
+        const sub = await db.subscription.findUnique({ where: { userId } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+        }
+
         const company = await db.company.findFirst({
             where: {
                 OR: [
@@ -39,6 +45,12 @@ export async function POST(req: Request) {
     try {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+        // VERIFICA PLANO
+        const sub = await db.subscription.findUnique({ where: { userId } });
+        if (!sub || sub.plan !== "MASTER") {
+            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+        }
 
         const company = await db.company.findUnique({ where: { ownerId: userId } });
         if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });

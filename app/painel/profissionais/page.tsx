@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import {
     Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
     Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon, Search,
-    MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon, Megaphone
+    MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon, Megaphone,
+    Download, Eye, Receipt, QrCode, CreditCard, Banknote
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,7 +42,8 @@ export default function GestaoEquipe() {
     const [profissionais, setProfissionais] = useState<any[]>([]);
     const [modalAberto, setModalAberto] = useState(false);
     const [proSelecionado, setProSelecionado] = useState<any>(null);
-    const [abaAtiva, setAbaAtiva] = useState<"RESUMO" | "DADOS">("RESUMO");
+    const [abaAtiva, setAbaAtiva] = useState<"RESUMO" | "DADOS" | "DOCUMENTOS">("RESUMO");
+    const [salvandoAnexo, setSalvandoAnexo] = useState(false);
     const [novaObs, setNovaObs] = useState("");
     const [mostrarInputObs, setMostrarInputObs] = useState(false);
     const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
@@ -118,7 +120,7 @@ export default function GestaoEquipe() {
 
     // --- CÁLCULO DE COMISSÃO ---
     const calcularMetricas = (pro: any) => {
-        const confirmados = pro.bookings?.filter((b: any) => b.status === "CONFIRMADO") || [];
+        const confirmados = pro.bookings?.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)) || [];
 
         const totalGeral = confirmados.reduce((acc: number, b: any) => acc + Number(b.service?.price || 0), 0);
 
@@ -214,6 +216,57 @@ export default function GestaoEquipe() {
             toast.success("Observação atualizada!");
         } else {
             toast.error("Erro ao atualizar observação.");
+        }
+    }
+
+    async function handleUploadAnexoPro(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0] || !proSelecionado) return;
+        const file = e.target.files[0];
+        setSalvandoAnexo(true);
+        try {
+            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
+            if (!resUpload.ok) {
+                const err = await resUpload.json();
+                throw new Error(err.error || "Erro no upload");
+            }
+            const blob = await resUpload.json();
+            const resBanco = await fetch('/api/painel/profissionais/anexos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: file.name,
+                    url: blob.url,
+                    type: file.type,
+                    size: file.size,
+                    professionalId: proSelecionado.id
+                })
+            });
+            if (resBanco.ok) {
+                const novoAnexo = await resBanco.json();
+                setProSelecionado({ ...proSelecionado, attachments: [...(proSelecionado.attachments || []), novoAnexo] });
+                setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, attachments: [...(p.attachments || []), novoAnexo] } : p));
+                toast.success("Arquivo anexado!");
+            } else {
+                const err = await resBanco.json();
+                toast.error(err.error || "Erro ao salvar anexo.");
+            }
+        } catch (error: any) { toast.error(error.message || "Erro no upload."); }
+        finally { setSalvandoAnexo(false); }
+    }
+
+    async function deletarAnexoPro(id: string) {
+        if (!confirm("Deseja excluir este anexo?")) return;
+        const res = await fetch('/api/painel/profissionais/anexos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+            setProSelecionado({ ...proSelecionado, attachments: proSelecionado.attachments.filter((a: any) => a.id !== id) });
+            setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, attachments: p.attachments.filter((a: any) => a.id !== id) } : p));
+            toast.success("Excluído com sucesso.");
+        } else {
+            toast.error("Erro ao excluir.");
         }
     }
 
@@ -429,6 +482,7 @@ export default function GestaoEquipe() {
                                 <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl mr-4">
                                     <button onClick={() => setAbaAtiva("RESUMO")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "RESUMO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><LayoutDashboard size={14} /> Resumo</button>
                                     <button onClick={() => setAbaAtiva("DADOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DADOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><UserCircle size={14} /> Dados</button>
+                                    <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DOCUMENTOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><FileText size={14} /> Documentos</button>
                                 </div>
                                 <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
                                 <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
@@ -449,12 +503,18 @@ export default function GestaoEquipe() {
                                         <section>
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2"><History size={16} /> Histórico Recente</h4>
                                             <div className="space-y-3">
-                                                {proSelecionado.bookings?.filter((b: any) => b.status === "CONFIRMADO").length > 0 ? (
-                                                    proSelecionado.bookings.filter((b: any) => b.status === "CONFIRMADO").slice(0, 10).map((b: any) => (
+                                                {proSelecionado.bookings?.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).length > 0 ? (
+                                                    proSelecionado.bookings.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).slice(0, 10).map((b: any) => (
                                                         <div key={b.id} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] flex justify-between items-center border border-transparent hover:border-blue-500 transition-all">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm"><Star size={20} className="text-yellow-500" /></div>
-                                                                <div><p className="font-black text-sm uppercase dark:text-white">{b.service?.name}</p><div className="flex gap-4 text-[10px] font-bold text-gray-400 uppercase mt-1"><span>{format(new Date(b.date), "dd/MM/yyyy HH:mm")}</span></div></div>
+                                                                <div>
+                                                                    <p className="font-black text-sm uppercase dark:text-white">{b.service?.name}</p>
+                                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-gray-400 uppercase mt-1">
+                                                                        <span className="text-blue-500">Atendeu: {b.customerName}</span>
+                                                                        <span>{format(new Date(b.date), "dd/MM/yyyy HH:mm")}</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             <div className="text-right"><p className="font-black text-base dark:text-white">R$ {b.service?.price}</p></div>
                                                         </div>
@@ -549,6 +609,68 @@ export default function GestaoEquipe() {
                                                 )) || <p className="text-gray-400 text-xs italic opacity-40">Sem notas.</p>}
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ABA DOCUMENTOS */}
+                            {abaAtiva === "DOCUMENTOS" && (
+                                <div className="space-y-8 animate-in fade-in duration-500">
+                                    <div className="flex justify-between items-center px-2">
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={16} /> Documentos e Arquivos</h4>
+                                        <label className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase cursor-pointer hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
+                                            {salvandoAnexo ? <Loader2 className="animate-spin" size={14} /> : <UploadCloud size={14} />}
+                                            {salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
+                                            <input type="file" className="hidden" onChange={handleUploadAnexoPro} accept=".pdf,image/*" disabled={salvandoAnexo} />
+                                        </label>
+                                    </div>
+
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] p-8 border dark:border-gray-800">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Armazenamento Utilizado</p>
+                                            <p className="text-[10px] font-black text-blue-600 uppercase">
+                                                {((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
+                                            </p>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-600 transition-all duration-500"
+                                                style={{ width: `${Math.min(100, ((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (10 * 1024 * 1024)) * 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {proSelecionado.attachments?.length > 0 ? (
+                                            proSelecionado.attachments.map((file: any) => (
+                                                <div key={file.id} className="p-6 bg-gray-50 dark:bg-gray-900 border-2 border-transparent hover:border-blue-500 rounded-[2rem] flex justify-between items-center group transition-all">
+                                                    <div className="flex items-center gap-4 min-w-0">
+                                                        <div className="w-12 h-12 bg-white dark:bg-gray-800 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+                                                            {file.type.includes('image') ? <ImageIcon size={20} /> : <FileText size={20} />}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-black text-xs uppercase dark:text-white truncate" title={file.name}>{file.name}</p>
+                                                            <p className="text-[9px] font-bold text-gray-400 uppercase">
+                                                                {((file.size || 0) / 1024).toFixed(0)} KB • {format(new Date(file.createdAt), "dd/MM/yyyy")}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <a href={file.url} target="_blank" className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-blue-600 transition shadow-sm" title="Baixar">
+                                                            <Download size={16} />
+                                                        </a>
+                                                        <button onClick={() => deletarAnexoPro(file.id)} className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-red-500 transition shadow-sm" title="Excluir">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
+                                                <UploadCloud size={40} className="mx-auto text-gray-300 mb-4" />
+                                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Nenhum documento anexado</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

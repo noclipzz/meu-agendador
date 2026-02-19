@@ -116,7 +116,29 @@ export async function DELETE(req: Request) {
 
     const body = await req.json();
 
-    // Na deleção, seria bom verificar permissão/empresa também, mas por brevidade:
+    // 1. Identifica a empresa (Dono ou Membro)
+    let companyId = null;
+
+    // Tenta como Dono
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+        companyId = ownerCompany.id;
+    } else {
+        // Tenta como Membro
+        const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+        if (member) companyId = member.companyId;
+    }
+
+    if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
+
+    // VERIFICA SE O SERVIÇO PERTENCE À EMPRESA
+    const service = await prisma.service.findUnique({ where: { id: body.id } });
+    if (!service) return NextResponse.json({ error: "Serviço não encontrado" }, { status: 404 });
+
+    if (service.companyId !== companyId) {
+        return NextResponse.json({ error: "Acesso negado. Este serviço não pertence à sua empresa." }, { status: 403 });
+    }
+
     await prisma.service.delete({ where: { id: body.id } });
 
     return NextResponse.json({ success: true });

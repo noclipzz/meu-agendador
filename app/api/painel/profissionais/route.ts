@@ -29,20 +29,21 @@ export async function GET() {
     if (!companyId) return NextResponse.json([]);
 
     const [profissionais, teamMembers] = await Promise.all([
-      prisma.professional.findMany({
+      (prisma.professional as any).findMany({
         where: { companyId },
         include: {
           bookings: {
-            where: { status: "CONFIRMADO" },
+            where: { status: { in: ["CONFIRMADO", "CONCLUIDO"] } },
             include: { service: true }
-          }
+          },
+          attachments: true
         }
       }),
       prisma.teamMember.findMany({ where: { companyId } })
     ]);
 
     // Anexa as permissões do TeamMember ao objeto do Profissional
-    const profissionaisComPermissoes = profissionais.map(p => {
+    const profissionaisComPermissoes = profissionais.map((p: any) => {
       const member = teamMembers.find(m =>
         (p.email && m.email === p.email) ||
         (p.userId && m.clerkUserId === p.userId)

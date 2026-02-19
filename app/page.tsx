@@ -254,7 +254,7 @@ function PlanosSection() {
             badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
             iconBg="bg-amber-500/10"
             iconColor="text-amber-400"
-            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Prontuários"]}
+            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Prontuários", "Maior banco de dados"]}
           />
 
           <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
@@ -288,7 +288,7 @@ function PlanosSection() {
 function FAQSection() {
   const items = [
     { q: "Preciso instalar algo no computador?", a: "Não! O NOHUD é 100% online. Você acessa pelo navegador do seu computador, tablet ou celular, de onde estiver." },
-    { q: "Os lembretes são enviados automaticamente?", a: "Sim. Assim que você confirma um agendamento, seu cliente recebe um e-mail com todos os detalhes. Você não precisa fazer nada manual. (No Whatsapp apenas o plano Master é automático)" },
+    { q: "Os lembretes são enviados automaticamente?", a: "Sim. Assim que você confirma um agendamento, seu cliente recebe um e-mail com todos os detalhes. Você não precisa fazer nada manual." },
     { q: "Posso cancelar quando quiser?", a: "Com certeza. Sem fidelidade, sem multas. Você tem total liberdade sobre sua assinatura." },
     { q: "Consigo gerenciar as comissões da equipe?", a: "Sim! O NOHUD calcula automaticamente as comissões com base nos serviços realizados por cada profissional." }
   ];
@@ -358,7 +358,7 @@ function ComparacaoPlanos() {
         { name: "Prontuário Master", individual: false, premium: false, master: true },
         { name: "Histórico do Cliente", individual: true, premium: true, master: true },
         { name: "Suporte Técnico", individual: "Padrão", premium: "Padrão", master: "Prioritário" },
-        { name: "Lembrete WhatsApp", individual: "Manual", premium: "Manual", master: "Automático" },
+        { name: "Lembrete WhatsApp", individual: "Manual", premium: "Manual", master: "Manual (Automático em breve)" },
       ]
     }
   ];
@@ -556,7 +556,7 @@ export default function LandingPage() {
         <div className="container mx-auto text-center relative z-10 max-w-4xl">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Star size={12} className="fill-blue-700" />
-            Mais de 1.000 agendamentos realizados
+            A melhor solução para o seu negócio
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-8 tracking-tight text-gray-900 animate-in fade-in slide-in-from-bottom-6 duration-1000">
