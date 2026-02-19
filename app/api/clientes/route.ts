@@ -44,8 +44,8 @@ export async function GET() {
           },
           orderBy: { date: 'desc' },
           take: 5
-        },
-        attachments: true
+        }
+        // attachments: true
       }
     });
 
