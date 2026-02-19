@@ -266,7 +266,7 @@ function PlanosSection() {
               <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Gerente de Conta</span></li>
               <li className="flex gap-2 text-xs font-medium items-start"><Check size={15} className="text-gray-400 flex-shrink-0 mt-0.5" /><span className="text-gray-600">Whitelabel (Sua Marca)</span></li>
             </ul>
-            <Link href="https://wa.me/5511999999999" target="_blank" className="w-full py-3 rounded-xl font-bold text-sm border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
+            <Link href="https://wa.me/553197289584" target="_blank" className="w-full py-3 rounded-xl font-bold text-sm border-2 border-gray-100 hover:border-gray-200 text-gray-600 transition flex justify-center items-center">Fale Conosco</Link>
           </div>
         </div>
 
@@ -321,9 +321,8 @@ function ComparacaoPlanos() {
         { name: "Profissionais", individual: "1 (Você)", premium: "Até 5", master: "Até 15" },
         { name: "Agenda Online 24h", individual: true, premium: true, master: true },
         { name: "Link de Agendamento", individual: true, premium: true, master: true },
-        { name: "Múltiplas Unidades", individual: false, premium: false, master: true },
         { name: "Gestão de Equipe", individual: false, premium: true, master: true },
-        { name: "App para Profissionais", individual: false, premium: true, master: true },
+        { name: "App no Celular (Instalável)", individual: true, premium: true, master: true },
       ]
     },
     {
@@ -334,7 +333,7 @@ function ComparacaoPlanos() {
         { name: "Metas de Faturamento", individual: true, premium: true, master: true },
         { name: "Fluxo de Caixa", individual: false, premium: true, master: true },
         { name: "Gestão de Estoque", individual: false, premium: false, master: true },
-        { name: "Taxas de Cartão", individual: false, premium: true, master: true },
+        { name: "Taxas de Cartão (Dedução)", individual: false, premium: true, master: true },
       ]
     },
     {
@@ -344,7 +343,7 @@ function ComparacaoPlanos() {
         { name: "Prontuário Master", individual: false, premium: false, master: true },
         { name: "Histórico do Cliente", individual: true, premium: true, master: true },
         { name: "Suporte Técnico", individual: "Padrão", premium: "Padrão", master: "Prioritário" },
-        { name: "Lembrete WhatsApp", individual: false, premium: "Em breve", master: "Sim (Oficial)" },
+        { name: "Lembrete WhatsApp", individual: "Manual", premium: "Manual", master: "Automático" },
       ]
     }
   ];

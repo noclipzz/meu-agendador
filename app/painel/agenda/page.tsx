@@ -710,8 +710,14 @@ export default function PainelDashboard() {
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Forma de Pagamento</label>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {[{ id: 'PIX', icon: <QrCode size={16} /> }, { id: 'CARTAO', icon: <CreditCard size={16} /> }, { id: 'DINHEIRO', icon: <Banknote size={16} /> }, { id: 'FATURADO', icon: <Clock size={16} /> }].map(m => (
-                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: m.id === 'FATURADO' ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {m.id}</button>
+                                        {[
+                                            { id: 'PIX', icon: <QrCode size={16} /> },
+                                            { id: 'CREDITO', icon: <CreditCard size={16} />, label: 'Crédito' },
+                                            { id: 'DEBITO', icon: <CreditCard size={16} />, label: 'Débito' },
+                                            { id: 'DINHEIRO', icon: <Banknote size={16} /> },
+                                            { id: 'FATURADO', icon: <Clock size={16} /> }
+                                        ].map(m => (
+                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: m.id === 'FATURADO' ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {(m as any).label || m.id}</button>
                                         ))}
                                     </div>
                                     {checkoutData.method === 'FATURADO' && (

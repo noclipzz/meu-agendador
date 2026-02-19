@@ -189,9 +189,9 @@ export async function GET(request: Request) {
         ]);
 
         // Cálculos de Totais
-        const totalReceita = receitasMes.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalReceita = receitasMes.reduce((acc, i) => acc + Number(i.netValue || i.value), 0);
         const totalDespesa = despesasMes.reduce((acc, i) => acc + Number(i.value), 0);
-        const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i) => acc + Number(i.netValue || i.value), 0);
 
         // Cálculo Crescimento
         let crescimento = 0;

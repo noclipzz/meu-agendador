@@ -123,7 +123,10 @@ export async function POST(req: Request) {
       codigoServico: body.codigoServico || null,
       aliquotaServico: body.aliquotaServico ? Number(body.aliquotaServico) : 0,
       certificadoA1Url: body.certificadoA1Url || null,
-      certificadoSenha: body.certificadoSenha || null
+      certificadoSenha: body.certificadoSenha || null,
+      // Taxas
+      creditCardTax: body.creditCardTax ? Number(body.creditCardTax) : 0,
+      debitCardTax: body.debitCardTax ? Number(body.debitCardTax) : 0
     };
 
     if (existingConfig) {
