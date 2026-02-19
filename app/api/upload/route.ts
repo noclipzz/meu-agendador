@@ -5,7 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     // 1. AUTENTICAÇÃO OBRIGATÓRIA
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return new NextResponse("Não autorizado", { status: 401 });
     }

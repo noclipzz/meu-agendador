@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search, CreditCard } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useTheme } from "../../../hooks/useTheme";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
 export default function Configuracoes() {
@@ -127,9 +130,10 @@ export default function Configuracoes() {
         const file = inputFileRef.current.files[0];
         setIsUploading(true);
         try {
-            const response = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-            if (!response.ok) throw new Error("Falha no servidor");
-            const newBlob = await response.json();
+            const newBlob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             setLogoUrl(newBlob.url);
             toast.success("Imagem carregada com sucesso!");
         } catch (error) {
@@ -144,9 +148,10 @@ export default function Configuracoes() {
         const file = inputCertRef.current.files[0];
         setIsUploading(true);
         try {
-            const response = await fetch(`/api/upload?filename=cert_${file.name}`, { method: 'POST', body: file });
-            if (!response.ok) throw new Error("Falha no servidor");
-            const newBlob = await response.json();
+            const newBlob = await upload(`cert_${file.name}`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             setCertificadoA1Url(newBlob.url);
             toast.success("Certificado enviado com sucesso!");
         } catch (error) {

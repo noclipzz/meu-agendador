@@ -5,26 +5,27 @@ export async function POST(request: Request): Promise<NextResponse> {
     const body = (await request.json()) as HandleUploadBody;
 
     try {
+        console.log('Gerando token para:', body.type, body.payload);
         const jsonResponse = await handleUpload({
             body,
             request,
             onBeforeGenerateToken: async (pathname) => {
-                // Aqui você pode implementar lógica de autenticação se necessário
+                console.log('onBeforeGenerateToken para:', pathname);
                 return {
-                    allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+                    allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'image/jpg'],
                     tokenPayload: JSON.stringify({
                         // payloads opcionais
                     }),
                 };
             },
             onUploadCompleted: async ({ blob, tokenPayload }) => {
-                // Lógica após o upload ser concluído (ex: salvar no banco)
-                console.log('Upload concluído:', blob);
+                console.log('Upload concluído com sucesso:', blob.url);
             },
         });
 
         return NextResponse.json(jsonResponse);
     } catch (error) {
+        console.error('Erro no handleUpload:', error);
         return NextResponse.json(
             { error: (error as Error).message },
             { status: 400 },
