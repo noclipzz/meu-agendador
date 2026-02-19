@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 const prisma = db;
 
@@ -46,7 +47,6 @@ export async function GET() {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-        const { toZonedTime } = require('date-fns-tz');
         const TIMEZONE = 'America/Sao_Paulo';
 
         const hoje = toZonedTime(new Date(), TIMEZONE);
