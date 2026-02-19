@@ -83,7 +83,7 @@ function usePWAInstall() {
             toast.success("Alertas ativos! 🔔");
             return true;
         } catch (error: any) {
-            if (Notification.permission === "denied") setNotificationDenied(true);
+            if ((Notification as any).permission === "denied") setNotificationDenied(true);
             toast.error(`Erro: ${error.message}`);
             return false;
         }
