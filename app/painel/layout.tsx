@@ -57,7 +57,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         phone: "",
         local: "",
         categoria: "REUNIAO",
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'), // en-CA retorna YYYY-MM-DD localmente
         time: "",
         serviceId: "",
         professionalIds: [] as string[], // Alterado para array
@@ -83,7 +83,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             phone: "",
             local: "",
             categoria: (tipoAgendamento === "EVENTO" || tipoAgendamento === "ENCAIXE") ? "REUNIAO" : "",
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toLocaleDateString('en-CA'),
             time: "",
             serviceId: "",
             professionalIds: [],
@@ -321,7 +321,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 }
 
                 setIsModalOpen(false);
-                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toISOString().split('T')[0], time: "", serviceId: "", professionalIds: [], notificarGeral: true });
+                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toLocaleDateString('en-CA'), time: "", serviceId: "", professionalIds: [], notificarGeral: true });
                 if (refreshAgenda) refreshAgenda();
             } else {
                 toast.error(data.error || "Erro ao salvar agendamento.");
@@ -678,7 +678,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Data</label>
-                                        <input type="date" min={new Date().toISOString().split('T')[0]} className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.date} onChange={e => setNovo({ ...novo, date: e.target.value })} />
+                                        <input type="date" min={new Date().toLocaleDateString('en-CA')} className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.date} onChange={e => setNovo({ ...novo, date: e.target.value })} />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Horário</label>

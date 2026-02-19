@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
         const connectToInstance = async () => {
             return await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-                headers: { 'apikey': targetCompany.evolutionApiKey }
+                headers: { 'apikey': targetCompany.evolutionApiKey! }
             });
         };
 
@@ -99,7 +99,10 @@ export async function POST(req: Request) {
             // Cria a instancia com flags de performance (syncFullHistory: false)
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
-                headers: { 'apikey': targetCompany.evolutionApiKey, 'Content-Type': 'application/json' },
+                headers: {
+                    'apikey': targetCompany.evolutionApiKey!,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     instanceName: instanceId,
                     qrcode: true,
