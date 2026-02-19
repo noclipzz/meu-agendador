@@ -46,7 +46,10 @@ export async function GET() {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-        const hoje = new Date();
+        const { toZonedTime } = require('date-fns-tz');
+        const TIMEZONE = 'America/Sao_Paulo';
+
+        const hoje = toZonedTime(new Date(), TIMEZONE);
         const inicioDia = startOfDay(hoje);
         const fimDia = endOfDay(hoje);
         const inicioMes = startOfMonth(hoje);
