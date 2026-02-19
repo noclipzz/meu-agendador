@@ -15,8 +15,8 @@ export async function POST(request: Request): Promise<NextResponse> {
             request,
             onBeforeGenerateToken: async (pathname) => {
                 return {
-                    // Removido temporariamente para testes
-                    // allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+                    allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'image/jpg'],
+                    addRandomSuffix: true,
                     tokenPayload: JSON.stringify({
                         customer: 'nohud',
                     }),
