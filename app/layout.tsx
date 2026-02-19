@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "NOHUD",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
