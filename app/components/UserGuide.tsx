@@ -36,7 +36,7 @@ const steps: Step[] = [
     },
     {
         title: "Gestores de Clientes 👥",
-        content: "Mantenha o histórico completo de seus clientes, com telefone, prontuários e frequência de visitas sempre à mão.",
+        content: "Mantenha o histórico completo de seus clientes, com telefone, fichas técnicas e frequência de visitas sempre à mão.",
         icon: <Users size={48} />,
         color: "bg-amber-600"
     },

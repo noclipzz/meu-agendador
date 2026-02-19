@@ -436,14 +436,14 @@ export default function ClientesPage() {
                 })
             });
             if (res.ok) {
-                toast.success(prontuarioEditId ? "Prontuário atualizado!" : "Prontuário salvo!");
+                toast.success(prontuarioEditId ? "Ficha atualizada!" : "Ficha salva!");
                 setProntuarioFormData({});
                 setProntuarioEditId(null);
                 setProntuarioTemplateSelecionado("");
                 setModalProntuarioAberto(false);
                 carregarProntuario();
             } else {
-                toast.error("Erro ao salvar prontuário");
+                toast.error("Erro ao salvar ficha técnica");
             }
         } finally {
             setProntuarioSalvando(false);
@@ -451,7 +451,7 @@ export default function ClientesPage() {
     }
 
     async function excluirProntuario(id: string) {
-        if (!confirm("Tem certeza que deseja excluir este prontuário?")) return;
+        if (!confirm("Tem certeza que deseja excluir esta ficha?")) return;
         try {
             const res = await fetch('/api/painel/prontuarios/entries', {
                 method: 'DELETE',
@@ -459,10 +459,10 @@ export default function ClientesPage() {
                 body: JSON.stringify({ id })
             });
             if (res.ok) {
-                toast.success("Prontuário excluído!");
+                toast.success("Ficha excluída!");
                 setProntuarioEntries(prontuarioEntries.filter(e => e.id !== id));
             } else {
-                toast.error("Erro ao excluir prontuário");
+                toast.error("Erro ao excluir ficha");
             }
         } catch { toast.error("Erro ao excluir"); }
     }
@@ -520,7 +520,7 @@ export default function ClientesPage() {
 
         const nomeEmpresa = empresaInfo.name || 'Clínica';
 
-        const html = `<!DOCTYPE html><html><head><title>Prontuário - ${clienteSelecionado?.name}</title>
+        const html = `<!DOCTYPE html><html><head><title>Ficha - ${clienteSelecionado?.name}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -589,7 +589,7 @@ export default function ClientesPage() {
                     ${logoHtml}
                     <div>
                         <div class="company-name">${nomeEmpresa}</div>
-                        <div class="company-subtitle">Prontuário do Paciente</div>
+                        <div class="company-subtitle">Ficha de Acompanhamento</div>
                     </div>
                 </div>
                 <div class="header-right">
@@ -599,10 +599,10 @@ export default function ClientesPage() {
             </div>
 
             <h1 class="doc-title">${entry.template?.name}</h1>
-            <p class="doc-subtitle">${entry.template?.description || 'Registro Clínico'}</p>
+            <p class="doc-subtitle">${entry.template?.description || 'Registro de Atendimento'}</p>
 
             <div class="client-box">
-                <div class="client-item"><label>Paciente</label><span>${clienteSelecionado?.name || '—'}</span></div>
+                <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>CPF</label><span>${clienteSelecionado?.cpf || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
                 <div class="client-item"><label>RG</label><span>${clienteSelecionado?.rg || '—'}</span></div>
@@ -714,7 +714,7 @@ export default function ClientesPage() {
                             <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
                             <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
                             {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
-                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Prontuário</button>
+                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Ficha & Evolução</button>
                             )}
                         </div>
 
@@ -940,7 +940,7 @@ export default function ClientesPage() {
                                     {loadingProntuarios ? (
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <Loader2 className="animate-spin text-teal-600 mb-2" size={30} />
-                                            <p className="text-[10px] uppercase text-gray-400 font-bold">Carregando prontuários...</p>
+                                            <p className="text-[10px] uppercase text-gray-400 font-bold">Carregando fichas...</p>
                                         </div>
                                     ) : prontuarioVisualizando ? (
                                         /* VISUALIZAÇÃO DO PRONTUÁRIO PREENCHIDO */
@@ -987,8 +987,8 @@ export default function ClientesPage() {
                                             {prontuarioTemplates.length === 0 ? (
                                                 <div className="text-center py-16">
                                                     <ClipboardList size={40} className="text-gray-300 mx-auto mb-4" />
-                                                    <p className="text-sm text-gray-500 font-bold">Nenhum modelo de prontuário criado.</p>
-                                                    <p className="text-xs text-gray-400 mt-1">Vá em <b>Prontuários</b> no menu lateral para criar um modelo.</p>
+                                                    <p className="text-sm text-gray-500 font-bold">Nenhum modelo de ficha técnica criado.</p>
+                                                    <p className="text-xs text-gray-400 mt-1">Vá em <b>Fichas Técnicas</b> no menu lateral para criar um modelo.</p>
                                                 </div>
                                             ) : (
                                                 <>
@@ -997,13 +997,13 @@ export default function ClientesPage() {
                                                         onClick={() => { setProntuarioTemplateSelecionado(""); setProntuarioFormData({}); setProntuarioEditId(null); setModalProntuarioAberto(true); }}
                                                         className="w-full border-2 border-dashed border-teal-300 dark:border-teal-800 p-5 rounded-2xl text-teal-600 font-bold text-sm hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition flex items-center justify-center gap-2"
                                                     >
-                                                        <Plus size={18} /> Novo Prontuário
+                                                        <Plus size={18} /> Nova Ficha Técnica
                                                     </button>
 
                                                     {/* LISTA DE PRONTUÁRIOS PREENCHIDOS */}
                                                     {prontuarioEntries.length > 0 && (
                                                         <div>
-                                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Prontuários Preenchidos ({prontuarioEntries.length})</h4>
+                                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Fichas Preenchidas ({prontuarioEntries.length})</h4>
                                                             <div className="space-y-2">
                                                                 {prontuarioEntries.map((entry: any) => (
                                                                     <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
@@ -1029,7 +1029,7 @@ export default function ClientesPage() {
                                                     {prontuarioEntries.length === 0 && (
                                                         <div className="text-center py-10 opacity-40">
                                                             <ClipboardList size={30} className="mx-auto mb-2" />
-                                                            <p className="text-xs font-bold">Nenhum prontuário preenchido para este cliente.</p>
+                                                            <p className="text-xs font-bold">Nenhuma ficha preenchida para este cliente.</p>
                                                         </div>
                                                     )}
                                                 </>
@@ -1232,7 +1232,7 @@ export default function ClientesPage() {
                             <div>
                                 <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
-                                    {prontuarioEditId ? "Editar Prontuário" : "Novo Prontuário"}
+                                    {prontuarioEditId ? "Editar Ficha Técnica" : "Nova Ficha Técnica"}
                                 </h2>
                                 <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
                             </div>
@@ -1245,7 +1245,7 @@ export default function ClientesPage() {
                         <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                             {/* SELETOR DE TEMPLATE */}
                             <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo do Prontuário</label>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo da Ficha</label>
                                 <select
                                     className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
                                     value={prontuarioTemplateSelecionado}
@@ -1353,7 +1353,7 @@ export default function ClientesPage() {
                                     className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
                                 >
                                     {prontuarioSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
-                                    {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Prontuário' : 'Salvar Prontuário')}
+                                    {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Ficha' : 'Salvar Ficha')}
                                 </button>
                             </div>
                         )}

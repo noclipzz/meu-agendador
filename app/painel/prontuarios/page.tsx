@@ -149,7 +149,7 @@ export default function ProntuariosPage() {
             });
 
             if (res.ok) {
-                toast.success(templateAtual?.id ? "Prontuário atualizado!" : "Prontuário criado!");
+                toast.success(templateAtual?.id ? "Ficha Técnica atualizada!" : "Ficha Técnica criada!");
                 setEditando(false);
                 carregarTemplates();
             } else {
@@ -161,12 +161,12 @@ export default function ProntuariosPage() {
     async function excluirTemplate(id: string) {
         const res = await fetch(`/api/painel/prontuarios/${id}`, { method: 'DELETE' });
         if (res.ok) {
-            toast.success("Prontuário excluído!");
+            toast.success("Ficha Técnica excluída!");
             setTemplates(templates.filter(t => t.id !== id));
         }
     }
 
-    if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse text-xs uppercase">Carregando prontuários...</div>;
+    if (loading) return <div className="p-10 text-center font-black text-gray-400 animate-pulse text-xs uppercase">Carregando fichas...</div>;
 
     // --- EDITOR DE TEMPLATE ---
     if (editando) {
@@ -176,7 +176,7 @@ export default function ProntuariosPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-3xl font-black text-gray-800 dark:text-white">
-                            {templateAtual ? "Editar Prontuário" : "Novo Prontuário"}
+                            {templateAtual ? "Editar Ficha Técnica" : "Nova Ficha Técnica"}
                         </h1>
                         <p className="text-sm text-gray-500">Configure os campos que o profissional vai preencher.</p>
                     </div>
@@ -188,10 +188,10 @@ export default function ProntuariosPage() {
                 {/* NOME E DESCRIÇÃO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome do Prontuário</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome da Ficha Técnica</label>
                         <input
                             className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white"
-                            placeholder="Ex: Anamnese Odontológica"
+                            placeholder="Ex: Ficha de Avaliação ou Anamnese"
                             value={nome}
                             onChange={e => setNome(e.target.value)}
                         />
@@ -232,7 +232,7 @@ export default function ProntuariosPage() {
                                     </span>
                                     <input
                                         className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
-                                        placeholder={campo.type === "header" ? "Título da seção (ex: Histórico Médico)" : "Nome do campo (ex: Possui alergia?)"}
+                                        placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Nome do campo (ex: Tipo de Cabelo/Pele)"}
                                         value={campo.label}
                                         onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
                                     />
@@ -340,7 +340,7 @@ export default function ProntuariosPage() {
                     className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl hover:bg-blue-700 transition flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                     {salvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
-                    {salvando ? "Salvando..." : "Salvar Prontuário"}
+                    {salvando ? "Salvando..." : "Salvar Ficha Técnica"}
                 </button>
             </div>
         );
@@ -351,11 +351,11 @@ export default function ProntuariosPage() {
         <div className="space-y-6 pb-20 p-2 font-sans">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white">Prontuários</h1>
-                    <p className="text-sm text-gray-500">Crie formulários personalizados para seus atendimentos.</p>
+                    <h1 className="text-3xl font-black text-gray-800 dark:text-white">Fichas Técnicas</h1>
+                    <p className="text-sm text-gray-500">Crie formulários personalizados para seus acompanhamentos.</p>
                 </div>
                 <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
-                    <Plus size={20} /> Novo Prontuário
+                    <Plus size={20} /> Nova Ficha Técnica
                 </button>
             </div>
 
@@ -364,13 +364,13 @@ export default function ProntuariosPage() {
                     <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
                         <ClipboardList size={40} className="text-blue-500" />
                     </div>
-                    <h3 className="text-xl font-black dark:text-white mb-2">Nenhum prontuário criado</h3>
+                    <h3 className="text-xl font-black dark:text-white mb-2">Nenhuma ficha técnica criada</h3>
                     <p className="text-gray-500 text-sm max-w-md mb-6">
-                        Crie um prontuário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
-                        preencher durante o atendimento do cliente.
+                        Crie um formulário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
+                        preencher durante o acompanhamento do cliente.
                     </p>
                     <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
-                        <Plus size={20} /> Criar Primeiro Prontuário
+                        <Plus size={20} /> Criar Primeiro Formulário
                     </button>
                 </div>
             ) : (
@@ -406,8 +406,8 @@ export default function ProntuariosPage() {
                 isOpen={!!templateParaExcluir}
                 onClose={() => setTemplateParaExcluir(null)}
                 onConfirm={() => templateParaExcluir && excluirTemplate(templateParaExcluir)}
-                title="Excluir Prontuário?"
-                message="Tem certeza que deseja excluir este modelo de prontuário? Esta ação não pode ser desfeita."
+                title="Excluir Ficha Técnica?"
+                message="Tem certeza que deseja excluir este modelo? Esta ação não pode ser desfeita."
                 isDeleting={true}
             />
         </div>
