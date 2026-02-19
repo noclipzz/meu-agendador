@@ -344,7 +344,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
-        { key: 'prontuarios', name: "Prontuários", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
+        { key: 'prontuarios', name: "Fichas Técnicas", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
         { key: 'profissionais', name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> },

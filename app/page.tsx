@@ -254,7 +254,7 @@ function PlanosSection() {
             badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
             iconBg="bg-amber-500/10"
             iconColor="text-amber-400"
-            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Prontuários", "Maior banco de dados"]}
+            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Fichas Técnicas", "Maior banco de dados"]}
           />
 
           <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
@@ -355,7 +355,7 @@ function ComparacaoPlanos() {
       name: "Comunicação & Clientes",
       features: [
         { name: "Lembretes E-mail", individual: true, premium: true, master: true },
-        { name: "Prontuário Master", individual: false, premium: false, master: true },
+        { name: "Fichas & Evolução", individual: false, premium: false, master: true },
         { name: "Histórico do Cliente", individual: true, premium: true, master: true },
         { name: "Suporte Técnico", individual: "Padrão", premium: "Padrão", master: "Prioritário" },
         { name: "Lembrete WhatsApp", individual: "Manual", premium: "Manual", master: "Manual (Automático em breve)" },
@@ -592,7 +592,7 @@ export default function LandingPage() {
                 { icon: BarChart3, title: "Financeiro & Metas", desc: "Acompanhe seu faturamento em tempo real e saiba exatamente quanto lucra.", color: "bg-purple-100 text-purple-600" },
                 { icon: Users, title: "Gestão de Equipe", desc: "Controle comissões, horários e permissões de acesso para colaboradores.", color: "bg-orange-100 text-orange-600" },
                 { icon: ShieldCheck, title: "Acesso Seguro", desc: "Seus dados protegidos na nuvem com backups automáticos e segurança total.", color: "bg-cyan-100 text-cyan-600" },
-                { icon: UserCircle, title: "Gestão de Clientes", desc: "Prontuários, histórico de atendimentos e preferências de cada cliente.", color: "bg-pink-100 text-pink-600" }
+                { icon: UserCircle, title: "Gestão de Clientes", desc: "Fichas técnicas, histórico de atendimentos e preferências de cada cliente.", color: "bg-pink-100 text-pink-600" }
               ].map((f, i) => (
                 <div key={i} className="bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all border border-white/20 group hover:-translate-y-1 duration-300">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-500 ${f.color}`}><f.icon size={28} strokeWidth={2.5} /></div>

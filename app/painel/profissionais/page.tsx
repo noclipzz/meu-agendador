@@ -787,7 +787,7 @@ export default function GestaoEquipe() {
                                                         { key: 'clientes', label: 'Clientes', icon: <Users size={14} /> },
                                                         { key: 'financeiro', label: 'Financeiro', icon: <BarChart3 size={14} /> },
                                                         { key: 'estoque', label: 'Estoque', icon: <Package size={14} /> },
-                                                        { key: 'prontuarios', label: 'Prontuários', icon: <ClipboardList size={14} /> },
+                                                        { key: 'prontuarios', label: 'Fichas Técnicas', icon: <ClipboardList size={14} /> },
                                                         { key: 'servicos', label: 'Serviços', icon: <Briefcase size={14} /> },
                                                         { key: 'profissionais', label: 'Equipe', icon: <UserIcon size={14} /> },
                                                         { key: 'config', label: 'Configurações', icon: <Settings size={14} /> },
