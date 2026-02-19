@@ -10,6 +10,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
 // --- HELPER: MASCARAS ---
@@ -136,11 +137,12 @@ export default function GestaoEquipe() {
     async function handleUploadFoto(e: React.ChangeEvent<HTMLInputElement>) {
         if (!e.target.files?.[0]) return;
         const file = e.target.files[0];
-        // setSalvando(true); // Opcional: mostrar loading no botão de upload
         toast.info("Enviando foto...");
         try {
-            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-            const blob = await resUpload.json();
+            const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             if (blob.url) {
                 setForm(prev => ({ ...prev, photoUrl: blob.url }));
                 toast.success("Foto enviada!");
@@ -148,7 +150,6 @@ export default function GestaoEquipe() {
                 toast.error("Erro ao processar imagem.");
             }
         } catch (error) { toast.error("Erro no upload."); }
-        // finally { setSalvando(false); }
     }
 
     async function adicionarNotaRapidaPro() {
@@ -224,12 +225,10 @@ export default function GestaoEquipe() {
         const file = e.target.files[0];
         setSalvandoAnexo(true);
         try {
-            const resUpload = await fetch(`/api/upload?filename=${file.name}`, { method: 'POST', body: file });
-            if (!resUpload.ok) {
-                const err = await resUpload.json();
-                throw new Error(err.error || "Erro no upload");
-            }
-            const blob = await resUpload.json();
+            const blob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
             const resBanco = await fetch('/api/painel/profissionais/anexos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
