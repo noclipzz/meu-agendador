@@ -48,6 +48,11 @@ model Company {
   aliquotaServico    Decimal? @default(0)
   certificadoA1Url   String?
   certificadoSenha   String?
+
+  // --- CONFIGURAÇÕES DE TAXAS ---
+  creditCardTax    Decimal? @default(0)
+  debitCardTax     Decimal? @default(0)
+    
    
   // Relações
   services          Service[]
@@ -170,6 +175,8 @@ model Invoice {
   id            String    @id @default(cuid())
   description   String
   value         Decimal
+  cardTax       Decimal?  @default(0) // Valor da taxa descontado
+  netValue      Decimal?  @default(0) // Valor líquido (bruto - taxa)
   method        String?   // PIX, BOLETO, CARTAO, DINHEIRO, FATURADO
   status        String    @default("PENDENTE") // PENDENTE, PAGO, VENCIDO, CANCELADO
   

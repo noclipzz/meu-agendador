@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search, CreditCard } from "lucide-react";
 import { useTheme } from "../../../hooks/useTheme";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
@@ -50,6 +50,8 @@ export default function Configuracoes() {
     const [aliquotaServico, setAliquotaServico] = useState("");
     const [certificadoA1Url, setCertificadoA1Url] = useState("");
     const [certificadoSenha, setCertificadoSenha] = useState("");
+    const [creditCardTax, setCreditCardTax] = useState("");
+    const [debitCardTax, setDebitCardTax] = useState("");
     const inputCertRef = useRef<HTMLInputElement>(null);
 
     const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
@@ -95,6 +97,8 @@ export default function Configuracoes() {
                 setAliquotaServico(String(dataConfig.aliquotaServico || ""));
                 setCertificadoA1Url(dataConfig.certificadoA1Url || "");
                 setCertificadoSenha(dataConfig.certificadoSenha || "");
+                setCreditCardTax(String(dataConfig.creditCardTax || "0"));
+                setDebitCardTax(String(dataConfig.debitCardTax || "0"));
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
@@ -161,7 +165,8 @@ export default function Configuracoes() {
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), whatsappMessage,
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state,
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
-                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha
+                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha,
+                    creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0")
                 })
             });
 
@@ -360,6 +365,38 @@ export default function Configuracoes() {
                         <p className="text-xs text-gray-500 uppercase font-bold text-[10px] dark:text-gray-400">Personalize o texto automático.</p>
                     </div>
                     <button onClick={() => setModalWhatsappOpen(true)} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition dark:hover:bg-gray-700 dark:text-gray-200 uppercase tracking-widest">Editar lembrete automático</button>
+                </div>
+
+                <div className="border-t dark:border-gray-700 pt-8 mt-6">
+                    <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                        <CreditCard className="text-blue-500" size={20} /> Financeiro e Taxas de Cartão
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-blue-50/50 dark:bg-gray-800/30 rounded-3xl border border-blue-100 dark:border-gray-800">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Taxa de Crédito (%)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                placeholder="Ex: 3.5"
+                                value={creditCardTax}
+                                onChange={e => setCreditCardTax(e.target.value)}
+                            />
+                            <p className="text-[10px] text-gray-400 mt-2 ml-1">Valor descontado automaticamente em pagamentos via CARTÃO CRÉDITO.</p>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Taxa de Débito (%)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                placeholder="Ex: 1.5"
+                                value={debitCardTax}
+                                onChange={e => setDebitCardTax(e.target.value)}
+                            />
+                            <p className="text-[10px] text-gray-400 mt-2 ml-1">Valor descontado automaticamente em pagamentos via CARTÃO DÉBITO.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="border-t dark:border-gray-700 pt-6 mt-6 flex items-center justify-between">

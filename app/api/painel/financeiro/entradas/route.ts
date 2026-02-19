@@ -36,12 +36,25 @@ export async function POST(req: Request) {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
+        // 2. Cálculo de Taxas (Abate)
+        const valorBruto = parseFloat(value);
+        let valorTaxa = 0;
+
+        if ((method === 'CREDITO' || method === 'DEBITO') && ownerCompany) {
+            const taxPerc = method === 'CREDITO' ? Number(ownerCompany.creditCardTax || 0) : Number(ownerCompany.debitCardTax || 0);
+            valorTaxa = (valorBruto * taxPerc) / 100;
+        }
+
+        const valorLiquido = valorBruto - valorTaxa;
+
         // Cria a fatura já como PAGA
         const invoice = await prisma.invoice.create({
             data: {
                 companyId,
                 clientId: clientId || null,
-                value: parseFloat(value),
+                value: valorBruto,
+                cardTax: valorTaxa,
+                netValue: valorLiquido,
                 description: description || "Entrada Manual",
                 method: method || "OUTRO",
                 status: "PAGO",

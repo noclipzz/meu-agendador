@@ -22,13 +22,27 @@ export async function POST(req: Request) {
             prisma.company.findUnique({ where: { id: companyId } })
         ]);
 
-        // 2. Cria a Fatura
+        // 2. Cálculo de Taxas (Abate)
+        const valorBruto = parseFloat(value);
+        let valorTaxa = 0;
+
+        if (method === 'CREDITO' && empresa?.creditCardTax) {
+            valorTaxa = (valorBruto * Number(empresa.creditCardTax)) / 100;
+        } else if (method === 'DEBITO' && empresa?.debitCardTax) {
+            valorTaxa = (valorBruto * Number(empresa.debitCardTax)) / 100;
+        }
+
+        const valorLiquido = valorBruto - valorTaxa;
+
+        // 3. Cria a Fatura
         const invoice = await prisma.invoice.create({
             data: {
                 clientId,
                 companyId,
                 description,
-                value: parseFloat(value),
+                value: valorBruto,
+                cardTax: valorTaxa,
+                netValue: valorLiquido,
                 dueDate: new Date(dueDate),
                 status: status || "PENDENTE",
                 method: method || null,
