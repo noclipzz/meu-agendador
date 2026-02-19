@@ -312,6 +312,139 @@ function FAQSection() {
   );
 }
 
+// --- TABELA DE COMPARAÇÃO ---
+function ComparacaoPlanos() {
+  const categories = [
+    {
+      name: "Gestão & Equipe",
+      features: [
+        { name: "Profissionais", individual: "1 (Você)", premium: "Até 5", master: "Até 15" },
+        { name: "Agenda Online 24h", individual: true, premium: true, master: true },
+        { name: "Link de Agendamento", individual: true, premium: true, master: true },
+        { name: "Múltiplas Unidades", individual: false, premium: false, master: true },
+        { name: "Gestão de Equipe", individual: false, premium: true, master: true },
+        { name: "App para Profissionais", individual: false, premium: true, master: true },
+      ]
+    },
+    {
+      name: "Financeiro & Vendas",
+      features: [
+        { name: "Gestão Financeira", individual: "Básica", premium: "Completa", master: "Avançada" },
+        { name: "Controle de Comissões", individual: false, premium: true, master: true },
+        { name: "Metas de Faturamento", individual: true, premium: true, master: true },
+        { name: "Fluxo de Caixa", individual: false, premium: true, master: true },
+        { name: "Gestão de Estoque", individual: false, premium: false, master: true },
+        { name: "Taxas de Cartão", individual: false, premium: true, master: true },
+      ]
+    },
+    {
+      name: "Comunicação & Clientes",
+      features: [
+        { name: "Lembretes E-mail", individual: true, premium: true, master: true },
+        { name: "Prontuário Master", individual: false, premium: false, master: true },
+        { name: "Histórico do Cliente", individual: true, premium: true, master: true },
+        { name: "Suporte Técnico", individual: "Padrão", premium: "Padrão", master: "Prioritário" },
+        { name: "Lembrete WhatsApp", individual: false, premium: "Em breve", master: "Sim (Oficial)" },
+      ]
+    }
+  ];
+
+  const plans = [
+    { name: "Individual", price: "35", key: "INDIVIDUAL" },
+    { name: "Premium", price: "65", key: "PREMIUM", popular: true },
+    { name: "Master", price: "99", key: "MASTER", master: true },
+  ];
+
+  return (
+    <section className="py-24 px-4 bg-white overflow-hidden hidden md:block border-t border-gray-100">
+      <div className="container mx-auto max-w-6xl">
+        <div className="text-center mb-20">
+          <h2 className="text-4xl font-black text-gray-900 tracking-tight mb-4">Compare e escolha</h2>
+          <p className="text-gray-500 font-medium">Veja em detalhes qual plano se encaixa no seu momento.</p>
+        </div>
+
+        <div className="relative">
+          {/* Header da Tabela */}
+          <div className="grid grid-cols-12 gap-1 pb-10 sticky top-16 bg-white/95 backdrop-blur-md z-30 border-b border-gray-100 pt-6">
+            <div className="col-span-3 flex items-end pb-2">
+              <span className="text-xl font-black text-gray-900 tracking-tight">Recursos</span>
+            </div>
+            {plans.map((plan) => (
+              <div key={plan.key} className="col-span-3 text-center flex flex-col items-center">
+                <div className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest mb-3 ${plan.master ? 'bg-amber-100 text-amber-700' : plan.popular ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                  {plan.name}
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-gray-900 leading-none">R$ {plan.price}</span>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">/mês</span>
+                  </div>
+                  <a href="#planos" className={`mt-4 w-[110px] py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition shadow-sm hover:shadow-md hover:scale-105 active:scale-95 ${plan.master ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-900' : plan.popular ? 'bg-blue-600 text-white' : 'bg-gray-900 text-white'
+                    }`}>
+                    Escolher
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Conteúdo da Tabela */}
+          <div className="mt-4 space-y-16">
+            {categories.map((cat, i) => (
+              <div key={i}>
+                <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-4 py-2 flex items-center gap-3">
+                  <div className="h-0.5 w-8 bg-blue-100 rounded-full" />
+                  {cat.name}
+                  <div className="h-0.5 flex-1 bg-blue-50/50 rounded-full" />
+                </h3>
+                <div className="divide-y divide-gray-50/50">
+                  {cat.features.map((feat, fi) => (
+                    <div key={fi} className="grid grid-cols-12 gap-1 py-4 hover:bg-gray-50/80 transition-all duration-200 items-center rounded-2xl group">
+                      <div className="col-span-3 lg:col-span-3 pl-4 flex items-center gap-2 group/help">
+                        <span className="text-[13px] font-bold text-gray-600 group-hover:text-gray-900 transition-colors">{feat.name}</span>
+                        <HelpCircle size={14} className="text-gray-200 group-hover/help:text-blue-400 transition-colors cursor-help shrink-0" />
+                      </div>
+
+                      {/* Individual */}
+                      <div className="col-span-3 text-center flex justify-center">
+                        {typeof feat.individual === 'boolean' ? (
+                          feat.individual ? <Check className="text-blue-500/60" size={18} /> : <span className="w-4 h-px bg-gray-100" />
+                        ) : (
+                          <span className="text-[11px] font-bold text-gray-500 tracking-tight">{feat.individual}</span>
+                        )}
+                      </div>
+
+                      {/* Premium */}
+                      <div className="col-span-3 text-center flex justify-center py-2 relative">
+                        <div className="absolute inset-y-1 inset-x-2 bg-blue-50/30 rounded-xl -z-10 group-hover:bg-blue-50/50 transition-colors" />
+                        {typeof feat.premium === 'boolean' ? (
+                          feat.premium ? <Check className="text-blue-600" size={20} strokeWidth={3} /> : <span className="w-4 h-px bg-gray-200" />
+                        ) : (
+                          <span className="text-[11px] font-black text-blue-700 tracking-tight">{feat.premium}</span>
+                        )}
+                      </div>
+
+                      {/* Master */}
+                      <div className="col-span-3 text-center flex justify-center">
+                        {typeof feat.master === 'boolean' ? (
+                          feat.master ? <Check className="text-amber-500" size={20} strokeWidth={2.5} /> : <span className="w-4 h-px bg-gray-100" />
+                        ) : (
+                          <span className="text-[11px] font-black text-amber-600 tracking-tight">{feat.master}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // --- HERO CTA (BOTAO COMEÇAR) ---
 function HeroCTA() {
   const { isSignedIn, user } = useUser();
@@ -493,7 +626,7 @@ export default function LandingPage() {
       </section>
 
       <PlanosSection />
-
+      <ComparacaoPlanos />
       <FAQSection />
 
       {/* CTA FINAL */}
