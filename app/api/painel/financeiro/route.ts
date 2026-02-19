@@ -61,7 +61,10 @@ export async function GET(request: Request) {
         const mesParam = searchParams.get('month');
         const anoParam = searchParams.get('year');
 
-        const hoje = new Date();
+        const { toZonedTime } = require('date-fns-tz');
+        const TIMEZONE = 'America/Sao_Paulo';
+
+        const hoje = toZonedTime(new Date(), TIMEZONE);
         // Se vier parametros, monta a data de referência. Senão usa hoje.
         const dataReferencia = (mesParam && anoParam)
             ? new Date(Number(anoParam), Number(mesParam) - 1, 1) // Meses no JS são 0-11
