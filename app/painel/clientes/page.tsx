@@ -176,7 +176,12 @@ export default function ClientesPage() {
     async function carregarClientes() {
         const res = await fetch('/api/clientes');
         const data = await res.json();
-        setClientes(data);
+        if (Array.isArray(data)) {
+            setClientes(data);
+        } else {
+            console.error("Erro ao carregar clientes:", data);
+            setClientes([]);
+        }
         setLoading(false);
     }
 

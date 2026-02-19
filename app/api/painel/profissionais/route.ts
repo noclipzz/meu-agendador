@@ -36,7 +36,7 @@ export async function GET() {
             where: { status: { in: ["CONFIRMADO", "CONCLUIDO"] } },
             include: { service: true }
           },
-          attachments: true
+          // attachments: true
         }
       }),
       prisma.teamMember.findMany({ where: { companyId } })
