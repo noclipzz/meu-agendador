@@ -85,62 +85,78 @@ export async function POST(req: Request) {
             await db.company.update({ where: { id: targetCompany.id }, data: { whatsappInstanceId: instanceId } });
         }
 
-        // Tenta pegar o QR se a instancia ja existir
+        // 1. Tenta conectar na instancia existente
         let res = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
             headers: { 'apikey': targetCompany.evolutionApiKey }
         });
 
         let data = res.ok ? await res.json() : null;
 
-        // Se retornar 404, ou se retornar {"count": 0} (comum quando esta travada ou sem gerar QR), recriamos a instancia
-        if (!res.ok || (res.status === 200 && data?.count === 0) || !data) {
-            console.log(`[WA] Instance ${instanceId} seems stuck or missing. Attempting recreation...`);
-
-            // Desconecta e deleta instancia antiga (se houver) para garantir a geracao limpa
-            try {
-                await fetch(`${serverUrl}/instance/logout/${instanceId}`, {
-                    method: 'DELETE',
+        // 2. Se a instancia existe mas o QR nao esta pronto (count: 0), tenta esperar um pouco antes de desistir ou recriar
+        if (res.status === 200 && (!data?.base64 && !data?.qrcode?.base64)) {
+            console.log(`[WA] Instance exists but QR not ready. Polling existing instance...`);
+            let attempts = 0;
+            while (attempts < 5) {
+                await new Promise(r => setTimeout(r, 2000));
+                const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
                     headers: { 'apikey': targetCompany.evolutionApiKey }
                 });
-                await fetch(`${serverUrl}/instance/delete/${instanceId}`, {
-                    method: 'DELETE',
-                    headers: { 'apikey': targetCompany.evolutionApiKey }
-                });
-            } catch (e) {
-                console.error(`[WA] Cleanup error for ${instanceId}:`, e);
+                if (retryRes.ok) {
+                    const retryData = await retryRes.json();
+                    if (retryData?.base64 || retryData?.qrcode?.base64) {
+                        data = retryData;
+                        console.log(`[WA] QR recovered from existing instance.`);
+                        break;
+                    }
+                }
+                attempts++;
             }
+        }
+
+        // 3. Se retornar 404, ou se ainda estiver travada com count 0 após polling, recriamos do zero
+        const stillNoQR = !data?.base64 && !data?.qrcode?.base64;
+        if (!res.ok || (res.status === 200 && stillNoQR) || !data) {
+            console.log(`[WA] Instance ${instanceId} missing or stuck. Forcing recreation...`);
+
+            try {
+                // Tenta limpar apenas se não for 404
+                if (res.status !== 404) {
+                    await fetch(`${serverUrl}/instance/logout/${instanceId}`, {
+                        method: 'DELETE',
+                        headers: { 'apikey': targetCompany.evolutionApiKey }
+                    }).catch(() => { });
+                    await fetch(`${serverUrl}/instance/delete/${instanceId}`, {
+                        method: 'DELETE',
+                        headers: { 'apikey': targetCompany.evolutionApiKey }
+                    }).catch(() => { });
+                }
+            } catch (e) { }
 
             // Recria a instancia
-            console.log(`[WA] Creating instance ${instanceId}...`);
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: { 'apikey': targetCompany.evolutionApiKey, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     instanceName: instanceId,
                     qrcode: true,
-                    integration: "WHATSAPP-BAILEYS",
-                    // Garantir que a instancia seja criada com as configuracoes corretas
-                    token: targetCompany.id.slice(0, 10) // Um token interno se necessario
+                    integration: "WHATSAPP-BAILEYS"
                 })
             });
 
             if (!createRes.ok) {
                 const errorData = await createRes.json().catch(() => ({}));
-                console.error(`[WA] Evolution Create Error:`, errorData);
                 return NextResponse.json({
-                    error: `Falha ao criar instancia na API: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
+                    error: `Erro na Evolution API: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
                 }, { status: 500 });
             }
 
             data = await createRes.json();
-            console.log(`[WA] Instance created successfully. Setting CONNECTING status.`);
 
-            // Evolution API V2 pode demorar alguns segundos para inicializar o Baileys e liberar o QR
-            if (data?.qrcode?.count === 0 || !data?.base64) {
-                console.log(`[WA] QR not ready yet, polling...`);
+            // Polling mais longo para nova instancia (até 40 segundos)
+            if (!data?.base64 && !data?.qrcode?.base64) {
                 let attempts = 0;
-                while (attempts < 6) { // Aumentado para 6 tentativas
-                    await new Promise(r => setTimeout(r, 2000)); // Aumentado para 2s
+                while (attempts < 15) {
+                    await new Promise(r => setTimeout(r, 2000));
                     const retryRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
                         headers: { 'apikey': targetCompany.evolutionApiKey }
                     });
@@ -148,7 +164,6 @@ export async function POST(req: Request) {
                         const retryData = await retryRes.json();
                         if (retryData?.base64 || retryData?.qrcode?.base64) {
                             data = retryData;
-                            console.log(`[WA] QR received after ${attempts + 1} attempts.`);
                             break;
                         }
                     }
@@ -159,10 +174,15 @@ export async function POST(req: Request) {
 
         const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
 
-        await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "CONNECTING" } });
+        await db.company.update({
+            where: { id: targetCompany.id },
+            data: { whatsappStatus: base64Qr ? "CONNECTING" : "DISCONNECTED" }
+        });
 
         if (!base64Qr) {
-            return NextResponse.json({ error: "A API esta demorando para gerar o QR Code. Aguarde uns instantes e tente novamente." }, { status: 400 });
+            return NextResponse.json({
+                error: "A API esta demorando muito para gerar o QR. Por favor, aguarde 1 minuto e tente clicar em conectar novamente."
+            }, { status: 400 });
         }
 
         return NextResponse.json({ qrCode: base64Qr });
