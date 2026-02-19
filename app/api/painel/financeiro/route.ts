@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, eachMonthOfInterval, format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 
 const prisma = db;
@@ -61,7 +62,6 @@ export async function GET(request: Request) {
         const mesParam = searchParams.get('month');
         const anoParam = searchParams.get('year');
 
-        const { toZonedTime } = require('date-fns-tz');
         const TIMEZONE = 'America/Sao_Paulo';
 
         const hoje = toZonedTime(new Date(), TIMEZONE);
