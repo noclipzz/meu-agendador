@@ -337,7 +337,10 @@ export default function ClientesPage() {
             } else {
                 toast.error("Erro ao processar imagem.");
             }
-        } catch (error) { toast.error("Erro no upload."); }
+        } catch (error: any) {
+            console.error("ERRO_UPLOAD_FOTO:", error);
+            toast.error("Erro no upload: " + (error.message || "Verifique o console"));
+        }
     }
 
     async function handleUploadAnexo(e: React.ChangeEvent<HTMLInputElement>) {

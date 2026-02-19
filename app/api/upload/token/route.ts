@@ -5,21 +5,25 @@ export async function POST(request: Request): Promise<NextResponse> {
     const body = (await request.json()) as HandleUploadBody;
 
     try {
-        console.log('Gerando token para:', body.type, body.payload);
+        console.log('Gerando token para:', body.type);
+        if (!process.env.BLOB_READ_WRITE_TOKEN) {
+            console.error('ERRO: BLOB_READ_WRITE_TOKEN não configurado no servidor.');
+        }
+
         const jsonResponse = await handleUpload({
             body,
             request,
             onBeforeGenerateToken: async (pathname) => {
-                console.log('onBeforeGenerateToken para:', pathname);
                 return {
-                    allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'image/jpg'],
+                    // Removido temporariamente para testes
+                    // allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
                     tokenPayload: JSON.stringify({
-                        // payloads opcionais
+                        customer: 'nohud',
                     }),
                 };
             },
             onUploadCompleted: async ({ blob, tokenPayload }) => {
-                console.log('Upload concluído com sucesso:', blob.url);
+                console.log('Upload concluído:', blob.url);
             },
         });
 

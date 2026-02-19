@@ -149,7 +149,10 @@ export default function GestaoEquipe() {
             } else {
                 toast.error("Erro ao processar imagem.");
             }
-        } catch (error) { toast.error("Erro no upload."); }
+        } catch (error: any) {
+            console.error("ERRO_UPLOAD_FOTO_PRO:", error);
+            toast.error("Erro no upload: " + (error.message || "Verifique o console"));
+        }
     }
 
     async function adicionarNotaRapidaPro() {
