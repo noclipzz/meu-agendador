@@ -219,7 +219,7 @@ function PlanosSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto items-start">
           <PlanCard
             title="Individual"
-            price="35"
+            price="49"
             description="Perfeito para profissionais autônomos."
             planKey="INDIVIDUAL"
             icon={Star}
@@ -231,7 +231,7 @@ function PlanosSection() {
 
           <PlanCard
             title="Premium"
-            price="65"
+            price="89"
             description="Para pequenas clínicas e estúdios."
             planKey="PREMIUM"
             popular={true}
@@ -245,7 +245,7 @@ function PlanosSection() {
 
           <PlanCard
             title="Master"
-            price="99"
+            price="149"
             description="O plano definitivo para seu negócio."
             planKey="MASTER"
             master={true}
@@ -364,9 +364,9 @@ function ComparacaoPlanos() {
   ];
 
   const plans = [
-    { name: "Individual", price: "35", key: "INDIVIDUAL" },
-    { name: "Premium", price: "65", key: "PREMIUM", popular: true },
-    { name: "Master", price: "99", key: "MASTER", master: true },
+    { name: "Individual", price: "49", key: "INDIVIDUAL" },
+    { name: "Premium", price: "89", key: "PREMIUM", popular: true },
+    { name: "Master", price: "149", key: "MASTER", master: true },
   ];
 
   return (
