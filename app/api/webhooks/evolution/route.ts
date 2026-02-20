@@ -1,6 +1,24 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
+async function sendEVOMessage(serverUrl: string, apiKey: string, instance: string, number: string, text: string) {
+    try {
+        const remoteJid = number.includes('@s.whatsapp.net') ? number : `${number.split(':')[0].replace(/\D/g, '')}@s.whatsapp.net`;
+        const endpoint = `${serverUrl.replace(/\/$/, '')}/message/sendText/${instance}`;
+        await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                number: remoteJid,
+                text: text,
+                options: { delay: 1200, presence: "composing" }
+            })
+        });
+    } catch (e) {
+        console.error("[EVO REPLIER] Error sending message:", e);
+    }
+}
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -76,9 +94,59 @@ export async function POST(req: Request) {
             });
         }
 
-        // QRCODE_UPDATED event especifico
         if (event === 'QRCODE_UPDATED' || event === 'qrcode.updated') {
             console.log(`[EVOLUTION WEBHOOK] QRCODE event received but QR was ${qrBase64 ? 'processed above' : 'empty!'}`);
+        }
+
+        // MESSAGES_UPSERT - Processa interatividade (1, 2, Sim)
+        if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe) {
+            const messageData = body.data;
+            const remoteJid = messageData?.key?.remoteJid;
+            const messageBody = messageData?.message?.conversation
+                || messageData?.message?.extendedTextMessage?.text
+                || "";
+
+            const cleanMessage = messageBody.trim().toLowerCase();
+            const phone = remoteJid?.split('@')[0]?.replace(/\D/g, '');
+
+            if (phone && (cleanMessage === '1' || cleanMessage === '2' || cleanMessage === 'sim')) {
+                console.log(`[EVOLUTION BOT] Incoming from ${phone}: "${cleanMessage}"`);
+
+                // Busca o agendamento mais recente deste cliente (PENDENTE)
+                const booking = await db.booking.findFirst({
+                    where: {
+                        companyId: company.id,
+                        customerPhone: { contains: phone.slice(-8) }, // Busca flexível
+                        status: "PENDENTE"
+                    },
+                    orderBy: { date: 'desc' },
+                    include: { service: true }
+                });
+
+                if (booking) {
+                    const serverUrl = company.evolutionServerUrl!;
+                    const apiKey = company.evolutionApiKey!;
+
+                    if (cleanMessage === '1') {
+                        await db.booking.update({
+                            where: { id: booking.id },
+                            data: { status: "CONFIRMADO" }
+                        });
+                        await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
+                            `✅ *Agendamento Confirmado!*\n\n${booking.customerName}, seu horário para *${booking.service?.name || 'Atendimento'}* está garantido. Até lá!`);
+                    } else if (cleanMessage === '2') {
+                        await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
+                            `⚠️ *Confirmação de Cancelamento*\n\nVocê selecionou a opção de cancelar. Tem certeza que deseja cancelar o agendamento para ${booking.service?.name || 'seu atendimento'}?\n\nDigite *Sim* para confirmar o cancelamento.`);
+                    } else if (cleanMessage === 'sim') {
+                        await db.booking.update({
+                            where: { id: booking.id },
+                            data: { status: "CANCELADO" }
+                        });
+                        await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
+                            `❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso. Se precisar de um novo horário, estamos à disposição!`);
+                    }
+                }
+            }
         }
 
         return NextResponse.json({ received: true });
