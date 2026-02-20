@@ -37,6 +37,7 @@ export async function GET() {
             include: { service: true },
             take: 10 // Limite para evitar resposta muito grande
           },
+          services: true
           // attachments: true
         }
       }),
@@ -139,7 +140,10 @@ export async function POST(req: Request) {
           photoUrl,
           color: color || "#3b82f6",
           companyId: company.id,
-          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO"
+          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO",
+          services: {
+            connect: body.serviceIds?.map((id: string) => ({ id })) || []
+          }
         }
       });
 
@@ -224,7 +228,10 @@ export async function PUT(req: Request) {
         complement: body.complement, neighborhood: body.neighborhood,
         city: body.city, state: body.state, notes: body.notes,
         maritalStatus: body.maritalStatus,
-        status: body.status
+        status: body.status,
+        services: {
+          set: body.serviceIds ? body.serviceIds.map((id: string) => ({ id })) : []
+        }
       }
     });
 

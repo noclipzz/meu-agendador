@@ -26,7 +26,7 @@ export async function POST(req: Request) {
                 customerPhone: phone,
                 preferences: preferences || "",
                 serviceId: serviceId || null,
-                professionalId: professionalId || null,
+                professionalId: professionalId === 'ANY' ? null : (professionalId || null),
                 companyId: companyId,
                 desiredDate: date ? new Date(date) : null,
                 status: "ATIVO"

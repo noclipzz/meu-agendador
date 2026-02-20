@@ -41,6 +41,7 @@ export default function GestaoEquipe() {
     const [userPlan, setUserPlan] = useState<string>("INDIVIDUAL"); // Detecta o plano do usuário
 
     const [profissionais, setProfissionais] = useState<any[]>([]);
+    const [servicosGlobais, setServicosGlobais] = useState<any[]>([]);
     const [modalAberto, setModalAberto] = useState(false);
     const [proSelecionado, setProSelecionado] = useState<any>(null);
     const [abaAtiva, setAbaAtiva] = useState<"RESUMO" | "DADOS" | "DOCUMENTOS">("RESUMO");
@@ -71,7 +72,8 @@ export default function GestaoEquipe() {
             profissionais: false,
             config: false,
             mural: true
-        }
+        },
+        serviceIds: [] as string[]
     });
 
     async function handleCEPChange(cep: string) {
@@ -102,13 +104,17 @@ export default function GestaoEquipe() {
     async function carregarDados() {
         try {
             // Carrega profissionais e informações do usuário
-            const [resPro, resCheckout] = await Promise.all([
+            const [resPro, resCheckout, resServ] = await Promise.all([
                 fetch('/api/painel/profissionais'),
-                fetch('/api/checkout')
+                fetch('/api/checkout'),
+                fetch('/api/painel/servicos')
             ]);
 
             const dataPro = await resPro.json();
             if (Array.isArray(dataPro)) setProfissionais(dataPro);
+
+            const dataServ = await resServ.json();
+            if (Array.isArray(dataServ)) setServicosGlobais(dataServ.filter((s: any) => s.status !== 'INATIVO'));
 
             const dataCheckout = await resCheckout.json();
             setUserPlan(dataCheckout.plan || "INDIVIDUAL");
@@ -357,7 +363,8 @@ export default function GestaoEquipe() {
                 profissionais: false,
                 config: false,
                 mural: true
-            }
+            },
+            serviceIds: p.services ? p.services.map((s: any) => s.id) : []
         });
         setModalAberto(true);
     }
@@ -380,7 +387,8 @@ export default function GestaoEquipe() {
                 profissionais: false,
                 config: false,
                 mural: true
-            }
+            },
+            serviceIds: []
         });
     }
 
@@ -749,7 +757,52 @@ export default function GestaoEquipe() {
                                     </div>
                                 </section>
 
-                                {/* 4. ACESSO E SISTEMA */}
+                                {/* 4. SERVIÇOS AUTORIZADOS */}
+                                <section>
+                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><Briefcase size={16} /> Serviços Autorizados</h3>
+                                    <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 space-y-5">
+                                        <p className="text-[10px] text-gray-400 font-bold ml-1">Selecione os serviços que este profissional está apto a realizar. Se nenhum for selecionado, ele não aparecerá na tela de agendamento desses serviços.</p>
+
+                                        {servicosGlobais.length === 0 ? (
+                                            <div className="text-center p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
+                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Nenhum serviço cadastrado.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[250px] overflow-y-auto custom-scrollbar p-2">
+                                                {servicosGlobais.map(s => {
+                                                    const isSelected = form.serviceIds.includes(s.id);
+                                                    return (
+                                                        <button
+                                                            key={s.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (isSelected) {
+                                                                    setForm({ ...form, serviceIds: form.serviceIds.filter(id => id !== s.id) });
+                                                                } else {
+                                                                    setForm({ ...form, serviceIds: [...form.serviceIds, s.id] });
+                                                                }
+                                                            }}
+                                                            className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all text-left ${isSelected
+                                                                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300 font-bold'
+                                                                : 'bg-white border-gray-100 text-gray-400 dark:bg-gray-900 dark:border-gray-800'
+                                                                }`}
+                                                        >
+                                                            <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                                {isSelected && <Check size={12} className="text-white" />}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-[11px] uppercase font-black truncate text-gray-800 dark:text-white group-hover:text-blue-600">{s.name}</p>
+                                                                <p className="text-[9px] uppercase tracking-tighter text-gray-400">R$ {Number(s.price).toFixed(2)}</p>
+                                                            </div>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+
+                                {/* 5. ACESSO E SISTEMA */}
                                 <section>
                                     <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2"><ShieldCheck size={16} /> Configurações de Acesso</h3>
                                     <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 space-y-5">

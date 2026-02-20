@@ -21,7 +21,7 @@ const formatarTelefone = (value: string) => {
 function gerarHorarios(
   inicioExpediente: string, fimExpediente: string, almocoInicio: string, almocoFim: string,
   intervalo: number, duracaoServico: number, agendamentosExistentes: any[],
-  dataSelecionada: Date
+  dataSelecionada: Date, totalProfessionals: number = 1
 ) {
   const slots: string[] = [];
   const toMinutes = (time: string) => {
@@ -51,7 +51,10 @@ function gerarHorarios(
   while (slotAtualMin + duracaoServico <= fimMin) {
     const fimSlotAtualMin = slotAtualMin + duracaoServico;
     const conflitoAlmoco = slotAtualMin < fimPausaMin && fimSlotAtualMin > inicioPausaMin;
-    const conflitoAgendamento = blocosOcupados.some(bloco => slotAtualMin < bloco.fim && fimSlotAtualMin > bloco.inicio);
+
+    // Na lógica de "Qualquer Profissional", o horário só está ocupado se TODOS os profissionais estiverem ocupados
+    const profissionaisOcupados = blocosOcupados.filter(bloco => slotAtualMin < bloco.fim && fimSlotAtualMin > bloco.inicio).length;
+    const conflitoAgendamento = profissionaisOcupados >= totalProfessionals;
 
     // Além de conflitos, verifica se o horário já passou (com margem de 10 min)
     const jaPassou = isHoje && slotAtualMin <= minutosAgora + 10;
@@ -118,7 +121,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           body: JSON.stringify({
             date: dataSelecionada,
             companyId: empresa.id,
-            professionalId: profissionalSelecionado.id
+            professionalId: profissionalSelecionado.id,
+            serviceId: servicoSelecionado.id
           })
         });
         const data = await res.json();
@@ -138,6 +142,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         return;
       }
 
+      const aptos = profissionais.filter((p: any) => !p.services || p.services.length === 0 || p.services.some((s: any) => s.id === servicoSelecionado?.id));
+
       const slots = gerarHorarios(
         empresa.openTime,
         empresa.closeTime,
@@ -146,7 +152,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         empresa.interval || 30,
         servicoSelecionado.duration,
         agendamentosDoDia,
-        dataSelecionada
+        dataSelecionada,
+        profissionalSelecionado.id === 'ANY' ? aptos.length : 1
       );
       setHorariosDisponiveis(slots);
     }
@@ -466,7 +473,21 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             <button onClick={() => setServicoSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
             <h2 className="text-xl font-black text-gray-900 mb-6">Com quem você deseja agendar?</h2>
             <div className="grid grid-cols-1 gap-4">
-              {profissionais.map(p => (
+              {/* Opção Qualquer Profissional */}
+              <button
+                onClick={() => setProfissionalSelecionado({ id: 'ANY', name: 'Qualquer Profissional' })}
+                className="w-full text-left bg-blue-50 p-5 rounded-[2rem] border-2 border-transparent hover:border-blue-500/50 flex items-center gap-5 transition-all group"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md border-2 border-white group-hover:scale-105 transition-transform">
+                  <User size={24} />
+                </div>
+                <div>
+                  <p className="font-black text-blue-900 group-hover:text-blue-600 transition">Qualquer Profissional</p>
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-tighter">O sistema escolhe o melhor pra você</p>
+                </div>
+              </button>
+
+              {profissionais.filter((p: any) => !p.services || p.services.length === 0 || p.services.some((s: any) => s.id === servicoSelecionado?.id)).map((p: any) => (
                 <button key={p.id} onClick={() => setProfissionalSelecionado(p)} className="w-full text-left bg-gray-50 p-5 rounded-[2rem] border-2 border-transparent hover:border-blue-500 flex items-center gap-5 transition-all group">
                   <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md border-2 border-white group-hover:scale-105 transition-transform">
                     {p.photoUrl ? <img src={p.photoUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-600 font-black text-xl">{p.name.charAt(0)}</div>}

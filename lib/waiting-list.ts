@@ -23,12 +23,16 @@ export async function checkWaitingList(booking: any) {
         const candidatos = await db.waitingList.findMany({
             where: {
                 companyId: booking.companyId,
-                status: "ATIVO"
+                status: "ATIVO",
+                OR: [
+                    { professionalId: booking.professionalId }, // Vaga no profissional que ele quer
+                    { professionalId: null }                   // Ou ele aceita qualquer profissional
+                ]
             },
             orderBy: { createdAt: 'asc' }
         });
 
-        console.log(`[WAITING_LIST] Encontrados ${candidatos.length} candidatos ATIVOS para a empresa ${booking.companyId}`);
+        console.log(`[WAITING_LIST] Encontrados ${candidatos.length} candidatos ATIVOS compatíveis com o profissional ${booking.professionalId || 'Geral'}`);
 
         // Filtra quem quer especificamente ESTA DATA ou não tem preferência
         const dataVaga = new Date(booking.date);
