@@ -142,6 +142,13 @@ export default function ListaEsperaPage() {
                                                 <span className="whitespace-nowrap">{format(new Date(item.desiredDate), "dd 'de' MMM", { locale: ptBR })}</span>
                                             </div>
                                         )}
+
+                                        {item.professional && (
+                                            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-800/50">
+                                                <User size={14} className="shrink-0" />
+                                                <span className="truncate max-w-[150px]">{item.professional.name}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {item.preferences && (

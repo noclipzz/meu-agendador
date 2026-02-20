@@ -5,6 +5,7 @@ import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 import { auth } from "@clerk/nextjs/server";
 import { sendEvolutionMessage } from "@/lib/whatsapp";
+import { startOfDay, endOfDay } from "date-fns";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -149,8 +150,51 @@ export async function POST(req: Request) {
                 targetProfessionalIds = [null];
             }
         } else {
-            // Agendamento normal sempre tem 1 profissional
-            targetProfessionalIds = [professionalId || (Array.isArray(professionalIds) ? professionalIds[0] : null)];
+            // Agendamento normal
+            if (professionalId === 'ANY') {
+                const professionals = await prisma.professional.findMany({
+                    where: { companyId },
+                    include: { services: true }
+                });
+
+                const aptos = professionals.filter(p => !p.services || p.services.length === 0 || p.services.some(s => s.id === serviceId));
+
+                const allBookings = await prisma.booking.findMany({
+                    where: {
+                        companyId,
+                        date: {
+                            gte: startOfDay(dataAgendamento),
+                            lte: endOfDay(dataAgendamento)
+                        },
+                        status: { not: 'CANCELADO' }
+                    },
+                    include: { service: true }
+                });
+
+                const slotStart = dataAgendamento.getTime();
+                const slotEnd = slotStart + (service?.duration || 30) * 60000;
+
+                const candidates = aptos.map(p => {
+                    const count = allBookings.filter(b => b.professionalId === p.id).length;
+                    const isBusy = allBookings.some(b => {
+                        if (b.professionalId !== p.id) return false;
+                        const bStart = new Date(b.date).getTime();
+                        const bEnd = bStart + (b.service?.duration || 30) * 60000;
+                        return (slotStart < bEnd && slotEnd > bStart);
+                    });
+                    return { id: p.id, count, isBusy };
+                }).filter(c => !c.isBusy);
+
+                if (candidates.length > 0) {
+                    // Ordena por menor contagem de agendamentos para balanceamento
+                    candidates.sort((a, b) => a.count - b.count);
+                    targetProfessionalIds = [candidates[0].id];
+                } else {
+                    return NextResponse.json({ error: "Nenhum profissional disponível para este horário." }, { status: 400 });
+                }
+            } else {
+                targetProfessionalIds = [professionalId || (Array.isArray(professionalIds) ? professionalIds[0] : null)];
+            }
         }
 
         // Criar as entradas
@@ -170,6 +214,31 @@ export async function POST(req: Request) {
                 }
             });
             bookingsCreated.push(b);
+        }
+
+        // 4.5 REMOÇÃO AUTOMÁTICA DA LISTA DE ESPERA
+        if (!isEvento && phone) {
+            try {
+                const agendamentoDia = startOfDay(dataAgendamento);
+                const agendamentoFimDia = endOfDay(dataAgendamento);
+
+                await prisma.waitingList.updateMany({
+                    where: {
+                        companyId,
+                        customerPhone: phone,
+                        status: "ATIVO",
+                        OR: [
+                            { desiredDate: null },
+                            { desiredDate: { gte: agendamentoDia, lte: agendamentoFimDia } }
+                        ]
+                    },
+                    data: {
+                        status: "ATENDIDO"
+                    }
+                });
+            } catch (err) {
+                console.error("Erro ao atualizar lista de espera:", err);
+            }
         }
 
         // 5. VERIFICAÇÃO DE ESTOQUE (Só no primeiro se for múltiplo)

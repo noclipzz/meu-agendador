@@ -7,7 +7,7 @@ const prisma = db;
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { date, companyId, professionalId } = body;
+    const { date, companyId, professionalId, serviceId } = body;
 
     if (!companyId || !professionalId) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
@@ -15,24 +15,34 @@ export async function POST(req: Request) {
 
     const dataBusca = new Date(date);
 
-    // Busca agendamentos do dia para aquele profissional
+    // Se for 'ANY', buscamos de TODOS os profissionais da empresa aptos ao serviço
+    let filterProfessional: any = { companyId: companyId };
+
+    if (professionalId !== 'ANY') {
+      filterProfessional = { professionalId: professionalId, companyId: companyId };
+    } else if (serviceId) {
+      const aptos = await prisma.professional.findMany({
+        where: { companyId },
+        include: { services: true }
+      });
+      const aptosIds = aptos.filter(p => !p.services || p.services.length === 0 || p.services.some(s => s.id === serviceId)).map(p => p.id);
+      filterProfessional = { companyId: companyId, professionalId: { in: aptosIds } };
+    }
+
     const agendamentos = await prisma.booking.findMany({
       where: {
-        companyId: companyId,
-        professionalId: professionalId,
+        ...filterProfessional,
         date: {
           gte: startOfDay(dataBusca),
           lte: endOfDay(dataBusca)
         },
         status: { not: "CANCELADO" }
       },
-      // IMPORTANTE: Inclui os dados do serviço para sabermos a duração
       include: {
         service: true
       }
     });
 
-    // Retorna a lista completa de agendamentos
     return NextResponse.json({ agendamentos });
 
   } catch (error) {
