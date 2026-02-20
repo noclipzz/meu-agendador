@@ -104,24 +104,18 @@ export async function POST(req: Request) {
         };
 
         const logoutDelete = async () => {
+            console.log(`[WA] Attempting cleanup for ${instanceId}`);
             try {
-                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
-                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
-                await new Promise(r => setTimeout(r, 1000)); // Espera o servidor processar a deleção
+                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
+                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
+                await new Promise(r => setTimeout(r, 2000));
             } catch (e) {
                 console.log("Cleanup error:", e);
             }
         };
 
-        let res = await connectToInstance();
-        let data = res.ok ? await res.json() : null;
-
-        // Se a instancia nao existir, estiver em erro ou retornou count:0 (stuck), vamos recriar
-        if (res.status === 404 || !data || (res.ok && data.count === 0)) {
-            if (res.status !== 404) await logoutDelete();
-
-            // Cria a instancia com flags de performance (syncFullHistory: false)
-            let createRes = await fetch(`${serverUrl}/instance/create`, {
+        const createInstance = async () => {
+            return await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: {
                     'apikey': targetCompany.evolutionApiKey!,
@@ -136,24 +130,34 @@ export async function POST(req: Request) {
                     readStatus: false
                 })
             });
+        };
 
-            // Se ainda der erro de "já em uso", tentamos conectar uma última vez antes de desistir
-            if (!createRes.ok) {
-                const errorData = await createRes.json().catch(() => ({}));
-                const msg = errorData.response?.message?.[0] || errorData.error || "";
+        let res = await connectToInstance();
+        let data = res.ok ? await res.json() : null;
 
-                if (msg.includes("already in use")) {
-                    res = await connectToInstance();
-                    data = res.ok ? await res.json() : null;
-                    if (!res.ok) {
-                        return NextResponse.json({ error: `Erro Evolution: Instância ocupada e inacessível.` }, { status: 500 });
-                    }
-                } else {
-                    return NextResponse.json({ error: `Erro Evolution: ${msg || createRes.statusText}` }, { status: 500 });
-                }
-            } else {
-                data = await createRes.json();
+        if (res.ok && data?.count === 0) {
+            console.log(`[WA] Instance ${instanceId} is stuck (count:0). Forcing reset.`);
+            await logoutDelete();
+            res = { ok: false, status: 404 } as any;
+        }
+
+        if (!res.ok || res.status === 404 || !data) {
+            let createRes = await createInstance();
+            let createData = await createRes.json().catch(() => ({}));
+
+            if (!createRes.ok && (createData.response?.message?.[0]?.includes("already in use") || createData.error?.includes("already in use"))) {
+                console.log(`[WA] ${instanceId} already in use, retrying creation after cleanup...`);
+                await logoutDelete();
+                createRes = await createInstance();
+                createData = await createRes.json().catch(() => ({}));
             }
+
+            if (!createRes.ok) {
+                const msg = createData.response?.message?.[0] || createData.error || createRes.statusText;
+                return NextResponse.json({ error: `Erro Evolution: ${msg}` }, { status: 500 });
+            }
+
+            data = createData;
         }
 
         const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
