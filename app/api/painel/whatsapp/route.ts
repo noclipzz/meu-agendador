@@ -100,21 +100,24 @@ export async function POST(req: Request) {
 
         // Determinar a URL pública do nosso app para configurar o webhook
         const appUrl = process.env.NEXT_PUBLIC_APP_URL
-            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-            || 'https://nohud.com.br';
+            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.nohud.com.br');
         const webhookUrl = `${appUrl}/api/webhooks/evolution`;
 
         // Limpar instância anterior se existir
+        console.log(`[WA] Cleaning up instance ${instanceId}...`);
         try {
-            await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
-            await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
-            await new Promise(r => setTimeout(r, 2000));
+            await Promise.all([
+                fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { }),
+                fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { })
+            ]);
+            // Pequeno delay reduzido para evitar timeout do Vercel
+            await new Promise(r => setTimeout(r, 500));
         } catch (e) {
             console.log("Cleanup error:", e);
         }
 
         // Criar instância COM webhook configurado
-        console.log(`[WA] Creating instance ${instanceId} with webhook: ${webhookUrl}`);
+        console.log(`[WA] Creating instance ${instanceId} with webhook: ${webhookUrl} on ${serverUrl}`);
         const createRes = await fetch(`${serverUrl}/instance/create`, {
             method: 'POST',
             headers: {
@@ -128,7 +131,7 @@ export async function POST(req: Request) {
                 syncFullHistory: false,
                 readMessages: false,
                 readStatus: false,
-                // Webhook para receber o QR Code e eventos de conexão
+                // Webhook para receber o QR Code e eventos de conexão e evitar delays
                 webhook: {
                     url: webhookUrl,
                     byEvents: false,
@@ -141,39 +144,17 @@ export async function POST(req: Request) {
             })
         });
 
+        console.log(`[WA] Evolution API Status: ${createRes.status}`);
+
         let createData: any = {};
         if (createRes.ok) {
             createData = await createRes.json().catch(() => ({}));
+            console.log(`[WA] Instance created: ${!!createData.qrcode?.base64 ? 'QR included' : 'No QR in response'}`);
         } else {
             const errorData = await createRes.json().catch(() => ({}));
             const msg = errorData.response?.message?.[0] || errorData.error || "";
-
-            // Se "already in use", tenta limpar mais agressivamente e criar de novo
-            if (msg.includes("already in use")) {
-                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
-                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
-                await new Promise(r => setTimeout(r, 3000));
-
-                const retryRes = await fetch(`${serverUrl}/instance/create`, {
-                    method: 'POST',
-                    headers: { 'apikey': targetCompany.evolutionApiKey!, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        instanceName: instanceId,
-                        qrcode: true,
-                        integration: "WHATSAPP-BAILEYS",
-                        syncFullHistory: false,
-                        webhook: { url: webhookUrl, byEvents: false, base64: true, events: ["QRCODE_UPDATED", "CONNECTION_UPDATE"] }
-                    })
-                });
-
-                if (!retryRes.ok) {
-                    const retryErr = await retryRes.json().catch(() => ({}));
-                    return NextResponse.json({ error: `Erro Evolution: ${retryErr.response?.message?.[0] || retryErr.error || "Falha ao criar instância"}` }, { status: 500 });
-                }
-                createData = await retryRes.json().catch(() => ({}));
-            } else {
-                return NextResponse.json({ error: `Erro Evolution: ${msg || createRes.statusText}` }, { status: 500 });
-            }
+            console.log(`[WA] Create error: ${msg}`);
+            return NextResponse.json({ error: `Erro Evolution: ${msg || createRes.statusText}` }, { status: 500 });
         }
 
         // O QR pode vir direto na resposta de criação OU via webhook
