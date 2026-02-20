@@ -31,13 +31,7 @@ export default function Configuracoes() {
     const [workDays, setWorkDays] = useState<string[]>([]);
     const [monthlyGoal, setMonthlyGoal] = useState("5000");
     const [clerkUserId, setClerkUserId] = useState("");
-    const [whatsappMessage, setWhatsappMessage] = useState("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.");
-    const [whatsappConfirmMessage, setWhatsappConfirmMessage] = useState("");
-    const [whatsappCancelPromptMessage, setWhatsappCancelPromptMessage] = useState("");
-    const [whatsappCancelSuccessMessage, setWhatsappCancelSuccessMessage] = useState("");
-    const [whatsappCancelRevertMessage, setWhatsappCancelRevertMessage] = useState("");
-
-    const [activeDrawer, setActiveDrawer] = useState<string | null>("confirmacao");
+    const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
 
     // --- NOVOS CAMPOS: ENDEREÇO E CONTATO ---
     const [cnpj, setCnpj] = useState("");
@@ -63,8 +57,10 @@ export default function Configuracoes() {
     const inputCertRef = useRef<HTMLInputElement>(null);
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
+    const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag de dono
+    const [companyPlan, setCompanyPlan] = useState<string>("FREE");
 
-    const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
+
 
     useEffect(() => { carregarTudo(); }, []);
 
@@ -79,6 +75,8 @@ export default function Configuracoes() {
             const dataCheckout = await resCheckout.json();
 
             setUserRole(dataCheckout.role || "PROFESSIONAL");
+            setIsOwner(!!dataCheckout.isOwner); // ✅ Pega do Super Check
+            setCompanyPlan(dataConfig.plan || "FREE");
 
             if (dataConfig && dataConfig.id) {
                 setClerkUserId(dataConfig.ownerId || "");
@@ -94,11 +92,6 @@ export default function Configuracoes() {
                 setInterval(dataConfig.interval || 30);
                 setMonthlyGoal(dataConfig.monthlyGoal || "5000");
                 if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
-                if (dataConfig.whatsappMessage) setWhatsappMessage(dataConfig.whatsappMessage);
-                setWhatsappConfirmMessage(dataConfig.whatsappConfirmMessage || "");
-                setWhatsappCancelPromptMessage(dataConfig.whatsappCancelPromptMessage || "");
-                setWhatsappCancelSuccessMessage(dataConfig.whatsappCancelSuccessMessage || "");
-                setWhatsappCancelRevertMessage(dataConfig.whatsappCancelRevertMessage || "");
 
                 // Popula novos campos
                 setCnpj(dataConfig.cnpj || "");
@@ -187,8 +180,6 @@ export default function Configuracoes() {
                 body: JSON.stringify({
                     name, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
-                    whatsappMessage, whatsappConfirmMessage, whatsappCancelPromptMessage,
-                    whatsappCancelSuccessMessage, whatsappCancelRevertMessage,
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state,
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
                     codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha,
@@ -207,11 +198,6 @@ export default function Configuracoes() {
         } catch (error) {
             toast.error("Erro de conexão.");
         }
-    }
-
-    async function salvarMensagemWhatsapp() {
-        await salvarConfig();
-        setModalWhatsappOpen(false);
     }
 
     const toggleDay = (day: string) => {
@@ -385,173 +371,6 @@ export default function Configuracoes() {
 
                 <div className="mt-6"><label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Dias de Funcionamento</label><div className="flex gap-2 flex-wrap">{diasSemana.map(dia => (<button key={dia.id} onClick={() => toggleDay(dia.id)} className={`w-10 h-10 rounded-full font-bold text-xs border transition ${workDays.includes(dia.id) ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105" : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700 dark:text-gray-300"}`}>{dia.label}</button>))}</div></div>
 
-                {userRole === "ADMIN" && (
-                    <div className="mt-10 border-t dark:border-gray-700 pt-8">
-                        <div className="mb-6">
-                            <h3 className="text-2xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                                <MessageSquare className="text-green-500" /> Automação de WhatsApp
-                            </h3>
-                            <p className="text-sm text-gray-500 font-medium dark:text-gray-400">Personalize todas as etapas da conversa do bot com seu cliente.</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            {/* GAVETA 1: LEMBRETE INICIAL */}
-                            <div className="border dark:border-gray-800 rounded-3xl overflow-hidden bg-white dark:bg-gray-950 shadow-sm">
-                                <button
-                                    onClick={() => setActiveDrawer(activeDrawer === "confirmacao" ? null : "confirmacao")}
-                                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-2xl text-blue-600 dark:text-blue-400"><MessageSquare size={20} /></div>
-                                        <div>
-                                            <h4 className="font-black text-gray-800 dark:text-white uppercase text-xs tracking-widest">1. Mensagem de Boas-vindas / Lembrete</h4>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Enviada logo após o agendamento ser feito.</p>
-                                        </div>
-                                    </div>
-                                    {activeDrawer === "confirmacao" ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-                                </button>
-                                {activeDrawer === "confirmacao" && (
-                                    <div className="p-6 pt-0 border-t dark:border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                                        <div className="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30 mb-4">
-                                            <p className="text-[10px] font-black text-blue-800 dark:text-blue-300 uppercase leading-relaxed">
-                                                💡 Essa mensagem inicia a conversa. É importante dizer ao cliente que ele pode responder <span className="underline">"1" ou "Confirmar"</span> para garantir o horário, ou <span className="underline">"2" ou "Cancelar"</span> caso deseje desmarcar.
-                                            </p>
-                                        </div>
-                                        <textarea
-                                            rows={4}
-                                            className="w-full p-4 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:ring-2 ring-blue-500 outline-none resize-none font-medium"
-                                            value={whatsappMessage}
-                                            onChange={(e) => setWhatsappMessage(e.target.value)}
-                                            placeholder="Digite a mensagem inicial..."
-                                        />
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            {["{nome}", "{servico}", "{dia}", "{hora}"].map(tag => (
-                                                <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[9px] font-black text-gray-600 dark:text-gray-400">{tag}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* GAVETA 2: CONFIRMAÇÃO DE SUCESSO */}
-                            <div className="border dark:border-gray-800 rounded-3xl overflow-hidden bg-white dark:bg-gray-950 shadow-sm">
-                                <button
-                                    onClick={() => setActiveDrawer(activeDrawer === "sucesso" ? null : "sucesso")}
-                                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-2xl text-green-600 dark:text-green-400"><CheckCircle size={20} /></div>
-                                        <div>
-                                            <h4 className="font-black text-gray-800 dark:text-white uppercase text-xs tracking-widest">2. Confirmação de Sucesso</h4>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Enviada quando o cliente responde "SIM" ou "1".</p>
-                                        </div>
-                                    </div>
-                                    {activeDrawer === "sucesso" ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-                                </button>
-                                {activeDrawer === "sucesso" && (
-                                    <div className="p-6 pt-0 border-t dark:border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                                        <textarea
-                                            rows={3}
-                                            className="w-full p-4 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:ring-2 ring-blue-500 outline-none resize-none font-medium"
-                                            value={whatsappConfirmMessage}
-                                            onChange={(e) => setWhatsappConfirmMessage(e.target.value)}
-                                            placeholder="Ex: ✅ Agendamento confirmado!..."
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* GAVETA 3: PROMPT DE CANCELAMENTO */}
-                            <div className="border dark:border-gray-800 rounded-3xl overflow-hidden bg-white dark:bg-gray-950 shadow-sm">
-                                <button
-                                    onClick={() => setActiveDrawer(activeDrawer === "pergunta_cancelar" ? null : "pergunta_cancelar")}
-                                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-2xl text-orange-600 dark:text-orange-400"><AlertTriangle size={20} /></div>
-                                        <div>
-                                            <h4 className="font-black text-gray-800 dark:text-white uppercase text-xs tracking-widest">3. Pergunta de Segurança para Cancelar</h4>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Enviada quando o cliente diz que quer cancelar.</p>
-                                        </div>
-                                    </div>
-                                    {activeDrawer === "pergunta_cancelar" ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-                                </button>
-                                {activeDrawer === "pergunta_cancelar" && (
-                                    <div className="p-6 pt-0 border-t dark:border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                                        <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30 mb-4">
-                                            <p className="text-[10px] font-black text-orange-800 dark:text-orange-300 uppercase leading-relaxed">
-                                                🚨 Nesta etapa, o bot deve perguntar se ele <span className="underline">Deseja Realmente Cancelar</span>. O robô aguardará uma resposta "SIM" nesta fase para enfim cancelar.
-                                            </p>
-                                        </div>
-                                        <textarea
-                                            rows={3}
-                                            className="w-full p-4 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:ring-2 ring-blue-500 outline-none resize-none font-medium"
-                                            value={whatsappCancelPromptMessage}
-                                            onChange={(e) => setWhatsappCancelPromptMessage(e.target.value)}
-                                            placeholder="Ex: Você deseja realmente cancelar seu horário?..."
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* GAVETA 4: CANCELAMENTO CONFIRMADO */}
-                            <div className="border dark:border-gray-800 rounded-3xl overflow-hidden bg-white dark:bg-gray-950 shadow-sm">
-                                <button
-                                    onClick={() => setActiveDrawer(activeDrawer === "cancelado" ? null : "cancelado")}
-                                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-2xl text-red-600 dark:text-red-400"><XCircle size={20} /></div>
-                                        <div>
-                                            <h4 className="font-black text-gray-800 dark:text-white uppercase text-xs tracking-widest">4. Cancelamento Concluído</h4>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Enviada após o cliente confirmar o cancelamento.</p>
-                                        </div>
-                                    </div>
-                                    {activeDrawer === "cancelado" ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-                                </button>
-                                {activeDrawer === "cancelado" && (
-                                    <div className="p-6 pt-0 border-t dark:border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                                        <textarea
-                                            rows={3}
-                                            className="w-full p-4 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:ring-2 ring-blue-500 outline-none resize-none font-medium"
-                                            value={whatsappCancelSuccessMessage}
-                                            onChange={(e) => setWhatsappCancelSuccessMessage(e.target.value)}
-                                            placeholder="Ex: ❌ Seu agendamento foi cancelado..."
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* GAVETA 5: DESISTÊNCIA DE CANCELAMENTO */}
-                            <div className="border dark:border-gray-800 rounded-3xl overflow-hidden bg-white dark:bg-gray-950 shadow-sm">
-                                <button
-                                    onClick={() => setActiveDrawer(activeDrawer === "reverter" ? null : "reverter")}
-                                    className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl text-indigo-600 dark:text-indigo-400"><RotateCcw size={20} /></div>
-                                        <div>
-                                            <h4 className="font-black text-gray-800 dark:text-white uppercase text-xs tracking-widest">5. Desistência de Cancelamento</h4>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Enviada se o cliente disser "Não" ao prompt de cancelamento.</p>
-                                        </div>
-                                    </div>
-                                    {activeDrawer === "reverter" ? <ChevronUp className="text-gray-400" /> : <ChevronDown className="text-gray-400" />}
-                                </button>
-                                {activeDrawer === "reverter" && (
-                                    <div className="p-6 pt-0 border-t dark:border-gray-800 animate-in slide-in-from-top-2 duration-200">
-                                        <textarea
-                                            rows={3}
-                                            className="w-full p-4 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white text-sm focus:ring-2 ring-blue-500 outline-none resize-none font-medium"
-                                            value={whatsappCancelRevertMessage}
-                                            onChange={(e) => setWhatsappCancelRevertMessage(e.target.value)}
-                                            placeholder="Ex: Entendido! Mantivemos seu agendamento..."
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <div className="border-t dark:border-gray-700 pt-8 mt-6">
                     <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
@@ -596,21 +415,7 @@ export default function Configuracoes() {
                 <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2"><Save size={18} /> Salvar Alterações</button>
             </div >
 
-            {modalWhatsappOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md border dark:border-gray-800 shadow-2xl animate-in zoom-in-95">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-black flex items-center gap-2 dark:text-white"><MessageSquare size={20} className="text-green-500" /> Editar Mensagem</h2>
-                            <button onClick={() => setModalWhatsappOpen(false)} className="text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
-                        </div>
-                        <textarea rows={6} className="w-full mt-2 p-4 rounded-2xl border dark:border-gray-700 dark:bg-gray-950 dark:text-white text-sm outline-none focus:ring-2 ring-blue-500 resize-none font-medium" value={whatsappMessage} onChange={(e) => setWhatsappMessage(e.target.value)} />
-                        <div className="grid grid-cols-2 gap-3 mt-6">
-                            <button onClick={() => setModalWhatsappOpen(false)} className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl font-black uppercase text-xs text-gray-500 dark:text-gray-300">Cancelar</button>
-                            <button onClick={salvarMensagemWhatsapp} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs">Confirmar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }

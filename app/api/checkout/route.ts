@@ -205,7 +205,8 @@ export async function GET() {
                     servicos: true, profissionais: true, config: true
                 },
                 companyId: myCompany?.id, // ID da sua empresa
-                companyName: myCompany?.name
+                companyName: myCompany?.name,
+                isOwner: true // ✅ Flag de dono absoluto
             });
         }
         // --------------------------------
@@ -270,7 +271,8 @@ export async function GET() {
                     servicos: true, profissionais: true, config: true
                 },
                 companyId: company.id,
-                companyName: company.name
+                companyName: company.name,
+                isOwner: true // ✅ Flag de dono
             });
         }
 
@@ -286,13 +288,13 @@ export async function GET() {
             }));
 
             const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
-            console.log("✅ [CHECKOUT] Identificado como PROFESSIONAL");
+            console.log("✅ [CHECKOUT] Identificado como STAFF");
 
             return NextResponse.json({
                 active: !!isActive,
                 plan: subPatrao?.plan,
-                role: "PROFESSIONAL",
-                permissions: member?.permissions || { agenda: true, clientes: true }, // Default se for null
+                role: member?.role || "PROFESSIONAL", // ✅ Agora usa o cargo real (ADMIN ou PROFESSIONAL)
+                permissions: member?.permissions || { agenda: true, clientes: true },
                 companyId: professional.companyId,
                 companyName: professional.company.name
             });

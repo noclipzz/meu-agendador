@@ -38,6 +38,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [hasAccess, setHasAccess] = useState(false);
     const [userRole, setUserRole] = useState<"ADMIN" | "PROFESSIONAL">("PROFESSIONAL");
     const [userPlan, setUserPlan] = useState<string | null>(null);
+    const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag se é o dono real
     const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -207,6 +208,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 // CASO 3: Acesso liberado (Dono Ativo ou Profissional)
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
+                setIsOwner(!!dados.isOwner); // ✅ Salva se é dono
                 setUserPermissions(dados.permissions); // <--- CARREGA PERMISSÕES
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
@@ -362,8 +364,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
         // 2. REGRAS DE CARGO E PERMISSÃO
 
-        // WhatsApp é EXCLUSIVO para ADMIN
-        if (item.key === 'whatsapp' && userRole !== "ADMIN") return false;
+        // WhatsApp é EXCLUSIVO para o OWNER (Dono da Empresa)
+        if (item.key === 'whatsapp' && !isOwner) return false;
 
         // Mural é visível para todos da equipe que tenham plano permitido
         if (item.key === 'mural') return true;
@@ -402,7 +404,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </button>
                 <div className="flex items-center gap-4">
                     <UserButton />
-                    {(userRole === "ADMIN" || userPermissions?.config) && (
+                    {(isOwner || userPermissions?.config) && (
                         <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
                             <Settings size={22} />
                         </Link>
@@ -470,7 +472,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
                         <div className="flex items-center gap-2">
                             <UserButton showName />
-                            {(userRole === "ADMIN" || userPermissions?.config) && (
+                            {(isOwner || userPermissions?.config) && (
                                 <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
                                     <Settings size={20} />
                                 </Link>
@@ -483,7 +485,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 <div className="p-4 border-t dark:border-gray-800 hidden md:block shrink-0">
                     <div className="flex items-center justify-between mb-2">
                         <UserButton showName />
-                        {(userRole === "ADMIN" || userPermissions?.config) && (
+                        {(isOwner || userPermissions?.config) && (
                             <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition" title="Configurações">
                                 <Settings size={18} />
                             </Link>
@@ -498,10 +500,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 {(() => {
                     const currentRoute = allItems.find(item => pathname === item.path);
 
-                    // Bloqueio Hard para WhatsApp (Apenas ADMIN)
-                    const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && userRole !== "ADMIN";
+                    // Bloqueio Hard para WhatsApp (Apenas OWNER)
+                    const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && !isOwner;
 
-                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN");
+                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && !userPermissions[currentRoute.key] && !isOwner);
 
                     if (isDenied) {
                         return (
