@@ -383,20 +383,20 @@ export default function FinanceiroPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-2">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-gray-100 dark:border-gray-700 shadow-sm">
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Faturamento Bruto</p>
-                        <h2 className="text-2xl font-black text-gray-800 dark:text-white">R$ {dadosResumo?.resumo?.bruto?.toLocaleString() || "0"}</h2>
+                        <h2 className="text-2xl font-black text-gray-800 dark:text-white">R$ {(dadosResumo?.resumo?.bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
                         <div className="flex items-center gap-1 text-green-500 mt-2"><ArrowUpCircle size={12} /><span className="text-[10px] font-black">+{dadosResumo?.resumo?.crescimento || "0"}% vs mês anterior</span></div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-red-50 dark:border-red-900/20 shadow-sm">
                         <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Total Gastos (Saídas)</p>
-                        <h2 className="text-2xl font-black text-red-600">R$ {dadosResumo?.resumo?.despesas?.toLocaleString() || "0"}</h2>
+                        <h2 className="text-2xl font-black text-red-600">R$ {(dadosResumo?.resumo?.despesas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border-2 border-orange-50 dark:border-orange-900/20 shadow-sm">
                         <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">A Receber (Boletos)</p>
-                        <h2 className="text-2xl font-black text-orange-600">R$ {dadosResumo?.boletosAbertos?.reduce((acc: any, b: any) => acc + Number(b.value), 0).toLocaleString() || "0"}</h2>
+                        <h2 className="text-2xl font-black text-orange-600">R$ {(dadosResumo?.boletosAbertos?.reduce((acc: any, b: any) => acc + Number(b.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
                     </div>
                     <div className="bg-blue-600 p-6 rounded-[2rem] shadow-xl shadow-blue-500/30 transform hover:scale-105 transition-transform">
                         <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest mb-1">Lucro Líquido (Real)</p>
-                        <h2 className="text-3xl font-black text-white font-mono tracking-tighter">R$ {dadosResumo?.resumo?.liquido?.toLocaleString() || "0"}</h2>
+                        <h2 className="text-3xl font-black text-white font-mono tracking-tighter">R$ {(dadosResumo?.resumo?.liquido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h2>
                     </div>
                 </div>
 
@@ -439,7 +439,7 @@ export default function FinanceiroPage() {
                                         <p className="text-[10px] font-black text-red-400 uppercase">Venceu: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
-                                        <p className="font-black text-red-600">R$ {Number(fat.value).toLocaleString()}</p>
+                                        <p className="font-black text-red-600">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleCobrar(fat, 'ATRASADO')} className="text-[10px] font-bold bg-white text-blue-600 px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition flex items-center gap-1">
                                                 <MessageCircle size={12} /> Cobrar
@@ -466,7 +466,7 @@ export default function FinanceiroPage() {
                                         <p className="text-[10px] font-bold text-gray-400 uppercase">Vence: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
-                                        <p className="font-black dark:text-white">R$ {Number(fat.value).toLocaleString()}</p>
+                                        <p className="font-black dark:text-white">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         <div className="flex gap-2">
                                             <button onClick={() => handleCobrar(fat, 'LEMBRETE')} className="text-[10px] font-bold text-gray-400 hover:text-blue-500 transition flex items-center gap-1">
                                                 <MessageCircle size={12} /> Lembrar
@@ -517,9 +517,9 @@ export default function FinanceiroPage() {
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <div className="text-right">
-                                        <p className="font-black text-red-600 text-lg">R$ {Number(exp.value).toLocaleString()}</p>
+                                        <p className="font-black text-red-600 text-lg">R$ {Number(exp.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         {exp.quantidade > 1 && (
-                                            <p className="text-[9px] font-bold text-gray-400">Total: R$ {(Number(exp.value) * exp.quantidade).toLocaleString()}</p>
+                                            <p className="text-[9px] font-bold text-gray-400">Total: R$ {(Number(exp.value) * exp.quantidade).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         )}
                                     </div>
                                     <button onClick={() => prepararEdicao(exp)} className="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-gray-400 hover:text-blue-500 transition"><Pencil size={18} /></button>
@@ -558,7 +558,7 @@ export default function FinanceiroPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="text-right">
-                                        <p className="font-black text-blue-600 text-lg">R$ {Number(inv.value).toLocaleString()}</p>
+                                        <p className="font-black text-blue-600 text-lg">R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <button
                                         onClick={() => deletarEntrada(inv.id)}
@@ -617,15 +617,15 @@ export default function FinanceiroPage() {
                 <div className="flex gap-4 mb-8">
                     <div className="flex-1 border-2 border-gray-100 bg-gray-50 p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Receita Total (Mês)</p>
-                        <p className="text-3xl font-black text-blue-600">R$ {dadosResumo?.resumo?.bruto?.toLocaleString()}</p>
+                        <p className="text-3xl font-black text-blue-600">R$ {(dadosResumo?.resumo?.bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="flex-1 border-2 border-gray-100 bg-gray-50 p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Despesas (Mês)</p>
-                        <p className="text-3xl font-black text-red-600">R$ {dadosResumo?.resumo?.despesas?.toLocaleString()}</p>
+                        <p className="text-3xl font-black text-red-600">R$ {(dadosResumo?.resumo?.despesas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="flex-1 border-2 border-black bg-black text-white p-3 rounded-xl">
                         <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Lucro Líquido</p>
-                        <p className="text-3xl font-black">R$ {dadosResumo?.resumo?.liquido?.toLocaleString()}</p>
+                        <p className="text-3xl font-black">R$ {(dadosResumo?.resumo?.liquido || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                 </div>
 
@@ -651,7 +651,7 @@ export default function FinanceiroPage() {
                                     <td className="p-2 font-bold uppercase">{inv.description}</td>
                                     <td className="p-2 uppercase">{inv.client?.name || 'Cliente Avulso'}</td>
                                     <td className="p-2"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">{inv.method || 'PIX'}</span></td>
-                                    <td className="p-2 text-right font-bold text-blue-600">R$ {Number(inv.value).toLocaleString()}</td>
+                                    <td className="p-2 text-right font-bold text-blue-600">R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                 </tr>
                             ))}
                             {(!dadosResumo?.allInvoices || dadosResumo?.allInvoices.length === 0) && (
@@ -661,7 +661,7 @@ export default function FinanceiroPage() {
                         <tfoot className="bg-gray-50 font-black">
                             <tr>
                                 <td colSpan={4} className="p-2 text-right uppercase">Subtotal Entradas:</td>
-                                <td className="p-2 text-right text-blue-700">R$ {dadosResumo?.resumo?.bruto?.toLocaleString()}</td>
+                                <td className="p-2 text-right text-blue-700">R$ {(dadosResumo?.resumo?.bruto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -689,7 +689,7 @@ export default function FinanceiroPage() {
                                     <td className="p-2 font-bold uppercase">{exp.description}</td>
                                     <td className="p-2 uppercase text-gray-500">{exp.category}</td>
                                     <td className="p-2 uppercase text-gray-400">{exp.frequency === 'MONTHLY' ? 'Mensal' : exp.frequency === 'WEEKLY' ? 'Semanal' : exp.frequency === 'YEARLY' ? 'Anual' : 'Único'}</td>
-                                    <td className="p-2 text-right font-bold text-red-600">R$ {Number(exp.value).toLocaleString()}</td>
+                                    <td className="p-2 text-right font-bold text-red-600">R$ {Number(exp.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                 </tr>
                             ))}
                             {(!dadosResumo?.allExpenses || dadosResumo?.allExpenses.length === 0) && (
@@ -699,7 +699,7 @@ export default function FinanceiroPage() {
                         <tfoot className="bg-gray-50 font-black">
                             <tr>
                                 <td colSpan={4} className="p-2 text-right uppercase">Subtotal Saídas:</td>
-                                <td className="p-2 text-right text-red-700">R$ {dadosResumo?.resumo?.despesas?.toLocaleString()}</td>
+                                <td className="p-2 text-right text-red-700">R$ {(dadosResumo?.resumo?.despesas || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -726,7 +726,7 @@ export default function FinanceiroPage() {
                                     <td className="p-2 font-mono text-red-600 font-bold">{format(new Date(fat.dueDate), 'dd/MM/yyyy')}</td>
                                     <td className="p-2 font-bold uppercase">{fat.client.name}</td>
                                     <td className="p-2 uppercase text-gray-500">{fat.description || 'Cobrança Avulsa'}</td>
-                                    <td className="p-2 text-right font-black text-orange-700">R$ {Number(fat.value).toLocaleString()}</td>
+                                    <td className="p-2 text-right font-black text-orange-700">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                 </tr>
                             ))}
                             {(!dadosResumo?.boletosVencidos || dadosResumo?.boletosVencidos.length === 0) && (
@@ -736,7 +736,7 @@ export default function FinanceiroPage() {
                         <tfoot className="bg-orange-100 font-black">
                             <tr>
                                 <td colSpan={3} className="p-2 text-right uppercase font-black">Total Inadimplência:</td>
-                                <td className="p-2 text-right text-orange-800">R$ {dadosResumo?.boletosVencidos?.reduce((acc: any, b: any) => acc + Number(b.value), 0).toLocaleString()}</td>
+                                <td className="p-2 text-right text-orange-800">R$ {(dadosResumo?.boletosVencidos?.reduce((acc: any, b: any) => acc + Number(b.value), 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -764,10 +764,10 @@ export default function FinanceiroPage() {
                                 return (
                                     <tr key={i} className="border-b border-gray-100">
                                         <td className="p-2 font-bold uppercase">{item.mes}</td>
-                                        <td className="p-2 text-right font-mono font-medium">R$ {item.receita.toLocaleString()}</td>
-                                        <td className="p-2 text-right font-mono font-medium">R$ {item.despesa.toLocaleString()}</td>
+                                        <td className="p-2 text-right font-mono font-medium">R$ {item.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                        <td className="p-2 text-right font-mono font-medium">R$ {item.despesa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                         <td className={`p-2 text-right font-mono font-black ${saldo >= 0 ? 'text-black' : 'text-red-600'}`}>
-                                            R$ {saldo.toLocaleString()}
+                                            R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="p-2 text-right font-bold text-gray-400">{margem}%</td>
                                     </tr>
@@ -777,9 +777,9 @@ export default function FinanceiroPage() {
                         <tfoot className="bg-gray-50 font-black text-[11px] border-t-2 border-black">
                             <tr>
                                 <td className="p-2 uppercase">Performance Acumulada (Período)</td>
-                                <td className="p-2 text-right text-green-700">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0).toLocaleString()}</td>
-                                <td className="p-2 text-right text-red-600">R$ {dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0).toLocaleString()}</td>
-                                <td className="p-2 text-right bg-yellow-50">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) - dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0)).toLocaleString()}</td>
+                                <td className="p-2 text-right text-green-700">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-right text-red-600">R$ {(dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-right bg-yellow-50">R$ {((dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.receita, 0) || 0) - (dadosResumo?.fluxoCaixa?.reduce((acc: any, i: any) => acc + i.despesa, 0) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                 <td className="p-2"></td>
                             </tr>
                         </tfoot>

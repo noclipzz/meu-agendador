@@ -826,7 +826,7 @@ export default function ClientesPage() {
                                                                 </p>
                                                                 <p className="text-[10px] font-bold text-gray-400">{format(new Date(b.date), "dd/MM/yy 'às' HH:mm")}</p>
                                                             </div>
-                                                            <span className="font-black text-green-600 text-sm">R$ {b.service?.price}</span>
+                                                            <span className="font-black text-green-600 text-sm">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                                         </div>
                                                     ))}
                                                     {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (

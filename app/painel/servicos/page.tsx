@@ -161,7 +161,7 @@ export default function ServicosPage() {
                         <h3 className="font-black text-lg dark:text-white uppercase truncate">{s.name}</h3>
                         <p className="text-sm font-bold text-gray-400">{s.duration || 30} min • Comissão: {s.commission || 0}%</p>
                         <div className="mt-4 flex justify-between items-center">
-                            <span className="text-2xl font-black text-green-600">R$ {Number(s.price).toFixed(2)}</span>
+                            <span className="text-2xl font-black text-green-600">R$ {Number(s.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                             {s.products.length > 0 && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-1 rounded-lg font-bold flex items-center gap-1"><Beaker size={10} /> {s.products.length} Produtos</span>}
                         </div>
                     </div>

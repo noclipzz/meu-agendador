@@ -436,7 +436,7 @@ export default function GestaoEquipe() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Produção</p>
-                                    <p className="font-black text-blue-600">R$ {totalGeral.toLocaleString()}</p>
+                                    <p className="font-black text-blue-600">R$ {totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                 </div>
                             </div>
 
@@ -501,8 +501,8 @@ export default function GestaoEquipe() {
                                 <div className="grid grid-cols-12 gap-8">
                                     <div className="col-span-12 lg:col-span-8 space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Produção Total</p><p className="text-2xl font-black text-blue-600">R$ {calcularMetricas(proSelecionado).totalGeral.toLocaleString()}</p></div>
-                                            <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-[2rem] border border-green-100 dark:border-green-800"><p className="text-[10px] font-black text-green-400 uppercase mb-1">Comissões</p><p className="text-2xl font-black text-green-600">R$ {calcularMetricas(proSelecionado).totalComissao.toLocaleString()}</p></div>
+                                            <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Produção Total</p><p className="text-2xl font-black text-blue-600">R$ {calcularMetricas(proSelecionado).totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                            <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-[2rem] border border-green-100 dark:border-green-800"><p className="text-[10px] font-black text-green-400 uppercase mb-1">Comissões</p><p className="text-2xl font-black text-green-600">R$ {calcularMetricas(proSelecionado).totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                                             <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Atendimentos</p><p className="text-2xl font-black dark:text-white">{calcularMetricas(proSelecionado).atendimentos}</p></div>
                                         </div>
                                         <section>
@@ -521,7 +521,7 @@ export default function GestaoEquipe() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="text-right"><p className="font-black text-base dark:text-white">R$ {b.service?.price}</p></div>
+                                                            <div className="text-right"><p className="font-black text-base dark:text-white">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                                                         </div>
                                                     ))
                                                 ) : <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-[2rem] opacity-40 italic text-sm">Sem histórico.</div>}
