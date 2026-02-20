@@ -15,8 +15,15 @@ export async function sendEvolutionMessage(
         if (!cleanNumber) return;
 
         // Formato exigido pela Evolution API (ex: 5511999999999)
-        // Se já tiver 55, usamos como está. Se não, adicionamos.
-        let remoteJid = cleanNumber.startsWith("55") ? cleanNumber : `55${cleanNumber}`;
+        // Se o número tiver 11 ou menos dígitos, ele não tem código de país (55)
+        let remoteJid = cleanNumber;
+
+        if (cleanNumber.length <= 11) {
+            remoteJid = `55${cleanNumber}`;
+        } else if (!cleanNumber.startsWith("55")) {
+            // Caso raríssimo de número internacional mal formatado
+            remoteJid = `55${cleanNumber}`;
+        }
 
         // Se for um JID completo (vindo do webhook por exemplo), mantemos
         if (number.includes("@s.whatsapp.net")) {
@@ -35,8 +42,7 @@ export async function sendEvolutionMessage(
             },
             body: JSON.stringify({
                 number: remoteJid,
-                text: text,
-                options: { delay: 1200, presence: "composing" },
+                text: text
             }),
         });
 
