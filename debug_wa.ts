@@ -9,39 +9,47 @@ async function main() {
 
     const serverUrl = company.evolutionServerUrl.replace(/\/$/, '');
     const apiKey = company.evolutionApiKey;
-    const instanceId = company.whatsappInstanceId || 'nohud-cmkv';
+    const instanceId = 'nohud-cmkv';
 
-    // Cleanup
-    await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': apiKey } }).catch(() => { });
-    await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': apiKey } }).catch(() => { });
-    await new Promise(r => setTimeout(r, 3000));
+    // 1. Delete existing instance
+    console.log(`Deleting instance ${instanceId}...`);
+    await fetch(`${serverUrl}/instance/delete/${instanceId}`, {
+        method: 'DELETE',
+        headers: { 'apikey': apiKey }
+    }).catch(() => { });
 
-    // Create sem qrcode (com number para tentar pairing code)
-    console.log('Creating instance...');
+    // 2. Create instance on v2.3.7
+    console.log('Creating instance on v2.3.7...');
     const createRes = await fetch(`${serverUrl}/instance/create`, {
         method: 'POST',
         headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
             instanceName: instanceId,
-            qrcode: false,
+            qrcode: true,
             integration: "WHATSAPP-BAILEYS"
         })
     });
-    console.log('Create:', createRes.status, await createRes.text());
+    const createData = await createRes.json().catch(() => ({}));
+    console.log('Create status:', createRes.status);
 
-    await new Promise(r => setTimeout(r, 2000));
-
-    // Tenta o pairing code
-    console.log('\nTrying pairing code...');
-    const pairRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-        method: 'GET',
-        headers: { 'apikey': apiKey }
-    });
-    console.log('Connect response:', await pairRes.text());
-
-    // Tenta verificar o manager URL
-    console.log('\nManager URL:', `${serverUrl}/manager`);
-    console.log('You can access the manager directly to generate QR code');
+    // In v2.3.x, qrcode might be inside the create object or needs to be fetched from /instance/connect
+    if (createData.qrcode?.base64) {
+        console.log('>>> SUCCESS! QR CODE IS RETURNED IN CREATE RESPONSE! <<<');
+        console.log('QR length:', createData.qrcode.base64.length);
+    } else {
+        console.log('Checking /instance/connect for QR...');
+        const connectRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
+            headers: { 'apikey': apiKey }
+        });
+        const connectData = await connectRes.json().catch(() => ({}));
+        console.log('Connect status:', connectRes.status);
+        if (connectData.base64) {
+            console.log('>>> SUCCESS! QR CODE IS RETURNED IN CONNECT RESPONSE! <<<');
+            console.log('QR length:', connectData.base64.length);
+        } else {
+            console.log('Connect data:', JSON.stringify(connectData));
+        }
+    }
 }
 
 main().finally(() => prisma.$disconnect());
