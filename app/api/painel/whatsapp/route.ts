@@ -182,14 +182,14 @@ export async function POST(req: Request) {
         await db.company.update({
             where: { id: targetCompany.id },
             data: {
-                whatsappStatus: "CONNECTING"
+                whatsappStatus: "CONNECTING",
+                whatsappQrCode: base64Qr || null
             } as any
         });
 
         return NextResponse.json({
             qrCode: base64Qr,
             status: "CONNECTING",
-            managerUrl: `${serverUrl}/manager`,
             message: base64Qr ? "QR Code Gerado" : "Aguardando QR Code do servidor..."
         });
     }
