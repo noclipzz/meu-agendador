@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const serverUrl = targetCompany.evolutionServerUrl.replace(/\/$/, "");
     let instanceId = targetCompany.whatsappInstanceId;
     let status = targetCompany.whatsappStatus || "DISCONNECTED";
-    let qrCode = targetCompany.whatsappQrCode || "";
+    let qrCode = (targetCompany as any).whatsappQrCode || "";
 
     // Consulta o estado real da instância na Evolution API
     if (instanceId) {
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
                         data: {
                             whatsappStatus: status,
                             ...(status === 'CONNECTED' ? { whatsappQrCode: null } : {})
-                        }
+                        } as any
                     });
                 }
             }
@@ -64,6 +64,7 @@ export async function GET(req: Request) {
         instanceId,
         status,
         qrCode,
+        managerUrl: `${serverUrl}/manager`,
         whatsappMessage: targetCompany.whatsappMessage
     });
 }
@@ -181,14 +182,14 @@ export async function POST(req: Request) {
         await db.company.update({
             where: { id: targetCompany.id },
             data: {
-                whatsappStatus: "CONNECTING",
-                whatsappQrCode: base64Qr || null
-            }
+                whatsappStatus: "CONNECTING"
+            } as any
         });
 
         return NextResponse.json({
             qrCode: base64Qr,
             status: "CONNECTING",
+            managerUrl: `${serverUrl}/manager`,
             message: base64Qr ? "QR Code Gerado" : "Aguardando QR Code do servidor..."
         });
     }
@@ -200,7 +201,7 @@ export async function POST(req: Request) {
                 method: 'DELETE',
                 headers: { 'apikey': targetCompany.evolutionApiKey }
             });
-            await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "DISCONNECTED", whatsappQrCode: null } });
+            await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "DISCONNECTED" } as any });
         }
         return NextResponse.json({ success: true });
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert } from "lucide-react";
+import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 import Image from "next/image";
@@ -14,6 +14,7 @@ export default function WhatsappPage() {
     const [whatsappMessage, setWhatsappMessage] = useState("");
     const [saving, setSaving] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [managerUrl, setManagerUrl] = useState("");
 
     useEffect(() => {
         fetchStatus();
@@ -23,7 +24,7 @@ export default function WhatsappPage() {
     useEffect(() => {
         let interval: NodeJS.Timeout;
 
-        if (status === "CONNECTING" && !qrCode) {
+        if (status === "CONNECTING") {
             interval = setInterval(() => {
                 fetchStatus();
             }, 2500); // 2.5s entre tentativas
@@ -40,8 +41,8 @@ export default function WhatsappPage() {
             const data = await res.json();
             if (data.configured) {
                 setConfigured(true);
-                // Se o servidor ja deu o QR, pegamos aqui
                 if (data.qrCode) setQrCode(data.qrCode);
+                if (data.managerUrl) setManagerUrl(data.managerUrl);
                 setStatus(data.status);
                 setWhatsappMessage(data.whatsappMessage || "");
             } else {
@@ -66,6 +67,7 @@ export default function WhatsappPage() {
             const data = await res.json();
             if (res.ok) {
                 if (data.qrCode) setQrCode(data.qrCode);
+                if (data.managerUrl) setManagerUrl(data.managerUrl);
                 setStatus("CONNECTING");
                 toast.info(data.message || "Iniciando conexão...");
             } else {
@@ -180,6 +182,28 @@ export default function WhatsappPage() {
                                     className="mt-6 font-bold text-sm text-blue-600 hover:text-blue-500 underline"
                                 >
                                     Já li o código, verificar status
+                                </button>
+                            </div>
+                        ) : status === 'CONNECTING' && !qrCode ? (
+                            <div className="flex flex-col items-center text-center">
+                                <Loader2 size={40} className="text-amber-500 mb-4 animate-spin" />
+                                <p className="font-bold text-gray-600 dark:text-gray-300">Aguardando QR Code...</p>
+                                <p className="text-sm text-gray-400 mt-2">Se o QR não aparecer em alguns segundos, use o painel abaixo:</p>
+                                {managerUrl && (
+                                    <a
+                                        href={managerUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-4 flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-all active:scale-95"
+                                    >
+                                        <ExternalLink size={18} /> Abrir Painel de Conexão
+                                    </a>
+                                )}
+                                <button
+                                    onClick={fetchStatus}
+                                    className="mt-4 font-bold text-sm text-blue-600 hover:text-blue-500 underline"
+                                >
+                                    Já conectei, verificar status
                                 </button>
                             </div>
                         ) : (
