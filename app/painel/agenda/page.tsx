@@ -304,6 +304,9 @@ export default function PainelDashboard() {
                                     {ags.map(ag => {
                                         const pro = profissionais.find(p => p.id === ag.professionalId);
                                         const isConcluido = ag.status === "CONCLUIDO";
+                                        const isConfirmado = ag.status === "CONFIRMADO";
+                                        const isCancelado = ag.status === "CANCELADO";
+                                        const isCanceladoSolicitado = ag.status === "CANCELAMENTO_SOLICITADO";
                                         const isEvento = ag.type === "EVENTO";
 
                                         if (isEvento) {
@@ -318,9 +321,10 @@ export default function PainelDashboard() {
                                         }
 
                                         return (
-                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center justify-between gap-0.5 ${ag.status === "CONFIRMADO" ? 'opacity-100' : 'opacity-60'} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`} style={{ backgroundColor: ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
+                                            <div key={ag.id} className={`text-[8px] md:text-[10px] px-1 py-0.5 rounded truncate text-white font-bold leading-tight flex items-center justify-between gap-0.5 ${isConfirmado ? 'opacity-100' : 'opacity-70'} ${isCancelado ? 'opacity-50 grayscale border-l-2 border-red-600' : ''} ${ag.type === "ENCAIXE" ? 'animate-pulse' : ''}`}
+                                                style={{ backgroundColor: isCancelado ? '#ef4444' : isCanceladoSolicitado ? '#f97316' : ag.type === "ENCAIXE" ? '#f59e0b' : (pro?.color || '#3b82f6') }}>
                                                 <div className="flex items-center gap-0.5 min-w-0 truncate">
-                                                    {ag.type === "ENCAIXE" ? <Zap size={10} /> : (ag.status === "CONFIRMADO" ? <CheckCheck size={10} /> : (ag.status === "CONCLUIDO" ? null : <Clock size={10} className="opacity-70" />))}
+                                                    {isCancelado ? <X size={10} className="text-white" /> : isCanceladoSolicitado ? <Clock size={10} className="text-white animate-pulse" /> : ag.type === "ENCAIXE" ? <Zap size={10} /> : (isConfirmado ? <CheckCheck size={10} /> : (isConcluido ? null : <Clock size={10} className="opacity-70" />))}
                                                     {isConcluido && <CheckCircle2 size={10} className="text-green-300" />}
                                                     <span className="shrink-0 mr-1">{format(new Date(ag.date), "HH:mm")}</span>
                                                     <span className="truncate">
@@ -376,6 +380,8 @@ export default function PainelDashboard() {
                         const { count, index } = ag._layout;
                         const isConfirmado = ag.status === "CONFIRMADO";
                         const isConcluido = ag.status === "CONCLUIDO";
+                        const isCancelado = ag.status === "CANCELADO";
+                        const isCanceladoSolicitado = ag.status === "CANCELAMENTO_SOLICITADO";
                         const isEncaixe = ag.type === "ENCAIXE";
                         const isEvento = ag.type === "EVENTO";
 
@@ -406,13 +412,14 @@ export default function PainelDashboard() {
                         return (
                             <button key={ag.id} onClick={() => { setAgendamentoSelecionado(ag); setIsEditing(false); }}
                                 className={`absolute rounded-xl text-left text-white shadow-md transition-all border-l-[6px] flex flex-col justify-center overflow-hidden px-3
-                                ${isConcluido ? 'opacity-50 grayscale' : isConfirmado ? 'opacity-100 scale-100' : 'opacity-75 hover:opacity-100'} 
+                                ${isConcluido ? 'opacity-50 grayscale' : isConfirmado ? 'opacity-100 scale-100' : isCancelado ? 'opacity-60 grayscale scale-[0.98]' : 'opacity-85 hover:opacity-100'} 
                                 ${isEncaixe ? 'ring-2 ring-amber-400' : ''}
+                                ${isCanceladoSolicitado ? 'ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-gray-900 border-l-orange-600' : ''}
                             `}
                                 style={{
                                     top: `calc(${topCalc} * var(--hour-h))`,
                                     height: `calc(${heightCalc} * var(--hour-h))`,
-                                    backgroundColor: isEncaixe ? '#f59e0b' : (pro?.color || '#3b82f6'),
+                                    backgroundColor: isCancelado ? '#ef4444' : isCanceladoSolicitado ? '#f97316' : isEncaixe ? '#f59e0b' : (pro?.color || '#3b82f6'),
                                     borderColor: 'rgba(0,0,0,0.1)',
                                     width: `calc((100% - 4rem) * ${100 / count / 100})`,
                                     left: `calc(4rem + ((100% - 4rem) * ${(index * (100 / count)) / 100}))`,
@@ -421,7 +428,7 @@ export default function PainelDashboard() {
                                     {/* HORÁRIO + ÍCONES */}
                                     <div className="flex items-center gap-1 shrink-0 bg-black/10 px-1.5 py-0.5 rounded-md">
                                         <span className="font-black text-[10px] md:text-[11px] leading-none">{format(data, "HH:mm")}</span>
-                                        {isEncaixe ? <Zap size={10} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={10} /> : isConfirmado ? <CheckCheck size={10} className="text-green-300" /> : <Clock size={10} className="opacity-70" />)}
+                                        {isCancelado ? <X size={10} className="text-white" /> : isCanceladoSolicitado ? <Clock size={10} className="text-white animate-pulse" /> : isEncaixe ? <Zap size={10} className="text-white animate-pulse" /> : (isConcluido ? <CheckCircle2 size={10} /> : isConfirmado ? <CheckCheck size={10} className="text-green-300" /> : <Clock size={10} className="opacity-70" />)}
                                     </div>
 
                                     {/* NOME DO CLIENTE E PROFISSIONAL */}
@@ -563,9 +570,11 @@ export default function PainelDashboard() {
                                                 <div className="flex items-center gap-2">
                                                     <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${agendamentoSelecionado.status === 'CONCLUIDO' ? 'bg-green-100 text-green-700' :
                                                         agendamentoSelecionado.status === 'CONFIRMADO' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-yellow-100 text-yellow-700'
+                                                            agendamentoSelecionado.status === 'CANCELADO' ? 'bg-red-100 text-red-700' :
+                                                                agendamentoSelecionado.status === 'CANCELAMENTO_SOLICITADO' ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-yellow-100 text-yellow-700'
                                                         }`}>
-                                                        {agendamentoSelecionado.status || 'PENDENTE'}
+                                                        {agendamentoSelecionado.status === 'CANCELAMENTO_SOLICITADO' ? 'CANCELAMENTO PENDENTE' : (agendamentoSelecionado.status || 'PENDENTE')}
                                                     </span>
                                                     <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{agendamentoSelecionado.type === "EVENTO" ? "Evento Interno" : "Detalhes"}</p>
                                                 </div>
