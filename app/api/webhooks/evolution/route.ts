@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
-import { formatarDataCompleta } from "@/app/utils/formatters";
+import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 
 async function sendEVOMessage(serverUrl: string, apiKey: string, instance: string, number: string, text: string) {
     try {
@@ -117,8 +117,14 @@ export async function POST(req: Request) {
                         // If they were about to cancel but said 'Sim', we confirm cancellation if status is CANCELAMENTO_SOLICITADO
                         if (booking.status === "CANCELAMENTO_SOLICITADO") {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELADO" } });
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
-                                `❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.`);
+
+                            const msgCancelSuccess = (company.whatsappCancelSuccessMessage || `❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.`)
+                                .replace("{nome}", booking.customerName || "")
+                                .replace("{servico}", booking.service?.name || "atendimento")
+                                .replace("{dia}", formatarDiaExtenso(booking.date))
+                                .replace("{hora}", formatarHorario(booking.date));
+
+                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgCancelSuccess);
 
                             // NOTIFY ADMIN & PROFESSIONAL
                             const dataFmt = formatarDataCompleta(booking.date);
@@ -129,8 +135,14 @@ export async function POST(req: Request) {
                         } else {
                             // Normal confirmation
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CONFIRMADO" } });
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
-                                `✅ *Agendamento Confirmado!*\n\n${booking.customerName}, seu horário para *${booking.service?.name || 'Atendimento'}* está garantido. Até lá!`);
+
+                            const msgConfirmSuccess = (company.whatsappConfirmMessage || `✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!`)
+                                .replace("{nome}", booking.customerName || "")
+                                .replace("{servico}", booking.service?.name || "atendimento")
+                                .replace("{dia}", formatarDiaExtenso(booking.date))
+                                .replace("{hora}", formatarHorario(booking.date));
+
+                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgConfirmSuccess);
 
                             const dataFmt = formatarDataCompleta(booking.date);
                             await notifyAdminsOfCompany(company.id, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou para às ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
@@ -144,13 +156,25 @@ export async function POST(req: Request) {
                         // If they are already in CANCELAMENTO_SOLICITADO and say 'Não', they might be changing their mind
                         if (booking.status === "CANCELAMENTO_SOLICITADO") {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "PENDENTE" } });
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
-                                `Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.`);
+
+                            const msgRevert = (company.whatsappCancelRevertMessage || `Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.`)
+                                .replace("{nome}", booking.customerName || "")
+                                .replace("{servico}", booking.service?.name || "atendimento")
+                                .replace("{dia}", formatarDiaExtenso(booking.date))
+                                .replace("{hora}", formatarHorario(booking.date));
+
+                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgRevert);
                         } else {
                             // Initiating cancellation flow
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELAMENTO_SOLICITADO" } });
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
-                                `⚠️ *Confirmação de Cancelamento*\n\n${booking.customerName}, você deseja realmente *CANCELAR* seu horário de *${booking.service?.name || 'atendimento'}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.`);
+
+                            const msgPrompt = (company.whatsappCancelPromptMessage || `⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.`)
+                                .replace("{nome}", booking.customerName || "")
+                                .replace("{servico}", booking.service?.name || "atendimento")
+                                .replace("{dia}", formatarDiaExtenso(booking.date))
+                                .replace("{hora}", formatarHorario(booking.date));
+
+                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgPrompt);
                         }
                     }
                 }

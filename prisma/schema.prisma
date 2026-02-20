@@ -24,7 +24,11 @@ model Company {
   interval          Int            @default(30)
   workDays          String         @default("1,2,3,4,5")
   monthlyGoal       Decimal        @default(5000)
-  whatsappMessage   String?        @default("Olá {nome}, seu agendamento está confirmado para {dia} às {hora}.")
+  whatsappMessage   String?        @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\\n\\nDigite *1* para Confirmar ou *2* para Cancelar.")
+  whatsappConfirmMessage String?     @default("✅ *Agendamento Confirmado!*\\n\\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
+  whatsappCancelPromptMessage String?  @default("⚠️ *Confirmação de Cancelamento*\\n\\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\\n\\nResponda *SIM* para confirmar o cancelamento definitivo.")
+  whatsappCancelSuccessMessage String? @default("❌ *Agendamento Cancelado*\\n\\nSeu agendamento foi cancelado com sucesso.")
+  whatsappCancelRevertMessage  String? @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
   notificationEmail String?        
   instagramUrl      String?        @default("")
   facebookUrl       String?        @default("")
