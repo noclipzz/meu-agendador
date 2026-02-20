@@ -2,24 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
-
-async function sendEVOMessage(serverUrl: string, apiKey: string, instance: string, number: string, text: string) {
-    try {
-        const remoteJid = number.includes('@s.whatsapp.net') ? number : `${number.split(':')[0].replace(/\D/g, '')}@s.whatsapp.net`;
-        const endpoint = `${serverUrl.replace(/\/$/, '')}/message/sendText/${instance}`;
-        await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'apikey': apiKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                number: remoteJid,
-                text: text,
-                options: { delay: 1200, presence: "composing" }
-            })
-        });
-    } catch (e) {
-        console.error("[EVO REPLIER] Error sending message:", e);
-    }
-}
+import { sendEvolutionMessage } from "@/lib/whatsapp";
 
 export const dynamic = 'force-dynamic';
 
@@ -130,7 +113,7 @@ export async function POST(req: Request) {
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
                                 .replace("{hora}", formatarHorario(booking.date));
 
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgCancelSuccess);
+                            await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgCancelSuccess);
 
                             // NOTIFY ADMIN & PROFESSIONAL
                             const dataFmt = formatarDataCompleta(booking.date);
@@ -149,7 +132,7 @@ export async function POST(req: Request) {
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
                                 .replace("{hora}", formatarHorario(booking.date));
 
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgConfirmSuccess);
+                            await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgConfirmSuccess);
 
                             const dataFmt = formatarDataCompleta(booking.date);
                             await notifyAdminsOfCompany(company.id, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou para às ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
@@ -171,7 +154,7 @@ export async function POST(req: Request) {
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
                                 .replace("{hora}", formatarHorario(booking.date));
 
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgRevert);
+                            await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgRevert);
                         } else {
                             // Initiating cancellation flow
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELAMENTO_SOLICITADO" } });
@@ -183,7 +166,7 @@ export async function POST(req: Request) {
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
                                 .replace("{hora}", formatarHorario(booking.date));
 
-                            await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid, msgPrompt);
+                            await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgPrompt);
                         }
                     }
                 }
