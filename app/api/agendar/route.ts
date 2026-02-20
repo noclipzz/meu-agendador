@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
-import { formatarDataCompleta, formatarHorario } from "@/app/utils/formatters";
+import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 import { auth } from "@clerk/nextjs/server";
 
 const prisma = db;
@@ -269,9 +269,10 @@ export async function POST(req: Request) {
                 const messageText = company.whatsappMessage
                     ? company.whatsappMessage
                         .replace("{nome}", name)
-                        .replace("{dia}", formatarDataCompleta(new Date(date)))
+                        .replace("{dia}", formatarDiaExtenso(new Date(date)))
+                        .replace("{servico}", nomeServico)
                         .replace("{hora}", formatarHorario(new Date(date)))
-                    : `Olá ${name}, recebemos sua solicitação de agendamento para ${formatarDataCompleta(new Date(date))} às ${formatarHorario(new Date(date))}.`;
+                    : `Olá ${name}, recebemos sua solicitação de agendamento para ${nomeServico} em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.`;
 
                 const phoneCleanNumber = phone.replace(/\D/g, ""); // Apenas números
 

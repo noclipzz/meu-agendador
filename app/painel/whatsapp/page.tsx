@@ -235,7 +235,8 @@ export default function WhatsappPage() {
                         <div className="mt-4 p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900 flex flex-col gap-1">
                             <span className="text-[10px] font-black uppercase text-blue-500">Variáveis Disponíveis:</span>
                             <span className="text-xs font-bold text-blue-700 dark:text-blue-400">{"{nome}"} - Nome do cliente</span>
-                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">{"{dia}"} - Dia e Mês</span>
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">{"{servico}"} - Nome do serviço</span>
+                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400">{"{dia}"} - Ex: 20 de fevereiro</span>
                             <span className="text-xs font-bold text-blue-700 dark:text-blue-400">{"{hora}"} - Ex: 14h30</span>
                         </div>
                     </div>
