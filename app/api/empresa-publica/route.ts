@@ -19,7 +19,11 @@ export async function GET(req: Request) {
       where: { slug: slug },
       include: {
         services: true,
-        professionals: true
+        professionals: {
+          include: {
+            services: true // Inclui os serviços vinculados para o filtro na tela de agendamento funcionar
+          }
+        }
       }
     });
 
