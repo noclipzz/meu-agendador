@@ -51,6 +51,7 @@ export async function GET() {
       );
       return {
         ...p,
+        role: member?.role || "PROFESSIONAL", // ✅ Agora retorna o cargo real (ADMIN ou PROFESSIONAL)
         permissions: member?.permissions || { agenda: true, clientes: true }
       };
     });
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
         await tx.teamMember.create({
           data: {
             email: email,
-            role: "PROFESSIONAL",
+            role: body.role || "PROFESSIONAL",
             companyId: company.id,
             clerkUserId: null,
             permissions: body.permissions || { agenda: true, clientes: true }
@@ -227,7 +228,7 @@ export async function PUT(req: Request) {
       }
     });
 
-    // Se houver e-mail ou userId, atualiza permissões no TeamMember
+    // Se houver e-mail ou userId, atualiza permissões e cargo no TeamMember
     if (updated.email || updated.userId) {
       await prisma.teamMember.updateMany({
         where: {
@@ -238,6 +239,7 @@ export async function PUT(req: Request) {
           companyId: updated.companyId
         },
         data: {
+          role: body.role || "PROFESSIONAL", // ✅ Agora permite mudar o cargo (ADMIN/PROFESSIONAL)
           permissions: body.permissions
         }
       });

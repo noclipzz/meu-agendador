@@ -58,6 +58,7 @@ export default function GestaoEquipe() {
         color: "#3b82f6",
         photoUrl: "",
         cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
+        role: "PROFESSIONAL", // ✅ Novo campo: Cargo
         permissions: {
             dashboard: false,
             agenda: true,
@@ -343,6 +344,7 @@ export default function GestaoEquipe() {
             state: p.state || "",
             notes: p.notes || "",
             status: p.status || "ATIVO",
+            role: p.role || "PROFESSIONAL", // ✅ Carrega o cargo
             permissions: p.permissions || {
                 dashboard: false,
                 agenda: true,
@@ -365,6 +367,7 @@ export default function GestaoEquipe() {
         setForm({
             id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "",
             cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
+            role: "PROFESSIONAL",
             permissions: {
                 dashboard: false,
                 agenda: true,
@@ -818,15 +821,42 @@ export default function GestaoEquipe() {
                                             </div>
                                         )}
 
-                                        <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Status do Cadastro</label>
-                                            <select className="w-full md:w-1/3 border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-blue-500" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                                <option value="ATIVO">ATIVO</option>
-                                                <option value="INATIVO">INATIVO (Bloqueia agendamentos)</option>
-                                            </select>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Cargo no Sistema</label>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setForm({ ...form, role: "PROFESSIONAL" })}
+                                                        className={`flex-1 p-4 rounded-2xl border-2 transition-all font-black text-[10px] uppercase text-center ${form.role === "PROFESSIONAL" ? "border-blue-600 bg-blue-50 text-blue-600" : "border-gray-100 text-gray-400 dark:border-gray-800"}`}
+                                                    >
+                                                        Profissional
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setForm({ ...form, role: "ADMIN" })}
+                                                        className={`flex-1 p-4 rounded-2xl border-2 transition-all font-black text-[10px] uppercase text-center ${form.role === "ADMIN" ? "border-red-600 bg-red-50 text-red-600" : "border-gray-100 text-gray-400 dark:border-gray-800"}`}
+                                                    >
+                                                        Administrador
+                                                    </button>
+                                                </div>
+                                                <p className="text-[9px] text-gray-400 ml-3 mt-2">
+                                                    {form.role === "ADMIN"
+                                                        ? "🛑 Admins tem acesso TOTAL e podem ignorar permissões marcadas abaixo."
+                                                        : "✅ Profissionais são limitados apenas às áreas marcadas abaixo."}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Status do Cadastro</label>
+                                                <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-blue-500" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                                    <option value="ATIVO">ATIVO</option>
+                                                    <option value="INATIVO">INATIVO (Bloqueia agendamentos)</option>
+                                                </select>
+                                            </div>
                                         </div>
 
-                                        <div className="md:col-span-8 space-y-1">
+                                        <div className="md:col-span-8 space-y-1 mt-4">
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
                                             <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Dê informações extras sobre o profissional..." />
                                             <p className="text-[9px] text-gray-400 font-black ml-4 mt-1 leading-none">* Dica: Você pode gerenciar notas rápidas diretamente na ficha do profissional.</p>

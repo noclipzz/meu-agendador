@@ -43,7 +43,11 @@ export async function GET() {
       where: { userId: config.ownerId }
     });
 
-    return NextResponse.json({ ...config, plan: subscription?.plan || "FREE" });
+    return NextResponse.json({
+      ...config,
+      plan: subscription?.plan || "FREE",
+      isOwner: config.ownerId === userId // ✅ Flag de dono
+    });
   } catch (error) {
     console.error("ERRO_GET_CONFIG:", error);
     return NextResponse.json({ error: "Erro ao buscar configurações" }, { status: 500 });
@@ -105,11 +109,6 @@ export async function POST(req: Request) {
       monthlyGoal: body.monthlyGoal ? Number(body.monthlyGoal) : 5000,
       workDays: body.workDays || "1,2,3,4,5",
       interval: body.interval ? Number(body.interval) : 30,
-      whatsappMessage: body.whatsappMessage || "Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\\n\\nDigite *1* para Confirmar ou *2* para Cancelar.",
-      whatsappConfirmMessage: body.whatsappConfirmMessage || "✅ *Agendamento Confirmado!*\\n\\n{nome}, seu horário para *{servico}* está garantido. Até lá!",
-      whatsappCancelPromptMessage: body.whatsappCancelPromptMessage || "⚠️ *Confirmação de Cancelamento*\\n\\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\\n\\nResponda *SIM* para confirmar o cancelamento definitivo.",
-      whatsappCancelSuccessMessage: body.whatsappCancelSuccessMessage || "❌ *Agendamento Cancelado*\\n\\nSeu agendamento foi cancelado com sucesso.",
-      whatsappCancelRevertMessage: body.whatsappCancelRevertMessage || "Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.",
       // Novos Campos
       cnpj: body.cnpj || null,
       phone: body.phone || null,

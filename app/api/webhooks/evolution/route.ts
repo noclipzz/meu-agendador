@@ -45,6 +45,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ received: true });
         }
 
+        const subscription = await db.subscription.findUnique({
+            where: { userId: company.ownerId }
+        });
+        const companyPlan = subscription?.plan || "FREE";
+
         const qrBase64 = body.data?.qrcode?.base64
             || body.qrcode?.base64
             || body.data?.base64
@@ -79,7 +84,7 @@ export async function POST(req: Request) {
             });
         }
 
-        if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe) {
+        if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe && companyPlan === "MASTER") {
             const messageData = body.data;
             const remoteJid = messageData?.key?.remoteJid;
             const messageBody = messageData?.message?.conversation

@@ -180,12 +180,23 @@ export default function ServicosPage() {
                         <div className="p-8 overflow-y-auto custom-scrollbar space-y-6">
                             {/* DADOS BÁSICOS */}
                             <div className="space-y-4">
-                                <input className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="Nome do Serviço" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome do Serviço</label>
+                                    <input className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="Ex: Corte de Cabelo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                </div>
                                 <div className="grid grid-cols-3 gap-4">
-                                    <input type="number" className="p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="Preço (R$)" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
-                                    {/* PLACEHOLDER EXPLICA O CAMPO */}
-                                    <input type="number" className="p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="Duração (min)" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} />
-                                    <input type="number" className="p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="Comissão (%)" value={form.commission} onChange={e => setForm({ ...form, commission: e.target.value })} />
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Preço (R$)</label>
+                                        <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0.00" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Duração (min)</label>
+                                        <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="30" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Comissão (%)</label>
+                                        <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0" value={form.commission} onChange={e => setForm({ ...form, commission: e.target.value })} />
+                                    </div>
                                 </div>
                             </div>
 

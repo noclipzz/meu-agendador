@@ -96,6 +96,14 @@ export async function POST(req: Request) {
             prisma.company.findUnique({ where: { id: companyId } })
         ]);
 
+        let companyPlan = "FREE";
+        if (company) {
+            const subscription = await prisma.subscription.findUnique({
+                where: { userId: company.ownerId }
+            });
+            companyPlan = subscription?.plan || "FREE";
+        }
+
         let finalClientId = clientId;
         // const phoneClean já definido acima
         if (!finalClientId && phoneClean) {
@@ -263,8 +271,8 @@ export async function POST(req: Request) {
             console.error("Erro push:", pushErr);
         }
 
-        // C) WHATSAPP - EVOLUTION API (Se estiver conectado)
-        if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone) {
+        // C) WHATSAPP - EVOLUTION API (Se estiver conectado e for plano MASTER)
+        if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
             try {
                 const messageText = company.whatsappMessage
                     ? company.whatsappMessage

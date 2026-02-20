@@ -61,7 +61,11 @@ export async function GET(req: Request) {
         status,
         qrCode,
         managerUrl: `${serverUrl}/manager`,
-        whatsappMessage: targetCompany.whatsappMessage
+        whatsappMessage: targetCompany.whatsappMessage,
+        whatsappConfirmMessage: targetCompany.whatsappConfirmMessage,
+        whatsappCancelPromptMessage: targetCompany.whatsappCancelPromptMessage,
+        whatsappCancelSuccessMessage: targetCompany.whatsappCancelSuccessMessage,
+        whatsappCancelRevertMessage: targetCompany.whatsappCancelRevertMessage
     });
 }
 
@@ -84,10 +88,23 @@ export async function POST(req: Request) {
     const serverUrl = targetCompany.evolutionServerUrl.replace(/\/$/, "");
 
     if (action === 'SAVE_CONFIG') {
-        const { whatsappMessage } = body;
+        const {
+            whatsappMessage,
+            whatsappConfirmMessage,
+            whatsappCancelPromptMessage,
+            whatsappCancelSuccessMessage,
+            whatsappCancelRevertMessage
+        } = body;
+
         await db.company.update({
             where: { id: targetCompany.id },
-            data: { whatsappMessage }
+            data: {
+                whatsappMessage,
+                whatsappConfirmMessage,
+                whatsappCancelPromptMessage,
+                whatsappCancelSuccessMessage,
+                whatsappCancelRevertMessage
+            }
         });
         return NextResponse.json({ success: true });
     }
