@@ -34,6 +34,7 @@ model Company {
   whatsappStatus     String?       @default("DISCONNECTED") // CONNECTING, CONNECTED, DISCONNECTED
   evolutionServerUrl String?       // URL da VPS (Ex: 'http://123.45.67.89:8080')
   evolutionApiKey    String?       // Chave Global da VPS
+  whatsappQrCode     String?       @db.Text // QR Code base64 recebido via webhook
   
   // Dados de Endereço e Contato (Novo)
   cnpj              String?

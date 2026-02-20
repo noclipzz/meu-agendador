@@ -1,0 +1,12 @@
+--- Setting webhook for QR ---
+Webhook: 200 | null
+
+--- QR Code image endpoint ---
+QR Image: 200 | Content-Type: application/json; charset=utf-8 | Size: 11
+Body size: 11
+
+--- Create with webhook for qrcode ---
+Create (qrcode:false): 201 | {"instance":{"instanceName":"nohud-cmkv","instanceId":"ccd603da-23be-489c-82a1-f166711a4f6c","integration":"WHATSAPP-BAILEYS","webhookWaBusiness":null,"accessTokenWaBusiness":"","status":"close"},"hash":"378A9D98-2DE0-48C7-8659-274A5C60FFD9","webhook":{},"websocket":{},"rabbitmq":{},"sqs":{},"settings":{"rejectCall":false,"msgCall":"","groupsIgnore":false,"alwaysOnline":false,"readMessages":false,"readStatus":false,"syncFullHistory":false}}
+
+Connect after create(qrcode:false): 200
+{"count":0}
