@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 import { auth } from "@clerk/nextjs/server";
+import { sendEvolutionMessage } from "@/lib/whatsapp";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -283,26 +284,14 @@ export async function POST(req: Request) {
                         .replace("{hora}", formatarHorario(new Date(date)))
                     : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.`;
 
-                const phoneCleanNumber = phone.replace(/\D/g, ""); // Apenas números
-
-                // Formato exigido pela Evolution API (ex: 5511999999999) - Assumindo Brasil DDI 55 se vier sem
-                const remoteJid = phoneCleanNumber.startsWith("55") ? phoneCleanNumber : `55${phoneCleanNumber}`;
-
-                const evolutionEndpoint = `${company.evolutionServerUrl}/message/sendText/${company.whatsappInstanceId}`;
-
-                // POST Request (Tratamento Async sem "await" travando a resposta - manda e esquece "fire and forget")
-                fetch(evolutionEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': company.evolutionApiKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        number: remoteJid,
-                        text: messageText,
-                        options: { delay: 1200, presence: "composing" } // Simula "digitando..."
-                    })
-                }).catch(err => console.error("Falha ao notificar via WhatsApp silenciosamente:", err));
+                // Post Request (Agora usando await para garantir entrega no serverless)
+                await sendEvolutionMessage(
+                    company.evolutionServerUrl,
+                    company.evolutionApiKey,
+                    company.whatsappInstanceId,
+                    phone,
+                    messageText
+                );
 
             } catch (wppErr) {
                 console.error("Erro preparando webhook whatsapp:", wppErr);
