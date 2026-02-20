@@ -29,6 +29,7 @@ model Company {
   whatsappCancelPromptMessage String?  @default("⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.")
   whatsappCancelSuccessMessage String? @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
   whatsappCancelRevertMessage  String? @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
+  whatsappWaitingListMessage  String? @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
   notificationEmail String?        
   instagramUrl      String?        @default("")
   facebookUrl       String?        @default("")

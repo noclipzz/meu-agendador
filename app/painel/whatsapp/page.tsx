@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert, ChevronDown, ChevronUp, MessageSquare, CheckCircle, AlertTriangle, XCircle, RotateCcw } from "lucide-react";
+import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert, ChevronDown, ChevronUp, MessageSquare, CheckCircle, AlertTriangle, XCircle, RotateCcw, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 import Image from "next/image";
@@ -16,6 +16,7 @@ export default function WhatsappPage() {
     const [whatsappCancelPromptMessage, setWhatsappCancelPromptMessage] = useState("");
     const [whatsappCancelSuccessMessage, setWhatsappCancelSuccessMessage] = useState("");
     const [whatsappCancelRevertMessage, setWhatsappCancelRevertMessage] = useState("");
+    const [whatsappWaitingListMessage, setWhatsappWaitingListMessage] = useState("");
 
     const [activeDrawer, setActiveDrawer] = useState<string | null>("confirmacao");
     const [saving, setSaving] = useState(false);
@@ -54,6 +55,7 @@ export default function WhatsappPage() {
                 setWhatsappCancelPromptMessage(data.whatsappCancelPromptMessage || "");
                 setWhatsappCancelSuccessMessage(data.whatsappCancelSuccessMessage || "");
                 setWhatsappCancelRevertMessage(data.whatsappCancelRevertMessage || "");
+                setWhatsappWaitingListMessage(data.whatsappWaitingListMessage || "");
             } else {
                 setConfigured(false);
             }
@@ -121,7 +123,8 @@ export default function WhatsappPage() {
                     whatsappConfirmMessage,
                     whatsappCancelPromptMessage,
                     whatsappCancelSuccessMessage,
-                    whatsappCancelRevertMessage
+                    whatsappCancelRevertMessage,
+                    whatsappWaitingListMessage
                 })
             });
             if (res.ok) {
@@ -368,6 +371,36 @@ export default function WhatsappPage() {
                                         onChange={(e) => setWhatsappCancelRevertMessage(e.target.value)}
                                         placeholder="Entendido! Mantivemos seu agendamento..."
                                     />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* GAVETA 6: LISTA DE ESPERA */}
+                        <div className="border dark:border-gray-700 rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-900/50">
+                            <button
+                                onClick={() => setActiveDrawer(activeDrawer === "waiting_list" ? null : "waiting_list")}
+                                className="w-full flex items-center justify-between p-4 hover:bg-white dark:hover:bg-gray-900 transition-colors"
+                            >
+                                <div className="flex items-center gap-3 text-left">
+                                    <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-2xl text-amber-600 dark:text-amber-400"><Clock size={16} /></div>
+                                    <h4 className="font-black text-gray-800 dark:text-white uppercase text-[10px] tracking-widest">6. Notificação Lista de Espera</h4>
+                                </div>
+                                {activeDrawer === "waiting_list" ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                            </button>
+                            {activeDrawer === "waiting_list" && (
+                                <div className="p-4 pt-0 animate-in slide-in-from-top-1 duration-200">
+                                    <textarea
+                                        rows={4}
+                                        className="w-full p-4 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-xs outline-none focus:ring-2 ring-blue-500 resize-none font-medium"
+                                        value={whatsappWaitingListMessage}
+                                        onChange={(e) => setWhatsappWaitingListMessage(e.target.value)}
+                                        placeholder="Olá {nome}, uma vaga surgiu para o dia {dia}..."
+                                    />
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {["{nome}", "{dia}", "{link}"].map(tag => (
+                                            <span key={tag} className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[8px] font-black text-gray-500 dark:text-gray-400">{tag}</span>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
