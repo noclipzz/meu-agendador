@@ -272,7 +272,7 @@ export async function POST(req: Request) {
                         .replace("{dia}", formatarDiaExtenso(new Date(date)))
                         .replace("{servico}", nomeServico)
                         .replace("{hora}", formatarHorario(new Date(date)))
-                    : `Olá ${name}, recebemos sua solicitação de agendamento para ${nomeServico} em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.`;
+                    : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.`;
 
                 const phoneCleanNumber = phone.replace(/\D/g, ""); // Apenas números
 

@@ -230,7 +230,7 @@ export default function WhatsappPage() {
                             className="flex-1 w-full border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-2xl p-4 font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-2 ring-green-500 resize-none min-h-[150px]"
                             value={whatsappMessage}
                             onChange={(e) => setWhatsappMessage(e.target.value)}
-                            placeholder="Olá {nome}, seu agendamento está confirmado para {dia} às {hora}."
+                            placeholder="Olá {nome}, recebemos seu agendamento para {servico}. Digite 1 para Confirmar."
                         />
                         <div className="mt-4 p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900 flex flex-col gap-1">
                             <span className="text-[10px] font-black uppercase text-blue-500">Variáveis Disponíveis:</span>
