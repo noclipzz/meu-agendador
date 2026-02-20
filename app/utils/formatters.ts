@@ -60,3 +60,12 @@ export const formatarDataApenas = (data: Date | string) => {
     timeZone: 'America/Sao_Paulo'
   });
 }
+
+export const formatarDiaExtenso = (data: Date | string) => {
+  const d = new Date(data);
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    timeZone: 'America/Sao_Paulo'
+  });
+}
