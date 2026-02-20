@@ -124,6 +124,7 @@ export async function POST(req: Request) {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELADO" } });
 
                             const msgCancelSuccess = (company.whatsappCancelSuccessMessage || `❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.`)
+                                .replace(/\\n/g, '\n')
                                 .replace("{nome}", booking.customerName || "")
                                 .replace("{servico}", booking.service?.name || "atendimento")
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
@@ -142,6 +143,7 @@ export async function POST(req: Request) {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CONFIRMADO" } });
 
                             const msgConfirmSuccess = (company.whatsappConfirmMessage || `✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!`)
+                                .replace(/\\n/g, '\n')
                                 .replace("{nome}", booking.customerName || "")
                                 .replace("{servico}", booking.service?.name || "atendimento")
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
@@ -163,6 +165,7 @@ export async function POST(req: Request) {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "PENDENTE" } });
 
                             const msgRevert = (company.whatsappCancelRevertMessage || `Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.`)
+                                .replace(/\\n/g, '\n')
                                 .replace("{nome}", booking.customerName || "")
                                 .replace("{servico}", booking.service?.name || "atendimento")
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
@@ -174,6 +177,7 @@ export async function POST(req: Request) {
                             await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELAMENTO_SOLICITADO" } });
 
                             const msgPrompt = (company.whatsappCancelPromptMessage || `⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.`)
+                                .replace(/\\n/g, '\n')
                                 .replace("{nome}", booking.customerName || "")
                                 .replace("{servico}", booking.service?.name || "atendimento")
                                 .replace("{dia}", formatarDiaExtenso(booking.date))
