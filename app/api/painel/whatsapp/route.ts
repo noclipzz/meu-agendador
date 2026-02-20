@@ -103,21 +103,25 @@ export async function POST(req: Request) {
             });
         };
 
+        const logoutDelete = async () => {
+            try {
+                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
+                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
+                await new Promise(r => setTimeout(r, 1000)); // Espera o servidor processar a deleção
+            } catch (e) {
+                console.log("Cleanup error:", e);
+            }
+        };
+
         let res = await connectToInstance();
         let data = res.ok ? await res.json() : null;
 
         // Se a instancia nao existir, estiver em erro ou retornou count:0 (stuck), vamos recriar
         if (res.status === 404 || !data || (res.ok && data.count === 0)) {
-            // Tenta limpar instancia travada
-            try {
-                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
-                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
-            } catch (e) {
-                console.log("Cleanup error (ignorable):", e);
-            }
+            if (res.status !== 404) await logoutDelete();
 
             // Cria a instancia com flags de performance (syncFullHistory: false)
-            const createRes = await fetch(`${serverUrl}/instance/create`, {
+            let createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
                 headers: {
                     'apikey': targetCompany.evolutionApiKey!,
@@ -127,21 +131,29 @@ export async function POST(req: Request) {
                     instanceName: instanceId,
                     qrcode: true,
                     integration: "WHATSAPP-BAILEYS",
-                    // PERFORMANCE: Desativa a sincronizacao de historico para o QR aparecer muito mais rapido
                     syncFullHistory: false,
                     readMessages: false,
                     readStatus: false
                 })
             });
 
+            // Se ainda der erro de "já em uso", tentamos conectar uma última vez antes de desistir
             if (!createRes.ok) {
                 const errorData = await createRes.json().catch(() => ({}));
-                return NextResponse.json({
-                    error: `Erro Evolution: ${errorData.response?.message?.[0] || errorData.error || createRes.statusText}`
-                }, { status: 500 });
-            }
+                const msg = errorData.response?.message?.[0] || errorData.error || "";
 
-            data = await createRes.json();
+                if (msg.includes("already in use")) {
+                    res = await connectToInstance();
+                    data = res.ok ? await res.json() : null;
+                    if (!res.ok) {
+                        return NextResponse.json({ error: `Erro Evolution: Instância ocupada e inacessível.` }, { status: 500 });
+                    }
+                } else {
+                    return NextResponse.json({ error: `Erro Evolution: ${msg || createRes.statusText}` }, { status: 500 });
+                }
+            } else {
+                data = await createRes.json();
+            }
         }
 
         const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
