@@ -362,6 +362,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
         // 2. REGRAS DE CARGO E PERMISSÃO
 
+        // WhatsApp é EXCLUSIVO para ADMIN
+        if (item.key === 'whatsapp' && userRole !== "ADMIN") return false;
+
         // Mural é visível para todos da equipe que tenham plano permitido
         if (item.key === 'mural') return true;
 
@@ -494,7 +497,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden h-full relative bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
                 {(() => {
                     const currentRoute = allItems.find(item => pathname === item.path);
-                    const isDenied = currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN";
+
+                    // Bloqueio Hard para WhatsApp (Apenas ADMIN)
+                    const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && userRole !== "ADMIN";
+
+                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && !userPermissions[currentRoute.key] && userRole !== "ADMIN");
 
                     if (isDenied) {
                         return (
