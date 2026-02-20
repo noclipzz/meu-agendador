@@ -1,8 +1,7 @@
 import { db } from "@/lib/db";
 import { notifyAdminsOfCompany } from "@/lib/push-server";
-import { isSameDay } from "date-fns";
 import { sendEvolutionMessage } from "./whatsapp";
-import { formatarDiaExtenso } from "@/app/utils/formatters";
+import { formatarDiaExtenso, formatarDataApenas } from "@/app/utils/formatters";
 
 export async function checkWaitingList(booking: any) {
     if (!booking) return;
@@ -35,12 +34,14 @@ export async function checkWaitingList(booking: any) {
 
         // Filtra quem quer especificamente ESTA DATA ou não tem preferência
         const dataVaga = new Date(booking.date);
+        const dataVagaStr = formatarDataApenas(dataVaga);
 
         const interessados = candidatos.filter(c => {
-            // O cliente só será citado se tiver EXPLICITAMENTE solicitado esta data
-            if (!c.desiredDate) return false;
+            // Se o candidato não especificou data, ele quer ser avisado de qualquer vaga
+            if (!c.desiredDate) return true;
 
-            return isSameDay(new Date(c.desiredDate), dataVaga);
+            const d1Str = formatarDataApenas(new Date(c.desiredDate));
+            return d1Str === dataVagaStr;
         });
 
         if (interessados.length > 0) {
@@ -51,7 +52,7 @@ export async function checkWaitingList(booking: any) {
             await notifyAdminsOfCompany(
                 booking.companyId,
                 "🔥 Vaga Liberada! Lista de Espera",
-                `${total} cliente${total > 1 ? 's' : ''} aguarda${total > 1 ? 'm' : ''} vaga para essa data (Dia ${dataVaga.getDate()}): ${nomes}.`,
+                `${total} cliente${total > 1 ? 's' : ''} aguarda${total > 1 ? 'm' : ''} vaga para essa data (${dataVaga.getDate()}/${dataVaga.getMonth() + 1}): ${nomes}.`,
                 "/painel/lista-espera"
             );
 
@@ -60,8 +61,9 @@ export async function checkWaitingList(booking: any) {
                 const appUrl = (process.env.NEXT_PUBLIC_APP_URL || `https://www.nohud.com.br`).replace(/\/$/, "");
                 const publicLink = `${appUrl}/${company.slug}`;
 
-                for (const client of interessados) {
-                    if (!client.customerPhone) continue;
+                // Envia em paralelo/lote para evitar timeout do Vercel e garantir que todos sejam disparados
+                const envios = interessados.map(async (client) => {
+                    if (!client.customerPhone) return;
 
                     const message = (company.whatsappWaitingListMessage || "Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
                         .replace(/\\n/g, '\n')
@@ -69,14 +71,16 @@ export async function checkWaitingList(booking: any) {
                         .replace("{dia}", formatarDiaExtenso(dataVaga))
                         .replace("{link}", publicLink);
 
-                    await sendEvolutionMessage(
+                    return sendEvolutionMessage(
                         company.evolutionServerUrl!,
                         company.evolutionApiKey!,
                         company.whatsappInstanceId!,
                         client.customerPhone,
                         message
                     );
-                }
+                });
+
+                await Promise.allSettled(envios);
             }
         }
     } catch (error) {
