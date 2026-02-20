@@ -42,32 +42,67 @@ export async function GET(req: Request) {
         let pushSent = 0;
 
         for (const sub of subscricoes) {
-            const profissional = await db.professional.findUnique({
-                where: { userId: sub.userId },
-                select: { id: true, name: true }
-            });
+            try {
+                let notificationSent = false;
 
-            if (!profissional) continue;
+                // A) Verificar se é Profissional
+                const profissional = await db.professional.findUnique({
+                    where: { userId: sub.userId },
+                    select: { id: true, name: true }
+                });
 
-            const primeiro = await db.booking.findFirst({
-                where: {
-                    professionalId: profissional.id,
-                    date: { gte: inicioDiaUTC, lte: fimDiaUTC },
-                    status: { in: ["PENDENTE", "CONFIRMADO"] }
-                },
-                orderBy: { date: 'asc' },
-                select: { date: true }
-            });
+                if (profissional) {
+                    const primeiro = await db.booking.findFirst({
+                        where: {
+                            professionalId: profissional.id,
+                            date: { gte: inicioDiaUTC, lte: fimDiaUTC },
+                            status: { in: ["PENDENTE", "CONFIRMADO"] }
+                        },
+                        orderBy: { date: 'asc' },
+                        select: { date: true }
+                    });
 
-            if (primeiro) {
-                const horaFmt = format(toZonedTime(primeiro.date, timezone), "HH:mm");
-                await sendPushNotification(
-                    sub.userId,
-                    "Bom dia! ☀️",
-                    `Bom dia ${profissional.name}, Hoje o seu primeiro compromisso é às ${horaFmt} horas, confira sua agenda de hoje.`,
-                    "/painel/agenda"
-                );
-                pushSent++;
+                    if (primeiro) {
+                        const horaFmt = format(toZonedTime(primeiro.date, timezone), "HH:mm");
+                        await sendPushNotification(
+                            sub.userId,
+                            "Bom dia! ☀️",
+                            `Bom dia ${profissional.name}, Hoje o seu primeiro compromisso é às ${horaFmt} horas, confira sua agenda de hoje.`,
+                            "/painel/agenda"
+                        );
+                        notificationSent = true;
+                        pushSent++;
+                    }
+                }
+
+                // B) Se não enviou (não tem agenda ou não é profissional) E é ADMINISTRADOR (Dono ou Equipe Admin)
+                if (!notificationSent) {
+                    const empresaDono = await db.company.findUnique({
+                        where: { ownerId: sub.userId },
+                        select: { id: true }
+                    });
+
+                    let isTeamAdmin = false;
+                    if (!empresaDono) {
+                        const member = await db.teamMember.findUnique({
+                            where: { clerkUserId: sub.userId },
+                            select: { role: true }
+                        });
+                        if (member?.role === "ADMIN") isTeamAdmin = true;
+                    }
+
+                    if (empresaDono || isTeamAdmin) {
+                        await sendPushNotification(
+                            sub.userId,
+                            "Bom dia! ☀️",
+                            "Bom dia!!, venha conferir os agendamentos de hoje!",
+                            "/painel/agenda"
+                        );
+                        pushSent++;
+                    }
+                }
+            } catch (err) {
+                console.error(`Erro ao processar notificação matinal para user ${sub.userId}:`, err);
             }
         }
         logs.push(`Push: ${pushSent} notificações enviadas.`);
