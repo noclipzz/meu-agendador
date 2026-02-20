@@ -57,14 +57,24 @@ export default function Configuracoes() {
     const [debitCardTax, setDebitCardTax] = useState("");
     const inputCertRef = useRef<HTMLInputElement>(null);
 
+    const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
+
     const [modalWhatsappOpen, setModalWhatsappOpen] = useState(false);
 
     useEffect(() => { carregarTudo(); }, []);
 
     async function carregarTudo() {
         try {
-            const resConfig = await fetch('/api/painel/config');
+            const [resConfig, resCheckout] = await Promise.all([
+                fetch('/api/painel/config'),
+                fetch('/api/checkout')
+            ]);
+
             const dataConfig = await resConfig.json();
+            const dataCheckout = await resCheckout.json();
+
+            setUserRole(dataCheckout.role || "PROFESSIONAL");
+
             if (dataConfig && dataConfig.id) {
                 setClerkUserId(dataConfig.ownerId || "");
                 setName(dataConfig.name || "");
@@ -364,13 +374,15 @@ export default function Configuracoes() {
 
                 <div className="mt-6"><label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Dias de Funcionamento</label><div className="flex gap-2 flex-wrap">{diasSemana.map(dia => (<button key={dia.id} onClick={() => toggleDay(dia.id)} className={`w-10 h-10 rounded-full font-bold text-xs border transition ${workDays.includes(dia.id) ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105" : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700 dark:text-gray-300"}`}>{dia.label}</button>))}</div></div>
 
-                <div className="mt-8 border-t dark:border-gray-700 pt-6 flex items-center justify-between">
-                    <div>
-                        <h3 className="font-bold text-sm text-gray-800 dark:text-white">Mensagem do WhatsApp</h3>
-                        <p className="text-xs text-gray-500 uppercase font-bold text-[10px] dark:text-gray-400">Personalize o texto automático.</p>
+                {userRole === "ADMIN" && (
+                    <div className="mt-8 border-t dark:border-gray-700 pt-6 flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-sm text-gray-800 dark:text-white">Mensagem do WhatsApp</h3>
+                            <p className="text-xs text-gray-500 uppercase font-bold text-[10px] dark:text-gray-400">Personalize o texto automático.</p>
+                        </div>
+                        <button onClick={() => setModalWhatsappOpen(true)} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition dark:hover:bg-gray-700 dark:text-gray-200 uppercase tracking-widest">Editar lembrete automático</button>
                     </div>
-                    <button onClick={() => setModalWhatsappOpen(true)} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition dark:hover:bg-gray-700 dark:text-gray-200 uppercase tracking-widest">Editar lembrete automático</button>
-                </div>
+                )}
 
                 <div className="border-t dark:border-gray-700 pt-8 mt-6">
                     <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">

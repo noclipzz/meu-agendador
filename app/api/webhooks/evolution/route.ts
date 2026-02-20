@@ -85,7 +85,8 @@ export async function POST(req: Request) {
                 || "";
 
             const cleanMessage = messageBody.trim().toLowerCase();
-            const phoneStr = remoteJid?.split('@')[0]?.replace(/\D/g, '');
+            // Split by : to remove multi-device suffix before cleaning digits
+            const phoneStr = remoteJid?.split('@')[0]?.split(':')[0]?.replace(/\D/g, '');
 
             const isConfirm = cleanMessage === '1' || cleanMessage === 'confirmar' || cleanMessage === 'confirma';
             const isCancel = cleanMessage === '2' || cleanMessage === 'cancelar' || cleanMessage === 'cancela';
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
                 const last8 = phoneStr.slice(-8);
                 const bookings = await db.booking.findMany({
                     where: { companyId: company.id, status: "PENDENTE" },
-                    orderBy: { date: 'desc' },
+                    orderBy: { date: 'asc' }, // Confirm the closest upcoming one
                     include: { service: true }
                 });
 
@@ -105,20 +106,22 @@ export async function POST(req: Request) {
                     const serverUrl = company.evolutionServerUrl!;
                     const apiKey = company.evolutionApiKey!;
 
-                    if (isConfirm || (isYes && booking.status === "PENDENTE")) {
+                    // ACTION: CONFIRM
+                    if (isConfirm || isYes) {
                         await db.booking.update({ where: { id: booking.id }, data: { status: "CONFIRMADO" } });
                         await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
                             `✅ *Agendamento Confirmado!*\n\n${booking.customerName}, seu horário para *${booking.service?.name || 'Atendimento'}* está garantido. Até lá!`);
-                    } else if (isCancel) {
-                        await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
-                            `⚠️ *Confirmação de Cancelamento*\n\nVocê selecionou a opção de cancelar. Tem certeza que deseja cancelar o agendamento para ${booking.service?.name || 'seu atendimento'}?\n\nDigite *Sim* para confirmar o cancelamento definitivo.`);
-                    } else if (isYes) {
+                    }
+                    // ACTION: CANCEL
+                    else if (isCancel) {
                         await db.booking.update({ where: { id: booking.id }, data: { status: "CANCELADO" } });
                         await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
                             `❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.`);
                     }
                 }
             }
+
+            return NextResponse.json({ received: true });
         }
 
         return NextResponse.json({ received: true });

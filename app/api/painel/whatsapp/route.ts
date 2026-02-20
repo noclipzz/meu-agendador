@@ -6,14 +6,10 @@ export async function GET(req: Request) {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    const company = await db.company.findFirst({ where: { ownerId: userId } });
-    let targetCompany = company;
+    const targetCompany = await db.company.findFirst({ where: { ownerId: userId } });
 
     if (!targetCompany) {
-        const teamMember = await db.teamMember.findFirst({ where: { clerkUserId: userId } });
-        if (!teamMember) return new NextResponse("Unauthorized", { status: 401 });
-        targetCompany = await db.company.findUnique({ where: { id: teamMember.companyId } });
-        if (!targetCompany) return new NextResponse("Unauthorized", { status: 401 });
+        return new NextResponse("Apenas o administrador (dono) possui acesso às configurações de WhatsApp.", { status: 403 });
     }
 
     if (!targetCompany?.evolutionServerUrl || !targetCompany?.evolutionApiKey) {
@@ -73,8 +69,13 @@ export async function POST(req: Request) {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
-    const targetCompany = await db.company.findFirst({ where: { OR: [{ ownerId: userId }, { teamMembers: { some: { clerkUserId: userId } } }] } });
-    if (!targetCompany?.evolutionServerUrl || !targetCompany?.evolutionApiKey) {
+    const targetCompany = await db.company.findFirst({ where: { ownerId: userId } });
+
+    if (!targetCompany) {
+        return new NextResponse("Ação não permitida para colaboradores.", { status: 403 });
+    }
+
+    if (!targetCompany.evolutionServerUrl || !targetCompany.evolutionApiKey) {
         return NextResponse.json({ error: "API não configurada" }, { status: 400 });
     }
 
