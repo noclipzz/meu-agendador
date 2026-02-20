@@ -106,8 +106,16 @@ export async function POST(req: Request) {
         let res = await connectToInstance();
         let data = res.ok ? await res.json() : null;
 
-        // Se a instancia nao existir ou estiver em erro, vamos criar/recriar com configuracoes de performance
-        if (res.status === 404 || !data) {
+        // Se a instancia nao existir, estiver em erro ou retornou count:0 (stuck), vamos recriar
+        if (res.status === 404 || !data || (res.ok && data.count === 0)) {
+            // Tenta limpar instancia travada
+            try {
+                await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
+                await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } });
+            } catch (e) {
+                console.log("Cleanup error (ignorable):", e);
+            }
+
             // Cria a instancia com flags de performance (syncFullHistory: false)
             const createRes = await fetch(`${serverUrl}/instance/create`, {
                 method: 'POST',
