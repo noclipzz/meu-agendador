@@ -138,7 +138,8 @@ export async function POST(req: Request) {
                     base64: true,
                     events: [
                         "QRCODE_UPDATED",
-                        "CONNECTION_UPDATE"
+                        "CONNECTION_UPDATE",
+                        "MESSAGES_UPSERT"
                     ]
                 }
             })
