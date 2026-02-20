@@ -109,7 +109,11 @@ export async function POST(req: Request) {
             const cleanMessage = messageBody.trim().toLowerCase();
             const phone = remoteJid?.split('@')[0]?.replace(/\D/g, '');
 
-            if (phone && (cleanMessage === '1' || cleanMessage === '2' || cleanMessage === 'sim')) {
+            const isConfirm = cleanMessage === '1' || cleanMessage === 'confirmar' || cleanMessage === 'confirma';
+            const isCancel = cleanMessage === '2' || cleanMessage === 'cancelar' || cleanMessage === 'cancela';
+            const isYes = ['sim', 's', 'si', 'smi', 'ss', 'simm'].includes(cleanMessage);
+
+            if (phone && (isConfirm || isCancel || isYes)) {
                 console.log(`[EVOLUTION BOT] Incoming from ${phone}: "${cleanMessage}"`);
 
                 // Busca o agendamento mais recente deste cliente (PENDENTE)
@@ -127,17 +131,17 @@ export async function POST(req: Request) {
                     const serverUrl = company.evolutionServerUrl!;
                     const apiKey = company.evolutionApiKey!;
 
-                    if (cleanMessage === '1') {
+                    if (isConfirm) {
                         await db.booking.update({
                             where: { id: booking.id },
                             data: { status: "CONFIRMADO" }
                         });
                         await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
                             `✅ *Agendamento Confirmado!*\n\n${booking.customerName}, seu horário para *${booking.service?.name || 'Atendimento'}* está garantido. Até lá!`);
-                    } else if (cleanMessage === '2') {
+                    } else if (isCancel) {
                         await sendEVOMessage(serverUrl, apiKey, instanceName, remoteJid,
                             `⚠️ *Confirmação de Cancelamento*\n\nVocê selecionou a opção de cancelar. Tem certeza que deseja cancelar o agendamento para ${booking.service?.name || 'seu atendimento'}?\n\nDigite *Sim* para confirmar o cancelamento.`);
-                    } else if (cleanMessage === 'sim') {
+                    } else if (isYes) {
                         await db.booking.update({
                             where: { id: booking.id },
                             data: { status: "CANCELADO" }
