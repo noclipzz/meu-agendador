@@ -99,8 +99,10 @@ export async function POST(req: Request) {
         }
 
         // Determinar a URL pública do nosso app para configurar o webhook
+        // PRIORIDADE: URL de Produção para evitar que preview URLs de Vercel "sequestrem" o webhook
         const appUrl = process.env.NEXT_PUBLIC_APP_URL
-            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://www.nohud.com.br');
+            ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+            : 'https://www.nohud.com.br';
         const webhookUrl = `${appUrl}/api/webhooks/evolution`;
 
         // Limpar instância anterior se existir
