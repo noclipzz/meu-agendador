@@ -10,23 +10,22 @@ export async function GET(req: Request) {
     let targetCompany = company;
 
     if (!targetCompany) {
-        // Tenta buscar como membro da equipe
         const teamMember = await db.teamMember.findFirst({ where: { clerkUserId: userId } });
         if (!teamMember) return new NextResponse("Unauthorized", { status: 401 });
         targetCompany = await db.company.findUnique({ where: { id: teamMember.companyId } });
         if (!targetCompany) return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Verifica se a API do whatsapp global foi habilitada para essa empresa
     if (!targetCompany?.evolutionServerUrl || !targetCompany?.evolutionApiKey) {
         return NextResponse.json({ configured: false });
     }
 
     const serverUrl = targetCompany.evolutionServerUrl.replace(/\/$/, "");
     let instanceId = targetCompany.whatsappInstanceId;
-
     let status = targetCompany.whatsappStatus || "DISCONNECTED";
-    let qrCode = "";
+    let qrCode = targetCompany.whatsappQrCode || "";
+
+    // Consulta o estado real da instância na Evolution API
     if (instanceId) {
         try {
             const stateRes = await fetch(`${serverUrl}/instance/connectionState/${instanceId}`, {
@@ -36,23 +35,24 @@ export async function GET(req: Request) {
             if (stateRes.ok) {
                 const stateData = await stateRes.json();
                 const state = stateData.instance?.state;
-                status = state === 'open' ? 'CONNECTED' : (state === 'connecting' ? 'CONNECTING' : 'DISCONNECTED');
 
-                if (status !== 'CONNECTED') {
-                    const connectRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-                        headers: { 'apikey': targetCompany.evolutionApiKey }
-                    });
-                    if (connectRes.ok) {
-                        const connectData = await connectRes.json();
-                        qrCode = connectData.base64 || connectData.qrcode?.base64 || "";
-                    }
+                if (state === 'open') {
+                    status = 'CONNECTED';
+                    qrCode = ""; // Não precisa mais do QR
+                } else if (state === 'connecting') {
+                    status = 'CONNECTING';
+                    // QR vem do banco (via webhook)
                 }
 
                 if (status !== targetCompany.whatsappStatus) {
-                    await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: status } });
+                    await db.company.update({
+                        where: { id: targetCompany.id },
+                        data: {
+                            whatsappStatus: status,
+                            ...(status === 'CONNECTED' ? { whatsappQrCode: null } : {})
+                        }
+                    });
                 }
-            } else {
-                status = 'DISCONNECTED';
             }
         } catch (e) {
             console.log("Evolution check state error:", e);
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const action = body.action; // 'CONNECT', 'DISCONNECT', 'SAVE_CONFIG'
+    const action = body.action;
     const serverUrl = targetCompany.evolutionServerUrl.replace(/\/$/, "");
 
     if (action === 'SAVE_CONFIG') {
@@ -97,82 +97,99 @@ export async function POST(req: Request) {
             await db.company.update({ where: { id: targetCompany.id }, data: { whatsappInstanceId: instanceId } });
         }
 
-        const connectToInstance = async () => {
-            return await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
-                headers: { 'apikey': targetCompany.evolutionApiKey! }
-            });
-        };
+        // Determinar a URL pública do nosso app para configurar o webhook
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL
+            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+            || 'https://nohud.com.br';
+        const webhookUrl = `${appUrl}/api/webhooks/evolution`;
 
-        const logoutDelete = async () => {
-            console.log(`[WA] Attempting cleanup for ${instanceId}`);
-            try {
+        // Limpar instância anterior se existir
+        try {
+            await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
+            await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
+            await new Promise(r => setTimeout(r, 2000));
+        } catch (e) {
+            console.log("Cleanup error:", e);
+        }
+
+        // Criar instância COM webhook configurado
+        console.log(`[WA] Creating instance ${instanceId} with webhook: ${webhookUrl}`);
+        const createRes = await fetch(`${serverUrl}/instance/create`, {
+            method: 'POST',
+            headers: {
+                'apikey': targetCompany.evolutionApiKey!,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                instanceName: instanceId,
+                qrcode: true,
+                integration: "WHATSAPP-BAILEYS",
+                syncFullHistory: false,
+                readMessages: false,
+                readStatus: false,
+                // Webhook para receber o QR Code e eventos de conexão
+                webhook: {
+                    url: webhookUrl,
+                    byEvents: false,
+                    base64: true,
+                    events: [
+                        "QRCODE_UPDATED",
+                        "CONNECTION_UPDATE"
+                    ]
+                }
+            })
+        });
+
+        let createData: any = {};
+        if (createRes.ok) {
+            createData = await createRes.json().catch(() => ({}));
+        } else {
+            const errorData = await createRes.json().catch(() => ({}));
+            const msg = errorData.response?.message?.[0] || errorData.error || "";
+
+            // Se "already in use", tenta limpar mais agressivamente e criar de novo
+            if (msg.includes("already in use")) {
                 await fetch(`${serverUrl}/instance/logout/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
                 await fetch(`${serverUrl}/instance/delete/${instanceId}`, { method: 'DELETE', headers: { 'apikey': targetCompany.evolutionApiKey! } }).catch(() => { });
-                await new Promise(r => setTimeout(r, 2000));
-            } catch (e) {
-                console.log("Cleanup error:", e);
+                await new Promise(r => setTimeout(r, 3000));
+
+                const retryRes = await fetch(`${serverUrl}/instance/create`, {
+                    method: 'POST',
+                    headers: { 'apikey': targetCompany.evolutionApiKey!, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        instanceName: instanceId,
+                        qrcode: true,
+                        integration: "WHATSAPP-BAILEYS",
+                        syncFullHistory: false,
+                        webhook: { url: webhookUrl, byEvents: false, base64: true, events: ["QRCODE_UPDATED", "CONNECTION_UPDATE"] }
+                    })
+                });
+
+                if (!retryRes.ok) {
+                    const retryErr = await retryRes.json().catch(() => ({}));
+                    return NextResponse.json({ error: `Erro Evolution: ${retryErr.response?.message?.[0] || retryErr.error || "Falha ao criar instância"}` }, { status: 500 });
+                }
+                createData = await retryRes.json().catch(() => ({}));
+            } else {
+                return NextResponse.json({ error: `Erro Evolution: ${msg || createRes.statusText}` }, { status: 500 });
             }
-        };
-
-        const createInstance = async () => {
-            return await fetch(`${serverUrl}/instance/create`, {
-                method: 'POST',
-                headers: {
-                    'apikey': targetCompany.evolutionApiKey!,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    instanceName: instanceId,
-                    qrcode: true,
-                    integration: "WHATSAPP-BAILEYS",
-                    syncFullHistory: false,
-                    readMessages: false,
-                    readStatus: false
-                })
-            });
-        };
-
-        let res = await connectToInstance();
-        let data = res.ok ? await res.json() : null;
-
-        if (res.ok && data?.count === 0) {
-            console.log(`[WA] Instance ${instanceId} is stuck (count:0). Forcing reset.`);
-            await logoutDelete();
-            res = { ok: false, status: 404 } as any;
         }
 
-        if (!res.ok || res.status === 404 || !data) {
-            let createRes = await createInstance();
-            let createData = await createRes.json().catch(() => ({}));
+        // O QR pode vir direto na resposta de criação OU via webhook
+        const base64Qr = createData?.qrcode?.base64 || createData?.base64 || "";
 
-            if (!createRes.ok && (createData.response?.message?.[0]?.includes("already in use") || createData.error?.includes("already in use"))) {
-                console.log(`[WA] ${instanceId} already in use, retrying creation after cleanup...`);
-                await logoutDelete();
-                createRes = await createInstance();
-                createData = await createRes.json().catch(() => ({}));
-            }
-
-            if (!createRes.ok) {
-                const msg = createData.response?.message?.[0] || createData.error || createRes.statusText;
-                return NextResponse.json({ error: `Erro Evolution: ${msg}` }, { status: 500 });
-            }
-
-            data = createData;
-        }
-
-        const base64Qr = data?.base64 || data?.qrcode?.base64 || "";
-
-        // Se nao temos o QR de primeira, nao tem problema. 
-        // Atualizamos o status e o FRONTEND vai perguntar novamente em 2 segundos.
         await db.company.update({
             where: { id: targetCompany.id },
-            data: { whatsappStatus: "CONNECTING" }
+            data: {
+                whatsappStatus: "CONNECTING",
+                whatsappQrCode: base64Qr || null
+            }
         });
 
         return NextResponse.json({
             qrCode: base64Qr,
             status: "CONNECTING",
-            message: base64Qr ? "QR Code Gerado" : "Iniciando motor de conexao..."
+            message: base64Qr ? "QR Code Gerado" : "Aguardando QR Code do servidor..."
         });
     }
 
@@ -183,7 +200,7 @@ export async function POST(req: Request) {
                 method: 'DELETE',
                 headers: { 'apikey': targetCompany.evolutionApiKey }
             });
-            await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "DISCONNECTED" } });
+            await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: "DISCONNECTED", whatsappQrCode: null } });
         }
         return NextResponse.json({ success: true });
     }
