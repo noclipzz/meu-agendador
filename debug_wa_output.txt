@@ -1,12 +1,18 @@
---- Setting webhook for QR ---
-Webhook: 200 | null
+Instance: nohud-cmkv
 
---- QR Code image endpoint ---
-QR Image: 200 | Content-Type: application/json; charset=utf-8 | Size: 11
-Body size: 11
+--- Full cleanup ---
 
---- Create with webhook for qrcode ---
-Create (qrcode:false): 201 | {"instance":{"instanceName":"nohud-cmkv","instanceId":"ccd603da-23be-489c-82a1-f166711a4f6c","integration":"WHATSAPP-BAILEYS","webhookWaBusiness":null,"accessTokenWaBusiness":"","status":"close"},"hash":"378A9D98-2DE0-48C7-8659-274A5C60FFD9","webhook":{},"websocket":{},"rabbitmq":{},"sqs":{},"settings":{"rejectCall":false,"msgCall":"","groupsIgnore":false,"alwaysOnline":false,"readMessages":false,"readStatus":false,"syncFullHistory":false}}
+--- Create with ALL events ---
+Create: 201 | {"instance":{"instanceName":"nohud-cmkv","instanceId":"5b6c762c-64d3-4af5-9238-30559c5a3f21","integration":"WHATSAPP-BAILEYS","webhookWaBusiness":null,"accessTokenWaBusiness":"","status":"connecting"},"hash":"69DD188B-DCBE-4908-9733-D374574EDC67","webhook":{"webhookUrl":"https://nohud.com.br/api/web
 
-Connect after create(qrcode:false): 200
-{"count":0}
+--- Waiting for webhook QR delivery (30s total) ---
+[3s] QR=NO | Status=CONNECTING
+[6s] QR=NO | Status=CONNECTING
+[9s] QR=NO | Status=CONNECTING
+[12s] QR=NO | Status=CONNECTING
+[15s] QR=NO | Status=DISCONNECTED
+[18s] QR=NO | Status=CONNECTING
+[21s] QR=NO | Status=CONNECTING
+[24s] QR=NO | Status=CONNECTING
+[27s] QR=NO | Status=CONNECTING
+[30s] QR=NO | Status=CONNECTING
