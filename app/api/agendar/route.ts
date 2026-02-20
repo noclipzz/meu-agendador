@@ -276,6 +276,7 @@ export async function POST(req: Request) {
             try {
                 const messageText = company.whatsappMessage
                     ? company.whatsappMessage
+                        .replace(/\\n/g, '\n')
                         .replace("{nome}", name)
                         .replace("{dia}", formatarDiaExtenso(new Date(date)))
                         .replace("{servico}", nomeServico)
