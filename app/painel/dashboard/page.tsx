@@ -233,7 +233,7 @@ export default function DashboardPage() {
                                     {dados.boletosVencidos?.map((b: any) => (
                                         <div key={b.id} className="flex justify-between text-sm">
                                             <span className="text-gray-600 dark:text-gray-300 truncate w-32">{b.client?.name || 'Cliente'}</span>
-                                            <span className="font-black text-red-500">R$ {Number(b.value || 0).toLocaleString()}</span>
+                                            <span className="font-black text-red-500">R$ {Number(b.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     ))}
                                     {(!dados.boletosVencidos || dados.boletosVencidos.length === 0) && <p className="text-gray-400 text-xs italic">Nenhuma conta atrasada.</p>}
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                                                 <p className="text-gray-800 dark:text-gray-200 font-bold text-xs">{b.client?.name || 'Cliente'}</p>
                                                 <p className="text-gray-400 text-[9px] font-black uppercase">{b.dueDate ? format(new Date(b.dueDate), 'dd/MM') : '--/--'}</p>
                                             </div>
-                                            <span className="font-black text-gray-800 dark:text-white">R$ {Number(b.value || 0).toLocaleString()}</span>
+                                            <span className="font-black text-gray-800 dark:text-white">R$ {Number(b.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     ))}
                                     {(!dados.boletosVencer || dados.boletosVencer.length === 0) && <p className="text-gray-400 text-xs italic">Nada para os próximos dias.</p>}

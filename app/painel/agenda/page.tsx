@@ -298,7 +298,7 @@ export default function PainelDashboard() {
                             <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 min-h-[80px] h-full flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'}`}>
                                 <div className="flex justify-between items-start mb-1 shrink-0">
                                     <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
-                                    {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R${faturamentoDia}</span>}
+                                    {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R$ {faturamentoDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar">
                                     {ags.map(ag => {
@@ -332,7 +332,7 @@ export default function PainelDashboard() {
                                                         {ag.customerName}
                                                     </span>
                                                 </div>
-                                                <span className="text-[7px] md:text-[9px] opacity-80 shrink-0 font-black">R${Number(ag.service?.price || 0)}</span>
+                                                <span className="text-[7px] md:text-[9px] opacity-80 shrink-0 font-black">R$ {Number(ag.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                         )
                                     })}
@@ -444,7 +444,7 @@ export default function PainelDashboard() {
                                     {/* PREÇO */}
                                     <div className="shrink-0">
                                         <span className="text-[9px] md:text-[10px] font-black opacity-90 bg-black/10 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                                            R$ {Number(ag.service?.price || 0)}
+                                            R$ {Number(ag.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 </div>
@@ -488,7 +488,7 @@ export default function PainelDashboard() {
 
                     <div className="flex-1 flex flex-col justify-center border-r dark:border-gray-700 pr-2">
                         <p className="text-[10px] text-gray-400 uppercase font-black leading-none mb-1">Faturamento</p>
-                        <div className="flex items-center gap-1"><DollarSign size={16} className="text-green-500" /><span className="text-base font-black">R$ {faturamentoTotal}</span></div>
+                        <div className="flex items-center gap-1"><DollarSign size={16} className="text-green-500" /><span className="text-base font-black">R$ {faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
                     </div>
 
                     <div className="flex-1 hidden md:block">
@@ -714,7 +714,7 @@ export default function PainelDashboard() {
                             <div className="space-y-6">
                                 <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-[2rem] text-center border-2 border-dashed dark:border-gray-700">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Valor do Serviço</p>
-                                    <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">R$ {Number(agendamentoSelecionado.service?.price || 0).toLocaleString()}</h3>
+                                    <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter">R$ {Number(agendamentoSelecionado.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
                                 </div>
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Forma de Pagamento</label>
