@@ -188,12 +188,20 @@ export default function WhatsappPage() {
                                 <Loader2 size={40} className="text-amber-500 mb-4 animate-spin" />
                                 <p className="font-bold text-gray-600 dark:text-gray-300">Gerando seu QR Code...</p>
                                 <p className="text-sm text-gray-400 mt-2">Isso pode levar alguns segundos. Por favor, aguarde.</p>
-                                <button
-                                    onClick={fetchStatus}
-                                    className="mt-6 font-bold text-sm text-blue-600 hover:text-blue-500 underline"
-                                >
-                                    Verificar status manualmente
-                                </button>
+                                <div className="flex flex-col gap-2 mt-6">
+                                    <button
+                                        onClick={fetchStatus}
+                                        className="font-bold text-sm text-blue-600 hover:text-blue-500 underline"
+                                    >
+                                        Verificar status manualmente
+                                    </button>
+                                    <button
+                                        onClick={handleConnect}
+                                        className="font-bold text-xs text-red-500/70 hover:text-red-500 underline"
+                                    >
+                                        Reiniciar tentativa
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center">
