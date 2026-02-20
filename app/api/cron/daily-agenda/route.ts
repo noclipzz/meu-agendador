@@ -51,6 +51,8 @@ export async function GET(req: Request) {
                     select: { id: true, name: true, companyId: true }
                 });
 
+                let notificationSent = false;
+
                 if (profissional) {
                     // Busca o primeiro agendamento do dia para este profissional
                     const primeiroAgendamento = await db.booking.findFirst({
@@ -80,34 +82,33 @@ export async function GET(req: Request) {
 
                         await sendPushNotification(sub.userId, titulo, corpo, "/painel/agenda");
                         contagemNotificacoes++;
+                        notificationSent = true;
+                    }
+                }
+
+                // B) Se não é profissional ou não tem agenda, verifica se é um ADMINISTRADOR (Dono ou Equipe Admin)
+                if (!notificationSent) {
+                    const empresaDono = await db.company.findUnique({
+                        where: { ownerId: sub.userId },
+                        select: { id: true }
+                    });
+
+                    let isTeamAdmin = false;
+                    if (!empresaDono) {
+                        const member = await db.teamMember.findUnique({
+                            where: { clerkUserId: sub.userId },
+                            select: { role: true }
+                        });
+                        if (member?.role === "ADMIN") isTeamAdmin = true;
                     }
 
-                    // Regra: Se é funcionário/profissional, encerra aqui (mesmo que não tenha agenda)
-                    // Conforme solicitado: "se o administrador também for um funcionário, ele apenas recebe a mensagem dizendo qual é o primeiro compromisso do dia."
-                    continue;
-                }
+                    if (empresaDono || isTeamAdmin) {
+                        const titulo = "Bom dia! ☀️";
+                        const corpo = "Bom dia!!, venha conferir os agendamentos de hoje!";
 
-                // B) Se não é profissional, verifica se é um ADMINISTRADOR (Dono ou Equipe Admin)
-                const empresaDono = await db.company.findUnique({
-                    where: { ownerId: sub.userId },
-                    select: { id: true }
-                });
-
-                let isTeamAdmin = false;
-                if (!empresaDono) {
-                    const member = await db.teamMember.findUnique({
-                        where: { clerkUserId: sub.userId },
-                        select: { role: true }
-                    });
-                    if (member?.role === "ADMIN") isTeamAdmin = true;
-                }
-
-                if (empresaDono || isTeamAdmin) {
-                    const titulo = "Bom dia! ☀️";
-                    const corpo = "Bom dia!!, venha conferir os agendamentos de hoje!";
-
-                    await sendPushNotification(sub.userId, titulo, corpo, "/painel/agenda");
-                    contagemNotificacoes++;
+                        await sendPushNotification(sub.userId, titulo, corpo, "/painel/agenda");
+                        contagemNotificacoes++;
+                    }
                 }
 
             } catch (err) {
