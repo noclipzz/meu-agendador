@@ -134,7 +134,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   // 3. Gera os horários livres
   useEffect(() => {
-    if (empresa && servicoSelecionado) {
+    if (empresa && servicoSelecionado && profissionalSelecionado) {
       const diaSemana = dataSelecionada.getDay().toString();
       const diasTrabalho = empresa.workDays ? empresa.workDays.split(',') : [];
       if (!diasTrabalho.includes(diaSemana)) {
@@ -157,7 +157,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
       );
       setHorariosDisponiveis(slots);
     }
-  }, [agendamentosDoDia, empresa, servicoSelecionado, dataSelecionada]);
+  }, [agendamentosDoDia, empresa, servicoSelecionado, dataSelecionada, profissionalSelecionado, profissionais]);
 
   // 4. Salva o agendamento
   async function finalizar() {
