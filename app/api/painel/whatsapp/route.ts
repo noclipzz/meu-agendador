@@ -25,8 +25,8 @@ export async function GET(req: Request) {
     const serverUrl = targetCompany.evolutionServerUrl.replace(/\/$/, "");
     let instanceId = targetCompany.whatsappInstanceId;
 
-    let status = targetCompany.whatsappStatus;
-
+    let status = targetCompany.whatsappStatus || "DISCONNECTED";
+    let qrCode = "";
     if (instanceId) {
         try {
             const stateRes = await fetch(`${serverUrl}/instance/connectionState/${instanceId}`, {
@@ -35,7 +35,18 @@ export async function GET(req: Request) {
 
             if (stateRes.ok) {
                 const stateData = await stateRes.json();
-                status = stateData.instance?.state === 'open' ? 'CONNECTED' : (stateData.instance?.state === 'connecting' ? 'CONNECTING' : 'DISCONNECTED');
+                const state = stateData.instance?.state;
+                status = state === 'open' ? 'CONNECTED' : (state === 'connecting' ? 'CONNECTING' : 'DISCONNECTED');
+
+                if (status !== 'CONNECTED') {
+                    const connectRes = await fetch(`${serverUrl}/instance/connect/${instanceId}`, {
+                        headers: { 'apikey': targetCompany.evolutionApiKey }
+                    });
+                    if (connectRes.ok) {
+                        const connectData = await connectRes.json();
+                        qrCode = connectData.base64 || connectData.qrcode?.base64 || "";
+                    }
+                }
 
                 if (status !== targetCompany.whatsappStatus) {
                     await db.company.update({ where: { id: targetCompany.id }, data: { whatsappStatus: status } });
@@ -44,7 +55,7 @@ export async function GET(req: Request) {
                 status = 'DISCONNECTED';
             }
         } catch (e) {
-            console.error("Evolution check state error:", e);
+            console.log("Evolution check state error:", e);
         }
     }
 
@@ -52,6 +63,7 @@ export async function GET(req: Request) {
         configured: true,
         instanceId,
         status,
+        qrCode,
         whatsappMessage: targetCompany.whatsappMessage
     });
 }
