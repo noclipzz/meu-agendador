@@ -21,13 +21,22 @@ export async function GET(req: Request) {
             ownerId = userId;
         } else {
             // Tenta como Membro
-            const member = await prisma.teamMember.findUnique({
+            const member = await prisma.teamMember.findFirst({
                 where: { clerkUserId: userId },
                 include: { company: true }
             });
             if (member) {
                 companyId = member.companyId;
                 ownerId = member.company.ownerId;
+            } else {
+                const prof = await prisma.professional.findFirst({
+                    where: { userId },
+                    include: { company: true }
+                });
+                if (prof) {
+                    companyId = prof.companyId;
+                    ownerId = prof.company.ownerId;
+                }
             }
         }
 

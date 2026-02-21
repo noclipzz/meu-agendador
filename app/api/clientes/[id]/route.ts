@@ -18,8 +18,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (ownerCompany) {
       companyId = ownerCompany.id;
     } else {
-      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-      if (member) companyId = member.companyId;
+      const member = await prisma.teamMember.findFirst({ where: { clerkUserId: userId } });
+      if (member) {
+        companyId = member.companyId;
+      } else {
+        const prof = await prisma.professional.findFirst({ where: { userId } });
+        if (prof) companyId = prof.companyId;
+      }
     }
 
     if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });

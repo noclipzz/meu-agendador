@@ -22,8 +22,13 @@ export async function GET() {
       companyId = ownerCompany.id;
     } else {
       // 2. Tenta como Funcionário
-      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
-      if (member) companyId = member.companyId;
+      const member = await prisma.teamMember.findFirst({ where: { clerkUserId: userId } });
+      if (member) {
+        companyId = member.companyId;
+      } else {
+        const prof = await prisma.professional.findFirst({ where: { userId } });
+        if (prof) companyId = prof.companyId;
+      }
     }
 
     if (!companyId) return NextResponse.json([]);
