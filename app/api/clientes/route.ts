@@ -16,11 +16,18 @@ async function getCompanyId(userId: string) {
   if (companyOwner) return companyOwner.id;
 
   // 2. Se não for dono, tenta achar como MEMBRO DA EQUIPE
-  const teamMember = await prisma.teamMember.findUnique({
+  const teamMember = await prisma.teamMember.findFirst({
     where: { clerkUserId: userId },
     select: { companyId: true }
   });
   if (teamMember) return teamMember.companyId;
+
+  // 3. Tenta achar como PROFISSIONAL
+  const professional = await prisma.professional.findFirst({
+    where: { userId },
+    select: { companyId: true }
+  });
+  if (professional) return professional.companyId;
 
   return null;
 }
