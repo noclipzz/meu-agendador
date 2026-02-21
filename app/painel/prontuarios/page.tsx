@@ -55,7 +55,6 @@ export default function ProntuariosPage() {
     const [descricao, setDescricao] = useState("");
     const [campos, setCampos] = useState<FormField[]>([]);
     const [salvando, setSalvando] = useState(false);
-    const [showFieldPicker, setShowFieldPicker] = useState(false);
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
 
     useEffect(() => { carregarTemplates(); }, []);
@@ -93,7 +92,6 @@ export default function ProntuariosPage() {
             ...(type === "select" || type === "checkboxGroup" ? { options: [""] } : {})
         };
         setCampos([...campos, novoCampo]);
-        setShowFieldPicker(false);
     }
 
     function atualizarCampo(id: string, updates: Partial<FormField>) {
@@ -234,7 +232,7 @@ export default function ProntuariosPage() {
                                     </span>
                                     <input
                                         className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
-                                        placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Nome do campo (ex: Tipo de Cabelo/Pele)"}
+                                        placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Pergunta / Nome do campo (ex: Tipo de Cabelo/Pele)"}
                                         value={campo.label}
                                         onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
                                     />
@@ -308,30 +306,24 @@ export default function ProntuariosPage() {
                         </div>
                     ))}
 
-                    {/* BOTÃO ADICIONAR CAMPO */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowFieldPicker(!showFieldPicker)}
-                            className="w-full border-2 border-dashed dark:border-gray-700 p-4 rounded-2xl text-gray-400 font-bold text-sm hover:border-blue-500 hover:text-blue-500 transition flex items-center justify-center gap-2"
-                        >
-                            <Plus size={18} /> Adicionar Campo
-                        </button>
-
-                        {showFieldPicker && (
-                            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl shadow-2xl p-4 z-50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                                {FIELD_TYPES.map(ft => (
-                                    <button
-                                        key={ft.type}
-                                        onClick={() => adicionarCampo(ft.type)}
-                                        className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition text-left group"
-                                    >
-                                        <ft.icon size={20} className="mb-2 text-gray-400 group-hover:text-blue-500" />
-                                        <p className="font-bold text-sm dark:text-white">{ft.label}</p>
-                                        <p className="text-[10px] text-gray-400">{ft.desc}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
+                    {/* BOTÕES DE ADICIONAR CAMPO SEMPRE VISÍVEIS */}
+                    <div className="bg-blue-50/50 dark:bg-gray-800/30 p-5 rounded-3xl border-2 border-dashed border-blue-200 dark:border-gray-700">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Plus size={14} /> Adicionar Novo Campo à Ficha
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {FIELD_TYPES.map(ft => (
+                                <button
+                                    key={ft.type}
+                                    onClick={() => adicionarCampo(ft.type)}
+                                    className="p-3 rounded-2xl bg-white dark:bg-gray-800 border dark:border-gray-700 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+                                >
+                                    <ft.icon size={20} className="mb-2 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                    <p className="font-bold text-xs dark:text-white group-hover:text-blue-600 transition-colors">{ft.label}</p>
+                                    <p className="text-[9px] text-gray-400 mt-1 leading-tight">{ft.desc}</p>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

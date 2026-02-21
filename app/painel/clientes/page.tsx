@@ -558,12 +558,11 @@ export default function ClientesPage() {
             /* SEÇÕES */
             .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:2px; padding:14px 0 8px; border-bottom:2px solid #0d9488; margin-bottom:0; margin-top:12px; }
 
-            /* GRID DE CAMPOS - DUAS COLUNAS */
-            .fields-grid { display:grid; grid-template-columns:1fr 1fr; border-left:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
-            .field-item { padding:10px 14px; border-right:1px solid #e5e7eb; border-bottom:1px solid #e5e7eb; }
-            .field-item.full-width { grid-column: 1 / -1; }
-            .field-label { font-size:9px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
-            .field-value { font-size:13px; font-weight:700; color:#111827; word-break:break-word; }
+            /* GRID DE CAMPOS - UMA COLUNA */
+            .fields-grid { display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
+            .field-item { padding:14px; border-bottom:1px solid #e5e7eb; }
+            .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+            .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
 
             /* ASSINATURA */
             .signature { margin-top:60px; display:flex; justify-content:space-around; padding-top:20px; }
