@@ -78,16 +78,25 @@ export async function POST(req: Request) {
             // Split by : to remove multi-device suffix before cleaning digits
             const phoneStr = remoteJid?.split('@')[0]?.split(':')[0]?.replace(/\D/g, '');
 
-            const isConfirmOrYes = ['1', 'sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma'].includes(cleanMessage);
-            const isCancelTrigger = ['2', 'cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'].includes(cleanMessage);
-            // const phoneStr = remoteJid?.split('@')[0]?.split(':')[0]?.replace(/\D/g, ''); // This line was duplicated, removed.
+            // Extrair ID de referência de 4 dígitos (ex: "1A2B", "Ref: #1A2B", ou apenas responder "1A2B")
+            const refMatch = messageBody.match(/\b[a-zA-Z0-9]{4}\b/);
+            const shortIdRef = refMatch ? refMatch[0].toUpperCase() : null;
+
+            let intentWord = cleanMessage;
+            if (shortIdRef) {
+                intentWord = cleanMessage.replace(new RegExp(shortIdRef, 'i'), '').replace('#', '').trim();
+            }
+
+            let isConfirmOrYes = ['1', 'sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'].includes(intentWord);
+            let isCancelTrigger = ['2', 'cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'].includes(intentWord);
+
+            // Se enviou apenas a referência de 4 dígitos (ex: "ss8k"), assumimos como "Sim/Confirmar"
+            if (shortIdRef && !isConfirmOrYes && !isCancelTrigger && intentWord.replace(/[^a-z0-9]/g, '').length === 0) {
+                isConfirmOrYes = true;
+            }
 
             if (phoneStr && (isConfirmOrYes || isCancelTrigger)) {
                 const last8 = phoneStr.slice(-8);
-
-                // Extrair ID de referência caso exista (ex: resposta a "ref: #1A2B" ou o próprio usuário digitando "1 1A2B")
-                const refMatch = messageBody.match(/[a-zA-Z0-9]{4}/);
-                const shortIdRef = refMatch ? refMatch[0].toUpperCase() : null;
 
                 // Search for both pending and those currently in the confirmation-to-cancel step
                 const bookings = await db.booking.findMany({
