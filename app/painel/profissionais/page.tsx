@@ -455,8 +455,12 @@ export default function GestaoEquipe() {
                             <div className="mt-4 flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-tighter">
                                 <span>{atendimentos} atendimentos</span>
                                 <div className="flex gap-2">
-                                    <button onClick={(e) => prepararEdicao(e, p)} className="text-gray-400 hover:text-blue-500 transition"><Pencil size={16} /></button>
-                                    <button onClick={(e) => { e.stopPropagation(); deletar(p.id, p.name); }} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                                    {userRole === "ADMIN" && (
+                                        <>
+                                            <button onClick={(e) => prepararEdicao(e, p)} className="text-gray-400 hover:text-blue-500 transition"><Pencil size={16} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); deletar(p.id, p.name); }} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
