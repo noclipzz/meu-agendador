@@ -492,7 +492,7 @@ export default function ClientesPage() {
                 if (rows.length === 0) {
                     valor = '—';
                 } else {
-                    let tableHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 5px; font-size: 11px;"><thead><tr>';
+                    let tableHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr>';
                     cols.forEach(col => {
                         tableHtml += `<th style="border: 1px solid #e5e7eb; padding: 4px; background: #f9fafb; text-align: left; color:#6b7280;">${col}</th>`;
                     });
@@ -500,7 +500,7 @@ export default function ClientesPage() {
                     rows.forEach(row => {
                         tableHtml += '<tr>';
                         cols.forEach((_, i) => {
-                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px;">${row[i] || ''}</td>`;
+                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">${row[i] || ''}</td>`;
                         });
                         tableHtml += '</tr>';
                     });
@@ -1006,7 +1006,7 @@ export default function ClientesPage() {
                                                                     <div className="col-span-1 sm:col-span-3">
                                                                         <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case mb-2">{field.label}</p>
                                                                         <div className="overflow-x-auto w-full border dark:border-gray-700 rounded-xl">
-                                                                            <table className="w-full text-left border-collapse text-xs">
+                                                                            <table className="w-full text-left border-collapse text-xs table-fixed">
                                                                                 <thead>
                                                                                     <tr className="bg-gray-50 dark:bg-gray-800/50">
                                                                                         {(field.options as string[] || []).map((col, i) => (
@@ -1018,7 +1018,7 @@ export default function ClientesPage() {
                                                                                     {(Array.isArray(valor) ? valor : []).map((row: string[], ri: number) => (
                                                                                         <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
                                                                                             {(field.options as string[] || []).map((_, ci) => (
-                                                                                                <td key={ci} className="border-r dark:border-gray-700/50 last:border-0 p-2 px-3 dark:text-gray-300 font-medium">{row[ci] || ''}</td>
+                                                                                                <td key={ci} className="border-r dark:border-gray-700/50 last:border-0 p-2 px-3 dark:text-gray-300 font-medium break-words whitespace-pre-wrap">{row[ci] || ''}</td>
                                                                                             ))}
                                                                                         </tr>
                                                                                     ))}
