@@ -8,14 +8,18 @@ interface AgendaContextType {
   refreshAgenda: () => void;
   companyId: string | null;
   setCompanyId: Dispatch<SetStateAction<string | null>>;
+  userRole: string;
+  setUserRole: Dispatch<SetStateAction<string>>;
 }
 
 // Cria o contexto com valores iniciais vazios
 const AgendaContext = createContext<AgendaContextType>({
   refreshKey: 0,
-  refreshAgenda: () => {},
+  refreshAgenda: () => { },
   companyId: null,
-  setCompanyId: () => {},
+  setCompanyId: () => { },
+  userRole: "PROFESSIONAL",
+  setUserRole: () => { },
 });
 
 // Um atalho para usar o contexto mais facilmente
@@ -25,6 +29,7 @@ export const useAgenda = () => useContext(AgendaContext);
 export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState("PROFESSIONAL");
 
   // Função para "avisar" a agenda que ela precisa recarregar
   const refreshAgenda = useCallback(() => {
@@ -32,7 +37,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // O valor que será compartilhado com todos os componentes filhos
-  const value = { refreshKey, refreshAgenda, companyId, setCompanyId };
+  const value = { refreshKey, refreshAgenda, companyId, setCompanyId, userRole, setUserRole };
 
   return (
     <AgendaContext.Provider value={value}>

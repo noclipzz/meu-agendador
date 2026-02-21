@@ -35,7 +35,7 @@ const formatarCEP = (value: string) => {
 };
 
 export default function GestaoEquipe() {
-    const { refreshAgenda } = useAgenda();
+    const { refreshAgenda, userRole } = useAgenda();
     const [loading, setLoading] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [userPlan, setUserPlan] = useState<string>("INDIVIDUAL"); // Detecta o plano do usuário
@@ -409,20 +409,22 @@ export default function GestaoEquipe() {
                     </h1>
                     <p className="text-gray-500 text-sm font-medium">Cadastre seus colaboradores para liberar o acesso ao sistema.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        // Verifica limite do plano INDIVIDUAL
-                        if (userPlan === "INDIVIDUAL" && profissionais.length >= 1) {
-                            toast.error("O plano INDIVIDUAL permite apenas 1 profissional. Faça upgrade para PREMIUM.");
-                            return;
-                        }
-                        setModalAberto(true);
-                    }}
-                    className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
-                >
-                    <Plus size={20} /> Novo Profissional
-                    {userPlan === "INDIVIDUAL" && <span className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full ml-2">Máx: {profissionais.length}/1</span>}
-                </button>
+                {userRole === "ADMIN" && (
+                    <button
+                        onClick={() => {
+                            // Verifica limite do plano INDIVIDUAL
+                            if (userPlan === "INDIVIDUAL" && profissionais.length >= 1) {
+                                toast.error("O plano INDIVIDUAL permite apenas 1 profissional. Faça upgrade para PREMIUM.");
+                                return;
+                            }
+                            setModalAberto(true);
+                        }}
+                        className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
+                    >
+                        <Plus size={20} /> Novo Profissional
+                        {userPlan === "INDIVIDUAL" && <span className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full ml-2">Máx: {profissionais.length}/1</span>}
+                    </button>
+                )}
             </div>
 
             {/* LISTA DE CARDS */}
@@ -497,8 +499,12 @@ export default function GestaoEquipe() {
                                     <button onClick={() => setAbaAtiva("DADOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DADOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><UserCircle size={14} /> Dados</button>
                                     <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DOCUMENTOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><FileText size={14} /> Documentos</button>
                                 </div>
-                                <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
-                                <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                                <div className="flex gap-2 relative z-10 shrink-0">
+                                    {userRole === "ADMIN" && (
+                                        <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
+                                    )}
+                                    <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                                </div>
                             </div>
                         </div>
 
@@ -543,7 +549,9 @@ export default function GestaoEquipe() {
                                                 <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Login Vinculado</label><div className="flex items-center gap-2">{proSelecionado.userId ? <><Check size={16} className="text-green-500" /><span className="text-sm font-bold text-green-600 uppercase">Sim</span></> : <><X size={16} className="text-red-500" /><span className="text-sm font-bold text-red-500 uppercase">Não</span></>}</div></div>
                                                 <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">E-mail</label><p className="text-xs font-bold dark:text-white break-all">{proSelecionado.email || "---"}</p></div>
                                             </div>
-                                            <button onClick={() => { if (confirm("Remover membro?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
+                                            {userRole === "ADMIN" && (
+                                                <button onClick={() => { if (confirm("Remover membro?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -576,9 +584,11 @@ export default function GestaoEquipe() {
                                         <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
                                             <div className="flex justify-between items-center mb-6">
                                                 <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Anotações Internas</h4>
-                                                <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                                    <Plus size={14} />
-                                                </button>
+                                                {userRole === "ADMIN" && (
+                                                    <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                                        <Plus size={14} />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {mostrarInputObs && (
