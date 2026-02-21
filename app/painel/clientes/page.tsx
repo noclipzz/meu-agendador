@@ -485,12 +485,36 @@ export default function ClientesPage() {
                 currentSection = { header: field.label, items: [] };
                 return;
             }
-            let valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
-                field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
-                    data[field.id] || '—';
+            let valor = '';
+            if (field.type === 'table') {
+                const rows = data[field.id] as string[][] || [];
+                const cols = field.options as string[] || [];
+                if (rows.length === 0) {
+                    valor = '—';
+                } else {
+                    let tableHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 5px; font-size: 11px;"><thead><tr>';
+                    cols.forEach(col => {
+                        tableHtml += `<th style="border: 1px solid #e5e7eb; padding: 4px; background: #f9fafb; text-align: left; color:#6b7280;">${col}</th>`;
+                    });
+                    tableHtml += '</tr></thead><tbody>';
+                    rows.forEach(row => {
+                        tableHtml += '<tr>';
+                        cols.forEach((_, i) => {
+                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px;">${row[i] || ''}</td>`;
+                        });
+                        tableHtml += '</tr>';
+                    });
+                    tableHtml += '</tbody></table>';
+                    valor = tableHtml;
+                }
+            } else {
+                valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
+                    field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
+                        data[field.id] || '—';
 
-            if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
-                valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
+                if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
+                    valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
+                }
             }
 
             currentSection.items.push({ label: field.label, value: String(valor) });
@@ -978,21 +1002,49 @@ export default function ClientesPage() {
                                                         if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
                                                         return (
                                                             <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b dark:border-gray-800/50">
-                                                                <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case">{field.label}</p>
-                                                                <p className="text-sm font-bold dark:text-white sm:col-span-2">
-                                                                    {field.type === 'checkbox' ? (
-                                                                        <span>
-                                                                            {valor ? '✅ Sim' : '❌ Não'}
-                                                                            {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
-                                                                                <span className="text-gray-400 font-normal ml-2 italic">
-                                                                                    ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
+                                                                {field.type === 'table' ? (
+                                                                    <div className="col-span-1 sm:col-span-3">
+                                                                        <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case mb-2">{field.label}</p>
+                                                                        <div className="overflow-x-auto w-full border dark:border-gray-700 rounded-xl">
+                                                                            <table className="w-full text-left border-collapse text-xs">
+                                                                                <thead>
+                                                                                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                                                                                        {(field.options as string[] || []).map((col, i) => (
+                                                                                            <th key={i} className="border-b dark:border-gray-700 p-2 px-3 font-bold text-gray-500 uppercase">{col}</th>
+                                                                                        ))}
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {(Array.isArray(valor) ? valor : []).map((row: string[], ri: number) => (
+                                                                                        <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                                                                                            {(field.options as string[] || []).map((_, ci) => (
+                                                                                                <td key={ci} className="border-r dark:border-gray-700/50 last:border-0 p-2 px-3 dark:text-gray-300 font-medium">{row[ci] || ''}</td>
+                                                                                            ))}
+                                                                                        </tr>
+                                                                                    ))}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case">{field.label}</p>
+                                                                        <p className="text-sm font-bold dark:text-white sm:col-span-2">
+                                                                            {field.type === 'checkbox' ? (
+                                                                                <span>
+                                                                                    {valor ? '✅ Sim' : '❌ Não'}
+                                                                                    {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
+                                                                                        <span className="text-gray-400 font-normal ml-2 italic">
+                                                                                            ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
+                                                                                        </span>
+                                                                                    )}
                                                                                 </span>
-                                                                            )}
-                                                                        </span>
-                                                                    ) :
-                                                                        field.type === 'checkboxGroup' ? (Array.isArray(valor) ? valor.join(', ') : '---') :
-                                                                            valor || '---'}
-                                                                </p>
+                                                                            ) :
+                                                                                field.type === 'checkboxGroup' ? (Array.isArray(valor) ? valor.join(', ') : '---') :
+                                                                                    valor || '---'}
+                                                                        </p>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         );
                                                     })}
@@ -1354,6 +1406,56 @@ export default function ClientesPage() {
                                                                     <span className="font-bold dark:text-white">{opt}</span>
                                                                 </label>
                                                             ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {field.type === 'table' && (
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                        <div className="overflow-x-auto border-2 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                                                            <table className="w-full text-left border-collapse text-sm">
+                                                                <thead>
+                                                                    <tr className="bg-gray-50 dark:bg-gray-800/50">
+                                                                        {field.options?.map((col: string, i: number) => <th key={i} className="p-3 font-black text-xs text-gray-500 uppercase tracking-widest border-b dark:border-gray-700">{col}</th>)}
+                                                                        <th className="p-3 border-b dark:border-gray-700 w-10"></th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {(prontuarioFormData[field.id] as string[][] || []).map((row: string[], ri: number) => (
+                                                                        <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
+                                                                            {field.options?.map((_: string, ci: number) => (
+                                                                                <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0">
+                                                                                    <input
+                                                                                        className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition"
+                                                                                        value={row[ci] || ''}
+                                                                                        onChange={e => {
+                                                                                            const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
+                                                                                            if (!arr[ri]) arr[ri] = [];
+                                                                                            arr[ri][ci] = e.target.value;
+                                                                                            setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
+                                                                                        }}
+                                                                                        placeholder={`---`}
+                                                                                    />
+                                                                                </td>
+                                                                            ))}
+                                                                            <td className="p-2 text-center">
+                                                                                <button onClick={() => {
+                                                                                    const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
+                                                                                    arr.splice(ri, 1);
+                                                                                    setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
+                                                                                }} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                            <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border-t dark:border-gray-700">
+                                                                <button onClick={() => {
+                                                                    const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
+                                                                    arr.push(new Array(field.options?.length || 0).fill(''));
+                                                                    setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
+                                                                }} className="text-xs font-bold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-3 py-2 rounded-xl transition flex items-center gap-2 inline-flex"><Plus size={14} /> Adicionar Linha</button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )}
