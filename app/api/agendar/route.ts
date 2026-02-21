@@ -316,12 +316,12 @@ export async function POST(req: Request) {
                 ? `Evento: "${name}" para ${dataFormatada}`
                 : `${name} solicitou ${nomeServico} para ${dataFormatada}`;
 
-            // Notifica Admins (Apenas se for CLIENTE agendando)
-            if (!isInternalUser) {
+            // Notifica Admins (Apenas se for CLIENTE externo agendando)
+            if (!userId) {
                 await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
             }
 
-            // Notifica Profissionais específicos (SEMPRE, exceto se for o próprio profissional agendando para si mesmo - opcional, mas vamos manter simples por enquanto)
+            // Notifica Profissionais específicos
             const notificationTargets = targetProfessionalIds.filter(id => id !== null) as string[];
             for (const proId of notificationTargets) {
                 // Evita notificar o próprio usuário se ele for o profissional agendado
@@ -344,28 +344,29 @@ export async function POST(req: Request) {
         // C) WHATSAPP - EVOLUTION API (Se estiver conectado e for plano MASTER)
         if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
             try {
-                // Generate short ID for message tracking
-                const shortId = bookingsCreated[0].id.split('-')[0].substring(0, 4).toUpperCase();
+                for (const booking of bookingsCreated) {
+                    // Generate short ID for message tracking
+                    const shortId = booking.id.split('-')[0].substring(0, 4).toUpperCase();
 
-                const messageText = company.whatsappMessage
-                    ? company.whatsappMessage
-                        .replace(/\\n/g, '\n')
-                        .replace("{nome}", name)
-                        .replace("{dia}", formatarDiaExtenso(new Date(date)))
-                        .replace("{servico}", nomeServico)
-                        .replace("{hora}", formatarHorario(new Date(date)))
-                    + `\n\n*(Ref: #${shortId})*`
-                    : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.\n\nDigite *1* ou *Sim* para Confirmar ou *2* para Cancelar.\n*(Ref: #${shortId})*`;
+                    const messageText = company.whatsappMessage
+                        ? company.whatsappMessage
+                            .replace(/\\n/g, '\n')
+                            .replace("{nome}", name)
+                            .replace("{dia}", formatarDiaExtenso(new Date(booking.date)))
+                            .replace("{servico}", nomeServico)
+                            .replace("{hora}", formatarHorario(new Date(booking.date)))
+                        + `\n\n*(Ref: #${shortId})*`
+                        : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nDigite *1* ou *Sim* para Confirmar ou *2* para Cancelar.\n*(Ref: #${shortId})*`;
 
-                // Post Request (Agora usando await para garantir entrega no serverless)
-                await sendEvolutionMessage(
-                    company.evolutionServerUrl,
-                    company.evolutionApiKey,
-                    company.whatsappInstanceId,
-                    phone,
-                    messageText
-                );
-
+                    // Post Request (Agora usando await para garantir entrega no serverless)
+                    await sendEvolutionMessage(
+                        company.evolutionServerUrl,
+                        company.evolutionApiKey,
+                        company.whatsappInstanceId,
+                        phone,
+                        messageText
+                    );
+                }
             } catch (wppErr) {
                 console.error("Erro preparando webhook whatsapp:", wppErr);
             }
