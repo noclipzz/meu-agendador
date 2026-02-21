@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 import { Plus, Search, Briefcase, Trash2, Save, X, Pencil, Beaker } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { useAgenda } from "../../../contexts/AgendaContext";
 
 export default function ServicosPage() {
+    const { userRole } = useAgenda();
     const [servicos, setServicos] = useState<any[]>([]);
     const [estoque, setEstoque] = useState<any[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
@@ -139,7 +141,9 @@ export default function ServicosPage() {
         <div className="p-6 space-y-6 pb-20 font-sans">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-black text-gray-800 dark:text-white">Meus Serviços</h1>
-                <button onClick={() => abrirModal()} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><Plus size={20} /> Novo Serviço</button>
+                {userRole === "ADMIN" && (
+                    <button onClick={() => abrirModal()} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><Plus size={20} /> Novo Serviço</button>
+                )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-2 rounded-2xl border dark:border-gray-700 flex items-center gap-3 shadow-sm">
@@ -153,10 +157,12 @@ export default function ServicosPage() {
                         <div className="flex justify-between items-start mb-4">
                             {/* ÍCONE GENÉRICO (MALETA) */}
                             <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl flex items-center justify-center"><Briefcase size={24} /></div>
-                            <div className="flex gap-2">
-                                <button onClick={() => abrirModal(s)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-blue-600 transition"><Pencil size={16} /></button>
-                                <button onClick={() => setServicoParaExcluir(s.id)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-red-600 transition"><Trash2 size={16} /></button>
-                            </div>
+                            {userRole === "ADMIN" && (
+                                <div className="flex gap-2">
+                                    <button onClick={() => abrirModal(s)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-blue-600 transition"><Pencil size={16} /></button>
+                                    <button onClick={() => setServicoParaExcluir(s.id)} className="p-2 bg-gray-50 dark:bg-gray-700 rounded-xl hover:text-red-600 transition"><Trash2 size={16} /></button>
+                                </div>
+                            )}
                         </div>
                         <h3 className="font-black text-lg dark:text-white uppercase truncate">{s.name}</h3>
                         <p className="text-sm font-bold text-gray-400">{s.duration || 30} min • Comissão: {s.commission || 0}%</p>
