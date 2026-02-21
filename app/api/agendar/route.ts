@@ -344,6 +344,9 @@ export async function POST(req: Request) {
         // C) WHATSAPP - EVOLUTION API (Se estiver conectado e for plano MASTER)
         if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
             try {
+                // Generate short ID for message tracking
+                const shortId = bookingsCreated[0].id.split('-')[0].substring(0, 4).toUpperCase();
+
                 const messageText = company.whatsappMessage
                     ? company.whatsappMessage
                         .replace(/\\n/g, '\n')
@@ -351,7 +354,8 @@ export async function POST(req: Request) {
                         .replace("{dia}", formatarDiaExtenso(new Date(date)))
                         .replace("{servico}", nomeServico)
                         .replace("{hora}", formatarHorario(new Date(date)))
-                    : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.`;
+                    + `\n\n*(Ref: #${shortId})*`
+                    : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(date))} às ${formatarHorario(new Date(date))}.\n\nDigite *1* ou *Sim* para Confirmar ou *2* para Cancelar.\n*(Ref: #${shortId})*`;
 
                 // Post Request (Agora usando await para garantir entrega no serverless)
                 await sendEvolutionMessage(

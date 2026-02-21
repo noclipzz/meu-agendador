@@ -84,6 +84,11 @@ export async function POST(req: Request) {
 
             if (phoneStr && (isConfirmOrYes || isCancelTrigger)) {
                 const last8 = phoneStr.slice(-8);
+
+                // Extrair ID de referência caso exista (ex: resposta a "ref: #1A2B" ou o próprio usuário digitando "1 1A2B")
+                const refMatch = messageBody.match(/[a-zA-Z0-9]{4}/);
+                const shortIdRef = refMatch ? refMatch[0].toUpperCase() : null;
+
                 // Search for both pending and those currently in the confirmation-to-cancel step
                 const bookings = await db.booking.findMany({
                     where: {
@@ -94,7 +99,34 @@ export async function POST(req: Request) {
                     include: { service: true }
                 });
 
-                const booking = bookings.find(b => (b.customerPhone?.replace(/\D/g, '') || "").endsWith(last8));
+                // Filtrar os agendamentos do cliente pelo telefone
+                const customerBookings = bookings.filter(b => (b.customerPhone?.replace(/\D/g, '') || "").endsWith(last8));
+
+                let booking = null;
+
+                if (customerBookings.length > 0) {
+                    if (shortIdRef && customerBookings.length > 1) {
+                        // Se o cliente tem mais de um e passou o ID na mensagem
+                        booking = customerBookings.find(b => b.id.toUpperCase().startsWith(shortIdRef)) || customerBookings[0];
+                    } else if (customerBookings.length > 1 && !shortIdRef) {
+                        // Se ele tem mais de um pendente mas NÃO informou o ID (apenas respondeu 1 ou 2)
+                        // Vamos enviar uma mensagem pedindo para especificar
+                        const serverUrl = company.evolutionServerUrl!;
+                        const apiKey = company.evolutionApiKey!;
+
+                        let listStr = customerBookings.map(b =>
+                            `*Ref: #${b.id.split('-')[0].substring(0, 4).toUpperCase()}* - ${b.service?.name} dia ${formatarDiaExtenso(b.date)} às ${formatarHorario(b.date)}`
+                        ).join('\n');
+
+                        const msgClarify = `Olá! Localizamos mais de um agendamento pendente para o seu número.\n\nPor favor, responda com o *número de Referência (Ref)* ou os 4 dígitos correspondentes ao agendamento que deseja Confirmar ou Cancelar:\n\n${listStr}`;
+
+                        await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgClarify);
+                        return NextResponse.json({ received: true });
+                    } else {
+                        // Só tem um agendamento, usa ele
+                        booking = customerBookings[0];
+                    }
+                }
 
                 if (booking) {
                     const serverUrl = company.evolutionServerUrl!;
