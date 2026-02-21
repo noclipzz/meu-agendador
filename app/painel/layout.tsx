@@ -32,11 +32,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     const router = useRouter();
-    const { refreshAgenda, companyId, setCompanyId } = useAgenda();
+    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
-    const [userRole, setUserRole] = useState<"ADMIN" | "PROFESSIONAL">("PROFESSIONAL");
     const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag se é o dono real
     const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares

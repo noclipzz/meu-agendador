@@ -13,6 +13,7 @@ import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
+import { useAgenda } from "@/contexts/AgendaContext";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
@@ -80,6 +81,7 @@ export default function ClientesPage() {
     // Query params para integração com a agenda
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { userRole } = useAgenda(); // Pegando role
     const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
     async function handleCEPChange(cep: string) {
@@ -644,7 +646,9 @@ export default function ClientesPage() {
         <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
             <div className="flex justify-between items-center px-2">
                 <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Gestão de Clientes</h1>
-                <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
+                {userRole === "ADMIN" && (
+                    <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
+                )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 p-2 rounded-2xl border dark:border-gray-700 flex items-center gap-3 shadow-sm mx-2">
@@ -702,8 +706,12 @@ export default function ClientesPage() {
                             </div>
                             {/* BOTÕES DE AÇÃO: EDITAR, EXCLUIR, FECHAR */}
                             <div className="flex gap-2 w-full md:w-auto justify-end">
-                                <button onClick={() => abrirEdicao(clienteSelecionado)} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm flex items-center justify-center" title="Editar"><Pencil size={18} className="md:size-5" /></button>
-                                <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center" title="Excluir"><Trash2 size={18} className="md:size-5" /></button>
+                                {userRole === "ADMIN" && (
+                                    <>
+                                        <button onClick={() => abrirEdicao(clienteSelecionado)} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm flex items-center justify-center" title="Editar"><Pencil size={18} className="md:size-5" /></button>
+                                        <button onClick={() => setConfirmarExclusao({ id: clienteSelecionado.id, tipo: 'CLIENTE' })} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-red-50 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center" title="Excluir"><Trash2 size={18} className="md:size-5" /></button>
+                                    </>
+                                )}
                                 <button onClick={() => setClienteSelecionado(null)} className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center" title="Fechar"><X size={18} className="md:size-5" /></button>
                             </div>
                         </div>
@@ -751,9 +759,11 @@ export default function ClientesPage() {
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
                                                     <Plus size={14} /> Notas e Observações
                                                 </h4>
-                                                <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
-                                                    <Plus size={14} />
-                                                </button>
+                                                {userRole === "ADMIN" && (
+                                                    <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm">
+                                                        <Plus size={14} />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {mostrarInputObs && (
@@ -788,20 +798,24 @@ export default function ClientesPage() {
                                                             <div className="flex justify-between items-start gap-4">
                                                                 <p className="flex-1 leading-relaxed italic">{n}</p>
                                                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                                                    <button
-                                                                        onClick={() => setEditandoNota({ index: i, text: n })}
-                                                                        className="text-blue-400 hover:text-blue-500 p-1"
-                                                                        title="Editar nota"
-                                                                    >
-                                                                        <Pencil size={14} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => { if (confirm("Deseja excluir esta nota?")) deletarNota(i); }}
-                                                                        className="text-red-400 hover:text-red-500 p-1"
-                                                                        title="Excluir nota"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                    </button>
+                                                                    {userRole === "ADMIN" && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => setEditandoNota({ index: i, text: n })}
+                                                                                className="text-blue-400 hover:text-blue-500 p-1"
+                                                                                title="Editar nota"
+                                                                            >
+                                                                                <Pencil size={14} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => { if (confirm("Deseja excluir esta nota?")) deletarNota(i); }}
+                                                                                className="text-red-400 hover:text-red-500 p-1"
+                                                                                title="Excluir nota"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </button>
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -895,10 +909,12 @@ export default function ClientesPage() {
                             {abaAtiva === "ANEXOS" && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <div className="flex justify-between items-center px-2"><h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2"><Plus size={18} /> Documentos e Fotos</h4>
-                                        <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
-                                            {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
-                                            <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
-                                        </label>
+                                        {userRole === "ADMIN" && (
+                                            <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
+                                                {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
+                                                <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
+                                            </label>
+                                        )}
                                     </div>
                                     {loadingDetalhes && !clienteSelecionado.attachments ? (
                                         <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>
@@ -926,7 +942,12 @@ export default function ClientesPage() {
                                                             <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">{file.type.includes('image') ? <ImageIcon size={20} className="md:size-6" /> : <FileText size={20} className="md:size-6" />}</div>
                                                             <div className="min-w-0"><p className="font-black text-xs md:text-sm uppercase dark:text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] font-bold text-gray-400 uppercase">{format(new Date(file.createdAt), "dd MMM yyyy")}</p></div>
                                                         </div>
-                                                        <div className="flex gap-1 md:gap-2 shrink-0"><a href={file.url} target="_blank" className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={16} className="md:size-[18px]" /></a><button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={16} className="md:size-[18px]" /></button></div>
+                                                        <div className="flex gap-1 md:gap-2 shrink-0">
+                                                            <a href={file.url} target="_blank" className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition"><Download size={16} className="md:size-[18px]" /></a>
+                                                            {userRole === "ADMIN" && (
+                                                                <button onClick={() => setConfirmarExclusao({ id: file.id, tipo: 'ANEXO' })} className="p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition"><Trash2 size={16} className="md:size-[18px]" /></button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
                                             </div>
@@ -1018,7 +1039,9 @@ export default function ClientesPage() {
                                                                             <button onClick={() => setProntuarioVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
                                                                             <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); setModalProntuarioAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
                                                                             <button onClick={() => imprimirProntuario(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
-                                                                            <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
+                                                                            {userRole === "ADMIN" && (
+                                                                                <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 ))}
