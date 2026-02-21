@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { useAgenda } from "../../../contexts/AgendaContext";
 
 type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number";
 
@@ -43,6 +44,7 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
 ];
 
 export default function ProntuariosPage() {
+    const { userRole } = useAgenda();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -354,9 +356,11 @@ export default function ProntuariosPage() {
                     <h1 className="text-3xl font-black text-gray-800 dark:text-white">Fichas Técnicas</h1>
                     <p className="text-sm text-gray-500">Crie formulários personalizados para seus acompanhamentos.</p>
                 </div>
-                <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
-                    <Plus size={20} /> Nova Ficha Técnica
-                </button>
+                {userRole === "ADMIN" && (
+                    <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                        <Plus size={20} /> Nova Ficha Técnica
+                    </button>
+                )}
             </div>
 
             {templates.length === 0 ? (
@@ -369,9 +373,11 @@ export default function ProntuariosPage() {
                         Crie um formulário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
                         preencher durante o acompanhamento do cliente.
                     </p>
-                    <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
-                        <Plus size={20} /> Criar Primeiro Formulário
-                    </button>
+                    {userRole === "ADMIN" && (
+                        <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                            <Plus size={20} /> Criar Primeiro Formulário
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -381,14 +387,16 @@ export default function ProntuariosPage() {
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
                                     <FileText size={22} />
                                 </div>
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                    <button onClick={() => editarTemplate(t)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition">
-                                        <Pencil size={14} />
-                                    </button>
-                                    <button onClick={() => setTemplateParaExcluir(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
+                                {userRole === "ADMIN" && (
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button onClick={() => editarTemplate(t)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition">
+                                            <Pencil size={14} />
+                                        </button>
+                                        <button onClick={() => setTemplateParaExcluir(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <h3 className="font-black text-lg dark:text-white mb-1">{t.name}</h3>
                             {t.description && <p className="text-xs text-gray-500 mb-3">{t.description}</p>}
@@ -410,6 +418,6 @@ export default function ProntuariosPage() {
                 message="Tem certeza que deseja excluir este modelo? Esta ação não pode ser desfeita."
                 isDeleting={true}
             />
-        </div>
+        </div >
     );
 }

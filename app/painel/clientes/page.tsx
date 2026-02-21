@@ -909,12 +909,10 @@ export default function ClientesPage() {
                             {abaAtiva === "ANEXOS" && (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <div className="flex justify-between items-center px-2"><h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2"><Plus size={18} /> Documentos e Fotos</h4>
-                                        {userRole === "ADMIN" && (
-                                            <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
-                                                {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
-                                                <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
-                                            </label>
-                                        )}
+                                        <label className="bg-purple-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase cursor-pointer hover:bg-purple-700 transition flex items-center gap-2 shadow-lg">
+                                            {salvandoAnexo ? <Loader2 className="animate-spin" size={16} /> : <UploadCloud size={16} />}{salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
+                                            <input type="file" className="hidden" onChange={handleUploadAnexo} accept=".pdf,image/*" disabled={salvandoAnexo} />
+                                        </label>
                                     </div>
                                     {loadingDetalhes && !clienteSelecionado.attachments ? (
                                         <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-purple-600 mb-2" /> <p className="text-[10px] uppercase text-gray-400 font-bold">Buscando arquivos...</p></div>

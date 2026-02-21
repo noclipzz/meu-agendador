@@ -10,22 +10,19 @@ export async function GET() {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-        // VERIFICA PLANO
-        const sub = await db.subscription.findUnique({ where: { userId } });
+        let company = await db.company.findUnique({ where: { ownerId: userId } });
+        if (!company) {
+            const prof = await db.professional.findFirst({ where: { userId }, include: { company: true } });
+            if (prof && prof.company) company = prof.company;
+        }
+
+        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        // VERIFICA PLANO VIA OWNER DA EMPRESA
+        const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
             return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
         }
-
-        const company = await db.company.findFirst({
-            where: {
-                OR: [
-                    { ownerId: userId },
-                    { professionals: { some: { userId } } }
-                ]
-            }
-        });
-
-        if (!company) return NextResponse.json([]);
 
         const templates = await db.formTemplate.findMany({
             where: { companyId: company.id },
@@ -46,14 +43,19 @@ export async function POST(req: Request) {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-        // VERIFICA PLANO
-        const sub = await db.subscription.findUnique({ where: { userId } });
+        let company = await db.company.findUnique({ where: { ownerId: userId } });
+        if (!company) {
+            const prof = await db.professional.findFirst({ where: { userId }, include: { company: true } });
+            if (prof && prof.company) company = prof.company;
+        }
+
+        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        // VERIFICA PLANO VIA OWNER DA EMPRESA
+        const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
             return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
         }
-
-        const company = await db.company.findUnique({ where: { ownerId: userId } });
-        if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const body = await req.json();
         const { name, description, fields } = body;
