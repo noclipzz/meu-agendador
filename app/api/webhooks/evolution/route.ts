@@ -107,7 +107,7 @@ export async function POST(req: Request) {
                 if (customerBookings.length > 0) {
                     if (shortIdRef && customerBookings.length > 1) {
                         // Se o cliente tem mais de um e passou o ID na mensagem
-                        booking = customerBookings.find(b => b.id.toUpperCase().startsWith(shortIdRef)) || customerBookings[0];
+                        booking = customerBookings.find(b => b.id.toUpperCase().endsWith(shortIdRef)) || customerBookings[0];
                     } else if (customerBookings.length > 1 && !shortIdRef) {
                         // Se ele tem mais de um pendente mas NÃO informou o ID (apenas respondeu 1 ou 2)
                         // Vamos enviar uma mensagem pedindo para especificar
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
                         const apiKey = company.evolutionApiKey!;
 
                         let listStr = customerBookings.map(b =>
-                            `*Ref: #${b.id.split('-')[0].substring(0, 4).toUpperCase()}* - ${b.service?.name} dia ${formatarDiaExtenso(b.date)} às ${formatarHorario(b.date)}`
+                            `*Ref: #${b.id.slice(-4).toUpperCase()}* - ${b.service?.name} dia ${formatarDiaExtenso(b.date)} às ${formatarHorario(b.date)}`
                         ).join('\n');
 
                         const msgClarify = `Olá! Localizamos mais de um agendamento pendente para o seu número.\n\nPor favor, responda com o *número de Referência (Ref)* ou os 4 dígitos correspondentes ao agendamento que deseja Confirmar ou Cancelar:\n\n${listStr}`;
