@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import {
     Plus, Trash2, Save, GripVertical, X, FileText, ChevronDown,
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
-    Heading, Loader2, Pencil, Copy, ClipboardList
+    Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
-type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number";
+type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number" | "table";
 
 interface FormField {
     id: string;
@@ -41,6 +41,7 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
     { type: "checkboxGroup", label: "Múltipla Escolha", icon: CheckSquare, desc: "Vários itens" },
     { type: "date", label: "Data", icon: Calendar, desc: "Calendário" },
     { type: "number", label: "Número", icon: Hash, desc: "Valor numérico" },
+    { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas definidas" },
 ];
 
 export default function ProntuariosPage() {
@@ -89,7 +90,7 @@ export default function ProntuariosPage() {
             type,
             label: "",
             required: false,
-            ...(type === "select" || type === "checkboxGroup" ? { options: [""] } : {})
+            ...(type === "select" || type === "checkboxGroup" || type === "table" ? { options: [""] } : {})
         };
         setCampos([...campos, novoCampo]);
     }
@@ -249,24 +250,26 @@ export default function ProntuariosPage() {
                                     )}
                                 </div>
 
-                                {/* OPÇÕES PARA SELECT E CHECKBOX GROUP */}
-                                {(campo.type === "select" || campo.type === "checkboxGroup") && (
-                                    <div className="pl-4 space-y-2">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase">Opções:</p>
+                                {/* OPÇÕES PARA SELECT, CHECKBOX GROUP E TABELA (COLUNAS) */}
+                                {(campo.type === "select" || campo.type === "checkboxGroup" || campo.type === "table") && (
+                                    <div className="pl-4 space-y-2 border-l-2 border-blue-100 dark:border-gray-800 ml-1 py-1">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase">
+                                            {campo.type === "table" ? "Colunas da Tabela:" : "Opções:"}
+                                        </p>
                                         {campo.options?.map((opt, i) => (
                                             <div key={i} className="flex gap-2 items-center">
                                                 <span className="text-[10px] text-gray-400 font-bold w-5">{i + 1}.</span>
                                                 <input
                                                     className="flex-1 border dark:border-gray-700 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm outline-none dark:text-white"
-                                                    placeholder={`Opção ${i + 1}`}
+                                                    placeholder={campo.type === "table" ? `Nome da Coluna ${i + 1}` : `Opção ${i + 1}`}
                                                     value={opt}
                                                     onChange={e => updateOption(campo.id, i, e.target.value)}
                                                 />
                                                 <button onClick={() => removeOption(campo.id, i)} className="text-red-400 hover:text-red-600 transition"><X size={14} /></button>
                                             </div>
                                         ))}
-                                        <button onClick={() => addOption(campo.id)} className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
-                                            <Plus size={12} /> Adicionar opção
+                                        <button onClick={() => addOption(campo.id)} className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1 mt-2">
+                                            <Plus size={12} /> {campo.type === "table" ? "Adicionar Coluna" : "Adicionar Opção"}
                                         </button>
                                     </div>
                                 )}
