@@ -345,8 +345,8 @@ export async function POST(req: Request) {
         if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
             try {
                 for (const booking of bookingsCreated) {
-                    // Generate short ID for message tracking
-                    const shortId = booking.id.split('-')[0].substring(0, 4).toUpperCase();
+                    // CUIDs share the same prefix if created at the same time, so we take the LAST 4 characters
+                    const shortId = booking.id.slice(-4).toUpperCase();
 
                     const messageText = company.whatsappMessage
                         ? company.whatsappMessage
