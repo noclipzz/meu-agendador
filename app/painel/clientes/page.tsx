@@ -593,17 +593,17 @@ export default function ClientesPage() {
             .doc-subtitle { font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; }
 
             /* PACIENTE */
-            .client-box { background:linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%); padding:16px 24px; border-radius:14px; margin-bottom:28px; display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; border:1px solid #e0f2fe; }
+            .client-box { background:linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%); padding:12px 18px; border-radius:14px; margin-bottom:16px; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; border:1px solid #e0f2fe; }
             .client-item label { font-size:9px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:2px; }
             .client-item span { font-size:12px; color:#0f172a; font-weight:800; }
             .client-item.full { grid-column: 1 / -1; }
 
             /* SEÇÕES */
-            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:2px; padding:14px 0 8px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:12px; }
+            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:1px; padding:10px 0 6px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:8px; }
 
             /* GRID DE CAMPOS - UMA COLUNA */
             .fields-grid { display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
-            .field-item { padding:14px; border-bottom:1px solid #e5e7eb; }
+            .field-item { padding:8px 14px; border-bottom:1px solid #e5e7eb; }
             .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
             .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
 
