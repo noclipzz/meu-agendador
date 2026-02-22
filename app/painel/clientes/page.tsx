@@ -651,7 +651,7 @@ export default function ClientesPage() {
             ${signatureType !== 'none' ? `
             <div class="signature">
                 ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
-                ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Paciente</div></div>` : ''}
+                ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
                 ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Responsável</div></div>` : ''}
             </div>` : ''}
 
@@ -1496,7 +1496,7 @@ export default function ClientesPage() {
 
             {/* MODAL DE IMPRESSÃO - OPÇÕES PERSONALIZADAS OBRIGATORIAS */}
             {printConfigModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
                             <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
@@ -1515,10 +1515,10 @@ export default function ClientesPage() {
                                 <div className="space-y-2">
                                     {[
                                         { id: 'none', label: 'Não exibir bloco de assinaturas' },
-                                        { id: 'client', label: 'Apenas Assinatura do Paciente' },
+                                        { id: 'client', label: 'Apenas Assinatura do Cliente' },
                                         { id: 'prof', label: 'Apenas Assinatura do Profissional' },
-                                        { id: 'both', label: 'Paciente e Profissional' },
-                                        { id: 'client_resp', label: 'Paciente e Responsável Legal' },
+                                        { id: 'both', label: 'Cliente e Profissional' },
+                                        { id: 'client_resp', label: 'Cliente e Responsável Legal' },
                                     ].map(opt => (
                                         <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.signatureType === opt.id ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
                                             <input
