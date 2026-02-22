@@ -519,7 +519,7 @@ export default function ClientesPage() {
                     rows.forEach(row => {
                         tableHtml += '<tr>';
                         cols.forEach((_, i) => {
-                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word;">${row[i] || ''}</td>`;
+                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap;">${row[i] || ''}</td>`;
                         });
                         tableHtml += '</tr>';
                     });
@@ -1495,8 +1495,9 @@ export default function ClientesPage() {
                                                                         <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
                                                                             {field.options?.map((_: string, ci: number) => (
                                                                                 <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0">
-                                                                                    <input
-                                                                                        className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition"
+                                                                                    <textarea
+                                                                                        rows={2}
+                                                                                        className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition resize-y min-h-[40px]"
                                                                                         value={row[ci] || ''}
                                                                                         onChange={e => {
                                                                                             const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
