@@ -6,6 +6,7 @@ import { Plus, Search, Briefcase, Trash2, Save, X, Pencil, Beaker } from "lucide
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { useAgenda } from "../../../contexts/AgendaContext";
+import { ModalPortal } from "../../../components/ui/ModalPortal";
 
 export default function ServicosPage() {
     const { userRole } = useAgenda();

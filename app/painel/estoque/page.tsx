@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { format, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { ModalPortal } from "../../../components/ui/ModalPortal";
 
 export default function EstoquePage() {
     const [produtos, setProdutos] = useState<any[]>([]);

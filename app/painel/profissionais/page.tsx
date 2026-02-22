@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
+import { ModalPortal } from "../../../components/ui/ModalPortal";
 
 // --- HELPER: MASCARAS ---
 const formatarTelefone = (value: string) => {
@@ -477,6 +478,7 @@ export default function GestaoEquipe() {
 
             {/* FICHA DO PROFISSIONAL (TABBED) */}
             {proSelecionado && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
@@ -704,6 +706,7 @@ export default function GestaoEquipe() {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {modalAberto && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,6 +45,14 @@ const calcularLayoutVisual = (agendamentos: any[]) => {
     }
     return result;
 };
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 export default function PainelDashboard() {
     const { user } = useUser();
@@ -543,7 +552,7 @@ export default function PainelDashboard() {
             {/* MODAL DETALHES / EDITAR */}
             {
                 agendamentoSelecionado && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                    <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
                         <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <button onClick={() => setAgendamentoSelecionado(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"><X /></button>
                             <div className="flex items-center justify-between mb-6">
@@ -696,14 +705,14 @@ export default function PainelDashboard() {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </div></ModalPortal>
                 )
             }
 
             {/* MODAL CHECKOUT FINANCEIRO */}
             {
                 modalCheckout && agendamentoSelecionado && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                    <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
                         <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                             <button onClick={() => setModalCheckout(false)} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
                             <div className="text-center mb-8">
@@ -739,7 +748,7 @@ export default function PainelDashboard() {
                                 <button onClick={finalizarCheckout} disabled={loading} className="w-full bg-green-600 text-white p-5 rounded-[2rem] font-black text-lg shadow-xl shadow-green-500/20 hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">{loading ? <Loader2 className="animate-spin" /> : "Finalizar e Receber"}</button>
                             </div>
                         </div>
-                    </div>
+                    </div></ModalPortal>
                 )
             }
         </div>

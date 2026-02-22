@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, BarChart, Bar, Legend
@@ -13,6 +14,14 @@ import {
 import { toast } from "sonner";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 export default function FinanceiroPage() {
     const [loading, setLoading] = useState(true);
@@ -793,7 +802,7 @@ export default function FinanceiroPage() {
 
             {/* MODAL LANÇAR ENTRADA (NOVO) */}
             {modalEntrada && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
                     <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                         <button onClick={fecharModalEntrada} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
 
@@ -907,12 +916,12 @@ export default function FinanceiroPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
 
             {/* MODAL LANÇAR/EDITAR DESPESA (MANTIDO) */}
             {modalDespesa && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4 print:hidden">
                     <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800">
                         <button onClick={fecharModalDespesa} className="absolute top-8 right-8 text-gray-400 hover:text-red-500 transition"><X size={24} /></button>
 
@@ -990,13 +999,13 @@ export default function FinanceiroPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
 
             {/* --- MODAL CONFIRMAR EXCLUSÃO --- */}
             {
                 modalExcluir && despesaParaExcluir && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                         <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200">
                             <button onClick={() => setModalExcluir(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white"><X size={20} /></button>
 
@@ -1052,12 +1061,12 @@ export default function FinanceiroPage() {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div></ModalPortal>
                 )
             }
             {/* --- MODAL DE CONFIRMAÇÃO GENÉRICO --- */}
             {modalConfirm.aberto && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl relative animate-in fade-in zoom-in duration-200 border dark:border-gray-700">
                         <div className="flex flex-col items-center text-center">
                             <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mb-6 ${modalConfirm.tipo === 'danger' ? 'bg-red-100 text-red-600' : modalConfirm.tipo === 'success' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
@@ -1084,7 +1093,7 @@ export default function FinanceiroPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
         </div >
     );

@@ -738,6 +738,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </div>
                 )}
             </main>
+            <div id="modal-root" />
         </div>
     );
 }

@@ -52,7 +52,8 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => setMounted(true), []);
     if (!mounted || typeof document === 'undefined') return null;
-    return createPortal(children, document.body);
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
 }
 
 export default function ClientesPage() {
