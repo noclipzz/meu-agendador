@@ -260,8 +260,11 @@ model Client {
   name          String
   phone         String?
   email         String?
+  clientType    String  @default("FISICA") // FISICA ou JURIDICA
   cpf           String?
+  cnpj          String?
   rg            String?
+  inscricaoEstadual String?
   birthDate     String?
   cep           String?
   address       String?

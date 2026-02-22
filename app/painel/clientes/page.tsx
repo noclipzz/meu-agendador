@@ -32,6 +32,15 @@ const formatarCPF = (value: string) => {
     return `${raw.slice(0, 3)}.${raw.slice(3, 6)}.${raw.slice(6, 9)}-${raw.slice(9)}`;
 };
 
+const formatarCNPJ = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 14);
+    if (raw.length <= 2) return raw;
+    if (raw.length <= 5) return `${raw.slice(0, 2)}.${raw.slice(2)}`;
+    if (raw.length <= 8) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5)}`;
+    if (raw.length <= 12) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8)}`;
+    return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8, 12)}-${raw.slice(12)}`;
+};
+
 const formatarCEP = (value: string) => {
     const raw = value.replace(/\D/g, "").slice(0, 8);
     if (raw.length <= 5) return raw;
@@ -74,7 +83,7 @@ export default function ClientesPage() {
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
     const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; signatureType: string } | null>(null);
     const [form, setForm] = useState({
-        id: "", name: "", phone: "", email: "", cpf: "", rg: "", photoUrl: "",
+        id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
     });
 
@@ -387,12 +396,15 @@ export default function ClientesPage() {
     function abrirEdicao(cliente: any) {
         setForm({
             ...cliente,
+            clientType: cliente.clientType || "FISICA",
             phone: formatarTelefone(cliente.phone || ""),
             cpf: formatarCPF(cliente.cpf || ""),
+            cnpj: formatarCNPJ(cliente.cnpj || ""),
             cep: formatarCEP(cliente.cep || ""),
             photoUrl: cliente.photoUrl || "",
             birthDate: cliente.birthDate || "",
             rg: cliente.rg || "",
+            inscricaoEstadual: cliente.inscricaoEstadual || "",
             number: cliente.number || "",
             complement: cliente.complement || "",
             neighborhood: cliente.neighborhood || "",
@@ -402,7 +414,7 @@ export default function ClientesPage() {
         setIsEditing(true);
         setModalAberto(true);
     }
-    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
+    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
 
     // === PRONTUÁRIO ===
     async function carregarProntuario() {
@@ -633,11 +645,11 @@ export default function ClientesPage() {
 
             <div class="client-box">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
-                <div class="client-item"><label>CPF</label><span>${clienteSelecionado?.cpf || '—'}</span></div>
+                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
-                <div class="client-item"><label>RG</label><span>${clienteSelecionado?.rg || '—'}</span></div>
+                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
                 <div class="client-item"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
-                <div class="client-item"><label>Estado Civil</label><span>${clienteSelecionado?.maritalStatus || '—'}</span></div>
+                ${clienteSelecionado?.clientType !== 'JURIDICA' ? `<div class="client-item"><label>Estado Civil</label><span>${clienteSelecionado?.maritalStatus || '—'}</span></div>` : ''}
                 <div class="client-item full"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
             </div>
 
@@ -767,12 +779,28 @@ export default function ClientesPage() {
                                     <div className="col-span-12 lg:col-span-8 space-y-8">
                                         <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
                                             <div className="grid grid-cols-12 gap-4">
-                                                <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cpf || "---"}</p></div>
-                                                <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.rg || "---"}</p></div>
+                                                {clienteSelecionado.clientType === 'JURIDICA' ? (
+                                                    <>
+                                                        <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CNPJ</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cnpj || "---"}</p></div>
+                                                        <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Inscrição Estadual</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.inscricaoEstadual || "---"}</p></div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cpf || "---"}</p></div>
+                                                        <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.rg || "---"}</p></div>
+                                                    </>
+                                                )}
                                                 <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Telefone</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.phone || "---"}</p></div>
-                                                <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nasc.</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.birthDate && !isNaN(new Date(clienteSelecionado.birthDate).getTime()) ? format(new Date(clienteSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
-                                                <div className="col-span-12 lg:col-span-8 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800 min-w-0"><label className="text-[9px] font-black text-gray-400 uppercase">E-mail</label><p className="font-bold dark:text-white text-xs truncate" title={clienteSelecionado.email}>{clienteSelecionado.email || "---"}</p></div>
-                                                <div className="col-span-12 lg:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.maritalStatus || "---"}</p></div>
+
+                                                {clienteSelecionado.clientType !== 'JURIDICA' && (
+                                                    <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nasc.</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.birthDate && !isNaN(new Date(clienteSelecionado.birthDate).getTime()) ? format(new Date(clienteSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
+                                                )}
+
+                                                <div className={`col-span-12 ${clienteSelecionado.clientType === 'JURIDICA' ? 'lg:col-span-9' : 'lg:col-span-8'} p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800 min-w-0`}><label className="text-[9px] font-black text-gray-400 uppercase">E-mail</label><p className="font-bold dark:text-white text-xs truncate" title={clienteSelecionado.email}>{clienteSelecionado.email || "---"}</p></div>
+
+                                                {clienteSelecionado.clientType !== 'JURIDICA' && (
+                                                    <div className="col-span-12 lg:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.maritalStatus || "---"}</p></div>
+                                                )}
                                             </div>
                                         </section>
                                         <section><h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Localização</h4>
@@ -1166,8 +1194,8 @@ export default function ClientesPage() {
                                     <div className="flex-1 w-full space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome Completo</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">{form.clientType === 'JURIDICA' ? 'Razão Social / Nome Fantasia' : 'Nome Completo'}</label>
+                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={form.clientType === 'JURIDICA' ? "Nome da empresa" : "Nome do cliente"} />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
@@ -1183,33 +1211,64 @@ export default function ClientesPage() {
 
                                 {/* SEÇÃO 1: DADOS PESSOAIS */}
                                 <section>
-                                    <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                        <UserCircle size={16} /> Documentação Pessoal
-                                    </h3>
+                                    <div className="flex justify-between items-center mb-4 px-2">
+                                        <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                            <UserCircle size={16} /> Documentação {form.clientType === 'JURIDICA' ? 'Empresarial' : 'Pessoal'}
+                                        </h3>
+                                        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex gap-1">
+                                            <button
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'FISICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                onClick={() => setForm({ ...form, clientType: 'FISICA', cnpj: '', inscricaoEstadual: '' })}
+                                            >
+                                                Física
+                                            </button>
+                                            <button
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'JURIDICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                onClick={() => setForm({ ...form, clientType: 'JURIDICA', cpf: '', rg: '', birthDate: '', maritalStatus: '' })}
+                                            >
+                                                Jurídica
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                        <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
-                                            <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
-                                        </div>
-                                        <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
-                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
-                                        </div>
-                                        <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
-                                            <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
-                                        </div>
-                                        <div className="md:col-span-4 space-y-1">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
-                                            <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
-                                                <option value="">Selecione...</option>
-                                                <option value="Solteiro(a)">Solteiro(a)</option>
-                                                <option value="Casado(a)">Casado(a)</option>
-                                                <option value="Divorciado(a)">Divorciado(a)</option>
-                                                <option value="Viúvo(a)">Viúvo(a)</option>
-                                                <option value="União Estável">União Estável</option>
-                                            </select>
-                                        </div>
+                                        {form.clientType === 'JURIDICA' ? (
+                                            <>
+                                                <div className="md:col-span-6 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CNPJ</label>
+                                                    <input maxLength={18} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnpj} onChange={e => setForm({ ...form, cnpj: formatarCNPJ(e.target.value) })} placeholder="00.000.000/0000-00" />
+                                                </div>
+                                                <div className="md:col-span-6 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Inscrição Estadual</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.inscricaoEstadual} onChange={e => setForm({ ...form, inscricaoEstadual: e.target.value })} placeholder="Isento, ou nº IE" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
+                                                    <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
+                                                </div>
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
+                                                </div>
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
+                                                    <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
+                                                </div>
+                                                <div className="md:col-span-12 lg:col-span-12 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
+                                                    <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                                                        <option value="">Selecione...</option>
+                                                        <option value="Solteiro(a)">Solteiro(a)</option>
+                                                        <option value="Casado(a)">Casado(a)</option>
+                                                        <option value="Divorciado(a)">Divorciado(a)</option>
+                                                        <option value="Viúvo(a)">Viúvo(a)</option>
+                                                        <option value="União Estável">União Estável</option>
+                                                    </select>
+                                                </div>
+                                            </>
+                                        )}
                                         <div className="md:col-span-12 space-y-1">
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
                                             <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
