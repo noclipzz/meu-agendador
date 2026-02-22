@@ -399,7 +399,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     );
 
     return (
-        <div className={`h-screen flex flex-col md:flex-row font-sans ${theme} overflow-hidden`}>
+        <div className={`h-screen flex flex-col md:flex-row font-sans ${theme} overflow-hidden print:h-auto print:overflow-visible`}>
 
             {/* --- HEADER MOBILE --- */}
             <div className="md:hidden h-[73px] shrink-0 print:hidden" /> {/* Placeholder para o header fixo */}
