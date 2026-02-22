@@ -179,7 +179,8 @@ export default function ClientesPage() {
                     city: data.city || "",
                     address: data.address || "",
                     phone: data.phone || "",
-                    cnpj: data.cnpj || ""
+                    cnpj: data.cnpj || "",
+                    corporateName: data.corporateName || ""
                 });
             }
         } catch { }
@@ -664,7 +665,7 @@ export default function ClientesPage() {
             <div class="signature">
                 ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
                 ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
+                ${['client_resp', 'company'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
             </div>` : ''}
 
             <div class="footer">
@@ -1577,6 +1578,7 @@ export default function ClientesPage() {
                                         { id: 'none', label: 'Não exibir bloco de assinaturas' },
                                         { id: 'client', label: 'Apenas Assinatura do Cliente' },
                                         { id: 'prof', label: 'Apenas Assinatura do Profissional' },
+                                        { id: 'company', label: 'Apenas Assinatura da Empresa' },
                                         { id: 'both', label: 'Cliente e Profissional' },
                                         { id: 'client_resp', label: 'Cliente e Empresa' },
                                     ].map(opt => (
