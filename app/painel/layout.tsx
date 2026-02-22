@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { UserButton, useUser } from "@clerk/nextjs";
@@ -17,6 +18,14 @@ import { toast } from "sonner";
 import { isBefore, subMinutes, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { InstallPWA, InstallSidebarButton } from "../components/InstallPWA";
 import { UserGuide } from "../components/UserGuide";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefoneInput = (value: string) => {
@@ -531,7 +540,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 <UserGuide />
 
                 {isModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 print:hidden">
+                    <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 print:hidden">
                         <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 flex flex-col max-h-[95vh]">
                             {/* HEADER FIXO */}
                             <div className="p-6 pb-0 shrink-0">
@@ -712,11 +721,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div></ModalPortal>
                 )}
 
                 {isSearchModalOpen && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[120] p-4 print:hidden">
+                    <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[120] p-4 print:hidden">
                         <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] w-full max-w-lg shadow-2xl flex flex-col max-h-[80vh] border dark:border-gray-800">
                             <div className="flex justify-between items-center mb-4 dark:text-white">
                                 <h3 className="font-black text-xl ml-2">Buscar Cliente</h3>
@@ -735,11 +744,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </div></ModalPortal>
                 )}
             </main>
             <div id="modal-root" />
-        </div>
+        </div >
     );
 }
 

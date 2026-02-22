@@ -189,7 +189,7 @@ export default function EstoquePage() {
 
             {/* MODAL GLOBAL */}
             {modalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
 
                         {/* HEADER DO MODAL */}
@@ -359,7 +359,7 @@ export default function EstoquePage() {
                             )}
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
             {/* MODAL DE CONFIRMAÇÃO */}
             <ConfirmationModal

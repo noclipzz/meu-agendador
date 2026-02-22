@@ -479,238 +479,238 @@ export default function GestaoEquipe() {
             {/* FICHA DO PROFISSIONAL (TABBED) */}
             {proSelecionado && (
                 <ModalPortal>
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
+                        <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
-                        {/* HEADER DA FICHA */}
-                        <div className="p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-white/5">
-                            <div className="flex items-center gap-6">
-                                <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl overflow-hidden shrink-0" style={{ backgroundColor: proSelecionado.photoUrl ? 'transparent' : proSelecionado.color }}>
-                                    {proSelecionado.photoUrl ? <img src={proSelecionado.photoUrl} alt={proSelecionado.name} className="w-full h-full object-cover" /> : proSelecionado.name.charAt(0)}
-                                </div>
-                                <div>
-                                    <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
-                                    <div className="flex gap-4 mt-1">
-                                        <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {proSelecionado.phone || "Sem telefone"}</span>
-                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${proSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
-                                            <div className={`w-1.5 h-1.5 rounded-full ${proSelecionado.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                                            {proSelecionado.status === 'INATIVO' ? 'Inativo' : 'Ativo'}
+                            {/* HEADER DA FICHA */}
+                            <div className="p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-white/5">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl overflow-hidden shrink-0" style={{ backgroundColor: proSelecionado.photoUrl ? 'transparent' : proSelecionado.color }}>
+                                        {proSelecionado.photoUrl ? <img src={proSelecionado.photoUrl} alt={proSelecionado.name} className="w-full h-full object-cover" /> : proSelecionado.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
+                                        <div className="flex gap-4 mt-1">
+                                            <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {proSelecionado.phone || "Sem telefone"}</span>
+                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${proSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${proSelecionado.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                                                {proSelecionado.status === 'INATIVO' ? 'Inativo' : 'Ativo'}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl mr-4">
-                                    <button onClick={() => setAbaAtiva("RESUMO")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "RESUMO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><LayoutDashboard size={14} /> Resumo</button>
-                                    <button onClick={() => setAbaAtiva("DADOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DADOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><UserCircle size={14} /> Dados</button>
-                                    <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DOCUMENTOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><FileText size={14} /> Documentos</button>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl mr-4">
+                                        <button onClick={() => setAbaAtiva("RESUMO")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "RESUMO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><LayoutDashboard size={14} /> Resumo</button>
+                                        <button onClick={() => setAbaAtiva("DADOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DADOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><UserCircle size={14} /> Dados</button>
+                                        <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DOCUMENTOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><FileText size={14} /> Documentos</button>
+                                    </div>
+                                    <div className="flex gap-2 relative z-10 shrink-0">
+                                        {userRole === "ADMIN" && (
+                                            <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
+                                        )}
+                                        <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2 relative z-10 shrink-0">
-                                    {userRole === "ADMIN" && (
-                                        <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
-                                    )}
-                                    <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
-                                </div>
                             </div>
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
 
-                            {/* ABA RESUMO */}
-                            {abaAtiva === "RESUMO" && (
-                                <div className="grid grid-cols-12 gap-8">
-                                    <div className="col-span-12 lg:col-span-8 space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Produção Total</p><p className="text-2xl font-black text-blue-600">R$ {calcularMetricas(proSelecionado).totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                            <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-[2rem] border border-green-100 dark:border-green-800"><p className="text-[10px] font-black text-green-400 uppercase mb-1">Comissões</p><p className="text-2xl font-black text-green-600">R$ {calcularMetricas(proSelecionado).totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                            <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Atendimentos</p><p className="text-2xl font-black dark:text-white">{calcularMetricas(proSelecionado).atendimentos}</p></div>
-                                        </div>
-                                        <section>
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2"><History size={16} /> Histórico Recente</h4>
-                                            <div className="space-y-3">
-                                                {proSelecionado.bookings?.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).length > 0 ? (
-                                                    proSelecionado.bookings.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).slice(0, 10).map((b: any) => (
-                                                        <div key={b.id} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] flex justify-between items-center border border-transparent hover:border-blue-500 transition-all">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm"><Star size={20} className="text-yellow-500" /></div>
-                                                                <div>
-                                                                    <p className="font-black text-sm uppercase dark:text-white">{b.service?.name}</p>
-                                                                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-gray-400 uppercase mt-1">
-                                                                        <span className="text-blue-500">Atendeu: {b.customerName}</span>
-                                                                        <span>{format(new Date(b.date), "dd/MM/yyyy HH:mm")}</span>
+                                {/* ABA RESUMO */}
+                                {abaAtiva === "RESUMO" && (
+                                    <div className="grid grid-cols-12 gap-8">
+                                        <div className="col-span-12 lg:col-span-8 space-y-8">
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-800"><p className="text-[10px] font-black text-blue-400 uppercase mb-1">Produção Total</p><p className="text-2xl font-black text-blue-600">R$ {calcularMetricas(proSelecionado).totalGeral.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-6 bg-green-50 dark:bg-green-900/20 rounded-[2rem] border border-green-100 dark:border-green-800"><p className="text-[10px] font-black text-green-400 uppercase mb-1">Comissões</p><p className="text-2xl font-black text-green-600">R$ {calcularMetricas(proSelecionado).totalComissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+                                                <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800"><p className="text-[10px] font-black text-gray-400 uppercase mb-1">Atendimentos</p><p className="text-2xl font-black dark:text-white">{calcularMetricas(proSelecionado).atendimentos}</p></div>
+                                            </div>
+                                            <section>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2"><History size={16} /> Histórico Recente</h4>
+                                                <div className="space-y-3">
+                                                    {proSelecionado.bookings?.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).length > 0 ? (
+                                                        proSelecionado.bookings.filter((b: any) => ["CONFIRMADO", "CONCLUIDO"].includes(b.status)).slice(0, 10).map((b: any) => (
+                                                            <div key={b.id} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-[2rem] flex justify-between items-center border border-transparent hover:border-blue-500 transition-all">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm"><Star size={20} className="text-yellow-500" /></div>
+                                                                    <div>
+                                                                        <p className="font-black text-sm uppercase dark:text-white">{b.service?.name}</p>
+                                                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-bold text-gray-400 uppercase mt-1">
+                                                                            <span className="text-blue-500">Atendeu: {b.customerName}</span>
+                                                                            <span>{format(new Date(b.date), "dd/MM/yyyy HH:mm")}</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+                                                                <div className="text-right"><p className="font-black text-base dark:text-white">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
                                                             </div>
-                                                            <div className="text-right"><p className="font-black text-base dark:text-white">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-                                                        </div>
-                                                    ))
-                                                ) : <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-[2rem] opacity-40 italic text-sm">Sem histórico.</div>}
-                                            </div>
-                                        </section>
-                                    </div>
-                                    <div className="col-span-12 lg:col-span-4 space-y-6">
-                                        <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
-                                            <h4 className="font-black text-xs uppercase tracking-widest mb-6 text-gray-400">Status do sistema</h4>
-                                            <div className="space-y-5">
-                                                <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Login Vinculado</label><div className="flex items-center gap-2">{proSelecionado.userId ? <><Check size={16} className="text-green-500" /><span className="text-sm font-bold text-green-600 uppercase">Sim</span></> : <><X size={16} className="text-red-500" /><span className="text-sm font-bold text-red-500 uppercase">Não</span></>}</div></div>
-                                                <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">E-mail</label><p className="text-xs font-bold dark:text-white break-all">{proSelecionado.email || "---"}</p></div>
-                                            </div>
-                                            {userRole === "ADMIN" && (
-                                                <button onClick={() => { if (confirm("Remover membro?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
-                                            )}
+                                                        ))
+                                                    ) : <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-[2rem] opacity-40 italic text-sm">Sem histórico.</div>}
+                                                </div>
+                                            </section>
                                         </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ABA DADOS CADASTRAIS */}
-                            {abaAtiva === "DADOS" && (
-                                <div className="grid grid-cols-12 gap-8">
-                                    <div className="col-span-12 lg:col-span-8 space-y-8">
-                                        <section>
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
-                                            <div className="grid grid-cols-12 gap-4">
-                                                <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-sm">{formatarCPF(proSelecionado.cpf || "") || "---"}</p></div>
-                                                <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-sm">{proSelecionado.rg || "---"}</p></div>
-                                                <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nascimento</label><p className="font-bold dark:text-white text-sm">{proSelecionado.birthDate && !isNaN(new Date(proSelecionado.birthDate).getTime()) ? format(new Date(proSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
-                                                <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-sm">{proSelecionado.maritalStatus || "---"}</p></div>
-                                            </div>
-                                        </section>
-                                        <section>
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Endereço Residencial</h4>
-                                            <div className="grid grid-cols-12 gap-4">
-                                                <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-xs truncate">{formatarCEP(proSelecionado.cep || "") || "---"}</p></div>
-                                                <div className="col-span-6 md:col-span-9 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.address || "---"}, {proSelecionado.number || "S/N"}</p></div>
-                                                <div className="col-span-6 md:col-span-5 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Bairro</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.neighborhood || "---"}</p></div>
-                                                <div className="col-span-6 md:col-span-7 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Cidade / UF</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.city || "---"} - {proSelecionado.state || "-"}</p></div>
-                                            </div>
-                                        </section>
-                                    </div>
-                                    <div className="col-span-12 lg:col-span-4 space-y-6">
-                                        <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
-                                            <div className="flex justify-between items-center mb-6">
-                                                <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Anotações Internas</h4>
+                                        <div className="col-span-12 lg:col-span-4 space-y-6">
+                                            <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
+                                                <h4 className="font-black text-xs uppercase tracking-widest mb-6 text-gray-400">Status do sistema</h4>
+                                                <div className="space-y-5">
+                                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Login Vinculado</label><div className="flex items-center gap-2">{proSelecionado.userId ? <><Check size={16} className="text-green-500" /><span className="text-sm font-bold text-green-600 uppercase">Sim</span></> : <><X size={16} className="text-red-500" /><span className="text-sm font-bold text-red-500 uppercase">Não</span></>}</div></div>
+                                                    <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">E-mail</label><p className="text-xs font-bold dark:text-white break-all">{proSelecionado.email || "---"}</p></div>
+                                                </div>
                                                 {userRole === "ADMIN" && (
-                                                    <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                                        <Plus size={14} />
-                                                    </button>
+                                                    <button onClick={() => { if (confirm("Remover membro?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
                                                 )}
                                             </div>
+                                        </div>
+                                    </div>
+                                )}
 
-                                            {mostrarInputObs && (
-                                                <div className="flex gap-2 mb-6 animate-in slide-in-from-top-2">
-                                                    <input
-                                                        className="flex-1 border-2 dark:border-gray-800 p-3 rounded-2xl bg-white dark:bg-gray-950 text-xs outline-none focus:border-blue-500 dark:text-white transition"
-                                                        placeholder="Nova nota..."
-                                                        value={novaObs}
-                                                        onChange={e => setNovaObs(e.target.value)}
-                                                        onKeyDown={e => e.key === 'Enter' && adicionarNotaRapidaPro()}
-                                                    />
-                                                    <button onClick={adicionarNotaRapidaPro} className="bg-green-600 text-white px-4 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-green-600/20 hover:bg-green-700 transition">OK</button>
+                                {/* ABA DADOS CADASTRAIS */}
+                                {abaAtiva === "DADOS" && (
+                                    <div className="grid grid-cols-12 gap-8">
+                                        <div className="col-span-12 lg:col-span-8 space-y-8">
+                                            <section>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
+                                                <div className="grid grid-cols-12 gap-4">
+                                                    <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-sm">{formatarCPF(proSelecionado.cpf || "") || "---"}</p></div>
+                                                    <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-sm">{proSelecionado.rg || "---"}</p></div>
+                                                    <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nascimento</label><p className="font-bold dark:text-white text-sm">{proSelecionado.birthDate && !isNaN(new Date(proSelecionado.birthDate).getTime()) ? format(new Date(proSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
+                                                    <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-sm">{proSelecionado.maritalStatus || "---"}</p></div>
+                                                </div>
+                                            </section>
+                                            <section>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><MapPin size={14} /> Endereço Residencial</h4>
+                                                <div className="grid grid-cols-12 gap-4">
+                                                    <div className="col-span-6 md:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CEP</label><p className="font-bold dark:text-white text-xs truncate">{formatarCEP(proSelecionado.cep || "") || "---"}</p></div>
+                                                    <div className="col-span-6 md:col-span-9 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Endereço</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.address || "---"}, {proSelecionado.number || "S/N"}</p></div>
+                                                    <div className="col-span-6 md:col-span-5 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Bairro</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.neighborhood || "---"}</p></div>
+                                                    <div className="col-span-6 md:col-span-7 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Cidade / UF</label><p className="font-bold dark:text-white text-xs truncate">{proSelecionado.city || "---"} - {proSelecionado.state || "-"}</p></div>
+                                                </div>
+                                            </section>
+                                        </div>
+                                        <div className="col-span-12 lg:col-span-4 space-y-6">
+                                            <div className="p-8 bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <h4 className="font-black text-xs uppercase tracking-widest text-gray-400">Anotações Internas</h4>
+                                                    {userRole === "ADMIN" && (
+                                                        <button onClick={() => setMostrarInputObs(!mostrarInputObs)} className="p-1 px-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                                                            <Plus size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {mostrarInputObs && (
+                                                    <div className="flex gap-2 mb-6 animate-in slide-in-from-top-2">
+                                                        <input
+                                                            className="flex-1 border-2 dark:border-gray-800 p-3 rounded-2xl bg-white dark:bg-gray-950 text-xs outline-none focus:border-blue-500 dark:text-white transition"
+                                                            placeholder="Nova nota..."
+                                                            value={novaObs}
+                                                            onChange={e => setNovaObs(e.target.value)}
+                                                            onKeyDown={e => e.key === 'Enter' && adicionarNotaRapidaPro()}
+                                                        />
+                                                        <button onClick={adicionarNotaRapidaPro} className="bg-green-600 text-white px-4 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-green-600/20 hover:bg-green-700 transition">OK</button>
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                    {proSelecionado.notes?.split('\n').filter((n: string) => n.trim() !== "").reverse().map((n: string, i: number) => (
+                                                        <div key={i} className="group relative p-4 bg-yellow-50/40 dark:bg-yellow-500/5 rounded-2xl border border-yellow-100 dark:border-yellow-900/20 text-xs dark:text-gray-200 transition-all hover:border-yellow-200 dark:hover:border-yellow-800/50">
+                                                            {editandoNota?.index === i ? (
+                                                                <div className="space-y-2">
+                                                                    <textarea
+                                                                        className="w-full bg-white dark:bg-gray-950 border-2 border-blue-500 p-3 rounded-xl outline-none font-bold text-xs"
+                                                                        value={editandoNota.text}
+                                                                        onChange={e => setEditandoNota({ ...editandoNota, text: e.target.value })}
+                                                                    />
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <button onClick={() => setEditandoNota(null)} className="text-[9px] font-black uppercase text-gray-400">Canc.</button>
+                                                                        <button onClick={salvarEdicaoNotaPro} className="text-[9px] font-black uppercase text-blue-600">Salvar</button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex justify-between items-start gap-4">
+                                                                    <p className="flex-1 leading-relaxed italic">{n}</p>
+                                                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                                        <button onClick={() => setEditandoNota({ index: i, text: n })} className="text-blue-400"><Pencil size={12} /></button>
+                                                                        <button onClick={() => { if (confirm("Excluir nota?")) deletarNotaPro(i); }} className="text-red-400"><Trash2 size={12} /></button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )) || <p className="text-gray-400 text-xs italic opacity-40">Sem notas.</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ABA DOCUMENTOS */}
+                                {abaAtiva === "DOCUMENTOS" && (
+                                    <div className="space-y-8 animate-in fade-in duration-500">
+                                        <div className="flex justify-between items-center px-2">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={16} /> Documentos e Arquivos</h4>
+                                            <label className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase cursor-pointer hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
+                                                {salvandoAnexo ? <Loader2 className="animate-spin" size={14} /> : <UploadCloud size={14} />}
+                                                {salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
+                                                <input type="file" className="hidden" onChange={handleUploadAnexoPro} accept=".pdf,image/*" disabled={salvandoAnexo} />
+                                            </label>
+                                        </div>
+
+                                        <div className="bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] p-8 border dark:border-gray-800">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Armazenamento Utilizado</p>
+                                                <p className="text-[10px] font-black text-blue-600 uppercase">
+                                                    {((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
+                                                </p>
+                                            </div>
+                                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-blue-600 transition-all duration-500"
+                                                    style={{ width: `${Math.min(100, ((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (10 * 1024 * 1024)) * 100)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {proSelecionado.attachments?.length > 0 ? (
+                                                proSelecionado.attachments.map((file: any) => (
+                                                    <div key={file.id} className="p-6 bg-gray-50 dark:bg-gray-900 border-2 border-transparent hover:border-blue-500 rounded-[2rem] flex justify-between items-center group transition-all">
+                                                        <div className="flex items-center gap-4 min-w-0">
+                                                            <div className="w-12 h-12 bg-white dark:bg-gray-800 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
+                                                                {file.type.includes('image') ? <ImageIcon size={20} /> : <FileText size={20} />}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="font-black text-xs uppercase dark:text-white truncate" title={file.name}>{file.name}</p>
+                                                                <p className="text-[9px] font-bold text-gray-400 uppercase">
+                                                                    {((file.size || 0) / 1024).toFixed(0)} KB • {format(new Date(file.createdAt), "dd/MM/yyyy")}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <a href={file.url} target="_blank" className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-blue-600 transition shadow-sm" title="Baixar">
+                                                                <Download size={16} />
+                                                            </a>
+                                                            <button onClick={() => deletarAnexoPro(file.id)} className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-red-500 transition shadow-sm" title="Excluir">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
+                                                    <UploadCloud size={40} className="mx-auto text-gray-300 mb-4" />
+                                                    <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Nenhum documento anexado</p>
                                                 </div>
                                             )}
-
-                                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                                {proSelecionado.notes?.split('\n').filter((n: string) => n.trim() !== "").reverse().map((n: string, i: number) => (
-                                                    <div key={i} className="group relative p-4 bg-yellow-50/40 dark:bg-yellow-500/5 rounded-2xl border border-yellow-100 dark:border-yellow-900/20 text-xs dark:text-gray-200 transition-all hover:border-yellow-200 dark:hover:border-yellow-800/50">
-                                                        {editandoNota?.index === i ? (
-                                                            <div className="space-y-2">
-                                                                <textarea
-                                                                    className="w-full bg-white dark:bg-gray-950 border-2 border-blue-500 p-3 rounded-xl outline-none font-bold text-xs"
-                                                                    value={editandoNota.text}
-                                                                    onChange={e => setEditandoNota({ ...editandoNota, text: e.target.value })}
-                                                                />
-                                                                <div className="flex justify-end gap-2">
-                                                                    <button onClick={() => setEditandoNota(null)} className="text-[9px] font-black uppercase text-gray-400">Canc.</button>
-                                                                    <button onClick={salvarEdicaoNotaPro} className="text-[9px] font-black uppercase text-blue-600">Salvar</button>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex justify-between items-start gap-4">
-                                                                <p className="flex-1 leading-relaxed italic">{n}</p>
-                                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                                                                    <button onClick={() => setEditandoNota({ index: i, text: n })} className="text-blue-400"><Pencil size={12} /></button>
-                                                                    <button onClick={() => { if (confirm("Excluir nota?")) deletarNotaPro(i); }} className="text-red-400"><Trash2 size={12} /></button>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )) || <p className="text-gray-400 text-xs italic opacity-40">Sem notas.</p>}
-                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* ABA DOCUMENTOS */}
-                            {abaAtiva === "DOCUMENTOS" && (
-                                <div className="space-y-8 animate-in fade-in duration-500">
-                                    <div className="flex justify-between items-center px-2">
-                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2"><Plus size={16} /> Documentos e Arquivos</h4>
-                                        <label className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase cursor-pointer hover:bg-blue-700 transition flex items-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95">
-                                            {salvandoAnexo ? <Loader2 className="animate-spin" size={14} /> : <UploadCloud size={14} />}
-                                            {salvandoAnexo ? "Subindo..." : "Novo Arquivo"}
-                                            <input type="file" className="hidden" onChange={handleUploadAnexoPro} accept=".pdf,image/*" disabled={salvandoAnexo} />
-                                        </label>
-                                    </div>
-
-                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-[2.5rem] p-8 border dark:border-gray-800">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Armazenamento Utilizado</p>
-                                            <p className="text-[10px] font-black text-blue-600 uppercase">
-                                                {((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
-                                            </p>
-                                        </div>
-                                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-blue-600 transition-all duration-500"
-                                                style={{ width: `${Math.min(100, ((proSelecionado.attachments?.reduce((acc: number, cur: any) => acc + (cur.size || 0), 0) || 0) / (10 * 1024 * 1024)) * 100)}%` }}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {proSelecionado.attachments?.length > 0 ? (
-                                            proSelecionado.attachments.map((file: any) => (
-                                                <div key={file.id} className="p-6 bg-gray-50 dark:bg-gray-900 border-2 border-transparent hover:border-blue-500 rounded-[2rem] flex justify-between items-center group transition-all">
-                                                    <div className="flex items-center gap-4 min-w-0">
-                                                        <div className="w-12 h-12 bg-white dark:bg-gray-800 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm shrink-0">
-                                                            {file.type.includes('image') ? <ImageIcon size={20} /> : <FileText size={20} />}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <p className="font-black text-xs uppercase dark:text-white truncate" title={file.name}>{file.name}</p>
-                                                            <p className="text-[9px] font-bold text-gray-400 uppercase">
-                                                                {((file.size || 0) / 1024).toFixed(0)} KB • {format(new Date(file.createdAt), "dd/MM/yyyy")}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <a href={file.url} target="_blank" className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-blue-600 transition shadow-sm" title="Baixar">
-                                                            <Download size={16} />
-                                                        </a>
-                                                        <button onClick={() => deletarAnexoPro(file.id)} className="p-3 bg-white dark:bg-gray-800 rounded-xl hover:text-red-500 transition shadow-sm" title="Excluir">
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="col-span-full py-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
-                                                <UploadCloud size={40} className="mx-auto text-gray-300 mb-4" />
-                                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Nenhum documento anexado</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
                 </ModalPortal>
             )}
 
             {modalAberto && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
                     <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                         {/* HEADER FIXO */}
                         <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
@@ -943,7 +943,7 @@ export default function GestaoEquipe() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
         </div>
     );
