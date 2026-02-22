@@ -664,7 +664,7 @@ export default function ClientesPage() {
             <div class="signature">
                 ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
                 ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Responsável</div></div>` : ''}
+                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
             </div>` : ''}
 
             <div class="footer">
@@ -1578,7 +1578,7 @@ export default function ClientesPage() {
                                         { id: 'client', label: 'Apenas Assinatura do Cliente' },
                                         { id: 'prof', label: 'Apenas Assinatura do Profissional' },
                                         { id: 'both', label: 'Cliente e Profissional' },
-                                        { id: 'client_resp', label: 'Cliente e Responsável Legal' },
+                                        { id: 'client_resp', label: 'Cliente e Empresa' },
                                     ].map(opt => (
                                         <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.signatureType === opt.id ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
                                             <input
