@@ -42,6 +42,7 @@ model Company {
   whatsappQrCode     String? @db.Text // QR Code base64 recebido via webhook
 
   // Dados de Endereço e Contato (Novo)
+  corporateName String?
   cnpj         String?
   phone        String?
   cep          String?

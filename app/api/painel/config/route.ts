@@ -110,6 +110,7 @@ export async function POST(req: Request) {
       workDays: body.workDays || "1,2,3,4,5",
       interval: body.interval ? Number(body.interval) : 30,
       // Novos Campos
+      corporateName: body.corporateName || null,
       cnpj: body.cnpj || null,
       phone: body.phone || null,
       cep: body.cep || null,

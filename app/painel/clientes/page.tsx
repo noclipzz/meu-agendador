@@ -513,13 +513,13 @@ export default function ClientesPage() {
                 } else {
                     let tableHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr>';
                     cols.forEach(col => {
-                        tableHtml += `<th style="border: 1px solid #e5e7eb; padding: 4px; background: #f9fafb; text-align: left; color:#6b7280;">${col}</th>`;
+                        tableHtml += `<th style="border-bottom: 1px solid #f3f4f6; padding: 4px 6px; background: #f9fafb; text-align: left; color:#6b7280;">${col}</th>`;
                     });
                     tableHtml += '</tr></thead><tbody>';
                     rows.forEach(row => {
                         tableHtml += '<tr>';
                         cols.forEach((_, i) => {
-                            tableHtml += `<td style="border: 1px solid #e5e7eb; padding: 4px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap;">${row[i] || ''}</td>`;
+                            tableHtml += `<td style="border-bottom: 1px solid #f3f4f6; padding: 4px 6px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap;">${row[i] || ''}</td>`;
                         });
                         tableHtml += '</tr>';
                     });
@@ -599,7 +599,7 @@ export default function ClientesPage() {
             .client-item.full { grid-column: 1 / -1; }
 
             /* SEÇÕES */
-            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:2px; padding:14px 0 8px; border-bottom:2px solid #0d9488; margin-bottom:0; margin-top:12px; }
+            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:2px; padding:14px 0 8px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:12px; }
 
             /* GRID DE CAMPOS - UMA COLUNA */
             .fields-grid { display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
