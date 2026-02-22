@@ -9,6 +9,15 @@ import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
+const formatarCNPJ = (value: string) => {
+    const raw = value.replace(/\D/g, "").slice(0, 14);
+    if (raw.length <= 2) return raw;
+    if (raw.length <= 5) return `${raw.slice(0, 2)}.${raw.slice(2)}`;
+    if (raw.length <= 8) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5)}`;
+    if (raw.length <= 12) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8)}`;
+    return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8, 12)}-${raw.slice(12)}`;
+};
+
 export default function Configuracoes() {
     const { theme, toggleTheme } = useTheme();
     const context = useAgenda();
@@ -19,6 +28,7 @@ export default function Configuracoes() {
 
     // --- CAMPOS GERAIS ---
     const [name, setName] = useState("");
+    const [corporateName, setCorporateName] = useState("");
     const [notificationEmail, setNotificationEmail] = useState("");
     const [instagramUrl, setInstagramUrl] = useState("");
     const [facebookUrl, setFacebookUrl] = useState("");
@@ -81,6 +91,7 @@ export default function Configuracoes() {
             if (dataConfig && dataConfig.id) {
                 setClerkUserId(dataConfig.ownerId || "");
                 setName(dataConfig.name || "");
+                setCorporateName(dataConfig.corporateName || "");
                 setNotificationEmail(dataConfig.notificationEmail || "");
                 setInstagramUrl(dataConfig.instagramUrl || "");
                 setFacebookUrl(dataConfig.facebookUrl || "");
@@ -178,7 +189,7 @@ export default function Configuracoes() {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
+                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state,
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
@@ -252,14 +263,27 @@ export default function Configuracoes() {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-1 gap-6 pt-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Razão Social</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    placeholder="Razão Social da Empresa (Ex: Proteção Dedetizadora LTDA)"
+                                    value={corporateName}
+                                    onChange={e => setCorporateName(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">CNPJ (Opcional)</label>
                                 <input
+                                    maxLength={18}
                                     className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
                                     placeholder="00.000.000/0000-00"
                                     value={cnpj}
-                                    onChange={e => setCnpj(e.target.value)}
+                                    onChange={e => setCnpj(formatarCNPJ(e.target.value))}
                                 />
                             </div>
                             <div>
