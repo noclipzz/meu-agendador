@@ -81,7 +81,7 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
-    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean } } | null>(null);
+    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean }; docNumber: string } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -483,12 +483,12 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
-        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false } });
+        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false }, docNumber: entry.id.slice(-6).toUpperCase() });
     }
 
     function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, twoColumns } = printConfigModal;
+        const { entry, dateVisible, signatures, twoColumns, docNumber } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -638,7 +638,7 @@ export default function ClientesPage() {
                 </div>
                 <div class="header-right">
                     <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
-                    <div class="header-doc">Documento Nº ${entry.id.slice(-6).toUpperCase()}</div>
+                    <div class="header-doc">Documento Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
                 </div>
             </div>
 
@@ -1633,9 +1633,26 @@ export default function ClientesPage() {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Dividir campos em Duas Colunas</span>
-                                        <span className="text-[10px] text-gray-400 font-bold">Ideal para economizar de papel</span>
+                                        <span className="text-[10px] text-gray-400 font-bold">Ideal para conter mais informações por página</span>
                                     </div>
                                 </label>
+                            </div>
+
+                            {/* Número do Documento */}
+                            <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <FileText size={14} /> Número do Documento (O.S.)
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase"
+                                    placeholder={`Ex: ${printConfigModal.entry?.id.slice(-6).toUpperCase()}`}
+                                    value={printConfigModal.docNumber}
+                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, docNumber: e.target.value.toUpperCase() })}
+                                />
+                                <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                    Se em branco, um número aleatório será gerado.
+                                </p>
                             </div>
                         </div>
 
