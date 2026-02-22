@@ -81,7 +81,7 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
-    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; signatureType: string } | null>(null);
+    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; signatures: { client: boolean; prof: boolean; company: boolean } } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -483,12 +483,12 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
-        setPrintConfigModal({ entry, dateVisible: true, signatureType: 'both' });
+        setPrintConfigModal({ entry, dateVisible: true, signatures: { client: true, prof: true, company: false } });
     }
 
     function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatureType } = printConfigModal;
+        const { entry, dateVisible, signatures } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -661,11 +661,11 @@ export default function ClientesPage() {
                 ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </div>` : '<div style="margin-top: 40px;"></div>'}
 
-            ${signatureType !== 'none' ? `
+            ${signatures.client || signatures.prof || signatures.company ? `
             <div class="signature">
-                ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
-                ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                ${['client_resp', 'company'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
+                ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
+                ${signatures.prof ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
+                ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
             </div>` : ''}
 
             <div class="footer">
@@ -1575,24 +1575,23 @@ export default function ClientesPage() {
                                 </label>
                                 <div className="space-y-2">
                                     {[
-                                        { id: 'none', label: 'Não exibir bloco de assinaturas' },
-                                        { id: 'client', label: 'Apenas Assinatura do Cliente' },
-                                        { id: 'prof', label: 'Apenas Assinatura do Profissional' },
-                                        { id: 'company', label: 'Apenas Assinatura da Empresa' },
-                                        { id: 'both', label: 'Cliente e Profissional' },
-                                        { id: 'client_resp', label: 'Cliente e Empresa' },
-                                    ].map(opt => (
-                                        <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.signatureType === opt.id ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
-                                            <input
-                                                type="radio"
-                                                name="signatureOption"
-                                                className="accent-teal-600 w-4 h-4"
-                                                checked={printConfigModal.signatureType === opt.id}
-                                                onChange={() => setPrintConfigModal({ ...printConfigModal, signatureType: opt.id })}
-                                            />
-                                            <span className={`font-bold text-sm ${printConfigModal.signatureType === opt.id ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
-                                        </label>
-                                    ))}
+                                        { id: 'client', label: 'Assinatura do Cliente' },
+                                        { id: 'prof', label: 'Assinatura do Profissional' },
+                                        { id: 'company', label: 'Assinatura da Empresa' },
+                                    ].map(opt => {
+                                        const isChecked = printConfigModal.signatures[opt.id as keyof typeof printConfigModal.signatures];
+                                        return (
+                                            <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${isChecked ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="accent-teal-600 w-4 h-4"
+                                                    checked={isChecked}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, [opt.id]: e.target.checked } })}
+                                                />
+                                                <span className={`font-bold text-sm ${isChecked ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
