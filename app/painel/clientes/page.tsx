@@ -72,9 +72,9 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
+    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; signatureType: string } | null>(null);
     const [form, setForm] = useState({
-        id: "", name: "", phone: "", email: "", cpf: "", rg: "",
-        photoUrl: "",
+        id: "", name: "", phone: "", email: "", cpf: "", rg: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
     });
 
@@ -470,6 +470,13 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
+        setPrintConfigModal({ entry, dateVisible: true, signatureType: 'both' });
+    }
+
+    function executarImpressaoDaFicha() {
+        if (!printConfigModal?.entry) return;
+        const { entry, dateVisible, signatureType } = printConfigModal;
+
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
 
@@ -614,7 +621,6 @@ export default function ClientesPage() {
                     ${logoHtml}
                     <div>
                         <div class="company-name">${nomeEmpresa}</div>
-                        <div class="company-subtitle">Ficha de Acompanhamento</div>
                     </div>
                 </div>
                 <div class="header-right">
@@ -624,7 +630,6 @@ export default function ClientesPage() {
             </div>
 
             <h1 class="doc-title">${entry.template?.name}</h1>
-            <p class="doc-subtitle">${entry.template?.description || 'Registro de Atendimento'}</p>
 
             <div class="client-box">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
@@ -638,14 +643,17 @@ export default function ClientesPage() {
 
             ${camposHtml}
 
+            ${dateVisible ? `
             <div style="margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1f2937; padding-right: 20px;">
                 ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </div>
+            </div>` : '<div style="margin-top: 40px;"></div>'}
 
+            ${signatureType !== 'none' ? `
             <div class="signature">
-                <div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>
-                <div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Paciente</div></div>
-            </div>
+                ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
+                ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Paciente</div></div>` : ''}
+                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Responsável</div></div>` : ''}
+            </div>` : ''}
 
             <div class="footer">
                 <strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
@@ -657,7 +665,10 @@ export default function ClientesPage() {
         if (printWindow) {
             printWindow.document.write(html);
             printWindow.document.close();
-            setTimeout(() => printWindow.print(), 600);
+            setTimeout(() => {
+                printWindow.print();
+                setPrintConfigModal(null);
+            }, 600);
         }
     }
 
@@ -1482,6 +1493,80 @@ export default function ClientesPage() {
                     </div>
                 </div>
             )}
-        </div>
+
+            {/* MODAL DE IMPRESSÃO - OPÇÕES PERSONALIZADAS OBRIGATORIAS */}
+            {printConfigModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                            <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
+                                <Printer size={22} className="text-teal-600" /> Imprimir Ficha
+                            </h2>
+                            <button onClick={() => setPrintConfigModal(null)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/40 hover:text-red-500 transition text-gray-400">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            {/* Assinatura */}
+                            <div className="space-y-3">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <FileIcon size={14} /> Bloco de Assinaturas
+                                </label>
+                                <div className="space-y-2">
+                                    {[
+                                        { id: 'none', label: 'Não exibir bloco de assinaturas' },
+                                        { id: 'client', label: 'Apenas Assinatura do Paciente' },
+                                        { id: 'prof', label: 'Apenas Assinatura do Profissional' },
+                                        { id: 'both', label: 'Paciente e Profissional' },
+                                        { id: 'client_resp', label: 'Paciente e Responsável Legal' },
+                                    ].map(opt => (
+                                        <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.signatureType === opt.id ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
+                                            <input
+                                                type="radio"
+                                                name="signatureOption"
+                                                className="accent-teal-600 w-4 h-4"
+                                                checked={printConfigModal.signatureType === opt.id}
+                                                onChange={() => setPrintConfigModal({ ...printConfigModal, signatureType: opt.id })}
+                                            />
+                                            <span className={`font-bold text-sm ${printConfigModal.signatureType === opt.id ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Data */}
+                            <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Calendar size={14} /> Exibição da Data
+                                </label>
+                                <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                    <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={printConfigModal.dateVisible}
+                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, dateVisible: e.target.checked })}
+                                        />
+                                        <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                    </div>
+                                    <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+                            <button
+                                onClick={executarImpressaoDaFicha}
+                                className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
+                            >
+                                <Printer size={18} /> Gerar PDF (Imprimir)
+                            </button>
+                        </div>
+                    </div>
+                </div >
+            )
+            }
+        </div >
     );
 }
