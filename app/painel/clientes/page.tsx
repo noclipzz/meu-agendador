@@ -563,7 +563,7 @@ export default function ClientesPage() {
             ? `<img src="${empresaInfo.logo}" class="company-logo" />`
             : `<div class="company-logo-placeholder">🏥</div>`;
 
-        const nomeEmpresa = empresaInfo.name || 'Clínica';
+        const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
 
         const html = `<!DOCTYPE html><html><head><title>Ficha - ${clienteSelecionado?.name}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -664,7 +664,7 @@ export default function ClientesPage() {
             <div class="signature">
                 ${['prof', 'both'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
                 ${['client', 'both', 'client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
+                ${['client_resp'].includes(signatureType) ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
             </div>` : ''}
 
             <div class="footer">
