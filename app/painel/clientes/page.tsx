@@ -1558,8 +1558,8 @@ export default function ClientesPage() {
             {/* MODAL DE IMPRESSÃO - OPÇÕES PERSONALIZADAS OBRIGATORIAS */}
             {printConfigModal && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md max-h-[90vh] border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20 shrink-0">
                             <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
                                 <Printer size={22} className="text-teal-600" /> Imprimir Ficha
                             </h2>
@@ -1567,7 +1567,7 @@ export default function ClientesPage() {
                                 <X size={20} />
                             </button>
                         </div>
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
                             {/* Assinatura */}
                             <div className="space-y-3">
                                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
