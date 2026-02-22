@@ -268,7 +268,7 @@ export default function Configuracoes() {
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Razão Social</label>
                                 <input
                                     className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
-                                    placeholder="Razão Social da Empresa (Ex: Proteção Dedetizadora LTDA)"
+                                    placeholder="Razão Social da Empresa (Ex: Minha Empresa LTDA)"
                                     value={corporateName}
                                     onChange={e => setCorporateName(e.target.value)}
                                 />
