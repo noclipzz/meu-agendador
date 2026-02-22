@@ -81,7 +81,7 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
-    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; signatures: { client: boolean; prof: boolean; company: boolean } } | null>(null);
+    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean } } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -483,12 +483,12 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
-        setPrintConfigModal({ entry, dateVisible: true, signatures: { client: true, prof: true, company: false } });
+        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false } });
     }
 
     function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures } = printConfigModal;
+        const { entry, dateVisible, signatures, twoColumns } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -602,9 +602,9 @@ export default function ClientesPage() {
             /* SEÇÕES */
             .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:1px; padding:10px 0 6px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:8px; }
 
-            /* GRID DE CAMPOS - UMA COLUNA */
-            .fields-grid { display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb; }
-            .field-item { padding:8px 14px; border-bottom:1px solid #e5e7eb; }
+            /* GRID DE CAMPOS - UMA OU DUAS COLUNAS */
+            .fields-grid { ${twoColumns ? 'display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border:none;' : 'display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb;'} }
+            .field-item { padding:${twoColumns ? '10px 14px' : '8px 14px'}; ${twoColumns ? 'border:1px solid #e5e7eb; border-radius: 8px;' : 'border-bottom:1px solid #e5e7eb;'} }
             .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
             .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
 
@@ -769,7 +769,7 @@ export default function ClientesPage() {
                             <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
                             <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
                             {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
-                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Ficha & Evolução</button>
+                                <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Fichas Técnicas </button>
                             )}
                         </div>
 
@@ -1612,6 +1612,29 @@ export default function ClientesPage() {
                                         <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
                                     </div>
                                     <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
+                                </label>
+                            </div>
+
+                            {/* Layout */}
+                            <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <FileText size={14} /> Layout da Ficha
+                                </label>
+                                <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                    <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={printConfigModal.twoColumns}
+                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, twoColumns: e.target.checked })}
+                                        />
+                                        <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Dividir campos em Duas Colunas</span>
+                                        <span className="text-[10px] text-gray-400 font-bold">Ideal para economizar de papel</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
