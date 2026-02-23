@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   verification: {
-    google: "U8G4EU44RE5zY3Z170ws-Uioqnd1EkunibmOIdP8",
+    google: "U8G4EU44RE5zY3Z170ws-Uioqnd1EkunibmCck1jo0I",
   },
   manifest: "/manifest.json",
   icons: {
