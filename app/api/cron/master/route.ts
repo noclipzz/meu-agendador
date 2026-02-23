@@ -5,6 +5,7 @@ import { format, startOfDay, endOfDay } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { Resend } from "resend";
 import { clerkClient } from "@clerk/nextjs/server";
+import { postImageToInstagram } from "@/lib/instagram";
 
 export const dynamic = 'force-dynamic';
 
@@ -183,6 +184,49 @@ export async function GET(req: Request) {
             }
         }
         logs.push(`Limpeza: ${cleanedSlugs} slugs liberados.`);
+
+        // --------------------------------------------------------------------------------
+        // 4. TAREFA: POSTAGEM AUTOMÁTICA NO INSTAGRAM
+        // --------------------------------------------------------------------------------
+        try {
+            const POSTS_DATABASE = [
+                {
+                    title: "Agenda Online 24/7",
+                    subtitle: "Deixe seus clientes agendarem enquanto você dorme.",
+                    feature: "Link de Bio Inteligente",
+                    caption: "A liberdade de ter sua agenda trabalhando por você 24 horas por dia. 🚀\n\nCom o NOHUD, o seu cliente escolhe o horário, agenda e você só recebe o aviso. Menos telefone, mais produtividade!\n\n#gestao #agendamento #produtividade #nohud"
+                },
+                {
+                    title: "WhatsApp Automático",
+                    subtitle: "Reduza o esquecimento e as faltas em até 80%.",
+                    feature: "Lembretes Inteligentes",
+                    caption: "Chega de perder tempo enviando mensagens manuais de confirmação. 📱\n\nO NOHUD envia automaticamente os lembretes para seus clientes via WhatsApp. Menos faltas, mais faturamento!\n\n#marketing #whatsapp #vendas #gestaoempresarial"
+                },
+                {
+                    title: "Financeiro na Mão",
+                    subtitle: "Saiba exatamente quanto você lucrou no final do dia.",
+                    feature: "Fluxo de Caixa Real-time",
+                    caption: "Você sabe para onde está indo o dinheiro da sua empresa? 💸\n\nCom nosso dashboard financeiro, você controla entradas, saídas e comissões com um clique. Controle total do seu lucro!\n\n#financas #empreendedorismo #barbearia #estetica"
+                }
+            ];
+
+            const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
+            const baseUrl = 'https://nohud.com.br';
+            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
+
+            const igResult = await postImageToInstagram({
+                imageUrl,
+                caption: post.caption
+            });
+
+            if (igResult.success) {
+                logs.push(`Instagram: Post diário enviado com sucesso (ID: ${igResult.postId})`);
+            } else {
+                logs.push(`Instagram: Falha ao enviar post (${igResult.error})`);
+            }
+        } catch (igErr: any) {
+            logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
+        }
 
         return NextResponse.json({ success: true, logs });
 
