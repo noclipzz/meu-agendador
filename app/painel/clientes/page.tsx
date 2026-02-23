@@ -15,6 +15,8 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "@/contexts/AgendaContext";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
@@ -69,6 +71,7 @@ export default function ClientesPage() {
 
     // Modais e Seleção
     const [modalAberto, setModalAberto] = useState(false);
+    const [modalImportarAberto, setModalImportarAberto] = useState(false);
     const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
     const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "PRONTUARIO">("DADOS");
     const [isEditing, setIsEditing] = useState(false);
@@ -279,6 +282,79 @@ export default function ClientesPage() {
             const errorData = await res.json().catch(() => ({ error: "Erro ao processar solicitação." }));
             toast.error(errorData.error || "Erro ao salvar cliente.");
         }
+    }
+
+    async function processarImportacao(file: File) {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[firstSheet];
+
+                // Converte para JSON
+                const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                if (jsonData.length === 0) {
+                    toast.error("O arquivo está vazio.");
+                    return;
+                }
+
+                const res = await fetch('/api/clientes/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clients: jsonData })
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    toast.success(result.message);
+                    setModalImportarAberto(false);
+                    carregarClientes(); // Recarrega a lista
+                } else {
+                    toast.error(result.error || "Erro ao importar.");
+                    if (result.erros && result.erros.length > 0) {
+                        console.error("Erros de importação:", result.erros);
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao ler excel:", error);
+                toast.error("Erro ao processar o arquivo Excel.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function baixarModeloExcel() {
+        const cabecalho = [
+            {
+                name: "João Silva",
+                phone: "(11) 99999-9999",
+                email: "joao@email.com",
+                clientType: "FISICA",
+                cpf: "111.222.333-44",
+                cnpj: "",
+                address: "Rua Exemplo",
+                number: "123",
+                complement: "Apt 4",
+                neighborhood: "Centro",
+                city: "São Paulo",
+                state: "SP",
+                notes: "Cliente VIP"
+            }
+        ];
+
+        const worksheet = XLSX.utils.json_to_sheet(cabecalho);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
+
+        const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+        const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
+        saveAs(data, "modelo_importacao_clientes.xlsx");
     }
 
     async function adicionarNotaRapida() {
@@ -700,10 +776,13 @@ export default function ClientesPage() {
 
     return (
         <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
-            <div className="flex justify-between items-center px-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center px-2 gap-4">
                 <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Gestão de Clientes</h1>
                 {userRole === "ADMIN" && (
-                    <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
+                    <div className="flex gap-2">
+                        <button onClick={() => setModalImportarAberto(true)} className="bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm"><Download size={20} /> Importar</button>
+                        <button onClick={() => setModalAberto(true)} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg"><UserPlus size={20} /> Adicionar Cliente</button>
+                    </div>
                 )}
             </div>
 
@@ -1679,6 +1758,48 @@ export default function ClientesPage() {
                                 >
                                     <Printer size={18} /> Gerar PDF (Imprimir)
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
+
+            {/* MODAL IMPORTAR PLANILHA */}
+            {modalImportarAberto && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                            <div className="p-8 pb-6 shrink-0 flex justify-between items-center border-b dark:border-gray-800">
+                                <div>
+                                    <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
+                                        <Download className="text-blue-500" size={24} /> Importar Clientes
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mt-1 font-medium">Adicione clientes em massa usando uma planilha Excel.</p>
+                                </div>
+                                <button onClick={() => setModalImportarAberto(false)} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl border dark:border-blue-800/30">
+                                    <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2"><FileText size={18} /> 1. Baixe o Modelo</h3>
+                                    <p className="text-sm text-blue-600/80 dark:text-blue-300/70 mb-4 leading-relaxed">Faça o download da nossa planilha modelo. Ela contém as colunas formatadas corretamente para que o sistema consiga ler as informações dos seus clientes.</p>
+                                    <button onClick={baixarModeloExcel} className="w-full bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-2xl font-bold flex justify-center items-center gap-2 hover:bg-blue-50 dark:hover:bg-gray-700 transition shadow-sm shadow-blue-100 dark:shadow-none">
+                                        <Download size={18} /> Baixar Planilha Modelo
+                                    </button>
+                                </div>
+
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-3xl border dark:border-gray-700">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-300 mb-2 flex items-center gap-2"><UploadCloud size={18} /> 2. Faça o Upload</h3>
+                                    <p className="text-sm text-gray-500 mb-4 leading-relaxed">Preencha a planilha modelo e, quando estiver com tudo pronto, faça o upload aqui para processar a importação.</p>
+                                    <label className="w-full bg-blue-600 border-2 border-blue-600 text-white p-3 rounded-2xl font-black flex justify-center items-center gap-2 hover:bg-blue-700 hover:border-blue-700 transition shadow-lg cursor-pointer">
+                                        <UploadCloud size={18} /> Escolher Arquivo Preenchido
+                                        <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                processarImportacao(e.target.files[0]);
+                                            }
+                                        }} />
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
