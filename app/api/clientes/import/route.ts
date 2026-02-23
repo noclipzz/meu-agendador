@@ -83,21 +83,24 @@ export async function POST(req: Request) {
                 continue;
             }
 
+            let finalEmail = email;
             if (email && !validateEmail(email)) {
-                erros.push(`Cliente ${client.name} ignorado (e-mail inválido: ${email}).`);
-                continue;
+                erros.push(`Cliente ${client.name}: E-mail "${email}" ignorado por ser inválido.`);
+                finalEmail = null;
             }
+
+            let finalCpf = cpf;
             if (cpf && !validateCPF(cpf)) {
-                erros.push(`Cliente ${client.name} ignorado (CPF inválido: ${cpf}).`);
-                continue;
+                erros.push(`Cliente ${client.name}: CPF "${cpf}" ignorado por ser inválido.`);
+                finalCpf = null;
             }
 
             clientsToCreate.push({
                 name: String(client.name).trim(),
                 phone: phone,
-                email: email,
+                email: finalEmail,
                 clientType: client.clientType === "JURIDICA" ? "JURIDICA" : "FISICA",
-                cpf: cpf,
+                cpf: finalCpf,
                 cnpj: client.cnpj ? String(client.cnpj).trim() : null,
                 address: client.address ? String(client.address).trim() : null,
                 number: client.number ? String(client.number).trim() : null,
