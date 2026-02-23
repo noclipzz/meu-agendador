@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { validateCPF, validateEmail } from "@/lib/validators";
+import {
+  validateCPF, validateEmail,
+  formatarTelefone, formatarCPF, formatarCNPJ, formatarCEP
+} from "@/lib/validators";
 
 const prisma = db;
 export const dynamic = "force-dynamic";
@@ -84,7 +87,11 @@ export async function POST(req: Request) {
     }
 
     // Verifica se já existe cliente com esse telefone na empresa (evita duplicidade)
-    const phoneToSave = body.phone?.trim() === "" ? null : body.phone?.trim();
+    const phoneToSave = body.phone?.trim() === "" ? null : formatarTelefone(body.phone?.trim());
+    const cpfToSave = body.cpf?.trim() === "" ? null : formatarCPF(body.cpf?.trim());
+    const cnpjToSave = body.cnpj?.trim() === "" ? null : formatarCNPJ(body.cnpj?.trim());
+    const cepToSave = body.cep?.trim() === "" ? null : formatarCEP(body.cep?.trim());
+
     if (phoneToSave) {
       const existing = await prisma.client.findFirst({
         where: {
@@ -103,12 +110,12 @@ export async function POST(req: Request) {
         phone: phoneToSave,
         email: body.email,
         clientType: body.clientType || "FISICA",
-        cpf: body.cpf,
-        cnpj: body.cnpj,
+        cpf: cpfToSave,
+        cnpj: cnpjToSave,
         rg: body.rg,
         inscricaoEstadual: body.inscricaoEstadual,
         birthDate: body.birthDate,
-        cep: body.cep,
+        cep: cepToSave,
         address: body.address,
         number: body.number,
         complement: body.complement,
@@ -149,7 +156,11 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
     }
     // Verifica se o telefone novo já existe em outro cliente
-    const phoneToSave = data.phone?.trim() === "" ? null : data.phone?.trim();
+    const phoneToSave = data.phone?.trim() === "" ? null : formatarTelefone(data.phone?.trim());
+    const cpfToSave = data.cpf?.trim() === "" ? null : formatarCPF(data.cpf?.trim());
+    const cnpjToSave = data.cnpj?.trim() === "" ? null : formatarCNPJ(data.cnpj?.trim());
+    const cepToSave = data.cep?.trim() === "" ? null : formatarCEP(data.cep?.trim());
+
     if (phoneToSave) {
       const existing = await prisma.client.findFirst({
         where: {
@@ -174,12 +185,12 @@ export async function PUT(req: Request) {
         phone: phoneToSave,
         email: data.email,
         clientType: data.clientType || "FISICA",
-        cpf: data.cpf,
-        cnpj: data.cnpj,
+        cpf: cpfToSave,
+        cnpj: cnpjToSave,
         rg: data.rg,
         inscricaoEstadual: data.inscricaoEstadual,
         birthDate: data.birthDate,
-        cep: data.cep,
+        cep: cepToSave,
         address: data.address,
         number: data.number,
         complement: data.complement,

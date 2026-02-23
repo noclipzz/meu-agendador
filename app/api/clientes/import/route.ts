@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { validateCPF, validateEmail } from "@/lib/validators";
+import {
+    validateCPF, validateEmail,
+    formatarTelefone, formatarCPF, formatarCNPJ, formatarCEP
+} from "@/lib/validators";
 
 const prisma = db;
 export const dynamic = "force-dynamic";
@@ -64,15 +67,21 @@ export async function POST(req: Request) {
                 continue;
             }
 
-            // Normalização básica
+            // Normalização básica com Máscara
             const phoneStr = client.phone ? String(client.phone).trim() : "";
-            const phone = phoneStr === "" ? null : phoneStr;
+            const phone = phoneStr === "" ? null : formatarTelefone(phoneStr);
 
             const emailStr = client.email ? String(client.email).trim().toLowerCase() : "";
             const email = emailStr === "" ? null : emailStr;
 
             const cpfStr = client.cpf ? String(client.cpf).trim() : "";
-            const cpf = cpfStr === "" ? null : cpfStr;
+            const cpf = cpfStr === "" ? null : formatarCPF(cpfStr);
+
+            const cnpjStr = client.cnpj ? String(client.cnpj).trim() : "";
+            const cnpj = cnpjStr === "" ? null : formatarCNPJ(cnpjStr);
+
+            const cepStr = client.cep ? String(client.cep).trim() : "";
+            const cep = cepStr === "" ? null : formatarCEP(cepStr);
 
             if (phone && currentPhones.has(phone)) {
                 erros.push(`Cliente ${client.name} ignorado (telefone duplicado: ${phone}).`);
@@ -101,7 +110,8 @@ export async function POST(req: Request) {
                 email: finalEmail,
                 clientType: client.clientType === "JURIDICA" ? "JURIDICA" : "FISICA",
                 cpf: finalCpf,
-                cnpj: client.cnpj ? String(client.cnpj).trim() : null,
+                cnpj: cnpj,
+                cep: cep,
                 address: client.address ? String(client.address).trim() : null,
                 number: client.number ? String(client.number).trim() : null,
                 complement: client.complement ? String(client.complement).trim() : null,
