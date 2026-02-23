@@ -9,8 +9,29 @@ import { Toaster } from "sonner"; // <--- 1. Importe
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NOHUD - Gestão Inteligente",
-  description: "Software completo para gestão de agendamentos e financeira.",
+  title: "NOHUD | Sistema de Agendamento Online e Gestão para Negócios",
+  description: "Organize sua agenda, controle seu financeiro e reduza faltas com lembretes automáticos no WhatsApp. O software de gestão ideal para barbearias, clínicas e estúdios.",
+  keywords: ["sistema de agendamento online", "software de gestão", "agenda para barbearia", "gestão financeira para clínicas", "lembretes whatsapp", "nohud"],
+  authors: [{ name: "NOHUD Sistemas" }],
+  openGraph: {
+    title: "NOHUD | Gestão Inteligente para seu Negócio",
+    description: "Transforme a gestão da sua empresa com agendamento online e controle financeiro simplificado.",
+    url: "https://nohud.com.br",
+    siteName: "NOHUD",
+    images: [
+      {
+        url: "/dashboard-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "NOHUD Dashboard",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
+  verification: {
+    google: "U8G4EU44RE5zY3Z170ws-Uioqnd1EkunibmOIdP8",
+  },
   manifest: "/manifest.json",
   icons: {
     icon: "/LOGOAPP.png",

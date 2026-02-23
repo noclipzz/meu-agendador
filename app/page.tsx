@@ -560,12 +560,12 @@ export default function LandingPage() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-8 tracking-tight text-gray-900 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            A gestão da sua empresa <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">simples e inteligente.</span>
+            Sistema de Agendamento <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">e Gestão Inteligente.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
-            Deixe as planilhas de lado. O NOHUD organiza sua agenda, controla seu financeiro e envia lembretes automáticos para seus clientes.
+            Organize sua agenda, controle o financeiro e reduza as faltas com lembretes automáticos. O NOHUD é a ferramenta completa para barbearias, clínicas e prestadores de serviço.
           </p>
 
           <div className="flex flex-col md:flex-row justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-200">
