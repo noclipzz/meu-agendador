@@ -460,29 +460,114 @@ function ComparacaoPlanos() {
 }
 
 // --- HERO CTA (BOTAO COMEÇAR) ---
+// --- MODAL DE TELEFONE ---
+function PhoneModal({ isOpen, onClose, onConfirm, loading }: { isOpen: boolean, onClose: () => void, onConfirm: (phone: string) => void, loading: boolean }) {
+  const [phone, setPhone] = useState("");
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl scale-in-center animate-in zoom-in-95 duration-300">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Smartphone size={32} />
+          </div>
+          <h3 className="text-2xl font-black text-gray-900">Quase lá! 🚀</h3>
+          <p className="text-gray-500 font-medium mt-2">Informe seu WhatsApp para recebermos você com um presente especial de boas-vindas.</p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Seu WhatsApp</label>
+            <input
+              type="tel"
+              placeholder="(00) 00000-0000"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full mt-1 px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all font-bold text-lg"
+              autoFocus
+            />
+          </div>
+
+          <button
+            onClick={() => onConfirm(phone)}
+            disabled={loading || !phone}
+            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <>Ativar Meus 7 Dias Grátis <ArrowRight size={20} /></>}
+          </button>
+
+          <button onClick={onClose} className="w-full py-2 text-gray-400 font-bold hover:text-gray-600 transition text-sm">
+            Depois eu informo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- BALÃO FLUTUANTE ---
+function FloatingCTA() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[40] animate-in slide-in-from-bottom-10 fade-in duration-700">
+      <Link href="#planos" className="group relative flex items-center gap-3 bg-white p-2 pr-6 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-blue-50 hover:scale-105 transition-all active:scale-95">
+        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:rotate-12 transition-transform">
+          <Zap size={24} fill="currentColor" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Teste Grátis</span>
+          <span className="text-sm font-black text-gray-900 leading-none">Liberar 7 dias agora! 🚀</span>
+        </div>
+
+        {/* Notificação Pulse */}
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-bounce" />
+      </Link>
+    </div>
+  );
+}
+
+// --- HERO CTA (BOTAO COMEÇAR) ---
 function HeroCTA() {
   const { isSignedIn, user } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const handleStart = async () => {
+  const handleStart = async (phone?: string) => {
     if (!isSignedIn) {
       router.push('/sign-up');
       return;
     }
 
+    // Se clicar no botão principal e for a primeira vez (sem modal aberto), abre modal
+    if (!phone && !showModal) {
+      setShowModal(true);
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch('/api/trial', { method: 'POST' });
+      const res = await fetch('/api/trial', {
+        method: 'POST',
+        body: JSON.stringify({ phone })
+      });
       const data = await res.json();
 
       if (res.ok) {
         toast.success("Período de teste de 7 dias ativado! 🎉");
         router.push('/painel/dashboard');
       } else {
-        // Se já usou trial ou tem assinatura
         if (data.code === "TRIAL_USED") {
-          // Tenta ir para o dashboard. Se estiver inativo, o layout vai redirecionar para planos.
           router.push('/painel/dashboard');
         } else {
           toast.info(data.message || "Redirecionando...");
@@ -493,17 +578,27 @@ function HeroCTA() {
       toast.error("Erro de conexão.");
     } finally {
       setLoading(false);
+      setShowModal(false);
     }
   };
 
   return (
-    <button
-      onClick={handleStart}
-      disabled={loading}
-      className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
-    >
-      {loading ? <Loader2 className="animate-spin" /> : <>Começar Gratuitamente <ArrowRight size={20} /></>}
-    </button>
+    <>
+      <button
+        onClick={() => handleStart()}
+        disabled={loading}
+        className="bg-blue-600 text-white font-bold px-10 py-4 rounded-full shadow-xl shadow-blue-500/25 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 text-lg"
+      >
+        {loading ? <Loader2 className="animate-spin" /> : <>Começar Gratuitamente <ArrowRight size={20} /></>}
+      </button>
+
+      <PhoneModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={(p) => handleStart(p)}
+        loading={loading}
+      />
+    </>
   );
 }
 
@@ -670,6 +765,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      <FloatingCTA />
     </div>
   );
 }

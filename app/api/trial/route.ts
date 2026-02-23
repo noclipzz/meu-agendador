@@ -13,6 +13,7 @@ export async function POST(req: Request) {
     try {
         const { userId } = auth();
         const user = await currentUser();
+        const { phone } = await req.json();
 
         if (!userId || !user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,6 +82,13 @@ export async function POST(req: Request) {
                 console.error("Erro ao enviar email de trial:", emailError);
                 // Não falha a requisição se o email falhar
             }
+        }
+
+        // --- LOGICA DE BOAS-VINDAS WHATSAPP ---
+        // Se houver um telefone, aqui enviaríamos a mensagem automática usando uma instância 'Master' do sistema
+        if (phone) {
+            console.log(`[TRIAL] Novo usuário ${user.firstName} ativado. Telefone para boas-vindas: ${phone}`);
+            // TODO: Integrar com Evolution API usando instância administrativa para enviar mensagem de saudação
         }
 
         return NextResponse.json({ success: true, message: "Período de teste ativado com sucesso!" });
