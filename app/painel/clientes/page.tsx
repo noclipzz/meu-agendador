@@ -1803,7 +1803,7 @@ export default function ClientesPage() {
             {modalImportarAberto && (
                 <ModalPortal>
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
-                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                             <div className="p-8 pb-6 shrink-0 flex justify-between items-center border-b dark:border-gray-800">
                                 <div>
                                     <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
@@ -1814,7 +1814,7 @@ export default function ClientesPage() {
                                 <button onClick={() => { setModalImportarAberto(false); setImportErros([]); }} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
                             </div>
 
-                            <div className="p-8 space-y-6">
+                            <div className="p-8 space-y-6 overflow-y-auto">
                                 <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl border dark:border-blue-800/30">
                                     <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2"><FileText size={18} /> 1. Baixe o Modelo</h3>
                                     <p className="text-sm text-blue-600/80 dark:text-blue-300/70 mb-4 leading-relaxed">Faça o download da nossa planilha modelo. Ela contém as colunas formatadas corretamente para que o sistema consiga ler as informações dos seus clientes.</p>
