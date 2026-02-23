@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import { ptBR } from "@clerk/localizations";
 import "./globals.css";
+import Script from 'next/script';
 import { Toaster } from "sonner"; // <--- 1. Importe
 
 
@@ -59,6 +60,22 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
   return (
     <ClerkProvider localization={ptBR as any}>
       <html lang="pt-BR" className="scroll-smooth">
+        <head>
+          {/* Google Analytics */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-6H0KVG4YCJ"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+
+              gtag('config', 'G-6H0KVG4YCJ');
+            `}
+          </Script>
+        </head>
         <body>
           {children}
           <Toaster richColors /> {/* <--- 2. Adicione aqui, antes de fechar o body */}
