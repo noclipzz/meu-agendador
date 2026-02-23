@@ -72,6 +72,7 @@ export default function ClientesPage() {
     // Modais e Seleção
     const [modalAberto, setModalAberto] = useState(false);
     const [modalImportarAberto, setModalImportarAberto] = useState(false);
+    const [importErros, setImportErros] = useState<string[]>([]);
     const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
     const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "PRONTUARIO">("DADOS");
     const [isEditing, setIsEditing] = useState(false);
@@ -287,6 +288,7 @@ export default function ClientesPage() {
     async function processarImportacao(file: File) {
         if (!file) return;
 
+        setImportErros([]);
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -296,10 +298,32 @@ export default function ClientesPage() {
                 const sheet = workbook.Sheets[firstSheet];
 
                 // Converte para JSON
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
+                const rawJsonData = XLSX.utils.sheet_to_json(sheet);
+
+                if (rawJsonData.length === 0) {
+                    toast.error("O arquivo está vazio.");
+                    return;
+                }
+
+                // Mapeia colunas em português para as chaves em inglês esperadas pela API
+                const jsonData = rawJsonData.map((row: any) => ({
+                    name: row.Nome || row.name || row.NOME,
+                    phone: row.Telefone || row.telefone || row.phone || row.TELEFONE,
+                    email: row.Email || row.email || row.EMAIL,
+                    clientType: row.TipoDaPessoa || row.clientType || 'FISICA',
+                    cpf: row.CPF || row.cpf,
+                    cnpj: row.CNPJ || row.cnpj,
+                    address: row.Endereco || row.address,
+                    number: row.Numero || row.number,
+                    complement: row.Complemento || row.complement,
+                    neighborhood: row.Bairro || row.neighborhood,
+                    city: row.Cidade || row.city,
+                    state: row.Estado || row.state,
+                    notes: row.Observacoes || row.notes || row.Observação
+                })).filter((c: any) => c.name); // Ignora linhas sem nome
 
                 if (jsonData.length === 0) {
-                    toast.error("O arquivo está vazio.");
+                    toast.error("Nenhum cliente válido (com nome) encontrado no arquivo.");
                     return;
                 }
 
@@ -312,13 +336,24 @@ export default function ClientesPage() {
                 const result = await res.json();
 
                 if (res.ok) {
-                    toast.success(result.message);
-                    setModalImportarAberto(false);
+                    if (result.importados > 0) {
+                        toast.success(`Importados ${result.importados} clientes com sucesso!`);
+                    } else {
+                        toast.warning(`Nenhum cliente importado.`);
+                    }
+
+                    if (result.erros && result.erros.length > 0) {
+                        setImportErros(result.erros);
+                        toast.error(`Atenção: Houve ${result.erros.length} erros ou duplicações.`);
+                    } else {
+                        setModalImportarAberto(false);
+                    }
+
                     carregarClientes(); // Recarrega a lista
                 } else {
                     toast.error(result.error || "Erro ao importar.");
                     if (result.erros && result.erros.length > 0) {
-                        console.error("Erros de importação:", result.erros);
+                        setImportErros(result.erros);
                     }
                 }
             } catch (error) {
@@ -332,19 +367,19 @@ export default function ClientesPage() {
     function baixarModeloExcel() {
         const cabecalho = [
             {
-                name: "João Silva",
-                phone: "(11) 99999-9999",
-                email: "joao@email.com",
-                clientType: "FISICA",
-                cpf: "111.222.333-44",
-                cnpj: "",
-                address: "Rua Exemplo",
-                number: "123",
-                complement: "Apt 4",
-                neighborhood: "Centro",
-                city: "São Paulo",
-                state: "SP",
-                notes: "Cliente VIP"
+                Nome: "João Silva",
+                Telefone: "(11) 99999-9999",
+                Email: "joao@email.com",
+                TipoDaPessoa: "FISICA",
+                CPF: "111.222.333-44",
+                CNPJ: "",
+                Endereco: "Rua Exemplo",
+                Numero: "123",
+                Complemento: "Apt 4",
+                Bairro: "Centro",
+                Cidade: "São Paulo",
+                Estado: "SP",
+                Observacoes: "Cliente VIP"
             }
         ];
 
@@ -1776,7 +1811,7 @@ export default function ClientesPage() {
                                     </h2>
                                     <p className="text-sm text-gray-500 mt-1 font-medium">Adicione clientes em massa usando uma planilha Excel.</p>
                                 </div>
-                                <button onClick={() => setModalImportarAberto(false)} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                                <button onClick={() => { setModalImportarAberto(false); setImportErros([]); }} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
                             </div>
 
                             <div className="p-8 space-y-6">
@@ -1793,13 +1828,23 @@ export default function ClientesPage() {
                                     <p className="text-sm text-gray-500 mb-4 leading-relaxed">Preencha a planilha modelo e, quando estiver com tudo pronto, faça o upload aqui para processar a importação.</p>
                                     <label className="w-full bg-blue-600 border-2 border-blue-600 text-white p-3 rounded-2xl font-black flex justify-center items-center gap-2 hover:bg-blue-700 hover:border-blue-700 transition shadow-lg cursor-pointer">
                                         <UploadCloud size={18} /> Escolher Arquivo Preenchido
-                                        <input type="file" className="hidden" accept=".xlsx, .xls" onChange={(e) => {
+                                        <input type="file" className="hidden" accept=".xlsx, .xls" onClick={(e: any) => e.target.value = null} onChange={(e) => {
                                             if (e.target.files && e.target.files[0]) {
                                                 processarImportacao(e.target.files[0]);
                                             }
                                         }} />
                                     </label>
                                 </div>
+                                {importErros.length > 0 && (
+                                    <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-3xl border border-red-100 dark:border-red-800/30 animate-in fade-in slide-in-from-top-2">
+                                        <h3 className="font-bold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2"><AlertTriangle size={18} /> Erros de Importação ({importErros.length})</h3>
+                                        <div className="max-h-32 overflow-y-auto space-y-1 custom-scrollbar pr-2">
+                                            {importErros.map((erro, i) => (
+                                                <div key={i} className="text-[11px] font-bold text-red-600/80 dark:text-red-300 bg-red-100/50 dark:bg-red-900/40 p-2 rounded-lg px-3 mb-1">{erro}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
