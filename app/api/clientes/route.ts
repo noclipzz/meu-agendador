@@ -84,11 +84,12 @@ export async function POST(req: Request) {
     }
 
     // Verifica se já existe cliente com esse telefone na empresa (evita duplicidade)
-    if (body.phone) {
+    const phoneToSave = body.phone?.trim() === "" ? null : body.phone?.trim();
+    if (phoneToSave) {
       const existing = await prisma.client.findFirst({
         where: {
           companyId,
-          phone: body.phone
+          phone: phoneToSave
         }
       });
       if (existing) {
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
     const client = await (prisma.client as any).create({
       data: {
         name: body.name,
-        phone: body.phone,
+        phone: phoneToSave,
         email: body.email,
         clientType: body.clientType || "FISICA",
         cpf: body.cpf,
@@ -147,6 +148,20 @@ export async function PUT(req: Request) {
     if (data.email && !validateEmail(data.email)) {
       return NextResponse.json({ error: "E-mail inválido." }, { status: 400 });
     }
+    // Verifica se o telefone novo já existe em outro cliente
+    const phoneToSave = data.phone?.trim() === "" ? null : data.phone?.trim();
+    if (phoneToSave) {
+      const existing = await prisma.client.findFirst({
+        where: {
+          companyId,
+          phone: phoneToSave,
+          id: { not: id }
+        }
+      });
+      if (existing) {
+        return NextResponse.json({ error: "Já existe outro cliente com este telefone." }, { status: 400 });
+      }
+    }
 
     // Garante que só atualiza clientes da MESMA empresa
     const updated = await (prisma.client as any).update({
@@ -156,7 +171,7 @@ export async function PUT(req: Request) {
       },
       data: {
         name: data.name,
-        phone: data.phone,
+        phone: phoneToSave,
         email: data.email,
         clientType: data.clientType || "FISICA",
         cpf: data.cpf,

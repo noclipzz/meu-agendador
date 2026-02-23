@@ -65,9 +65,14 @@ export async function POST(req: Request) {
             }
 
             // Normalização básica
-            const phone = client.phone ? String(client.phone).trim() : null;
-            const email = client.email ? String(client.email).trim().toLowerCase() : null;
-            const cpf = client.cpf ? String(client.cpf).trim() : null;
+            const phoneStr = client.phone ? String(client.phone).trim() : "";
+            const phone = phoneStr === "" ? null : phoneStr;
+
+            const emailStr = client.email ? String(client.email).trim().toLowerCase() : "";
+            const email = emailStr === "" ? null : emailStr;
+
+            const cpfStr = client.cpf ? String(client.cpf).trim() : "";
+            const cpf = cpfStr === "" ? null : cpfStr;
 
             if (phone && currentPhones.has(phone)) {
                 erros.push(`Cliente ${client.name} ignorado (telefone duplicado: ${phone}).`);
