@@ -226,22 +226,22 @@ export async function GET(req: Request) {
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
 
-            // DIAGNÓSTICO: Testando se o Facebook consegue acessar um arquivo ESTÁTICO no nosso domínio
-            // Se funcionar: o problema é a rota dinâmica /api/marketing/og
-            // Se falhar: o domínio inteiro está bloqueado para o crawler do Facebook
-            const imageUrl = 'https://www.nohud.com.br/LOGOAPP.png';
+            // Usa a rota proxy Node.js (/api/marketing/image) em vez da Edge (/api/marketing/og)
+            // O proxy busca a imagem internamente e serve como PNG puro para o Facebook
+            const baseUrl = 'https://www.nohud.com.br';
+            const imageUrl = `${baseUrl}/api/marketing/image?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
-            console.log("📸 [DIAGNÓSTICO-2] Testando arquivo estático do domínio:", imageUrl);
+            console.log("📸 [INSTAGRAM] URL proxy para Meta:", imageUrl);
 
             const igResult = await postImageToInstagram({
                 imageUrl,
-                caption: post.caption + "\n\n(Teste com arquivo estático do domínio)"
+                caption: post.caption
             });
 
             if (igResult.success) {
-                logs.push(`Instagram: DIAGNÓSTICO-2 → Arquivo estático FUNCIONA! Problema é na rota OG dinâmica.`);
+                logs.push(`Instagram: Post diário enviado com sucesso (ID: ${igResult.postId})`);
             } else {
-                logs.push(`Instagram: DIAGNÓSTICO-2 → Arquivo estático FALHOU (${igResult.error}). Domínio bloqueado!`);
+                logs.push(`Instagram: Falha ao enviar post (${igResult.error})`);
             }
         } catch (igErr: any) {
             logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
