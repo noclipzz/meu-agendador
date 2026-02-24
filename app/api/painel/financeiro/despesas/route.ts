@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { startOfDay, endOfDay, addWeeks, addMonths, addYears, isBefore, isToday } from "date-fns";
 
 const prisma = db;
+export const dynamic = 'force-dynamic';
 
-import { addWeeks, addMonths, addYears } from "date-fns";
-
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
     const { userId } = await auth();
-    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    const body = await req.json();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 1. Descobre a empresa (Robust Check)
+    const { searchParams } = new URL(req.url);
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
+    const status = searchParams.get("status");
+    const search = searchParams.get("search");
+
+    // 1. Descobre a empresa
     let companyId = null;
     const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
     if (ownerCompany) {
@@ -22,9 +27,90 @@ export async function POST(req: Request) {
       if (member) {
         companyId = member.companyId;
       } else {
-        const professional = await prisma.professional.findFirst({
-          where: { userId: userId }
-        });
+        const professional = await prisma.professional.findFirst({ where: { userId: userId } });
+        if (professional) companyId = professional.companyId;
+      }
+    }
+
+    if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+    // 2. Filtros
+    const where: any = { companyId };
+    if (start && end) {
+      where.dueDate = {
+        gte: new Date(start),
+        lte: new Date(end)
+      };
+    }
+    if (status && status !== "TODAS") {
+      where.status = status;
+    }
+    if (search) {
+      where.OR = [
+        { description: { contains: search, mode: "insensitive" } },
+        { supplier: { name: { contains: search, mode: "insensitive" } } }
+      ];
+    }
+
+    const expenses = await prisma.expense.findMany({
+      where,
+      include: { supplier: true },
+      orderBy: { dueDate: "asc" }
+    });
+
+    // 3. Resumo (Estatísticas)
+    const today = startOfDay(new Date());
+
+    const summary = {
+      overdue: 0,
+      today: 0,
+      upcoming: 0,
+      paid: 0,
+      total: 0
+    };
+
+    expenses.forEach(exp => {
+      const val = Number(exp.value);
+      summary.total += val;
+
+      if (exp.status === "PAGO") {
+        summary.paid += val;
+      } else if (isToday(new Date(exp.dueDate))) {
+        summary.today += val;
+      } else if (isBefore(new Date(exp.dueDate), today)) {
+        summary.overdue += val;
+        // Ajusta status para VENCIDO se estiver pendente e com data passada
+        if (exp.status === "PENDENTE") exp.status = "VENCIDO";
+      } else {
+        summary.upcoming += val;
+      }
+    });
+
+    return NextResponse.json({ expenses, summary });
+
+  } catch (error) {
+    console.error("ERRO_GET_DESPESAS:", error);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    const body = await req.json();
+
+    // 1. Descobre a empresa
+    let companyId = null;
+    const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+    if (ownerCompany) {
+      companyId = ownerCompany.id;
+    } else {
+      const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+      if (member) {
+        companyId = member.companyId;
+      } else {
+        const professional = await prisma.professional.findFirst({ where: { userId: userId } });
         if (professional) companyId = professional.companyId;
       }
     }
@@ -32,19 +118,15 @@ export async function POST(req: Request) {
     if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
     const expensesToCreate = [];
-    // Adiciona T12:00:00 para evitar que o fuso horário (ex: -3h) jogue para o dia anterior
-    const baseDate = new Date(`${body.date}T12:00:00`);
+    const baseDate = new Date(`${body.dueDate}T12:00:00`);
 
-    // Definição de quantas repetições criar
     let occurrences = 1;
-    if (body.frequency === 'WEEKLY') occurrences = 52; // 1 ano de semanas
-    if (body.frequency === 'MONTHLY') occurrences = 12; // 1 ano de meses
-    if (body.frequency === 'YEARLY') occurrences = 5; // 5 anos
+    if (body.frequency === 'WEEKLY') occurrences = 52;
+    if (body.frequency === 'MONTHLY') occurrences = body.installments || 12;
+    if (body.frequency === 'YEARLY') occurrences = 5;
 
     for (let i = 0; i < occurrences; i++) {
       let nextDate = new Date(baseDate);
-
-      // Calcula a próxima data com base na frequência e no índice
       if (i > 0) {
         if (body.frequency === 'WEEKLY') nextDate = addWeeks(baseDate, i);
         else if (body.frequency === 'MONTHLY') nextDate = addMonths(baseDate, i);
@@ -52,19 +134,22 @@ export async function POST(req: Request) {
       }
 
       expensesToCreate.push({
-        description: body.description, // Mantém a mesma descrição
+        description: body.description,
         value: parseFloat(body.value),
         category: body.category,
-        frequency: body.frequency || "ONCE",
-        date: nextDate,
+        status: body.status || "PENDENTE",
+        paymentMethod: body.paymentMethod,
+        dueDate: nextDate,
+        supplierId: body.supplierId,
+        paymentAccount: body.paymentAccount,
+        costCenter: body.costCenter,
+        nfe: body.nfe,
+        notes: body.notes,
         companyId: companyId
       });
     }
 
-    // Usa createMany para inserir tudo de uma vez (Performance)
-    await prisma.expense.createMany({
-      data: expensesToCreate
-    });
+    await prisma.expense.createMany({ data: expensesToCreate });
 
     return NextResponse.json({ success: true, count: occurrences });
 
@@ -74,28 +159,38 @@ export async function POST(req: Request) {
   }
 }
 
-// NOVO: Função para ATUALIZAR despesa
 export async function PUT(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { id, description, value, category, frequency, date } = body;
+    const { id, ...data } = body;
+
+    // Sanitização dos dados
+    const updateData: any = {
+      description: data.description,
+      value: data.value ? parseFloat(data.value) : undefined,
+      category: data.category,
+      status: data.status,
+      paymentMethod: data.paymentMethod,
+      dueDate: data.dueDate ? new Date(`${data.dueDate}T12:00:00`) : undefined,
+      paidAt: data.paidAt ? new Date(`${data.paidAt}T12:00:00`) : undefined,
+      supplierId: data.supplierId,
+      paymentAccount: data.paymentAccount,
+      costCenter: data.costCenter,
+      nfe: data.nfe,
+      notes: data.notes
+    };
 
     const updated = await prisma.expense.update({
       where: { id },
-      data: {
-        description,
-        value: parseFloat(value),
-        category,
-        frequency,
-        date: new Date(`${date}T12:00:00`),
-      }
+      data: updateData
     });
 
     return NextResponse.json(updated);
   } catch (error) {
+    console.error("ERRO_PUT_DESPESA:", error);
     return NextResponse.json({ error: "Erro ao atualizar" }, { status: 500 });
   }
 }
@@ -108,7 +203,6 @@ export async function DELETE(req: Request) {
     const { id, deleteSeries } = await req.json();
 
     if (deleteSeries) {
-      // Busca a despesa original para pegar os critérios de grupo
       const original = await prisma.expense.findUnique({ where: { id } });
       if (original) {
         await prisma.expense.deleteMany({
@@ -117,10 +211,6 @@ export async function DELETE(req: Request) {
             description: original.description,
             value: original.value,
             category: original.category,
-            frequency: original.frequency,
-            // Opcional: Se quiser apagar só as futuras:
-            // date: { gte: original.date } 
-            // Mas como o usuário reclamou de "apagar uma por uma", provavelmente quer limpar a série toda.
           }
         });
       }
@@ -129,5 +219,7 @@ export async function DELETE(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) { return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 }); }
+  } catch (error) {
+    return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 });
+  }
 }

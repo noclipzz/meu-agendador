@@ -173,15 +173,30 @@ model Service {
 
 // --- DESPESAS (CONTAS A PAGAR) ---
 model Expense {
-  id          String   @id @default(cuid())
-  description String
-  value       Decimal
-  category    String
-  frequency   String   @default("ONCE")
-  date        DateTime @default(now())
+  id            String    @id @default(cuid())
+  description   String
+  value         Decimal
+  category      String?
+  status        String    @default("PENDENTE") // PENDENTE, PAGO, VENCIDO, CANCELADO
+  paymentMethod String? // PIX, BOLETO, CARTAO, DINHEIRO, etc.
+  
+  dueDate DateTime // Data de vencimento
+  paidAt  DateTime? // Data do pagamento efetivo
+
+  // Vínculos
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  paymentAccount String? // Conta bancária/caixa
+  costCenter     String? // Centro de custo
+  nfe            String? // Número da nota fiscal
+  notes          String?
 
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- FATURAS E COBRANÇAS (CONTAS A RECEBER) ---
@@ -455,4 +470,6 @@ model Supplier {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  expenses Expense[]
 }
