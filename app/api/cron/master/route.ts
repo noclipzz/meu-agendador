@@ -193,22 +193,34 @@ export async function GET(req: Request) {
         try {
             const POSTS_DATABASE = [
                 {
-                    title: "Agenda Online 24/7",
-                    subtitle: "Deixe seus clientes agendarem enquanto você dorme.",
-                    feature: "Link de Bio Inteligente",
-                    caption: "A liberdade de ter sua agenda trabalhando por você 24 horas por dia. 🚀\n\nCom o NOHUD, o seu cliente escolhe o horário, agenda e você só recebe o aviso. Menos telefone, mais produtividade!\n\n#gestao #agendamento #produtividade #nohud"
+                    title: "Escalabilidade e Eficiência",
+                    subtitle: "Transforme seu atendimento em um processo automático e lucrativo.",
+                    feature: "Automação de Fluxo",
+                    caption: "Eficiência não é sobre trabalhar mais, é sobre trabalhar melhor. 🚀\n\nNossa plataforma profissional permite que sua empresa opere em escala, com agendamentos automáticos e gestão centralizada. Otimize seu tempo hoje.\n\n#BusinessEfficiency #ScaleUp #NOHUD #GestaoProfissional"
                 },
                 {
-                    title: "WhatsApp Automático",
-                    subtitle: "Reduza o esquecimento e as faltas em até 80%.",
-                    feature: "Lembretes Inteligentes",
-                    caption: "Chega de perder tempo enviando mensagens manuais de confirmação. 📱\n\nO NOHUD envia automaticamente os lembretes para seus clientes via WhatsApp. Menos faltas, mais faturamento!\n\n#marketing #whatsapp #vendas #gestaoempresarial"
+                    title: "A Experiência do Cliente Elevada",
+                    subtitle: "Proporcione conveniência premium com agendamento em um clique.",
+                    feature: "User Experience",
+                    caption: "O luxo moderno é a conveniência. ✨\n\nOfereça aos seus clientes a facilidade de agendar serviços a qualquer hora, de qualquer lugar. Uma interface intuitiva que reflete o profissionalismo da sua marca.\n\n#CustomerExperience #UX #Inovacao #AgendamentoDigital"
                 },
                 {
-                    title: "Financeiro na Mão",
-                    subtitle: "Saiba exatamente quanto você lucrou no final do dia.",
-                    feature: "Fluxo de Caixa Real-time",
-                    caption: "Você sabe para onde está indo o dinheiro da sua empresa? 💸\n\nCom nosso dashboard financeiro, você controla entradas, saídas e comissões com um clique. Controle total do seu lucro!\n\n#financas #empreendedorismo #barbearia #estetica"
+                    title: "Inteligência de Dados no seu Bolso",
+                    subtitle: "Decisões baseadas em números, não em suposições.",
+                    feature: "Analytics Avançado",
+                    caption: "O que não se mede, não se gerencia. 📊\n\nTenha uma visão clara do seu faturamento, taxas de retenção e performance da equipe em tempo real. A inteligência que seu negócio precisa para crescer com segurança.\n\n#DataDriven #BusinessIntelligence #Financas #Growth"
+                },
+                {
+                    title: "Zero Faltas, Máxima Rentabilidade",
+                    subtitle: "Sistema de notificações inteligente via WhatsApp Business.",
+                    feature: "Retenção Ativa",
+                    caption: "Elimine os horários vazios na sua agenda. 📱\n\nNossos lembretes automáticos garantem que seu cliente nunca esqueça um compromisso, reduzindo taxas de No-Show em até 90%. Mais previsibilidade para o seu caixa.\n\n#WhatsAppMarketing #CustomerSuccess #Produtividade #NOHUD"
+                },
+                {
+                    title: "Sua Marca em Outro Nível",
+                    subtitle: "Posicionamento digital profissional para empresas de serviços.",
+                    feature: "Branding Digital",
+                    caption: "Como o seu negócio é visto na internet? 🌐\n\nTer um link de agendamento próprio é o primeiro passo para um posicionamento de autoridade. Modernize sua presença digital com o NOHUD.\n\n#Branding #Professionalism #DigitalTransformation #ServiceBusiness"
                 }
             ];
 
