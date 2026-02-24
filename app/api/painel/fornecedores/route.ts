@@ -66,9 +66,17 @@ export async function POST(req: Request) {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
+        const {
+            name, corporateName, cnpj, phone, email,
+            cep, address, number, complement, neighborhood,
+            city, state, notes, status
+        } = body;
+
         const supplier = await prisma.supplier.create({
             data: {
-                ...body,
+                name, corporateName, cnpj, phone, email,
+                cep, address, number, complement, neighborhood,
+                city, state, notes, status: status || "ATIVO",
                 companyId
             }
         });
@@ -86,7 +94,6 @@ export async function PUT(req: Request) {
 
     try {
         const body = await req.json();
-        const { id, ...data } = body;
 
         let companyId = null;
         const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
@@ -103,9 +110,19 @@ export async function PUT(req: Request) {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
+        const {
+            id, name, corporateName, cnpj, phone, email,
+            cep, address, number, complement, neighborhood,
+            city, state, notes, status
+        } = body;
+
         const supplier = await prisma.supplier.update({
             where: { id, companyId },
-            data
+            data: {
+                name, corporateName, cnpj, phone, email,
+                cep, address, number, complement, neighborhood,
+                city, state, notes, status
+            }
         });
 
         return NextResponse.json(supplier);

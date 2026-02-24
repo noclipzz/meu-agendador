@@ -359,7 +359,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const cadastrosItems = [
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={18} /> },
-        { key: 'profissionais', name: "Equipe / Funcionários", path: "/painel/profissionais", icon: <UserIcon size={18} /> },
+        { key: 'profissionais', name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={18} /> },
         { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={18} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={18} /> },
