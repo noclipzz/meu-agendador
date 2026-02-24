@@ -7,16 +7,17 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const userAgent = req.headers.get('user-agent') || 'desconhecido';
-        console.log(`🖼️ [OG_IMAGE] Requisição recebida de: ${userAgent}`);
 
         // Parâmetros dinâmicos para o post
         const title = searchParams.get('title') || 'Gestão Inteligente';
         const subtitle = searchParams.get('subtitle') || 'Organize sua agenda hoje';
         const feature = searchParams.get('feature') || 'WhatsApp Automático';
 
-        const design = searchParams.get('design') || '1';
-        const logoUrl = `https://www.nohud.com.br/LOGOAPP.png`;
+        // Busca a logo real do site (funciona server-to-server)
+        const logoData = await fetch(new URL('/LOGOAPP.png', 'https://www.nohud.com.br')).then(
+            (res) => res.arrayBuffer()
+        );
+        const logoBase64 = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`;
 
         return new ImageResponse(
             (
@@ -26,109 +27,156 @@ export async function GET(req: NextRequest) {
                         width: '100%',
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
                         backgroundColor: '#030712',
-                        backgroundImage: 'radial-gradient(circle at 20% 20%, #1e40af 0%, transparent 40%), radial-gradient(circle at 80% 80%, #4c1d95 0%, transparent 40%)',
-                        padding: '80px',
                         fontFamily: 'sans-serif',
                         position: 'relative',
+                        overflow: 'hidden',
                     }}
                 >
-                    {/* Header com Logo em Texto/CSS para velocidade máxima */}
+                    {/* Background Gradient Orbs */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '-200px',
+                        right: '-100px',
+                        width: '600px',
+                        height: '600px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(37, 99, 235, 0.25) 0%, transparent 70%)',
+                        display: 'flex',
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '-200px',
+                        left: '-100px',
+                        width: '500px',
+                        height: '500px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle, rgba(124, 58, 237, 0.2) 0%, transparent 70%)',
+                        display: 'flex',
+                    }} />
+
+                    {/* Noise/Grid overlay for texture */}
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+                        backgroundSize: '60px 60px',
+                        display: 'flex',
+                    }} />
+
+                    {/* Top Bar - Logo + Badge */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '20px',
-                        position: 'absolute',
-                        top: '80px',
-                        left: '80px'
+                        justifyContent: 'space-between',
+                        padding: '70px 80px 0 80px',
                     }}>
-                        <div style={{ width: '60px', height: '60px', backgroundColor: '#2563eb', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: 'white', fontSize: '35px' }}>N</div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '36px', fontWeight: '900', color: 'white', letterSpacing: '-1.5px', lineHeight: '1' }}>NOHUD</span>
-                            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '2px', marginTop: '4px' }}>Gestão Inteligente</span>
+                        {/* Logo Section */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <img
+                                src={logoBase64}
+                                style={{ width: '65px', height: '65px', borderRadius: '16px' }}
+                            />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '34px', fontWeight: '900', color: 'white', letterSpacing: '-1px', lineHeight: '1' }}>NOHUD</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '3px', marginTop: '4px' }}>Gestão Inteligente</span>
+                            </div>
+                        </div>
+
+                        {/* Feature Badge */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                            border: '1px solid rgba(37, 99, 235, 0.25)',
+                            padding: '12px 24px',
+                            borderRadius: '100px',
+                        }}>
+                            <div style={{ width: '10px', height: '10px', backgroundColor: '#22c55e', borderRadius: '50%', display: 'flex' }} />
+                            <span style={{ fontSize: '18px', fontWeight: '700', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '2px' }}>{feature}</span>
                         </div>
                     </div>
 
+                    {/* Main Content - Centered */}
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        width: '100%'
+                        flex: 1,
+                        justifyContent: 'center',
+                        padding: '0 80px',
                     }}>
-                        {/* Status/Category Badge */}
+                        {/* Accent Line */}
                         <div style={{
-                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
-                            border: '1px solid rgba(37, 99, 235, 0.3)',
-                            padding: '12px 30px',
-                            borderRadius: '100px',
-                            color: '#60a5fa',
-                            fontSize: '24px',
-                            fontWeight: '800',
-                            marginBottom: '50px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '3px',
-                        }}>
-                            {feature}
-                        </div>
+                            width: '80px',
+                            height: '5px',
+                            background: 'linear-gradient(90deg, #2563eb, #7c3aed)',
+                            borderRadius: '10px',
+                            marginBottom: '35px',
+                            display: 'flex',
+                        }} />
 
-                        {/* Heading */}
+                        {/* Title */}
                         <h1 style={{
-                            fontSize: '100px',
+                            fontSize: '82px',
                             fontWeight: '900',
                             color: 'white',
-                            lineHeight: '1',
-                            margin: '0',
-                            letterSpacing: '-5px',
-                            maxWidth: '900px',
-                            textShadow: '0 10px 20px rgba(0,0,0,0.3)'
+                            lineHeight: '1.05',
+                            margin: '0 0 30px 0',
+                            letterSpacing: '-3px',
+                            maxWidth: '920px',
                         }}>
                             {title}
                         </h1>
 
-                        {/* Line */}
-                        <div style={{
-                            width: '120px',
-                            height: '8px',
-                            background: '#2563eb',
-                            borderRadius: '10px',
-                            margin: '40px 0'
-                        }} />
-
                         {/* Subtitle */}
                         <p style={{
-                            fontSize: '40px',
-                            color: '#cbd5e1',
-                            maxWidth: '850px',
-                            fontWeight: '500',
-                            lineHeight: '1.4',
+                            fontSize: '32px',
+                            color: '#94a3b8',
+                            maxWidth: '750px',
+                            fontWeight: '400',
+                            lineHeight: '1.5',
                             margin: '0',
                         }}>
                             {subtitle}
                         </p>
                     </div>
 
-                    {/* Footer Card */}
+                    {/* Bottom Bar - CTA */}
                     <div style={{
-                        position: 'absolute',
-                        bottom: '80px',
-                        left: '80px',
-                        right: '80px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        padding: '40px 50px',
-                        borderRadius: '35px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        padding: '0 80px 70px 80px',
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                            <div style={{ width: '15px', height: '15px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
-                            <span style={{ fontSize: '28px', fontWeight: 'bold', color: 'white' }}>nohud.com.br</span>
+                        {/* Left: Website */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            padding: '20px 35px',
+                            borderRadius: '20px',
+                        }}>
+                            <span style={{ fontSize: '22px', color: '#64748b', fontWeight: '500' }}>Acesse</span>
+                            <span style={{ fontSize: '26px', color: 'white', fontWeight: '800', letterSpacing: '-0.5px' }}>nohud.com.br</span>
                         </div>
-                        <span style={{ color: '#60a5fa', fontSize: '26px', fontWeight: 'bold' }}>Sua Agenda Inteligente</span>
+
+                        {/* Right: CTA Button */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+                            padding: '20px 40px',
+                            borderRadius: '20px',
+                        }}>
+                            <span style={{ fontSize: '22px', color: 'white', fontWeight: '700' }}>Teste Grátis →</span>
+                        </div>
                     </div>
                 </div>
             ),
@@ -141,7 +189,7 @@ export async function GET(req: NextRequest) {
             }
         );
     } catch (e: any) {
-        console.log(`${e.message}`);
+        console.log(`OG Image Error: ${e.message}`);
         return new Response(`Failed to generate the image`, {
             status: 500,
         });
