@@ -7,6 +7,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
+        const userAgent = req.headers.get('user-agent') || 'desconhecido';
+        console.log(`🖼️ [OG_IMAGE] Requisição recebida de: ${userAgent}`);
 
         // Parâmetros dinâmicos para o post
         const title = searchParams.get('title') || 'Gestão Inteligente';
