@@ -28,27 +28,14 @@ export async function GET(req: NextRequest) {
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: '#030712', // Deep dark
-                        backgroundImage: 'radial-gradient(circle at 0% 0%, #1e3a8a 0%, transparent 40%), radial-gradient(circle at 100% 100%, #4c1d95 0%, transparent 40%), radial-gradient(circle at 50% 50%, #0f172a 0%, #030712 100%)',
-                        padding: '60px',
+                        backgroundColor: '#030712',
+                        backgroundImage: 'radial-gradient(circle at 20% 20%, #1e40af 0%, transparent 40%), radial-gradient(circle at 80% 80%, #4c1d95 0%, transparent 40%)',
+                        padding: '80px',
                         fontFamily: 'sans-serif',
                         position: 'relative',
-                        overflow: 'hidden',
                     }}
                 >
-                    {/* Background Abstract Element */}
-                    <div style={{
-                        position: 'absolute',
-                        top: '-10%',
-                        right: '-10%',
-                        width: '500px',
-                        height: '500px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, transparent 80%)',
-                        filter: 'blur(60px)',
-                    }} />
-
-                    {/* Header with Logo */}
+                    {/* Header com Logo em Texto/CSS para velocidade máxima */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -57,69 +44,62 @@ export async function GET(req: NextRequest) {
                         top: '80px',
                         left: '80px'
                     }}>
-                        <img
-                            src={logoUrl}
-                            style={{ width: '60px', height: '60px', borderRadius: '15px', objectFit: 'cover' }}
-                            alt="Logo"
-                        />
+                        <div style={{ width: '60px', height: '60px', backgroundColor: '#2563eb', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: 'white', fontSize: '35px' }}>N</div>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '32px', fontWeight: '900', color: 'white', letterSpacing: '-1.5px', lineHeight: '1' }}>NOHUD</span>
+                            <span style={{ fontSize: '36px', fontWeight: '900', color: 'white', letterSpacing: '-1.5px', lineHeight: '1' }}>NOHUD</span>
                             <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '2px', marginTop: '4px' }}>Gestão Inteligente</span>
                         </div>
                     </div>
 
-                    {/* Main Content Area */}
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         textAlign: 'center',
-                        marginTop: '80px',
                         width: '100%'
                     }}>
                         {/* Status/Category Badge */}
                         <div style={{
-                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.15)',
                             border: '1px solid rgba(37, 99, 235, 0.3)',
-                            padding: '12px 28px',
+                            padding: '12px 30px',
                             borderRadius: '100px',
                             color: '#60a5fa',
-                            fontSize: '22px',
+                            fontSize: '24px',
                             fontWeight: '800',
-                            marginBottom: '45px',
+                            marginBottom: '50px',
                             textTransform: 'uppercase',
                             letterSpacing: '3px',
-                            backdropFilter: 'blur(10px)'
                         }}>
                             {feature}
                         </div>
 
                         {/* Heading */}
                         <h1 style={{
-                            fontSize: '95px',
-                            fontWeight: '950',
+                            fontSize: '100px',
+                            fontWeight: '900',
                             color: 'white',
-                            lineHeight: '0.95',
+                            lineHeight: '1',
                             margin: '0',
                             letterSpacing: '-5px',
-                            maxWidth: '960px',
-                            textShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                            maxWidth: '900px',
+                            textShadow: '0 10px 20px rgba(0,0,0,0.3)'
                         }}>
                             {title}
                         </h1>
 
-                        {/* Highlight line */}
+                        {/* Line */}
                         <div style={{
                             width: '120px',
                             height: '8px',
-                            background: 'linear-gradient(to right, #2563eb, #7c3aed)',
+                            background: '#2563eb',
                             borderRadius: '10px',
                             margin: '40px 0'
                         }} />
 
-                        {/* Subheading */}
+                        {/* Subtitle */}
                         <p style={{
-                            fontSize: '38px',
+                            fontSize: '40px',
                             color: '#cbd5e1',
                             maxWidth: '850px',
                             fontWeight: '500',
@@ -130,7 +110,7 @@ export async function GET(req: NextRequest) {
                         </p>
                     </div>
 
-                    {/* Floating Info card (Glassmorphism) */}
+                    {/* Footer Card */}
                     <div style={{
                         position: 'absolute',
                         bottom: '80px',
@@ -138,23 +118,17 @@ export async function GET(req: NextRequest) {
                         right: '80px',
                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
-                        padding: '35px 50px',
-                        borderRadius: '40px',
+                        padding: '40px 50px',
+                        borderRadius: '35px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        backdropFilter: 'blur(20px)',
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                            <div style={{ width: '45px', height: '45px', backgroundColor: 'rgba(34, 197, 94, 0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <div style={{ width: '15px', height: '15px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
-                            </div>
-                            <span style={{ fontSize: '26px', fontWeight: 'bold', color: 'white' }}>Sistema Ativo 24h</span>
+                            <div style={{ width: '15px', height: '15px', backgroundColor: '#22c55e', borderRadius: '50%' }}></div>
+                            <span style={{ fontSize: '28px', fontWeight: 'bold', color: 'white' }}>nohud.com.br</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ color: '#94a3b8', fontSize: '24px' }}>Comece em:</span>
-                            <span style={{ color: 'white', fontSize: '30px', fontWeight: '900', letterSpacing: '-1px' }}>nohud.com.br</span>
-                        </div>
+                        <span style={{ color: '#60a5fa', fontSize: '26px', fontWeight: 'bold' }}>Sua Agenda Inteligente</span>
                     </div>
                 </div>
             ),
