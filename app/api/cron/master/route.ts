@@ -226,15 +226,38 @@ export async function GET(req: Request) {
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
 
-            // Usa a rota proxy Node.js (/api/marketing/image) em vez da Edge (/api/marketing/og)
-            // O proxy busca a imagem internamente e serve como PNG puro para o Facebook
-            const baseUrl = 'https://www.nohud.com.br';
-            const imageUrl = `${baseUrl}/api/marketing/image?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
+            // PASSO 1: Gerar a imagem internamente (server-to-server, funciona sempre)
+            const ogUrl = `https://www.nohud.com.br/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
+            console.log("📸 [INSTAGRAM] Gerando imagem de:", ogUrl);
 
-            console.log("📸 [INSTAGRAM] URL proxy para Meta:", imageUrl);
+            const ogRes = await fetch(ogUrl);
+            if (!ogRes.ok) {
+                throw new Error(`Falha ao gerar imagem OG: ${ogRes.status}`);
+            }
+            const imageBuffer = Buffer.from(await ogRes.arrayBuffer());
+            console.log("📸 [INSTAGRAM] Imagem gerada:", imageBuffer.length, "bytes");
 
+            // PASSO 2: Upload para hospedagem externa (Telegraph/Telegram - gratuito, sem API key)
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'nohud-post.png');
+
+            const uploadRes = await fetch('https://telegra.ph/upload', {
+                method: 'POST',
+                body: uploadFormData,
+            });
+            const uploadData = await uploadRes.json();
+
+            if (!uploadData || !uploadData[0] || !uploadData[0].src) {
+                console.error("📸 [INSTAGRAM] Resposta do upload:", JSON.stringify(uploadData));
+                throw new Error("Falha ao fazer upload da imagem para hospedagem externa");
+            }
+
+            const externalImageUrl = `https://telegra.ph${uploadData[0].src}`;
+            console.log("📸 [INSTAGRAM] Imagem hospedada em:", externalImageUrl);
+
+            // PASSO 3: Enviar para o Instagram usando a URL externa (que o Facebook consegue acessar)
             const igResult = await postImageToInstagram({
-                imageUrl,
+                imageUrl: externalImageUrl,
                 caption: post.caption
             });
 
