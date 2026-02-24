@@ -10,6 +10,7 @@ import { Toaster } from "sonner"; // <--- 1. Importe
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://nohud.com.br"),
   title: "NOHUD | Sistema de Agendamento Online e Gestão para Negócios",
   description: "Organize sua agenda, controle seu financeiro e reduza faltas com lembretes automáticos no WhatsApp. O software de gestão ideal para barbearias, clínicas e estúdios.",
   keywords: ["sistema de agendamento online", "software de gestão", "agenda para barbearia", "gestão financeira para clínicas", "lembretes whatsapp", "nohud"],

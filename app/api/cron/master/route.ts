@@ -213,9 +213,7 @@ export async function GET(req: Request) {
             ];
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
-            const host = req.headers.get('host') || 'nohud.com.br';
-            const protocol = req.headers.get('x-forwarded-proto') || 'https';
-            const baseUrl = `${protocol}://${host}`;
+            const baseUrl = 'https://nohud.com.br';
 
             const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
