@@ -213,21 +213,20 @@ export async function GET(req: Request) {
             ];
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
+            const baseUrl = 'https://www.nohud.com.br';
+            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&v=${Date.now()}.png`;
 
-            // TESTE DE DIAGNÓSTICO: Usando uma imagem externa estável
-            const imageUrl = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1080&auto=format&fit=crop";
-
-            console.log("📸 [DIAGNÓSTICO] Tentando postar imagem externa:", imageUrl);
+            console.log("📸 [INSTAGRAM] Enviando arte dinâmica para Meta:", imageUrl);
 
             const igResult = await postImageToInstagram({
                 imageUrl,
-                caption: post.caption + "\n\n(Teste de diagnóstico de imagem externa)"
+                caption: post.caption
             });
 
             if (igResult.success) {
-                logs.push(`Instagram: DIAGNÓSTICO SUCESSO (O problema é o seu site/DNS)`);
+                logs.push(`Instagram: Post diário enviado com sucesso (ID: ${igResult.postId})`);
             } else {
-                logs.push(`Instagram: DIAGNÓSTICO FALHA (${igResult.error})`);
+                logs.push(`Instagram: Falha ao enviar post dinâmico (${igResult.error})`);
             }
         } catch (igErr: any) {
             logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
