@@ -214,6 +214,8 @@ export async function GET(req: Request) {
             const baseUrl = 'https://nohud.com.br';
             const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
+            console.log("📸 [INSTAGRAM] Tentando postar imagem:", imageUrl);
+
             const igResult = await postImageToInstagram({
                 imageUrl,
                 caption: post.caption

@@ -2,6 +2,8 @@ import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+export const contentType = 'image/png';
 
 export async function GET(req: NextRequest) {
     try {
