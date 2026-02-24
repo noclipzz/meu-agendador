@@ -226,9 +226,9 @@ export async function GET(req: Request) {
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
             const baseUrl = 'https://www.nohud.com.br';
-            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&v=${Date.now()}.png`;
+            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
-            console.log("📸 [INSTAGRAM] Enviando arte dinâmica para Meta:", imageUrl);
+            console.log("📸 [INSTAGRAM] URL enviada para Meta:", imageUrl);
 
             const igResult = await postImageToInstagram({
                 imageUrl,
