@@ -42,7 +42,6 @@ export async function GET(req: Request) {
         const subscricoes = await db.pushSubscription.findMany({ select: { userId: true } });
         let pushSent = 0;
 
-        /* BLOCO DESATIVADO TEMPORARIAMENTE PARA TESTES
         for (const sub of subscricoes) {
             try {
                 let notificationSent = false;
@@ -107,8 +106,7 @@ export async function GET(req: Request) {
                 console.error(`Erro ao processar notificação matinal para user ${sub.userId}:`, err);
             }
         }
-        */
-        logs.push(`Push: Notificações desativadas (Modo Teste)`);
+        logs.push(`Push: ${pushSent} notificações enviadas.`);
 
         // --------------------------------------------------------------------------------
         // 2. TAREFA: EXPIRAÇÃO DE TRIALS E AVISOS DE ASSINATURA
