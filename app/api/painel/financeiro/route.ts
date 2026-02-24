@@ -94,9 +94,9 @@ export async function GET(request: Request) {
             prisma.expense.findMany({
                 where: {
                     companyId: companyId,
-                    date: { gte: seisMesesAtras, lte: fimMesAtual }
+                    dueDate: { gte: seisMesesAtras, lte: fimMesAtual }
                 },
-                select: { value: true, date: true }
+                select: { value: true, dueDate: true }
             })
         ]);
 
@@ -115,7 +115,7 @@ export async function GET(request: Request) {
                 .reduce((acc, curr) => acc + Number(curr.value), 0);
 
             const despesaMes = todasDespesasGrafico
-                .filter(d => d.date && d.date >= inicio && d.date <= fim)
+                .filter(d => d.dueDate && d.dueDate >= inicio && d.dueDate <= fim)
                 .reduce((acc, curr) => acc + Number(curr.value), 0);
 
             return {
@@ -140,8 +140,8 @@ export async function GET(request: Request) {
             }),
             // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
-                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } },
-                orderBy: { date: 'desc' }
+                where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                orderBy: { dueDate: 'desc' }
             }),
             // 3. Receitas Mês Anterior ao SELECIONADO
             prisma.invoice.findMany({
@@ -165,8 +165,8 @@ export async function GET(request: Request) {
             }),
             // 6. Despesas LISTGEM - DO MÊS SELECIONADO (Removendo limite 20 pra ver todas do mês)
             prisma.expense.findMany({
-                where: { companyId: companyId, date: { gte: inicioMes, lte: fimMes } },
-                orderBy: { date: 'desc' }
+                where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                orderBy: { dueDate: 'desc' }
             }),
             // 7. BOLETOS VENCIDOS (Global, pois vencido é vencido independente do mês que eu olho? Ou filtro? Geralmente Vencido mostra tudo que tá pendente pra trás)
             prisma.invoice.findMany({
