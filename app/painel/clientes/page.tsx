@@ -78,6 +78,39 @@ export default function ClientesPage() {
     const { userRole } = useAgenda(); // Pegando role
     const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
+    async function handleCNPJChange(cnpj: string) {
+        const formatado = formatarCNPJ(cnpj);
+        setForm(prev => ({ ...prev, cnpj: formatado }));
+
+        const cleanCNPJ = formatado.replace(/\D/g, "");
+        if (cleanCNPJ.length === 14) {
+            toast.info("Buscando dados do CNPJ...");
+            try {
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`);
+                const data = await res.json();
+                if (data && !data.message) {
+                    setForm(prev => ({
+                        ...prev,
+                        name: data.razao_social || data.nome_fantasia || prev.name,
+                        email: data.email || prev.email,
+                        phone: data.ddd_telefone_1 ? formatarTelefone(data.ddd_telefone_1) : prev.phone,
+                        cep: data.cep ? formatarCEP(data.cep) : prev.cep,
+                        address: data.logradouro || prev.address,
+                        number: data.numero || prev.number,
+                        complement: data.complemento || prev.complement,
+                        neighborhood: data.bairro || prev.neighborhood,
+                        city: data.municipio || prev.city,
+                        state: data.uf || prev.state,
+                    }));
+                    toast.success("Dados da empresa carregados!");
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CNPJ:", error);
+                toast.error("Erro ao buscar dados do CNPJ.");
+            }
+        }
+    }
+
     async function handleCEPChange(cep: string) {
         const formatado = formatarCEP(cep);
         setForm(prev => ({ ...prev, cep: formatado }));
@@ -104,7 +137,39 @@ export default function ClientesPage() {
         }
     }
 
-    useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+    useEffect(() => {
+        carregarClientes();
+        carregarEmpresa();
+
+        // Carregar preferências de impressão do localStorage
+        const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
+        if (savedPrintPrefs) {
+            try {
+                const prefs = JSON.parse(savedPrintPrefs);
+                // Atualizamos apenas as flags, não o entry
+                setPrintConfigModal((prev: any) => ({
+                    ...prev,
+                    dateVisible: prefs.dateVisible ?? true,
+                    twoColumns: prefs.twoColumns ?? false,
+                    signatures: prefs.signatures ?? { client: true, prof: true, company: false }
+                }));
+            } catch (e) {
+                console.error("Erro ao carregar preferências de impressão:", e);
+            }
+        }
+    }, []);
+
+    // Salvar preferências sempre que mudarem
+    useEffect(() => {
+        if (printConfigModal) {
+            const prefs = {
+                dateVisible: printConfigModal.dateVisible,
+                twoColumns: printConfigModal.twoColumns,
+                signatures: printConfigModal.signatures
+            };
+            localStorage.setItem('nohud_print_prefs', JSON.stringify(prefs));
+        }
+    }, [printConfigModal?.dateVisible, printConfigModal?.twoColumns, printConfigModal?.signatures]);
 
     // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
     // Efeito para tratar query params da agenda (abrir ficha ou novo cadastro)
@@ -575,7 +640,25 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
-        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false }, docNumber: entry.id.slice(-6).toUpperCase(), customFooter: "" });
+        const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
+        let initialPrefs = {
+            dateVisible: true,
+            twoColumns: false,
+            signatures: { client: true, prof: true, company: false }
+        };
+
+        if (savedPrintPrefs) {
+            try {
+                initialPrefs = { ...initialPrefs, ...JSON.parse(savedPrintPrefs) };
+            } catch (e) { }
+        }
+
+        setPrintConfigModal({
+            entry,
+            docNumber: entry.id.slice(-6).toUpperCase(),
+            customFooter: "",
+            ...initialPrefs
+        });
     }
 
     function executarImpressaoDaFicha() {
@@ -1340,7 +1423,10 @@ export default function ClientesPage() {
                                                 <>
                                                     <div className="md:col-span-6 space-y-1">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CNPJ</label>
-                                                        <input maxLength={18} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnpj} onChange={e => setForm({ ...form, cnpj: formatarCNPJ(e.target.value) })} placeholder="00.000.000/0000-00" />
+                                                        <div className="relative">
+                                                            <input maxLength={18} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnpj} onChange={e => handleCNPJChange(e.target.value)} placeholder="00.000.000/0000-00" />
+                                                            <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                                        </div>
                                                     </div>
                                                     <div className="md:col-span-6 space-y-1">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Inscrição Estadual</label>
