@@ -66,7 +66,7 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
-    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean }; docNumber: string } | null>(null);
+    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean }; docNumber: string; customFooter: string } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -575,12 +575,12 @@ export default function ClientesPage() {
     }
 
     function imprimirProntuario(entry: any) {
-        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false }, docNumber: entry.id.slice(-6).toUpperCase() });
+        setPrintConfigModal({ entry, dateVisible: true, twoColumns: false, signatures: { client: true, prof: true, company: false }, docNumber: entry.id.slice(-6).toUpperCase(), customFooter: "" });
     }
 
     function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, twoColumns, docNumber } = printConfigModal;
+        const { entry, dateVisible, signatures, twoColumns, docNumber, customFooter } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -663,8 +663,8 @@ export default function ClientesPage() {
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; }
-            .page { max-width:800px; margin:0 auto; padding:20px; }
+            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; }
+            .page { max-width:800px; margin:0 auto; padding:20px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
             
             /* BOTÃO VOLTAR (APENAS PARA MOBILE/SCREEN) */
             .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
@@ -707,7 +707,9 @@ export default function ClientesPage() {
             .signature-label { font-size:10px; color:#6b7280; font-weight:600; }
 
             /* RODAPÉ */
-            .footer { margin-top:40px; text-align:center; font-size:9px; color:#9ca3af; padding-top:16px; border-top:1px solid #e5e7eb; }
+            .signature-footer-container { margin-top: auto; padding-top: 40px; }
+            .custom-footer-text { margin-bottom: 20px; font-size: 11px; color: #4b5563; font-weight: 500; text-align: center; white-space: pre-wrap; line-height: 1.5; }
+            .footer { text-align:center; font-size:9px; color:#9ca3af; padding-top:16px; border-top:1px solid #e5e7eb; }
             .footer strong { color:#6b7280; }
 
             @media print {
@@ -753,15 +755,19 @@ export default function ClientesPage() {
                 ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </div>` : '<div style="margin-top: 40px;"></div>'}
 
-            ${signatures.client || signatures.prof || signatures.company ? `
-            <div class="signature">
-                ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                ${signatures.prof ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
-                ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
-            </div>` : ''}
+            <div class="signature-footer-container">
+                ${customFooter ? `<div class="custom-footer-text">${customFooter}</div>` : ''}
 
-            <div class="footer">
-                <strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
+                ${signatures.client || signatures.prof || signatures.company ? `
+                <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
+                    ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
+                    ${signatures.prof ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
+                    ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
+                </div>` : ''}
+
+                <div class="footer">
+                    <strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
+                </div>
             </div>
         </div>
         </body></html>`;
@@ -1754,6 +1760,23 @@ export default function ClientesPage() {
                                     />
                                     <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
                                         Se em branco, um número aleatório será gerado.
+                                    </p>
+                                </div>
+
+                                {/* Rodapé Personalizado */}
+                                <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Plus size={14} /> Informações Adicionais no Rodapé
+                                    </label>
+                                    <textarea
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
+                                        rows={3}
+                                        placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
+                                        value={printConfigModal.customFooter}
+                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                        Este texto aparecerá acima da assinatura e da data automática.
                                     </p>
                                 </div>
                             </div>
