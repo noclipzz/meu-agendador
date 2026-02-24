@@ -2,20 +2,38 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db as prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     try {
-        const member = await prisma.teamMember.findUnique({
-            where: { clerkUserId: userId },
-            select: { companyId: true, role: true }
-        });
+        let companyId = null;
 
-        if (!member) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId }
+            });
+            if (member) {
+                companyId = member.companyId;
+            } else {
+                const professional = await prisma.professional.findFirst({
+                    where: { userId: userId }
+                });
+                if (professional) {
+                    companyId = professional.companyId;
+                }
+            }
+        }
+
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const suppliers = await prisma.supplier.findMany({
-            where: { companyId: member.companyId },
+            where: { companyId },
             orderBy: { name: 'asc' }
         });
 
@@ -32,17 +50,26 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const member = await prisma.teamMember.findUnique({
-            where: { clerkUserId: userId },
-            select: { companyId: true }
-        });
+        let companyId = null;
 
-        if (!member) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId }
+            });
+            if (member) {
+                companyId = member.companyId;
+            }
+        }
+
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const supplier = await prisma.supplier.create({
             data: {
                 ...body,
-                companyId: member.companyId
+                companyId
             }
         });
 
@@ -61,15 +88,23 @@ export async function PUT(req: Request) {
         const body = await req.json();
         const { id, ...data } = body;
 
-        const member = await prisma.teamMember.findUnique({
-            where: { clerkUserId: userId },
-            select: { companyId: true }
-        });
+        let companyId = null;
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId }
+            });
+            if (member) {
+                companyId = member.companyId;
+            }
+        }
 
-        if (!member) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const supplier = await prisma.supplier.update({
-            where: { id, companyId: member.companyId },
+            where: { id, companyId },
             data
         });
 
@@ -86,17 +121,24 @@ export async function DELETE(req: Request) {
 
     try {
         const { id } = await req.json();
-        const member = await prisma.teamMember.findUnique({
-            where: { clerkUserId: userId },
-            select: { companyId: true, role: true }
-        });
 
-        if (!member || member.role !== 'ADMIN') {
-            return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+        let companyId = null;
+        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (ownerCompany) {
+            companyId = ownerCompany.id;
+        } else {
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId }
+            });
+            if (member) {
+                companyId = member.companyId;
+            }
         }
 
+        if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
         await prisma.supplier.delete({
-            where: { id, companyId: member.companyId }
+            where: { id, companyId }
         });
 
         return NextResponse.json({ success: true });

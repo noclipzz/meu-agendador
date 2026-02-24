@@ -40,7 +40,12 @@ export default function FornecedoresPage() {
         try {
             const res = await fetch('/api/painel/fornecedores');
             const data = await res.json();
-            setSuppliers(data);
+            if (Array.isArray(data)) {
+                setSuppliers(data);
+            } else {
+                console.error("Recebido algo que não é array:", data);
+                setSuppliers([]);
+            }
         } catch (error) {
             toast.error("Erro ao carregar fornecedores");
         } finally {
