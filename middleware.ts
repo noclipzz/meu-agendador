@@ -35,6 +35,10 @@ export default clerkMiddleware((auth, req) => {
 });
 
 export const config = {
-  // O matcher padrão do Clerk já pega tudo, então não precisamos mexer aqui
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  // Exclui: arquivos estáticos (com .), _next, e rotas de marketing (para o crawler do Facebook)
+  matcher: [
+    "/((?!.*\\..*|_next|api/marketing).*)",
+    "/",
+    "/(api(?!/marketing)|trpc)(.*)"
+  ],
 };
