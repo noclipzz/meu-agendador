@@ -213,8 +213,12 @@ export async function GET(req: Request) {
             ];
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
-            const baseUrl = 'https://nohud.com.br';
-            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
+            const host = req.headers.get('host') || 'nohud.com.br';
+            const protocol = host.includes('localhost') ? 'http' : 'https';
+            const baseUrl = `${protocol}://${host}`;
+
+            // Adicionamos um .png falso no final da query para ajudar alguns crawlers
+            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&ext=.png`;
 
             console.log("📸 [INSTAGRAM] Tentando postar imagem:", imageUrl);
 
