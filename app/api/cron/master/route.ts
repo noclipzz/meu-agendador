@@ -237,22 +237,61 @@ export async function GET(req: Request) {
             const imageBuffer = Buffer.from(await ogRes.arrayBuffer());
             console.log("📸 [INSTAGRAM] Imagem gerada:", imageBuffer.length, "bytes");
 
-            // PASSO 2: Upload para hospedagem externa (Telegraph/Telegram - gratuito, sem API key)
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', new Blob([imageBuffer], { type: 'image/png' }), 'nohud-post.png');
+            // PASSO 2: Upload para hospedagem externa
+            let externalImageUrl = '';
 
-            const uploadRes = await fetch('https://telegra.ph/upload', {
-                method: 'POST',
-                body: uploadFormData,
-            });
-            const uploadData = await uploadRes.json();
+            // Tentativa 1: Telegraph (Telegram) - usando File em vez de Blob para compatibilidade Node.js
+            try {
+                const telegraphForm = new FormData();
+                const uint8 = new Uint8Array(imageBuffer);
+                telegraphForm.append('file', new File([uint8], 'post.png', { type: 'image/png' }));
 
-            if (!uploadData || !uploadData[0] || !uploadData[0].src) {
-                console.error("📸 [INSTAGRAM] Resposta do upload:", JSON.stringify(uploadData));
-                throw new Error("Falha ao fazer upload da imagem para hospedagem externa");
+                const telegraphRes = await fetch('https://telegra.ph/upload', {
+                    method: 'POST',
+                    body: telegraphForm,
+                });
+                const telegraphText = await telegraphRes.text();
+                console.log("📸 [UPLOAD] Telegraph resposta:", telegraphText);
+
+                const telegraphData = JSON.parse(telegraphText);
+                if (telegraphData?.[0]?.src) {
+                    externalImageUrl = `https://telegra.ph${telegraphData[0].src}`;
+                }
+            } catch (e: any) {
+                console.log("📸 [UPLOAD] Telegraph falhou:", e.message);
             }
 
-            const externalImageUrl = `https://telegra.ph${uploadData[0].src}`;
+            // Tentativa 2: freeimage.host (base64) - fallback
+            if (!externalImageUrl) {
+                try {
+                    const base64Image = imageBuffer.toString('base64');
+                    const fiParams = new URLSearchParams();
+                    fiParams.append('source', base64Image);
+                    fiParams.append('type', 'base64');
+                    fiParams.append('action', 'upload');
+                    fiParams.append('format', 'json');
+
+                    const fiRes = await fetch('https://freeimage.host/api/1/upload?key=6d207e02198a847aa98d0a2a901485a5', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: fiParams.toString(),
+                    });
+                    const fiText = await fiRes.text();
+                    console.log("📸 [UPLOAD] FreeImage resposta:", fiText.substring(0, 200));
+
+                    const fiData = JSON.parse(fiText);
+                    if (fiData?.image?.url) {
+                        externalImageUrl = fiData.image.url;
+                    }
+                } catch (e: any) {
+                    console.log("📸 [UPLOAD] FreeImage falhou:", e.message);
+                }
+            }
+
+            if (!externalImageUrl) {
+                throw new Error("Todos os serviços de upload falharam");
+            }
+
             console.log("📸 [INSTAGRAM] Imagem hospedada em:", externalImageUrl);
 
             // PASSO 3: Enviar para o Instagram usando a URL externa (que o Facebook consegue acessar)
