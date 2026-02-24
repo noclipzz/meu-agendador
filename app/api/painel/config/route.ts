@@ -25,7 +25,7 @@ export async function GET() {
     if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
     // Busca a empresa onde o usuário é o DONO ou onde ele é um PROFISSIONAL vinculado
-    const config = await prisma.company.findFirst({
+    let config = await prisma.company.findFirst({
       where: {
         OR: [
           { ownerId: userId },
@@ -33,6 +33,22 @@ export async function GET() {
         ]
       }
     });
+
+    const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
+
+    if (!config && userId === SUPER_ADMIN) {
+      console.log("🛠️ [AUTO-HEAL] Criando empresa para SUPER_ADMIN em /api/config");
+      config = await prisma.company.create({
+        data: {
+          name: "Meu Negócio Digital",
+          slug: "meu-negocio-" + Date.now(),
+          ownerId: userId,
+          services: {
+            create: [{ name: "Atendimento Inicial", price: 0, duration: 30 }]
+          }
+        }
+      });
+    }
 
     if (!config) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
