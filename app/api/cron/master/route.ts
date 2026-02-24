@@ -42,6 +42,7 @@ export async function GET(req: Request) {
         const subscricoes = await db.pushSubscription.findMany({ select: { userId: true } });
         let pushSent = 0;
 
+        /* PUSH DESATIVADO DURANTE TESTES DO INSTAGRAM
         for (const sub of subscricoes) {
             try {
                 let notificationSent = false;
@@ -106,7 +107,8 @@ export async function GET(req: Request) {
                 console.error(`Erro ao processar notificação matinal para user ${sub.userId}:`, err);
             }
         }
-        logs.push(`Push: ${pushSent} notificações enviadas.`);
+        */
+        logs.push(`Push: Notificações desativadas (Modo Teste)`);
 
         // --------------------------------------------------------------------------------
         // 2. TAREFA: EXPIRAÇÃO DE TRIALS E AVISOS DE ASSINATURA

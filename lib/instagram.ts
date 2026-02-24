@@ -16,13 +16,30 @@ export async function postImageToInstagram({ imageUrl, caption }: PostToInstagra
     }
 
     try {
-        // 1. Criar o container de mídia
-        const createRes = await fetch(
-            `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ID}/media?image_url=${encodeURIComponent(imageUrl)}&caption=${encodeURIComponent(caption)}&access_token=${FACEBOOK_ACCESS_TOKEN}`,
-            { method: 'POST' }
-        );
+        // LOG de diagnóstico
+        console.log("📸 [INSTAGRAM] image_url enviada:", imageUrl);
+        console.log("📸 [INSTAGRAM] caption (primeiros 50 chars):", caption.substring(0, 50));
+
+        // 1. Criar o container de mídia usando POST body (não query params)
+        //    Isso evita que URLs com caracteres especiais sejam corrompidas na query string.
+        const createUrl = `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ID}/media`;
+
+        const formData = new URLSearchParams();
+        formData.append('image_url', imageUrl);
+        formData.append('caption', caption);
+        formData.append('access_token', FACEBOOK_ACCESS_TOKEN);
+
+        const createRes = await fetch(createUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+        });
 
         const createData = await createRes.json();
+
+        console.log("📸 [INSTAGRAM] Resposta do container:", JSON.stringify(createData));
 
         if (createData.error) {
             console.error("Erro ao criar container Instagram:", createData.error);
@@ -30,14 +47,24 @@ export async function postImageToInstagram({ imageUrl, caption }: PostToInstagra
         }
 
         const creationId = createData.id;
+        console.log("📸 [INSTAGRAM] Container criado:", creationId);
 
-        // 2. Aguardar o processamento da Meta (Aumentado para 10s para garantir o download da OG Image)
+        // 2. Aguardar o processamento da Meta (10s para garantir o download da imagem)
         await new Promise(resolve => setTimeout(resolve, 10000));
 
         // 3. Publicar a mídia
         const publishRes = await fetch(
-            `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ID}/media_publish?creation_id=${creationId}&access_token=${FACEBOOK_ACCESS_TOKEN}`,
-            { method: 'POST' }
+            `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ID}/media_publish`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    creation_id: creationId,
+                    access_token: FACEBOOK_ACCESS_TOKEN,
+                }).toString(),
+            }
         );
 
         const publishData = await publishRes.json();
@@ -47,6 +74,7 @@ export async function postImageToInstagram({ imageUrl, caption }: PostToInstagra
             throw new Error(publishData.error.message);
         }
 
+        console.log("✅ [INSTAGRAM] Post publicado com sucesso! ID:", publishData.id);
         return { success: true, postId: publishData.id };
 
     } catch (error: any) {
