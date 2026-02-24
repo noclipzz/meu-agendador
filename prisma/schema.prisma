@@ -78,6 +78,7 @@ model Company {
   formTemplates FormTemplate[] // Templates de prontuário
   waitingList   WaitingList[] // Lista de espera
   posts         OrganizationPost[] // Mural de Avisos
+  suppliers     Supplier[] // Gestão de fornecedores
 }
 
 // --- MURAL DE AVISOS (REDE SOCIAL CORPORATIVA) ---
@@ -426,6 +427,31 @@ model FormEntry {
 
   companyId String
   filledBy  String? // userId de quem preencheu
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- FORNECEDORES ---
+model Supplier {
+  id            String  @id @default(cuid())
+  name          String
+  corporateName String?
+  cnpj          String?
+  phone         String?
+  email         String?
+  cep           String?
+  address       String?
+  number        String?
+  complement    String?
+  neighborhood  String?
+  city          String?
+  state         String?
+  notes         String?
+  status        String  @default("ATIVO")
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

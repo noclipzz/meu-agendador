@@ -9,7 +9,8 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -53,6 +54,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [termoBusca, setTermoBusca] = useState("");
     const [salvando, setSalvando] = useState(false);
+    const [openMenus, setOpenMenus] = useState<string[]>(["cadastros", "financeiro_group"]); // Inicia aberto para facilitar
 
     const [tipoAgendamento, setTipoAgendamento] = useState<"CLIENTE" | "EVENTO" | "ENCAIXE">("CLIENTE");
 
@@ -348,45 +350,55 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     );
 
     const allItems = [
-        { key: 'dashboard', name: "Visão Geral", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
+        { key: 'dashboard', name: "Dashboard", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
-        { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={20} /> },
-        { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
         { key: 'prontuarios', name: "Fichas Técnicas", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
-        { key: 'profissionais', name: "Equipe", path: "/painel/profissionais", icon: <UserIcon size={20} /> },
     ];
 
-    const menuItems = allItems.filter(item => {
-        // 1. REGRAS DE PLANO (SUPERIOR A TUDO)
+    const cadastrosItems = [
+        { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={18} /> },
+        { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
+        { key: 'profissionais', name: "Equipe / Funcionários", path: "/painel/profissionais", icon: <UserIcon size={18} /> },
+    ];
+
+    const financeiroItems = [
+        { key: 'financeiro', name: "Visão Geral", path: "/painel/financeiro", icon: <BarChart3 size={18} /> },
+        { key: 'contas_pagar', name: "Contas a pagar", path: "/painel/financeiro/contas-pagar", icon: <TrendingDown size={18} className="text-red-500" /> },
+        { key: 'contas_receber', name: "Contas a receber", path: "/painel/financeiro/contas-receber", icon: <TrendingUp size={18} className="text-emerald-500" /> },
+        { key: 'dre', name: "DRE gerencial", path: "/painel/financeiro/dre", icon: <Layers size={18} /> },
+        { key: 'fluxo_caixa', name: "Fluxo de caixa", path: "/painel/financeiro/fluxo-caixa", icon: <BarChart4 size={18} /> },
+        { key: 'boletos', name: "Boleto bancários", path: "/painel/financeiro/boletos", icon: <Barcode size={18} /> },
+        { key: 'auxiliares', name: "Opções auxiliares", path: "/painel/financeiro/auxiliares", icon: <Settings2 size={18} /> },
+    ];
+
+    const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
+            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key)) return false;
         }
         if (userPlan === "PREMIUM") {
             if (["prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
         }
-
-        // 2. REGRAS DE CARGO E PERMISSÃO
-
-        // WhatsApp é EXCLUSIVO para o OWNER (Dono da Empresa)
         if (item.key === 'whatsapp' && !isOwner) return false;
-
-        // Mural é visível para todos da equipe que tenham plano permitido
         if (item.key === 'mural') return true;
-
-        // Admins tem permissão total nas demais áreas permitidas pelo plano
         if (userRole === "ADMIN") return true;
-
-        // Se ainda não carregou permissões (para Profissionais), mostra apenas o básico por segurança
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        // Para profissionais, depende puramente das permissões granulares no banco
-        return userPermissions[item.key as keyof typeof userPermissions];
+        const permKey = ["contas_pagar", "contas_receber", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key) ? "financeiro" : item.key;
+        return userPermissions[permKey as keyof typeof userPermissions];
     });
+
+    const visibleItems = filterMenu(allItems);
+    const visibleCadastros = filterMenu(cadastrosItems);
+    const visibleFinanceiro = filterMenu(financeiroItems);
+
+    const toggleMenu = (key: string) => {
+        setOpenMenus(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+    };
 
     // Bloqueia se estiver verificando OU se não tiver acesso (caso esteja redirecionando)
     if (verificando || !hasAccess) return (
@@ -449,21 +461,86 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     </button>
                 </div>
 
-                <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-2 md:space-y-2 overflow-y-auto custom-scrollbar">
-                    {menuItems.map(item => (
+                <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-1 overflow-y-auto custom-scrollbar">
+                    {visibleItems.map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
                             href={item.path}
-                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[15px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
                         >
-                            {/* Ícone adaptável */}
                             <div className="md:scale-100 scale-110 flex items-center justify-center">
                                 {item.icon}
                             </div>
                             {item.name}
                         </Link>
                     ))}
+
+                    {/* GRUPO: CADASTROS */}
+                    {visibleCadastros.length > 0 && (
+                        <div className="pt-2">
+                            <button
+                                onClick={() => toggleMenu("cadastros")}
+                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+                            >
+                                <div className="flex items-center gap-4 md:gap-3">
+                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                        <FolderPlus size={20} />
+                                    </div>
+                                    <span className="text-base md:text-[14px]">Cadastros</span>
+                                </div>
+                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("cadastros") ? "" : "-rotate-90"}`} />
+                            </button>
+
+                            {openMenus.includes("cadastros") && (
+                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
+                                    {visibleCadastros.map(sub => (
+                                        <Link
+                                            key={sub.path}
+                                            href={sub.path}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+                                        >
+                                            {sub.icon}
+                                            {sub.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* GRUPO: FINANCEIRO */}
+                    {visibleFinanceiro.length > 0 && (
+                        <div className="pt-2">
+                            <button
+                                onClick={() => toggleMenu("financeiro_group")}
+                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+                            >
+                                <div className="flex items-center gap-4 md:gap-3">
+                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                        <BarChart3 size={20} />
+                                    </div>
+                                    <span className="text-base md:text-[14px]">Financeiro</span>
+                                </div>
+                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("financeiro_group") ? "" : "-rotate-90"}`} />
+                            </button>
+
+                            {openMenus.includes("financeiro_group") && (
+                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
+                                    {visibleFinanceiro.map(sub => (
+                                        <Link
+                                            key={sub.path}
+                                            href={sub.path}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+                                        >
+                                            {sub.icon}
+                                            {sub.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </nav>
 
                 <div className="p-4 md:p-3 space-y-4 md:space-y-2 shrink-0">
@@ -506,7 +583,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
             <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden h-full bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
                 {(() => {
-                    const currentRoute = allItems.find(item => pathname === item.path);
+                    const allPossibleItems = [...allItems, ...cadastrosItems, ...financeiroItems];
+                    const currentRoute = allPossibleItems.find(item => pathname === item.path);
 
                     // Bloqueio Hard para WhatsApp (Apenas OWNER)
                     const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && !isOwner;
