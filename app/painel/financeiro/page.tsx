@@ -57,7 +57,7 @@ export default function FinanceiroPage() {
         value: "",
         frequency: "ONCE",
         category: "Outros",
-        date: new Date().toISOString().split('T')[0]
+        dueDate: new Date().toISOString().split('T')[0]
     });
 
     const [novaEntrada, setNovaEntrada] = useState({
@@ -151,8 +151,8 @@ export default function FinanceiroPage() {
             value: exp.value.toString(),
             category: exp.category,
             frequency: exp.frequency || "ONCE",
-            date: (exp.date && !isNaN(new Date(exp.date).getTime()))
-                ? new Date(exp.date).toISOString().split('T')[0]
+            dueDate: (exp.dueDate || exp.date) && !isNaN(new Date(exp.dueDate || exp.date).getTime())
+                ? new Date(exp.dueDate || exp.date).toISOString().split('T')[0]
                 : new Date().toISOString().split('T')[0]
         });
         setModalDespesa(true);
@@ -312,7 +312,7 @@ export default function FinanceiroPage() {
 
     function fecharModalDespesa() {
         setModalDespesa(false);
-        setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", date: new Date().toISOString().split('T')[0] });
+        setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", dueDate: new Date().toISOString().split('T')[0] });
     }
 
     function fecharModalEntrada() {
@@ -958,8 +958,8 @@ export default function FinanceiroPage() {
                                     <input
                                         type="date"
                                         className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-red-500 font-bold dark:text-white transition-all"
-                                        value={novaDespesa.date}
-                                        onChange={e => setNovaDespesa({ ...novaDespesa, date: e.target.value })}
+                                        value={novaDespesa.dueDate}
+                                        onChange={e => setNovaDespesa({ ...novaDespesa, dueDate: e.target.value })}
                                     />
                                 </div>
                             </div>

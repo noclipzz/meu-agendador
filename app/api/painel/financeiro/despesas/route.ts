@@ -123,7 +123,14 @@ export async function POST(req: Request) {
     if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
     const expensesToCreate = [];
-    const baseDate = new Date(`${body.dueDate}T12:00:00`);
+    const expenseDate = body.dueDate || body.date;
+    if (!expenseDate) throw new Error("Data de vencimento não informada.");
+
+    // Suporte para datas puras (YYYY-MM-DD) ou ISO
+    const datePart = expenseDate.includes('T') ? expenseDate.split('T')[0] : expenseDate;
+    const baseDate = new Date(`${datePart}T12:00:00`);
+
+    if (isNaN(baseDate.getTime())) throw new Error("Data de vencimento inválida.");
 
     let occurrences = 1;
     if (body.frequency === 'WEEKLY') occurrences = 52;
@@ -140,12 +147,12 @@ export async function POST(req: Request) {
 
       expensesToCreate.push({
         description: body.description,
-        value: parseFloat(body.value),
-        category: body.category,
+        value: Math.abs(parseFloat(body.value.toString().replace(',', '.'))) || 0,
+        category: body.category || "Outros",
         status: body.status || "PENDENTE",
-        paymentMethod: body.paymentMethod,
+        paymentMethod: body.paymentMethod || "DINHEIRO",
         dueDate: nextDate,
-        supplierId: body.supplierId,
+        supplierId: body.supplierId && body.supplierId.length > 5 ? body.supplierId : null,
         paymentAccount: body.paymentAccount,
         costCenter: body.costCenter,
         nfe: body.nfe,
@@ -154,13 +161,18 @@ export async function POST(req: Request) {
       });
     }
 
+    if (expensesToCreate.length === 0) throw new Error("Nenhum lançamento a criar.");
+
     await prisma.expense.createMany({ data: expensesToCreate });
 
     return NextResponse.json({ success: true, count: occurrences });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("ERRO_CRIAR_DESPESA:", error);
-    return NextResponse.json({ error: "Erro ao salvar" }, { status: 500 });
+    return NextResponse.json({
+      error: "Erro ao salvar lançamento",
+      message: error.message
+    }, { status: 500 });
   }
 }
 

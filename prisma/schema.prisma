@@ -1,177 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// --- EMPRESA (SaaS Multi-tenant) ---
 model Company {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  ownerId   String   @unique
-  createdAt DateTime @default(now())
-
-  // Configurações e Branding
-  logoUrl                      String? @default("")
-  openTime                     String  @default("09:00")
-  closeTime                    String  @default("18:00")
-  lunchStart                   String  @default("12:00")
-  lunchEnd                     String  @default("13:00")
-  interval                     Int     @default(30)
-  workDays                     String  @default("1,2,3,4,5")
-  monthlyGoal                  Decimal @default(5000)
-  whatsappMessage              String? @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.")
-  whatsappConfirmMessage       String? @default("✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
-  whatsappCancelPromptMessage  String? @default("⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.")
-  whatsappCancelSuccessMessage String? @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
-  whatsappCancelRevertMessage  String? @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
-  whatsappWaitingListMessage   String? @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
+  id                           String             @id @default(cuid())
+  name                         String
+  slug                         String             @unique
+  ownerId                      String             @unique
+  createdAt                    DateTime           @default(now())
+  logoUrl                      String?            @default("")
+  openTime                     String             @default("09:00")
+  closeTime                    String             @default("18:00")
+  lunchStart                   String             @default("12:00")
+  lunchEnd                     String             @default("13:00")
+  interval                     Int                @default(30)
+  workDays                     String             @default("1,2,3,4,5")
+  monthlyGoal                  Decimal            @default(5000)
+  whatsappMessage              String?            @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.")
   notificationEmail            String?
-  instagramUrl                 String? @default("")
-  facebookUrl                  String? @default("")
-
-  // --- INTEGRAÇÃO WHATSAPP (Evolution API) ---
-  whatsappInstanceId String? // Nome da instância na VPS (Ex: 'nohud-wpp')
-  whatsappStatus     String? @default("DISCONNECTED") // CONNECTING, CONNECTED, DISCONNECTED
-  evolutionServerUrl String? // URL da VPS (Ex: 'http://123.45.67.89:8080')
-  evolutionApiKey    String? // Chave Global da VPS
-  whatsappQrCode     String? @db.Text // QR Code base64 recebido via webhook
-
-  // Dados de Endereço e Contato (Novo)
-  corporateName String?
-  cnpj         String?
-  phone        String?
-  cep          String?
-  address      String?
-  number       String?
-  complement   String?
-  neighborhood String?
-  city         String?
-  state        String?
-
-  // --- DADOS FISCAIS (Focus NFe) ---
-  inscricaoMunicipal String?
-  regimeTributario   Int?     @default(1) // 1: Simples Nacional, 3: Normal
-  naturezaOperacao   Int?     @default(1) // 1: Tributação no município
-  codigoServico      String? // Código da lista de serviços (ex: 07.02)
-  aliquotaServico    Decimal? @default(0)
-  certificadoA1Url   String?
-  certificadoSenha   String?
-
-  // --- CONFIGURAÇÕES DE TAXAS ---
-  creditCardTax Decimal? @default(0)
-  debitCardTax  Decimal? @default(0)
-
-  // Relações
-  services      Service[]
-  bookings      Booking[]
-  professionals Professional[]
-  teamMembers   TeamMember[]
-  clients       Client[]
-  expenses      Expense[]
-  invoices      Invoice[]
-  products      Product[] // Estoque da empresa
-  formTemplates FormTemplate[] // Templates de prontuário
-  waitingList   WaitingList[] // Lista de espera
-  posts         OrganizationPost[] // Mural de Avisos
-  suppliers     Supplier[] // Gestão de fornecedores
+  facebookUrl                  String?            @default("")
+  instagramUrl                 String?            @default("")
+  address                      String?
+  cep                          String?
+  city                         String?
+  cnpj                         String?
+  complement                   String?
+  neighborhood                 String?
+  number                       String?
+  phone                        String?
+  state                        String?
+  aliquotaServico              Decimal?           @default(0)
+  certificadoA1Url             String?
+  certificadoSenha             String?
+  codigoServico                String?
+  inscricaoMunicipal           String?
+  naturezaOperacao             Int?               @default(1)
+  regimeTributario             Int?               @default(1)
+  creditCardTax                Decimal?           @default(0)
+  debitCardTax                 Decimal?           @default(0)
+  evolutionApiKey              String?
+  evolutionServerUrl           String?
+  whatsappInstanceId           String?
+  whatsappStatus               String?            @default("DISCONNECTED")
+  whatsappQrCode               String?
+  whatsappCancelPromptMessage  String?            @default("⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.")
+  whatsappCancelRevertMessage  String?            @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
+  whatsappCancelSuccessMessage String?            @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
+  whatsappConfirmMessage       String?            @default("✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
+  whatsappWaitingListMessage   String?            @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
+  corporateName                String?
+  bookings                     Booking[]
+  clients                      Client[]
+  expenses                     Expense[]
+  formTemplates                FormTemplate[]
+  invoices                     Invoice[]
+  posts                        OrganizationPost[]
+  products                     Product[]
+  professionals                Professional[]
+  services                     Service[]
+  suppliers                    Supplier[]
+  teamMembers                  TeamMember[]
+  waitingList                  WaitingList[]
 }
 
-// --- MURAL DE AVISOS (REDE SOCIAL CORPORATIVA) ---
 model OrganizationPost {
-  id       String  @id @default(cuid())
-  title    String
-  content  String
-  type     String  @default("AVISO") // AVISO, EVENTO, URGENTE, CELEBRACAO
-  imageUrl String?
-
-  authorId   String? // Clerk User ID de quem postou
-  authorName String? // Nome cacheado para exibição rápida
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  type       String   @default("AVISO")
+  imageUrl   String?
+  authorId   String?
+  authorName String?
+  companyId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// --- MEMBROS DA EQUIPE ---
 model TeamMember {
   id          String  @id @default(cuid())
-  clerkUserId String? @unique
   email       String  @unique
-  role        String  @default("PROFESSIONAL") // ADMIN ou PROFESSIONAL
-  permissions Json? // Controle granular: { "dashboard": boolean, "agenda": boolean, ... }
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role        String  @default("PROFESSIONAL")
+  companyId   String
+  clerkUserId String? @unique
+  permissions Json?
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// --- PROFISSIONAIS ---
 model Professional {
-  id       String  @id @default(cuid())
-  name     String
-  photoUrl String?
-  phone    String?
-  email    String? // <-- Adicionado para vínculo com TeamMember
-  color    String  @default("#3b82f6")
-  userId   String? @unique
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  bookings    Booking[]
-  waitingList WaitingList[]
-
-  // Dados completos (Espelho do Cliente)
-  cpf           String?
-  rg            String?
+  id            String        @id @default(cuid())
+  name          String
+  photoUrl      String?
+  phone         String?
+  color         String        @default("#3b82f6")
+  companyId     String
+  userId        String?       @unique
+  email         String?
+  address       String?
   birthDate     String?
   cep           String?
-  address       String?
-  number        String?
-  complement    String?
-  neighborhood  String?
   city          String?
-  state         String?
+  complement    String?
+  cpf           String?
+  createdAt     DateTime      @default(now())
+  neighborhood  String?
   notes         String?
+  number        String?
+  rg            String?
+  state         String?
+  status        String        @default("ATIVO")
+  updatedAt     DateTime      @default(now()) @updatedAt
   maritalStatus String?
-  status        String  @default("ATIVO")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  services    Service[] // Services performed by this professional
-  attachments Attachment[]
+  attachments   Attachment[]
+  bookings      Booking[]
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  waitingList   WaitingList[]
+  services      Service[]     @relation("ProfessionalToService")
 }
 
-// --- SERVIÇOS ---
 model Service {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal
-  duration    Int
-  commission  Int     @default(0)
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  bookings    Booking[]
-  waitingList WaitingList[]
-
-  // Produtos consumidos por este serviço (Receita)
-  products ServiceProduct[]
-
-  // Quem realiza
-  professionals Professional[]
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  price         Decimal
+  duration      Int
+  companyId     String
+  commission    Int              @default(0)
+  bookings      Booking[]
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  products      ServiceProduct[]
+  waitingList   WaitingList[]
+  professionals Professional[]   @relation("ProfessionalToService")
 }
 
-// --- DESPESAS (CONTAS A PAGAR) ---
+// --- NOVO MODELO DE DESPESAS (CONTAS A PAGAR) ---
 model Expense {
   id            String    @id @default(cuid())
   description   String
@@ -199,20 +166,18 @@ model Expense {
   updatedAt DateTime @updatedAt
 }
 
-// --- FATURAS E COBRANÇAS (CONTAS A RECEBER) ---
 model Invoice {
   id          String   @id @default(cuid())
   description String
   value       Decimal
-  cardTax     Decimal? @default(0) // Valor da taxa descontado
-  netValue    Decimal? @default(0) // Valor líquido (bruto - taxa)
-  method      String? // PIX, BOLETO, CARTAO, DINHEIRO, FATURADO
-  status      String   @default("PENDENTE") // PENDENTE, PAGO, VENCIDO, CANCELADO
+  cardTax     Decimal? @default(0)
+  netValue    Decimal? @default(0)
+  method      String?
+  status      String   @default("PENDENTE")
 
-  dueDate DateTime // Data de vencimento da cobrança
-  paidAt  DateTime? // Data em que o pagamento foi confirmado
+  dueDate DateTime
+  paidAt  DateTime?
 
-  // Vínculos
   bookingId String?  @unique
   booking   Booking? @relation(fields: [bookingId], references: [id])
 
@@ -226,19 +191,16 @@ model Invoice {
   updatedAt DateTime @updatedAt
 }
 
-// --- AGENDAMENTOS E EVENTOS ---
 model Booking {
   id            String   @id @default(cuid())
   date          DateTime
   customerName  String
   customerPhone String?
   userId        String?
-
-  type     String  @default("CLIENTE") // CLIENTE, EVENTO ou ENCAIXE
-  location String?
-
-  status       String  @default("PENDENTE") // PENDENTE, CONFIRMADO, CONCLUIDO, CANCELADO
-  reminderSent Boolean @default(false)
+  type          String   @default("CLIENTE")
+  location      String?
+  status        String   @default("PENDENTE")
+  reminderSent  Boolean  @default(false)
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
@@ -249,176 +211,143 @@ model Booking {
   professionalId String?
   professional   Professional? @relation(fields: [professionalId], references: [id])
 
+  invoice Invoice?
   companyId String
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  invoice Invoice?
 }
 
-// --- ASSINATURAS (Stripe) ---
 model Subscription {
-  id     String  @id @default(cuid())
-  userId String  @unique
-  plan   String?
-  status String  @default("INACTIVE")
-
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  plan                 String?
+  status               String    @default("INACTIVE")
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
   stripePriceId        String?
   expiresAt            DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
-// --- CLIENTES (CRM) ---
 model Client {
-  id            String  @id @default(cuid())
-  name          String
-  phone         String?
-  email         String?
-  clientType    String  @default("FISICA") // FISICA ou JURIDICA
-  cpf           String?
-  cnpj          String?
-  rg            String?
+  id                String       @id @default(cuid())
+  name              String
+  phone             String?
+  email             String?
+  cpf               String?
+  rg                String?
+  birthDate         String?
+  cep               String?
+  address           String?
+  city              String?
+  notes             String?
+  status            String       @default("ATIVO")
+  companyId         String
+  createdAt         DateTime     @default(now())
+  complement        String?
+  neighborhood      String?
+  number            String?
+  state             String?
+  maritalStatus     String?
+  photoUrl          String?
+  clientType        String       @default("FISICA")
+  cnpj              String?
   inscricaoEstadual String?
-  birthDate     String?
-  cep           String?
-  address       String?
-  number        String?
-  complement    String?
-  neighborhood  String?
-  city          String?
-  state         String?
-  notes         String?
-  maritalStatus String?
-  photoUrl      String?
-  status        String  @default("ATIVO")
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  bookings    Booking[]
-  attachments Attachment[]
-  invoices    Invoice[]
-  formEntries FormEntry[] // Prontuários preenchidos
-  createdAt   DateTime     @default(now())
+  attachments       Attachment[]
+  bookings          Booking[]
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  formEntries       FormEntry[]
+  invoices          Invoice[]
 }
 
 model Attachment {
-  id   String @id @default(cuid())
-  name String
-  url  String
-  type String // Ex: image/png, application/pdf
-  size Int    @default(0) // Tamanho em bytes
-
-  clientId String?
-  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
+  id             String        @id @default(cuid())
+  name           String
+  url            String
+  type           String
+  clientId       String?
+  createdAt      DateTime      @default(now())
   professionalId String?
+  size           Int           @default(0)
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
 }
-
-// --- NOVO: ESTOQUE AVANÇADO (COM LOTES) ---
 
 model Product {
-  id        String   @id @default(cuid())
-  name      String
-  // quantity agora é a SOMA de todos os lotes (cache para performance)
-  quantity  Decimal  @default(0)
-  unit      String   @default("UN")
-  minStock  Decimal  @default(5)
-  costPrice Decimal? @default(0)
-
-  // Removemos expiryDate daqui, pois agora cada lote tem a sua
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  batches        ProductBatch[] // <--- NOVOS LOTES
+  id             String           @id @default(cuid())
+  name           String
+  quantity       Decimal          @default(0)
+  unit           String           @default("UN")
+  minStock       Decimal          @default(5)
+  costPrice      Decimal?         @default(0)
+  companyId      String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  batches        ProductBatch[]
   usedInServices ServiceProduct[]
   logs           StockLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
-// NOVA TABELA: LOTES DE PRODUTO
 model ProductBatch {
-  id        String  @id @default(cuid())
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  quantity   Decimal // Quantidade neste lote específico
-  expiryDate DateTime? // Validade deste lote específico
+  id         String    @id @default(cuid())
+  productId  String
+  quantity   Decimal
+  expiryDate DateTime?
   createdAt  DateTime  @default(now())
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model StockLog {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  quantity Decimal
-  oldStock Decimal
-  newStock Decimal
-  type     String // "ENTRADA", "SAIDA", "AJUSTE", "VENDA"
-  reason   String?
-
+  quantity  Decimal
+  oldStock  Decimal
+  newStock  Decimal
+  type      String
+  reason    String?
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
-// Mantenha o ServiceProduct igual...
 model ServiceProduct {
   id        String  @id @default(cuid())
   serviceId String
-  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   amount    Decimal
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([serviceId, productId])
 }
 
-// --- PRONTUÁRIOS PERSONALIZÁVEIS ---
-
 model FormTemplate {
-  id          String  @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String?
-  fields      Json // Array de definições de campos
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  entries FormEntry[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  fields      Json
+  companyId   String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  entries     FormEntry[]
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
-// --- NOVO: LISTA DE ESPERA (SMART FILL) ---
 model WaitingList {
-  id            String    @id @default(cuid())
-  customerName  String
-  customerPhone String
-  preferences   String? // Ex: "Segundas e Quartas, Manhã"
-  desiredDate   DateTime? // Data que o cliente queria
-  status        String    @default("ATIVO") // ATIVO, ATENDIDO, CANCELADO
-
-  serviceId String?
-  service   Service? @relation(fields: [serviceId], references: [id])
-
+  id             String        @id @default(cuid())
+  customerName   String
+  customerPhone  String
+  preferences    String?
+  status         String        @default("ATIVO")
+  serviceId      String?
   professionalId String?
+  companyId      String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  desiredDate    DateTime?
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   professional   Professional? @relation(fields: [professionalId], references: [id])
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  service        Service?      @relation(fields: [serviceId], references: [id])
 }
 
 model PushSubscription {
@@ -431,25 +360,20 @@ model PushSubscription {
 }
 
 model FormEntry {
-  id   String @id @default(cuid())
-  data Json // Dados preenchidos do formulário
-
+  id         String       @id @default(cuid())
+  data       Json
   templateId String
+  clientId   String
+  companyId  String
+  filledBy   String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   template   FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  companyId String
-  filledBy  String? // userId de quem preencheu
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
-// --- FORNECEDORES ---
 model Supplier {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String
   corporateName String?
   cnpj          String?
@@ -463,13 +387,10 @@ model Supplier {
   city          String?
   state         String?
   notes         String?
-  status        String  @default("ATIVO")
-
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  expenses Expense[]
+  status        String   @default("ATIVO")
+  companyId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  expenses      Expense[]
 }

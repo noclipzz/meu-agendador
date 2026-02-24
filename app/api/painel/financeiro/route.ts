@@ -143,6 +143,7 @@ export async function GET(request: Request) {
             // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
                 where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                include: { supplier: true },
                 orderBy: { dueDate: 'desc' }
             }),
             // 3. Receitas Mês Anterior ao SELECIONADO
@@ -168,6 +169,7 @@ export async function GET(request: Request) {
             // 6. Despesas LISTGEM - DO MÊS SELECIONADO (Removendo limite 20 pra ver todas do mês)
             prisma.expense.findMany({
                 where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                include: { supplier: true },
                 orderBy: { dueDate: 'desc' }
             }),
             // 7. BOLETOS VENCIDOS (Global, pois vencido é vencido independente do mês que eu olho? Ou filtro? Geralmente Vencido mostra tudo que tá pendente pra trás)
@@ -194,9 +196,9 @@ export async function GET(request: Request) {
         ]);
 
         // Cálculos de Totais
-        const totalReceita = receitasMes.reduce((acc, i) => acc + Number(i.netValue || i.value), 0);
-        const totalDespesa = despesasMes.reduce((acc, i) => acc + Number(i.value), 0);
-        const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i) => acc + Number(i.netValue || i.value), 0);
+        const totalReceita = receitasMes.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
+        const totalDespesa = despesasMes.reduce((acc, i: any) => acc + Number(i.value || 0), 0);
+        const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
 
         // Cálculo Crescimento
         let crescimento = 0;
@@ -219,8 +221,8 @@ export async function GET(request: Request) {
             return p ? { name: p.name, count: item._count.id, receita: 0, color: p.color } : null;
         })).then(r => r.filter(Boolean));
 
-        // Retorno Final (Adicionando alias 'date' para compatibilidade)
-        return NextResponse.json({
+        // Retorno Final (Garante alias 'date' para compatibilidade com frontend legado)
+        const responseData = {
             resumo: {
                 bruto: totalReceita,
                 despesas: totalDespesa,
@@ -231,14 +233,22 @@ export async function GET(request: Request) {
             fluxoCaixa,
             rankingServicos,
             rankingProfissionais,
-            allExpenses: (allExpenses as any[]).map(e => ({ ...e, date: e.dueDate })),
+            allExpenses: (allExpenses as any[]).map(e => ({
+                ...e,
+                date: e.dueDate || e.date || new Date()
+            })),
             allInvoices: receitasMes,
             boletosVencidos,
             boletosAbertos
-        });
+        };
 
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+        return NextResponse.json(responseData);
+
+    } catch (error: any) {
+        console.error("ERRO_FINANCEIRO_GET:", error);
+        return NextResponse.json({
+            error: "Erro ao carregar dados financeiros",
+            message: error.message
+        }, { status: 500 });
     }
 }
