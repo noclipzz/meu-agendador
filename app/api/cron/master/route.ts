@@ -214,13 +214,12 @@ export async function GET(req: Request) {
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
             const host = req.headers.get('host') || 'nohud.com.br';
-            const protocol = host.includes('localhost') ? 'http' : 'https';
+            const protocol = req.headers.get('x-forwarded-proto') || 'https';
             const baseUrl = `${protocol}://${host}`;
 
-            // Adicionamos um .png falso no final da query para ajudar alguns crawlers
-            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&ext=.png`;
+            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
-            console.log("📸 [INSTAGRAM] Tentando postar imagem:", imageUrl);
+            console.log("📸 [INSTAGRAM] URL enviada para Meta:", imageUrl);
 
             const igResult = await postImageToInstagram({
                 imageUrl,

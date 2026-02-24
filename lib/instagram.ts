@@ -31,9 +31,8 @@ export async function postImageToInstagram({ imageUrl, caption }: PostToInstagra
 
         const creationId = createData.id;
 
-        // 2. Aguardar um pouco para processamento (Meta recomenda alguns segundos ou polling)
-        // Em um cron, podemos fazer um sleep simples
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // 2. Aguardar o processamento da Meta (Aumentado para 10s para garantir o download da OG Image)
+        await new Promise(resolve => setTimeout(resolve, 10000));
 
         // 3. Publicar a mídia
         const publishRes = await fetch(
