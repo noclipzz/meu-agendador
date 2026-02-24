@@ -355,15 +355,15 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
-        { key: 'prontuarios', name: "Fichas Técnicas", path: "/painel/prontuarios", icon: <ClipboardList size={20} /> },
-        { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={20} /> },
-        { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={20} /> },
     ];
 
     const cadastrosItems = [
         { key: 'clientes', name: "Clientes", path: "/painel/clientes", icon: <Users size={18} /> },
-        { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
         { key: 'profissionais', name: "Equipe / Funcionários", path: "/painel/profissionais", icon: <UserIcon size={18} /> },
+        { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
+        { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={18} /> },
+        { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={18} /> },
+        { key: 'prontuarios', name: "Fichas Técnicas", path: "/painel/prontuarios", icon: <ClipboardList size={18} /> },
     ];
 
     const financeiroItems = [
@@ -462,7 +462,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-1 overflow-y-auto custom-scrollbar">
-                    {visibleItems.map(item => (
+                    {/* DASHBOARD E AGENDA */}
+                    {visibleItems.slice(0, 2).map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
@@ -476,7 +477,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         </Link>
                     ))}
 
-                    {/* GRUPO: CADASTROS */}
+                    {/* GRUPO: CADASTROS (ABAIXO DE AGENDA) */}
                     {visibleCadastros.length > 0 && (
                         <div className="pt-2">
                             <button
@@ -487,7 +488,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                     <div className="md:scale-100 scale-110 flex items-center justify-center">
                                         <FolderPlus size={20} />
                                     </div>
-                                    <span className="text-base md:text-[14px]">Cadastros</span>
+                                    <span className="text-base md:text-[14px]">Cadastro</span>
                                 </div>
                                 <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("cadastros") ? "" : "-rotate-90"}`} />
                             </button>
@@ -508,6 +509,21 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             )}
                         </div>
                     )}
+
+                    {/* DEMAIS ITENS DE ALLITEMS */}
+                    {visibleItems.slice(2).map(item => (
+                        <Link
+                            key={item.path}
+                            id={`tour-nav-${item.key}`}
+                            href={item.path}
+                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                        >
+                            <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                {item.icon}
+                            </div>
+                            {item.name}
+                        </Link>
+                    ))}
 
                     {/* GRUPO: FINANCEIRO */}
                     {visibleFinanceiro.length > 0 && (
