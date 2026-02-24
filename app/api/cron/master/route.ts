@@ -225,20 +225,23 @@ export async function GET(req: Request) {
             ];
 
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
-            const baseUrl = 'https://www.nohud.com.br';
-            const imageUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}`;
 
-            console.log("📸 [INSTAGRAM] URL enviada para Meta:", imageUrl);
+            // DIAGNÓSTICO: Testando se o Facebook consegue acessar um arquivo ESTÁTICO no nosso domínio
+            // Se funcionar: o problema é a rota dinâmica /api/marketing/og
+            // Se falhar: o domínio inteiro está bloqueado para o crawler do Facebook
+            const imageUrl = 'https://www.nohud.com.br/LOGOAPP.png';
+
+            console.log("📸 [DIAGNÓSTICO-2] Testando arquivo estático do domínio:", imageUrl);
 
             const igResult = await postImageToInstagram({
                 imageUrl,
-                caption: post.caption
+                caption: post.caption + "\n\n(Teste com arquivo estático do domínio)"
             });
 
             if (igResult.success) {
-                logs.push(`Instagram: Post diário enviado com sucesso (ID: ${igResult.postId})`);
+                logs.push(`Instagram: DIAGNÓSTICO-2 → Arquivo estático FUNCIONA! Problema é na rota OG dinâmica.`);
             } else {
-                logs.push(`Instagram: Falha ao enviar post dinâmico (${igResult.error})`);
+                logs.push(`Instagram: DIAGNÓSTICO-2 → Arquivo estático FALHOU (${igResult.error}). Domínio bloqueado!`);
             }
         } catch (igErr: any) {
             logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
