@@ -32,6 +32,94 @@ export default function FornecedoresPage() {
         notes: ""
     });
 
+    const maskCPFCNPJ = (value: string) => {
+        const raw = value.replace(/\D/g, "");
+        if (raw.length <= 11) {
+            return raw
+                .replace(/(\d{3})(\d)/, "$1.$2")
+                .replace(/(\d{3})(\d)/, "$1.$2")
+                .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+                .substring(0, 14);
+        }
+        return raw
+            .replace(/(\d{2})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1/$2")
+            .replace(/(\d{4})(\d{1,2})/, "$1-$2")
+            .substring(0, 18);
+    };
+
+    const maskPhone = (value: string) => {
+        const raw = value.replace(/\D/g, "");
+        if (raw.length > 10) {
+            return raw
+                .replace(/(\d{2})(\d)/, "($1) $2")
+                .replace(/(\d{5})(\d)/, "$1-$2")
+                .substring(0, 15);
+        }
+        return raw
+            .replace(/(\d{2})(\d)/, "($1) $2")
+            .replace(/(\d{4})(\d)/, "$1-$2")
+            .substring(0, 14);
+    };
+
+    const maskCEP = (value: string) => {
+        return value.replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2").substring(0, 9);
+    };
+
+    async function handleBuscarCEP(cep: string) {
+        const rawCEP = cep.replace(/\D/g, "");
+        if (rawCEP.length === 8) {
+            try {
+                const res = await fetch(`https://viacep.com.br/ws/${rawCEP}/json/`);
+                const data = await res.json();
+                if (!data.erro) {
+                    setForm(prev => ({
+                        ...prev,
+                        address: data.logradouro || prev.address,
+                        neighborhood: data.bairro || prev.neighborhood,
+                        city: data.localidade || prev.city,
+                        state: data.uf || prev.state
+                    }));
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CEP", error);
+            }
+        }
+    }
+
+    async function handleBuscarCNPJ(cnpj: string) {
+        const rawCNPJ = cnpj.replace(/\D/g, "");
+        if (rawCNPJ.length === 14) {
+            const loadingToast = toast.loading("Buscando dados do CNPJ...");
+            try {
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${rawCNPJ}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setForm(prev => ({
+                        ...prev,
+                        name: data.nome_fantasia || data.razao_social || prev.name,
+                        corporateName: data.razao_social || prev.corporateName,
+                        phone: data.ddd_telefone_1 ? maskPhone(data.ddd_telefone_1) : prev.phone,
+                        email: data.email || prev.email,
+                        cep: data.cep ? maskCEP(data.cep) : prev.cep,
+                        address: data.logradouro || prev.address,
+                        number: data.numero || prev.number,
+                        complement: data.complemento || prev.complement,
+                        neighborhood: data.bairro || prev.neighborhood,
+                        city: data.municipio || prev.city,
+                        state: data.uf || prev.state
+                    }));
+                    toast.success("Dados importados com sucesso!", { id: loadingToast });
+                } else {
+                    toast.error("CNPJ não encontrado", { id: loadingToast });
+                }
+            } catch (error) {
+                toast.error("Erro ao buscar CNPJ", { id: loadingToast });
+            }
+        }
+    }
+
     useEffect(() => {
         loadSuppliers();
     }, []);
@@ -228,6 +316,22 @@ export default function FornecedoresPage() {
                         <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">CNPJ / CPF</label>
+                                    <input
+                                        type="text"
+                                        placeholder="00.000.000/0000-00"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.cnpj}
+                                        onChange={(e) => {
+                                            const masked = maskCPFCNPJ(e.target.value);
+                                            setForm({ ...form, cnpj: masked });
+                                            if (masked.replace(/\D/g, "").length === 14) {
+                                                handleBuscarCNPJ(masked);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase ml-2">Nome Fantasia *</label>
                                     <input
                                         type="text"
@@ -246,27 +350,20 @@ export default function FornecedoresPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">CNPJ / CPF</label>
-                                    <input
-                                        type="text"
-                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
-                                        value={form.cnpj}
-                                        onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase ml-2">Telefone</label>
                                     <input
                                         type="tel"
+                                        placeholder="(00) 00000-0000"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
                                         value={form.phone}
-                                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                        onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase ml-2">E-mail</label>
                                     <input
                                         type="email"
+                                        placeholder="exemplo@email.com"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
                                         value={form.email}
                                         onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -276,20 +373,80 @@ export default function FornecedoresPage() {
                                     <label className="text-xs font-black text-gray-400 uppercase ml-2">CEP</label>
                                     <input
                                         type="text"
+                                        placeholder="00000-000"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
                                         value={form.cep}
-                                        onChange={(e) => setForm({ ...form, cep: e.target.value })}
+                                        onChange={(e) => {
+                                            const masked = maskCEP(e.target.value);
+                                            setForm({ ...form, cep: masked });
+                                            if (masked.length === 9) handleBuscarCEP(masked);
+                                        }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-gray-400 uppercase ml-2">Endereço Completo</label>
-                                <textarea
-                                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold h-24 resize-none"
-                                    value={form.address}
-                                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">Logradouro (Rua/Av)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.address}
+                                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">Número</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.number}
+                                        onChange={(e) => setForm({ ...form, number: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">Bairro</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.neighborhood}
+                                        onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">Complemento</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.complement}
+                                        onChange={(e) => setForm({ ...form, complement: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">Cidade</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold"
+                                        value={form.city}
+                                        onChange={(e) => setForm({ ...form, city: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase ml-2">UF (Estado)</label>
+                                    <input
+                                        type="text"
+                                        maxLength={2}
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-blue-500 font-bold uppercase"
+                                        value={form.state}
+                                        onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
