@@ -65,9 +65,11 @@ export async function GET(request: Request) {
         const TIMEZONE = 'America/Sao_Paulo';
 
         const hoje = toZonedTime(new Date(), TIMEZONE);
-        // Se vier parametros, monta a data de referência. Senão usa hoje.
+        const validMes = Number(mesParam) || (hoje.getMonth() + 1);
+        const validAno = Number(anoParam) || hoje.getFullYear();
+
         const dataReferencia = (mesParam && anoParam)
-            ? new Date(Number(anoParam), Number(mesParam) - 1, 1) // Meses no JS são 0-11
+            ? new Date(validAno, validMes - 1, 1)
             : hoje;
 
         const inicioMes = startOfMonth(dataReferencia);
@@ -115,8 +117,8 @@ export async function GET(request: Request) {
                 .reduce((acc, curr) => acc + Number(curr.value), 0);
 
             const despesaMes = todasDespesasGrafico
-                .filter(d => d.dueDate && d.dueDate >= inicio && d.dueDate <= fim)
-                .reduce((acc, curr) => acc + Number(curr.value), 0);
+                .filter((d: any) => d.dueDate && d.dueDate >= inicio && d.dueDate <= fim)
+                .reduce((acc, curr: any) => acc + Number(curr.value), 0);
 
             return {
                 mes: format(data, 'MMM', { locale: ptBR }).toUpperCase(),
@@ -217,7 +219,7 @@ export async function GET(request: Request) {
             return p ? { name: p.name, count: item._count.id, receita: 0, color: p.color } : null;
         })).then(r => r.filter(Boolean));
 
-        // Retorno Final
+        // Retorno Final (Adicionando alias 'date' para compatibilidade)
         return NextResponse.json({
             resumo: {
                 bruto: totalReceita,
@@ -229,10 +231,10 @@ export async function GET(request: Request) {
             fluxoCaixa,
             rankingServicos,
             rankingProfissionais,
-            allExpenses,
-            allInvoices: receitasMes, // Agora retorna as faturas pagas
-            boletosVencidos, // Sempre geral
-            boletosAbertos // Agora filtrado pelo mês
+            allExpenses: (allExpenses as any[]).map(e => ({ ...e, date: e.dueDate })),
+            allInvoices: receitasMes,
+            boletosVencidos,
+            boletosAbertos
         });
 
     } catch (error) {

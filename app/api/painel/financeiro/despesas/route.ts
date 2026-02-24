@@ -37,10 +37,15 @@ export async function GET(req: Request) {
     // 2. Filtros
     const where: any = { companyId };
     if (start && end) {
-      where.dueDate = {
-        gte: new Date(start),
-        lte: new Date(end)
-      };
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        where.dueDate = {
+          gte: startDate,
+          lte: endDate
+        };
+      }
     }
     if (status && status !== "TODAS") {
       where.status = status;
@@ -52,7 +57,7 @@ export async function GET(req: Request) {
       ];
     }
 
-    const expenses = await prisma.expense.findMany({
+    const expenses = await (prisma.expense as any).findMany({
       where,
       include: { supplier: true },
       orderBy: { dueDate: "asc" }
@@ -69,7 +74,7 @@ export async function GET(req: Request) {
       total: 0
     };
 
-    expenses.forEach(exp => {
+    expenses.forEach((exp: any) => {
       const val = Number(exp.value);
       summary.total += val;
 
