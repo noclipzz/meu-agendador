@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings } from "lucide-react";
+import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -279,8 +279,8 @@ export default function NotasFiscaisPage() {
                                         </td>
                                         <td className="px-6 py-5">
                                             <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${inv.nfeStatus === 'EMITIDA' ? 'bg-emerald-100 text-emerald-700' :
-                                                    inv.nfeStatus === 'PROCESSANDO' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-orange-100 text-orange-700'
+                                                inv.nfeStatus === 'PROCESSANDO' ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-orange-100 text-orange-700'
                                                 }`}>
                                                 {inv.nfeStatus}
                                             </span>
