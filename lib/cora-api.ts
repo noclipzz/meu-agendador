@@ -3,6 +3,7 @@ import { db } from './db';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import crypto from 'crypto';
 
 // URLs de STAGE/SANDBOX (conforme arquivos recebidos)
 // URLs de STAGE/SANDBOX corrigidas para a Modalidade Integração Direta (Direct Integration)
@@ -113,7 +114,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         const response = await axios.post(`${CORA_API_URL}/invoices`, payload, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Idempotency-Key': invoice.id
+                'Idempotency-Key': crypto.randomUUID()
             },
             httpsAgent: getCoraAgent()
         });
