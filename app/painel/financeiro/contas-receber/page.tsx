@@ -14,6 +14,13 @@ export default function ContasReceberPage() {
     const [filtroStatus, setFiltroStatus] = useState("todos");
     const [currentDate, setCurrentDate] = useState(new Date());
 
+    // Estados para Modais e Ações
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalType, setModalType] = useState<"create" | "edit" | "view">("create");
+    const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+    const [clients, setClients] = useState<any[]>([]);
+    const [formLoading, setFormLoading] = useState(false);
+
     async function carregarDados() {
         setLoading(true);
         try {
@@ -31,9 +38,21 @@ export default function ContasReceberPage() {
         }
     }
 
+    async function carregarClientes() {
+        try {
+            const res = await fetch("/api/painel/clientes");
+            const json = await res.json();
+            if (Array.isArray(json)) setClients(json);
+        } catch (e) { console.error(e); }
+    }
+
     useEffect(() => {
         carregarDados();
     }, [currentDate]);
+
+    useEffect(() => {
+        if (isModalOpen && clients.length === 0) carregarClientes();
+    }, [isModalOpen]);
 
     const navegarMes = (step: number) => {
         const d = new Date(currentDate);
@@ -45,10 +64,90 @@ export default function ContasReceberPage() {
         return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
+    // --- AÇÕES ---
+    async function confirmarRecebimento(id: string) {
+        toast.promise(
+            fetch("/api/financeiro/faturas", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, status: "PAGO" })
+            }).then(async res => {
+                if (!res.ok) throw new Error();
+                carregarDados();
+            }),
+            {
+                loading: 'Dando baixa na fatura...',
+                success: 'Recebimento confirmado!',
+                error: 'Erro ao confirmar recebimento.',
+            }
+        );
+    }
+
+    async function excluirFatura(id: string) {
+        if (!confirm("Tem certeza que deseja excluir esta fatura?")) return;
+
+        toast.promise(
+            fetch(`/api/financeiro/faturas?id=${id}`, { method: "DELETE" }).then(async res => {
+                if (!res.ok) throw new Error();
+                carregarDados();
+            }),
+            {
+                loading: 'Excluindo...',
+                success: 'Fatura removida!',
+                error: 'Erro ao excluir.',
+            }
+        );
+    }
+
+    async function salvarFatura(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setFormLoading(true);
+        const formData = new FormData(e.currentTarget);
+        const payload = Object.fromEntries(formData.entries());
+
+        // Se for edição, usamos o selectedInvoice.companyId
+        const companyId = selectedInvoice?.companyId || data?.invoices?.[0]?.companyId;
+
+        try {
+            const res = await fetch("/api/financeiro/faturas", {
+                method: modalType === "edit" ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...payload,
+                    id: selectedInvoice?.id,
+                    companyId
+                })
+            });
+
+            if (res.ok) {
+                toast.success(modalType === "edit" ? "Fatura atualizada!" : "Fatura lançada!");
+                setIsModalOpen(false);
+                carregarDados();
+            } else {
+                toast.error("Erro ao salvar fatura.");
+            }
+        } catch (error) {
+            toast.error("Erro de conexão.");
+        } finally {
+            setFormLoading(false);
+        }
+    }
+
     const invoicesFiltradas = data?.invoices?.filter((inv: any) => {
         const matchBusca = inv.description?.toLowerCase().includes(busca.toLowerCase()) ||
             inv.client?.name?.toLowerCase().includes(busca.toLowerCase());
-        const matchStatus = filtroStatus === "todos" || inv.status === filtroStatus;
+
+        let matchStatus = true;
+        const isVencido = new Date(inv.dueDate) < new Date() && inv.status === "PENDENTE";
+
+        if (filtroStatus === "PAGO") {
+            matchStatus = inv.status === "PAGO";
+        } else if (filtroStatus === "PENDENTE") {
+            matchStatus = inv.status === "PENDENTE" && !isVencido;
+        } else if (filtroStatus === "ATRASADO") {
+            matchStatus = isVencido;
+        }
+
         return matchBusca && matchStatus;
     }) || [];
 
@@ -69,7 +168,8 @@ export default function ContasReceberPage() {
     const getPaymentIcon = (method: string) => {
         switch (method) {
             case 'PIX': return <QrCode size={14} />;
-            case 'CORA': return <FileText size={14} />;
+            case 'PIX_CORA': return <QrCode size={14} />;
+            case 'BOLETO': return <FileText size={14} />;
             case 'CREDITO':
             case 'DEBITO': return <CreditCard size={14} />;
             case 'DINHEIRO': return <Banknote size={14} />;
@@ -94,7 +194,10 @@ export default function ContasReceberPage() {
                     <p className="text-gray-500 font-bold text-sm">Gestão de faturas, boletos e entradas futuras.</p>
                 </div>
                 <div className="flex gap-2">
-                    <button className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-emerald-700 transition shadow-lg active:scale-95">
+                    <button
+                        onClick={() => { setModalType("create"); setSelectedInvoice(null); setIsModalOpen(true); }}
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-emerald-700 transition shadow-lg active:scale-95"
+                    >
                         <Plus size={20} /> Lançar Entrada
                     </button>
                     <button className="bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 px-4 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-750 transition active:scale-95">
@@ -152,6 +255,7 @@ export default function ContasReceberPage() {
                         <option value="todos">Todos Status</option>
                         <option value="PAGO">Confirmados</option>
                         <option value="PENDENTE">Pendentes</option>
+                        <option value="ATRASADO">Atrasados</option>
                     </select>
                 </div>
             </div>
@@ -210,7 +314,7 @@ export default function ContasReceberPage() {
                                             <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-bold text-[11px]">
                                                 {getPaymentIcon(inv.method)}
                                                 <span className="uppercase tracking-tighter">{inv.method || "A definir"}</span>
-                                                {inv.method === 'CORA' && <CheckCircle size={10} className="text-blue-500" />}
+                                                {(inv.method === 'PIX_CORA' || inv.method === 'BOLETO') && <CheckCircle size={10} className="text-blue-500" />}
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
@@ -233,12 +337,36 @@ export default function ContasReceberPage() {
                                         </td>
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                                                <button className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition" title="Ver detalhes"><Eye size={18} /></button>
-                                                <button className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition" title="Editar"><Pencil size={18} /></button>
+                                                <button
+                                                    onClick={() => { setModalType("view"); setSelectedInvoice(inv); setIsModalOpen(true); }}
+                                                    className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition"
+                                                    title="Ver detalhes"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => { setModalType("edit"); setSelectedInvoice(inv); setIsModalOpen(true); }}
+                                                    className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-amber-600 rounded-lg transition"
+                                                    title="Editar"
+                                                >
+                                                    <Pencil size={18} />
+                                                </button>
                                                 {inv.status === "PENDENTE" && (
-                                                    <button className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 rounded-lg transition" title="Confirmar Recebimento"><CheckCircle2 size={18} /></button>
+                                                    <button
+                                                        onClick={() => confirmarRecebimento(inv.id)}
+                                                        className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 rounded-lg transition"
+                                                        title="Confirmar Recebimento"
+                                                    >
+                                                        <CheckCircle2 size={18} />
+                                                    </button>
                                                 )}
-                                                <button className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition" title="Excluir"><Trash2 size={18} /></button>
+                                                <button
+                                                    onClick={() => excluirFatura(inv.id)}
+                                                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -248,6 +376,133 @@ export default function ContasReceberPage() {
                     </table>
                 </div>
             </div>
+
+            {/* MODAL LANÇAMENTO / EDIÇÃO */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-lg relative shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar border dark:border-gray-800">
+                        <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"><TrendingUp className="rotate-45" size={24} /></button>
+
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">
+                                {modalType === "create" ? "Lançar Nova Entrada" : modalType === "edit" ? "Editar Fatura" : "Detalhes da Fatura"}
+                            </h2>
+                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest">Controle Financeiro Nohud</p>
+                        </div>
+
+                        <form onSubmit={salvarFatura} className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Cliente</label>
+                                    <select
+                                        name="clientId"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                        defaultValue={selectedInvoice?.clientId || ""}
+                                        required
+                                        disabled={modalType === "view"}
+                                    >
+                                        <option value="">Selecione um cliente...</option>
+                                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Descrição do Lançamento</label>
+                                    <input
+                                        name="description"
+                                        type="text"
+                                        placeholder="Ex: Contrato de Serviços de TI"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                        defaultValue={selectedInvoice?.description || ""}
+                                        required
+                                        disabled={modalType === "view"}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$)</label>
+                                        <input
+                                            name="value"
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0,00"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.value || ""}
+                                            required
+                                            disabled={modalType === "view"}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento</label>
+                                        <input
+                                            name="dueDate"
+                                            type="date"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.dueDate ? format(new Date(selectedInvoice.dueDate), "yyyy-MM-dd") : ""}
+                                            required
+                                            disabled={modalType === "view"}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Status</label>
+                                        <select
+                                            name="status"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.status || "PENDENTE"}
+                                            disabled={modalType === "view"}
+                                        >
+                                            <option value="PENDENTE">Pendente</option>
+                                            <option value="PAGO">Pago / Confirmado</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Método</label>
+                                        <select
+                                            name="method"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.method || ""}
+                                            disabled={modalType === "view"}
+                                        >
+                                            <option value="">Selecione...</option>
+                                            <option value="PIX">PIX (Manual)</option>
+                                            <option value="PIX_CORA">PIX (Cora)</option>
+                                            <option value="BOLETO">Boleto (Cora)</option>
+                                            <option value="DINHEIRO">Dinheiro</option>
+                                            <option value="CREDITO">Cartão Crédito</option>
+                                            <option value="DEBITO">Cartão Débito</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {modalType !== "view" && (
+                                <button
+                                    type="submit"
+                                    disabled={formLoading}
+                                    className="w-full bg-emerald-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl shadow-emerald-500/20 hover:bg-emerald-700 transition flex items-center justify-center gap-2 active:scale-95 mt-4"
+                                >
+                                    {formLoading ? <Loader2 className="animate-spin" /> : <CheckCircle2 size={24} />}
+                                    {modalType === "create" ? "Lançar Recebimento" : "Salvar Alterações"}
+                                </button>
+                            )}
+
+                            {modalType === "view" && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition mt-4"
+                                >
+                                    Fechar
+                                </button>
+                            )}
+                        </form>
+                    </div>
+                </div>
+            )}
 
             <div className="flex justify-end gap-2 pr-4">
                 <button className="text-[11px] font-black uppercase tracking-widest text-gray-400 hover:text-emerald-500 flex items-center gap-2 transition">

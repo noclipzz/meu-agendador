@@ -210,8 +210,8 @@ export async function POST(req: Request) {
             }
         }
 
-        // 6. INTEGRAÇÃO CORA (Se método for CORA)
-        if (method === 'CORA') {
+        // 6. INTEGRAÇÃO CORA (Se método for PIX_CORA ou BOLETO)
+        if (method === 'PIX_CORA' || method === 'BOLETO') {
             try {
                 await createCoraCharge(companyId, invoice.id);
             } catch (coraErr) {
@@ -223,5 +223,51 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error("ERRO_CHECKOUT:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    }
+}
+
+export async function PUT(req: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+        const body = await req.json();
+        const { id, status, value, description, dueDate, method } = body;
+
+        const updatedInvoice = await prisma.invoice.update({
+            where: { id },
+            data: {
+                status,
+                value: value ? parseFloat(value) : undefined,
+                description,
+                dueDate: dueDate ? new Date(dueDate) : undefined,
+                method,
+                paidAt: status === "PAGO" ? new Date() : undefined
+            }
+        });
+
+        return NextResponse.json(updatedInvoice);
+    } catch (error) {
+        console.error("ERRO_FATURA_PUT:", error);
+        return NextResponse.json({ error: "Erro ao atualizar fatura" }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get("id");
+
+        if (!id) return new NextResponse("ID não fornecido", { status: 400 });
+
+        await prisma.invoice.delete({ where: { id } });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("ERRO_FATURA_DELETE:", error);
+        return NextResponse.json({ error: "Erro ao excluir fatura" }, { status: 500 });
     }
 }

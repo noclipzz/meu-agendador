@@ -730,18 +730,18 @@ export default function PainelDashboard() {
                                     <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { id: 'PIX', icon: <QrCode size={16} /> },
-                                            { id: 'CORA', icon: <ExternalLink size={16} />, label: 'Pix/Boleto' },
+                                            { id: 'PIX_CORA', icon: <ExternalLink size={16} />, label: 'Pix (Cora)' },
+                                            { id: 'BOLETO', icon: <FileText size={16} />, label: 'Boleto' },
                                             { id: 'CREDITO', icon: <CreditCard size={16} />, label: 'Crédito' },
                                             { id: 'DEBITO', icon: <CreditCard size={16} />, label: 'Débito' },
-                                            { id: 'DINHEIRO', icon: <Banknote size={16} /> },
-                                            { id: 'FATURADO', icon: <Clock size={16} /> }
+                                            { id: 'DINHEIRO', icon: <Banknote size={16} /> }
                                         ].map(m => (
-                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: (m.id === 'FATURADO' || m.id === 'CORA') ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {(m as any).label || m.id}</button>
+                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: (m.id === 'BOLETO' || m.id === 'PIX_CORA') ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {(m as any).label || m.id}</button>
                                         ))}
                                     </div>
-                                    {checkoutData.method === 'FATURADO' && (
+                                    {checkoutData.method === 'BOLETO' && (
                                         <div className="animate-in fade-in slide-in-from-top-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento do Boleto</label>
                                             <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl dark:bg-gray-800 font-bold dark:text-white" value={checkoutData.dueDate} onChange={e => setCheckoutData({ ...checkoutData, dueDate: e.target.value })} />
                                         </div>
                                     )}
