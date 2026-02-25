@@ -9,7 +9,8 @@ import {
     TrendingDown, Plus, Search, Trash2, Pencil, X,
     ArrowLeft, Calendar, Filter, ChevronDown, CheckCircle2,
     AlertCircle, Clock, MoreHorizontal, Download, FileText,
-    Truck, Wallet, Hash, Loader2
+    Truck, Wallet, Hash, Loader2, Check, Printer, Copy, Eye,
+    MoreVertical
 } from "lucide-react";
 
 export default function ContasPagarPage() {
@@ -25,6 +26,9 @@ export default function ContasPagarPage() {
 
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
+    const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
     const [editingExpense, setEditingExpense] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
 
@@ -178,16 +182,88 @@ export default function ContasPagarPage() {
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Deseja excluir esta despesa?")) return;
+    async function handleConfirmPayment(exp: any) {
+        try {
+            const res = await fetch('/api/painel/financeiro/despesas', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: exp.id,
+                    status: 'PAGO',
+                    paidAt: format(new Date(), 'yyyy-MM-dd')
+                })
+            });
+            if (res.ok) {
+                toast.success("Pagamento confirmado!");
+                loadData();
+                setOpenActionMenuId(null);
+            }
+        } catch (error) {
+            toast.error("Erro ao confirmar pagamento");
+        }
+    }
+
+    async function handleDuplicatePayment(exp: any) {
+        try {
+            const { id, createdAt, updatedAt, supplier, ...data } = exp;
+            const res = await fetch('/api/painel/financeiro/despesas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...data,
+                    description: `${data.description} (Cópia)`,
+                    status: 'PENDENTE',
+                    dueDate: format(addMonths(new Date(data.dueDate), 1), 'yyyy-MM-dd')
+                })
+            });
+            if (res.ok) {
+                toast.success("Lançamento duplicado (para o próximo mês)");
+                loadData();
+                setOpenActionMenuId(null);
+            }
+        } catch (error) {
+            toast.error("Erro ao duplicar");
+        }
+    }
+
+    function handlePrintReceipt(exp: any) {
+        toast.info("Gerando recibo...");
+        // Simulação de geração de PDF/Impressão
+        const win = window.open('', '_blank');
+        if (win) {
+            win.document.write(`
+                <html>
+                    <head><title>Recibo - ${exp.description}</title></head>
+                    <body style="font-family: sans-serif; padding: 40px; border: 2px solid #EEE; max-width: 600px; margin: auto;">
+                        <h1 style="text-align: center; color: #333;">RECIBO DE PAGAMENTO</h1>
+                        <hr/>
+                        <p><strong>Descrição:</strong> ${exp.description}</p>
+                        <p><strong>Valor:</strong> R$ ${Number(exp.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p><strong>Data de Vencimento:</strong> ${format(new Date(exp.dueDate), 'dd/MM/yyyy')}</p>
+                        <p><strong>Status:</strong> ${exp.status}</p>
+                        <p><strong>Fornecedor:</strong> ${exp.supplier?.name || 'Não informado'}</p>
+                        <br/><br/>
+                        <div style="border-top: 1px solid #000; width: 200px; margin-top: 40px; padding-top: 10px;">Assinatura</div>
+                    </body>
+                </html>
+            `);
+            win.document.close();
+            win.print();
+        }
+    }
+
+    async function handleDelete() {
+        if (!expenseToDelete) return;
         try {
             const res = await fetch('/api/painel/financeiro/despesas', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
+                body: JSON.stringify({ id: expenseToDelete.id })
             });
             if (res.ok) {
                 toast.success("Excluído com sucesso");
+                setIsDeleteModalOpen(false);
+                setExpenseToDelete(null);
                 loadData();
             }
         } catch (error) {
@@ -447,6 +523,15 @@ export default function ContasPagarPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                                            {/* Botão Visualizar (Azul) */}
+                                            <button
+                                                className="p-1.5 bg-cyan-500 text-white rounded hover:bg-cyan-600 transition shadow-sm"
+                                                title="Visualizar"
+                                            >
+                                                <Eye size={14} />
+                                            </button>
+
+                                            {/* Botão Editar (Laranja) */}
                                             <button
                                                 onClick={() => {
                                                     setEditingExpense(exp);
@@ -457,16 +542,60 @@ export default function ContasPagarPage() {
                                                     });
                                                     setIsModalOpen(true);
                                                 }}
-                                                className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
+                                                className="p-1.5 bg-amber-500 text-white rounded hover:bg-amber-600 transition shadow-sm"
+                                                title="Editar"
                                             >
-                                                <Pencil size={16} />
+                                                <Pencil size={14} />
                                             </button>
+
+                                            {/* Botão Excluir (Vermelho) */}
                                             <button
-                                                onClick={() => handleDelete(exp.id)}
-                                                className="p-2 bg-red-50 text-red-400 rounded-lg hover:bg-red-100 transition"
+                                                onClick={() => {
+                                                    setExpenseToDelete(exp);
+                                                    setIsDeleteModalOpen(true);
+                                                }}
+                                                className="p-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition shadow-sm"
+                                                title="Excluir"
                                             >
-                                                <Trash2 size={16} />
+                                                <X size={14} />
                                             </button>
+
+                                            {/* Botão Mais Opções (Verde) */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setOpenActionMenuId(openActionMenuId === exp.id ? null : exp.id)}
+                                                    className={`p-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition shadow-sm ${openActionMenuId === exp.id ? 'ring-2 ring-emerald-300' : ''}`}
+                                                    title="Mais ações"
+                                                >
+                                                    <ChevronDown size={14} className={`transition-transform duration-200 ${openActionMenuId === exp.id ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                {openActionMenuId === exp.id && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionMenuId(null)} />
+                                                        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                                            <button
+                                                                onClick={() => handleConfirmPayment(exp)}
+                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                            >
+                                                                <Check size={16} /> Confirmar pagamento
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePrintReceipt(exp)}
+                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                            >
+                                                                <Printer size={16} /> Imprimir recibo
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDuplicatePayment(exp)}
+                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                            >
+                                                                <Copy size={16} /> Duplicar pagamento
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -617,6 +746,37 @@ export default function ContasPagarPage() {
                                 className="flex-[2] bg-red-500 text-white px-8 py-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-red-600 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
                             >
                                 {salvando ? <Loader2 className="animate-spin" /> : editingExpense ? "Salvar Alterações" : "Confirmar Lançamento"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL Exclusão (Personalizado como na imagem) */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
+                            <p className="text-gray-300 text-sm">Deseja excluir esta despesa?</p>
+                        </div>
+                        <div className="p-4 bg-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    handleDelete();
+                                }}
+                                className="bg-[#2463eb] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-600 transition shadow-md active:scale-95 uppercase"
+                            >
+                                OK
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsDeleteModalOpen(false);
+                                    setExpenseToDelete(null);
+                                }}
+                                className="bg-transparent text-white border border-white/30 px-6 py-2 rounded-lg font-bold text-sm hover:bg-white/10 transition uppercase"
+                            >
+                                Cancelar
                             </button>
                         </div>
                     </div>
