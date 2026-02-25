@@ -1144,7 +1144,17 @@ export default function ClientesPage() {
                                                             </div>
                                                             <div className="text-right shrink-0">
                                                                 <p className={`font-black text-sm md:text-xl ${inv.status === 'PAGO' ? 'text-green-600' : 'text-red-600'}`}>R$ {Number(inv.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
+                                                                <div className="flex flex-col items-end gap-1 mt-1">
+                                                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{inv.status} • {inv.method || 'A DEFINIR'}</span>
+                                                                    {inv.method === 'BOLETO' && inv.bankUrl && (
+                                                                        <button
+                                                                            onClick={() => window.open(inv.bankUrl, '_blank')}
+                                                                            className="text-[10px] font-black uppercase text-blue-500 hover:text-blue-600 flex items-center gap-1 transition-colors bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg"
+                                                                        >
+                                                                            <Printer size={12} /> Imprimir Boleto
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )) || <p className="text-center py-20 opacity-30 italic">Sem faturamentos registrados.</p>}

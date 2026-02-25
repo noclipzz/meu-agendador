@@ -28,30 +28,48 @@ export async function GET(request: Request) {
         if (!targetCompanyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
         const { searchParams } = new URL(request.url);
-        const month = parseInt(searchParams.get("month") || "");
-        const year = parseInt(searchParams.get("year") || "");
+        const start = searchParams.get("start");
+        const end = searchParams.get("end");
+        const status = searchParams.get("status");
+        const search = searchParams.get("search");
 
         const TIMEZONE = 'America/Sao_Paulo';
         const hoje = toZonedTime(new Date(), TIMEZONE);
 
-        let startDate, endDate;
+        // Define onde buscar
+        const where: any = { companyId: targetCompanyId };
 
-        if (month && year) {
-            const date = new Date(year, month - 1, 1);
-            startDate = startOfMonth(date);
-            endDate = endOfMonth(date);
+        let startDate, endDate;
+        if (start && end) {
+            startDate = new Date(start);
+            endDate = new Date(end);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                where.dueDate = {
+                    gte: startDate,
+                    lte: endDate
+                };
+            }
         } else {
             startDate = startOfMonth(hoje);
             endDate = endOfMonth(hoje);
+            where.dueDate = { gte: startDate, lte: endDate };
         }
 
-        // 1. Busca todas as faturas do mês (ou geral para os resumos)
+        if (status && status !== "TODAS" && status !== "todos") {
+            where.status = status;
+        }
+
+        if (search) {
+            where.OR = [
+                { description: { contains: search, mode: "insensitive" } },
+                { client: { name: { contains: search, mode: "insensitive" } } }
+            ];
+        }
+
+        // 1. Busca todas as faturas baseadas nos filtros passados
         const [invoices, summaryInvoices] = await Promise.all([
             prisma.invoice.findMany({
-                where: {
-                    companyId: targetCompanyId,
-                    dueDate: { gte: startDate, lte: endDate }
-                },
+                where,
                 include: { client: true },
                 orderBy: { dueDate: "asc" }
             }),

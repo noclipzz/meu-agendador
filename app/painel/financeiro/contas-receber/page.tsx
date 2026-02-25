@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, ArrowLeft, Plus, Search, Calendar, Filter, MoreHorizontal, CheckCircle, Clock, AlertCircle, Eye, Pencil, Trash2, CheckCircle2, QrCode, CreditCard, Banknote, FileText, ChevronLeft, ChevronRight, Loader2, Download } from "lucide-react";
+import { TrendingUp, ArrowLeft, Plus, Search, Calendar, Filter, MoreHorizontal, CheckCircle, Clock, AlertCircle, Eye, Pencil, Trash2, CheckCircle2, QrCode, CreditCard, Banknote, FileText, ChevronLeft, ChevronRight, Loader2, Download, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -12,7 +12,19 @@ export default function ContasReceberPage() {
     const [data, setData] = useState<any>(null);
     const [busca, setBusca] = useState("");
     const [filtroStatus, setFiltroStatus] = useState("todos");
-    const [currentDate, setCurrentDate] = useState(new Date());
+
+    // Filtros avançados
+    const [filters, setFilters] = useState({
+        start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+        end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+        status: "TODAS",
+        search: ""
+    });
+    const [selectedPeriod, setSelectedPeriod] = useState("");
+    const [isPeriodSelectorOpen, setIsPeriodSelectorOpen] = useState(false);
+
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
 
     // Estados para Modais e Ações
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,10 +33,69 @@ export default function ContasReceberPage() {
     const [clients, setClients] = useState<any[]>([]);
     const [formLoading, setFormLoading] = useState(false);
 
+    useEffect(() => {
+        const label = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
+        setSelectedPeriod(label.charAt(0).toUpperCase() + label.slice(1));
+    }, []);
+
+    const handlePeriodChange = (period: string) => {
+        const now = new Date();
+        let start = "";
+        let end = "";
+        let label = period;
+
+        switch (period) {
+            case "HOJE":
+                start = format(startOfDay(now), 'yyyy-MM-dd');
+                end = format(endOfDay(now), 'yyyy-MM-dd');
+                label = "Hoje";
+                break;
+            case "SEMANA":
+                start = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                end = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                label = "Esta semana";
+                break;
+            case "MES_PASSADO":
+                const lastMonth = subMonths(now, 1);
+                start = format(startOfMonth(lastMonth), 'yyyy-MM-dd');
+                end = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
+                label = format(lastMonth, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "ESTE_MES":
+                start = format(startOfMonth(now), 'yyyy-MM-dd');
+                end = format(endOfMonth(now), 'yyyy-MM-dd');
+                label = format(now, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "PROXIMO_MES":
+                const nextMonth = addMonths(now, 1);
+                start = format(startOfMonth(nextMonth), 'yyyy-MM-dd');
+                end = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
+                label = format(nextMonth, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "TODO":
+                start = "";
+                end = "";
+                label = "Todo o período";
+                break;
+        }
+
+        const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+        setSelectedPeriod(capitalizedLabel);
+        setFilters({ ...filters, start, end });
+        setIsPeriodSelectorOpen(false);
+    };
+
     async function carregarDados() {
         setLoading(true);
         try {
-            const res = await fetch(`/api/painel/financeiro/receber?month=${currentDate.getMonth() + 1}&year=${currentDate.getFullYear()}`);
+            const query = new URLSearchParams({
+                start: filters.start,
+                end: filters.end,
+                status: filtrosAvancados(),
+                search: busca || filters.search
+            }).toString();
+
+            const res = await fetch(`/api/painel/financeiro/receber?${query}`);
             const json = await res.json();
             if (res.ok) {
                 setData(json);
@@ -38,9 +109,15 @@ export default function ContasReceberPage() {
         }
     }
 
+    function filtrosAvancados() {
+        if (filtroStatus === 'PAGO') return 'PAGO';
+        if (filtroStatus === 'PENDENTE') return 'PENDENTE';
+        return 'TODAS'; // Apenas para passar pro backend, o front ainda faz o de atrasados
+    }
+
     async function carregarClientes() {
         try {
-            const res = await fetch("/api/painel/clientes");
+            const res = await fetch("/api/clientes");
             const json = await res.json();
             if (Array.isArray(json)) setClients(json);
         } catch (e) { console.error(e); }
@@ -48,17 +125,11 @@ export default function ContasReceberPage() {
 
     useEffect(() => {
         carregarDados();
-    }, [currentDate]);
+    }, [filters.start, filters.end, filters.status, filtroStatus, busca]);
 
     useEffect(() => {
         if (isModalOpen && clients.length === 0) carregarClientes();
     }, [isModalOpen]);
-
-    const navegarMes = (step: number) => {
-        const d = new Date(currentDate);
-        d.setMonth(d.getMonth() + step);
-        setCurrentDate(d);
-    };
 
     const formatCurrency = (val: number) => {
         return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -83,12 +154,14 @@ export default function ContasReceberPage() {
         );
     }
 
-    async function excluirFatura(id: string) {
-        if (!confirm("Tem certeza que deseja excluir esta fatura?")) return;
+    async function executarExclusaoFatura() {
+        if (!invoiceToDelete) return;
 
         toast.promise(
-            fetch(`/api/financeiro/faturas?id=${id}`, { method: "DELETE" }).then(async res => {
+            fetch(`/api/financeiro/faturas?id=${invoiceToDelete.id}`, { method: "DELETE" }).then(async res => {
                 if (!res.ok) throw new Error();
+                setIsDeleteModalOpen(false);
+                setInvoiceToDelete(null);
                 carregarDados();
             }),
             {
@@ -237,18 +310,38 @@ export default function ContasReceberPage() {
                     />
                 </div>
 
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                    <div className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-700">
-                        <button onClick={() => navegarMes(-1)} className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-l-2xl transition"><ChevronLeft size={18} /></button>
-                        <div className="px-4 flex items-center gap-2 min-w-[150px] justify-center">
-                            <Calendar size={16} className="text-emerald-500" />
-                            <span className="text-xs font-black uppercase">{format(currentDate, "MMMM yyyy", { locale: ptBR })}</span>
-                        </div>
-                        <button onClick={() => navegarMes(1)} className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-r-2xl transition"><ChevronRight size={18} /></button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                    {/* Seletor de Período igual ao Contas a Pagar */}
+                    <div className="relative w-full sm:w-auto">
+                        <button
+                            onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
+                            className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#1e293b] transition min-w-[180px] justify-between text-sm shadow-md"
+                        >
+                            <span className="capitalize">{selectedPeriod}</span>
+                            <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isPeriodSelectorOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setIsPeriodSelectorOpen(false)}
+                                />
+                                <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left">
+                                    <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
+                                    <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
+                                    <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
+                                    <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
+                                    <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
+                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                                    <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <select
-                        className="bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-2xl px-4 py-3.5 text-xs font-black uppercase tracking-tighter outline-none appearance-none cursor-pointer"
+                        className="bg-gray-50 dark:bg-gray-900 px-4 py-3 rounded-2xl border dark:border-gray-700 outline-none text-sm font-bold text-gray-600 dark:text-gray-300 w-full sm:w-auto"
                         value={filtroStatus}
                         onChange={(e) => setFiltroStatus(e.target.value)}
                     >
@@ -361,7 +454,7 @@ export default function ContasReceberPage() {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => excluirFatura(inv.id)}
+                                                    onClick={() => { setInvoiceToDelete(inv); setIsDeleteModalOpen(true); }}
                                                     className="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition"
                                                     title="Excluir"
                                                 >
@@ -395,6 +488,7 @@ export default function ContasReceberPage() {
                                 <div>
                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Cliente</label>
                                     <select
+                                        key={`client-select-${clients.length}`}
                                         name="clientId"
                                         className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
                                         defaultValue={selectedInvoice?.clientId || ""}
@@ -504,11 +598,31 @@ export default function ContasReceberPage() {
                 </div>
             )}
 
-            <div className="flex justify-end gap-2 pr-4">
-                <button className="text-[11px] font-black uppercase tracking-widest text-gray-400 hover:text-emerald-500 flex items-center gap-2 transition">
-                    <Download size={14} /> Exportar Excel
-                </button>
-            </div>
+            {/* MODAL Exclusão (Personalizado como na imagem) */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
+                            <p className="text-gray-300 text-sm">Tem certeza que deseja excluir esta fatura?</p>
+                        </div>
+                        <div className="p-4 bg-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={executarExclusaoFatura}
+                                className="bg-[#2463eb] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-600 transition shadow-md active:scale-95 uppercase"
+                            >
+                                OK
+                            </button>
+                            <button
+                                onClick={() => { setIsDeleteModalOpen(false); setInvoiceToDelete(null); }}
+                                className="bg-transparent text-white border border-white/30 px-6 py-2 rounded-lg font-bold text-sm hover:bg-white/10 transition uppercase"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
