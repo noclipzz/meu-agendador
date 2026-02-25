@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+!lib/cora/certs/certificate.pem
 
 # debug
 npm-debug.log*
