@@ -126,6 +126,7 @@ export async function POST(req: Request) {
       naturezaOperacao: body.naturezaOperacao ? Number(body.naturezaOperacao) : 1,
       codigoServico: body.codigoServico || null,
       aliquotaServico: body.aliquotaServico ? Number(body.aliquotaServico) : 0,
+      inssTax: body.inssTax ? Number(body.inssTax) : 0,
       certificadoA1Url: body.certificadoA1Url || null,
       certificadoSenha: body.certificadoSenha || null,
       // Taxas

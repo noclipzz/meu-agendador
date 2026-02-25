@@ -69,6 +69,7 @@ export default function Configuracoes() {
     const [naturezaOperacao, setNaturezaOperacao] = useState("1");
     const [codigoServico, setCodigoServico] = useState("");
     const [aliquotaServico, setAliquotaServico] = useState("");
+    const [inssTax, setInssTax] = useState("");
     const [certificadoA1Url, setCertificadoA1Url] = useState("");
     const [certificadoSenha, setCertificadoSenha] = useState("");
     const [creditCardTax, setCreditCardTax] = useState("");
@@ -135,6 +136,7 @@ export default function Configuracoes() {
                 setNaturezaOperacao(String(dataConfig.naturezaOperacao || "1"));
                 setCodigoServico(dataConfig.codigoServico || "");
                 setAliquotaServico(String(dataConfig.aliquotaServico || ""));
+                setInssTax(String(dataConfig.inssTax || ""));
                 setCertificadoA1Url(dataConfig.certificadoA1Url || "");
                 setCertificadoSenha(dataConfig.certificadoSenha || "");
                 setCreditCardTax(String(dataConfig.creditCardTax || "0"));
@@ -253,7 +255,7 @@ export default function Configuracoes() {
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state,
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
-                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha,
+                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"), certificadoA1Url, certificadoSenha,
                     creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
                     coraClientId, coraClientSecret
                 })
@@ -530,6 +532,30 @@ export default function Configuracoes() {
                                     placeholder="Ex: 04.01"
                                     value={codigoServico}
                                     onChange={e => setCodigoServico(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Alíquota ISS (%)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white"
+                                    placeholder="Ex: 2 ou 5"
+                                    value={aliquotaServico}
+                                    onChange={e => setAliquotaServico(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Retenção INSS (%)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white"
+                                    placeholder="Ex: 11"
+                                    value={inssTax}
+                                    onChange={e => setInssTax(e.target.value)}
                                 />
                             </div>
 

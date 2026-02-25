@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -370,6 +370,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'financeiro', name: "Visão Geral", path: "/painel/financeiro", icon: <BarChart3 size={18} /> },
         { key: 'contas_pagar', name: "Contas a pagar", path: "/painel/financeiro/contas-pagar", icon: <TrendingDown size={18} className="text-red-500" /> },
         { key: 'contas_receber', name: "Contas a receber", path: "/painel/financeiro/contas-receber", icon: <TrendingUp size={18} className="text-emerald-500" /> },
+        { key: 'notas_fiscais', name: "Notas fiscais (NFS-e)", path: "/painel/financeiro/notas-fiscais", icon: <FileText size={18} /> },
         { key: 'dre', name: "DRE gerencial", path: "/painel/financeiro/dre", icon: <Layers size={18} /> },
         { key: 'fluxo_caixa', name: "Fluxo de caixa", path: "/painel/financeiro/fluxo-caixa", icon: <BarChart4 size={18} /> },
         { key: 'boletos', name: "Boleto bancários", path: "/painel/financeiro/boletos", icon: <Barcode size={18} /> },
@@ -378,7 +379,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key)) return false;
+            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key)) return false;
         }
         if (userPlan === "PREMIUM") {
             if (["prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
@@ -388,7 +389,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         if (userRole === "ADMIN") return true;
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        const permKey = ["contas_pagar", "contas_receber", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key) ? "financeiro" : item.key;
+        const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key) ? "financeiro" : item.key;
         return userPermissions[permKey as keyof typeof userPermissions];
     });
 

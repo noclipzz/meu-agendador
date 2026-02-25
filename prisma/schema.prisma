@@ -35,6 +35,7 @@ model Company {
   phone                        String?
   state                        String?
   aliquotaServico              Decimal?           @default(0)
+  inssTax                      Decimal?           @default(0)
   certificadoA1Url             String?
   certificadoSenha             String?
   codigoServico                String?
