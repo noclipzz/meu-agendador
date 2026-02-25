@@ -573,7 +573,7 @@ export default function ContasPagarPage() {
                                                 {openActionMenuId === exp.id && (
                                                     <>
                                                         <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionMenuId(null)} />
-                                                        <div className="absolute right-0 bottom-full mb-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in slide-in-from-bottom-2 duration-100 origin-bottom-right">
+                                                        <div className="absolute right-full top-0 mr-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in slide-in-from-right-2 duration-100 origin-right">
                                                             <button
                                                                 onClick={() => handleConfirmPayment(exp)}
                                                                 className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
