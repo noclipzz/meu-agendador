@@ -94,12 +94,18 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
     if (!invoice.client) throw new Error('Cliente não vinculado à fatura.');
 
     try {
+        const docNumber = invoice.client.cpf?.replace(/\D/g, '') || invoice.client.cnpj?.replace(/\D/g, '');
+        const docType = (invoice.client.cnpj && invoice.client.cnpj.replace(/\D/g, '').length > 11) ? 'CNPJ' : 'CPF';
+
         const payload = {
             code: invoice.id,
             customer: {
                 name: invoice.client.name,
-                email: invoice.client.email || 'financeiro@nohud.com.br', // Fallback obrigatório
-                cpf_cnpj: invoice.client.cpf?.replace(/\D/g, '') || invoice.client.cnpj?.replace(/\D/g, ''),
+                email: invoice.client.email || 'financeiro@nohud.com.br',
+                document: {
+                    identity: docNumber,
+                    type: docType
+                }
             },
             services: [{
                 name: invoice.description || 'Serviço prestado',
