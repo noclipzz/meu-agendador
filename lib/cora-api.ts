@@ -5,8 +5,9 @@ import path from 'path';
 import https from 'https';
 
 // URLs de STAGE/SANDBOX (conforme arquivos recebidos)
-const CORA_AUTH_URL = 'https://matls-auth.stage.cora.com.br/token';
-const CORA_API_URL = 'https://matls-api.stage.cora.com.br';
+// URLs de STAGE/SANDBOX corrigidas para a Modalidade Integração Direta (Direct Integration)
+const CORA_AUTH_URL = 'https://matls-clients.api.stage.cora.com.br/token';
+const CORA_API_URL = 'https://matls-clients.api.stage.cora.com.br/v2';
 
 // Carrega os certificados para o mTLS
 function getCoraAgent() {
@@ -46,22 +47,23 @@ export async function getCoraValidToken(companyId: string) {
 
     // No ambiente de Stage da Cora com mTLS, a autenticação geralmente espera o client_id no corpo
     try {
-        console.log(`🔐 [CORA] Iniciando autenticação mTLS para Company: ${companyId}`);
+        console.log(`🔐 [CORA] Autenticando Company: ${companyId}`);
+        const agent = getCoraAgent();
 
         const params = new URLSearchParams();
         params.append('grant_type', 'client_credentials');
         params.append('client_id', company.coraClientId);
 
         const response = await axios.post(CORA_AUTH_URL, params.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            httpsAgent: getCoraAgent()
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            httpsAgent: agent
         });
+
+        console.log("✅ [CORA] Autenticado!");
 
         const { access_token, expires_in, refresh_token } = response.data;
         const expiryDate = new Date();
-        expiryDate.setSeconds(expiryDate.getSeconds() + expires_in - 60); // 1 min de margem
+        expiryDate.setSeconds(expiryDate.getSeconds() + expires_in - 60);
 
         await db.company.update({
             where: { id: companyId },
@@ -74,8 +76,9 @@ export async function getCoraValidToken(companyId: string) {
 
         return access_token;
     } catch (error: any) {
-        console.error('Erro ao autenticar na Cora:', error.response?.data || error.message);
-        throw new Error('Falha na autenticação com o Banco Cora.');
+        const errInfo = error.response?.data || error.message;
+        console.error('❌ [CORA_AUTH_ERROR]:', JSON.stringify(errInfo));
+        throw new Error(`Cora Auth: ${JSON.stringify(errInfo)}`);
     }
 }
 
@@ -90,27 +93,32 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
     if (!invoice.client) throw new Error('Cliente não vinculado à fatura.');
 
     try {
-        const response = await axios.post(`${CORA_API_URL}/invoices`, {
+        const payload = {
             code: invoice.id,
             customer: {
                 name: invoice.client.name,
-                email: invoice.client.email,
+                email: invoice.client.email || 'financeiro@nohud.com.br', // Fallback obrigatório
                 cpf_cnpj: invoice.client.cpf?.replace(/\D/g, '') || invoice.client.cnpj?.replace(/\D/g, ''),
             },
             services: [{
                 name: invoice.description || 'Serviço prestado',
-                amount: Math.round(Number(invoice.value) * 100), // Cora usa centavos
+                amount: Math.round(Number(invoice.value) * 100),
             }],
             payment_methods: ['PIX', 'BANK_SLIP'],
             due_date: invoice.dueDate.toISOString().split('T')[0],
-        }, {
+        };
+
+        console.log("📤 [CORA] Enviando Payload:", JSON.stringify(payload));
+
+        const response = await axios.post(`${CORA_API_URL}/invoices`, payload, {
             headers: { 'Authorization': `Bearer ${token}` },
             httpsAgent: getCoraAgent()
         });
 
+        console.log("✅ [CORA] Cobrança criada!");
+
         const coraData = response.data;
 
-        // Atualiza a Invoice com os dados do banco
         await db.invoice.update({
             where: { id: invoiceId },
             data: {
@@ -123,7 +131,8 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
 
         return coraData;
     } catch (error: any) {
-        console.error('Erro ao criar cobrança na Cora:', error.response?.data || error.message);
-        throw new Error('Erro ao gerar cobrança no banco Cora.');
+        const errInfo = error.response?.data || error.message;
+        console.error('❌ [CORA_CHARGE_ERROR]:', JSON.stringify(errInfo));
+        throw new Error(`Cora Charge: ${JSON.stringify(errInfo)}`);
     }
 }
