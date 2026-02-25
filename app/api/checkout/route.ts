@@ -177,22 +177,7 @@ export async function GET() {
             console.log("👑 [CHECKOUT] SUPER ADMIN DETECTADO - LIBERANDO ACESSO TOTAL");
 
             // Busca apenas a empresa para ter o ID correto no painel
-            let myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
-
-            // 🛠️ AUTO-HEAL: Se a empresa não existe (ex: após reset do banco), cria uma básica
-            if (!myCompany) {
-                console.log("🛠️ [AUTO-HEAL] Criando empresa padrão para o SUPER ADMIN...");
-                myCompany = await prisma.company.create({
-                    data: {
-                        name: "Meu Negócio Digital",
-                        slug: "meu-negocio-" + Math.floor(Math.random() * 1000),
-                        ownerId: userId,
-                        services: {
-                            create: [{ name: "Atendimento Inicial", price: 0, duration: 30 }]
-                        }
-                    }
-                });
-            }
+            const myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
 
             if (myCompany && (!myCompany.evolutionServerUrl || !myCompany.evolutionApiKey)) {
                 try {

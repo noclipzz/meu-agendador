@@ -13,7 +13,6 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
     try {
         const { userId } = await auth();
-        console.log("📍 [FINANCEIRO_GET] UserId:", userId);
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         // 1. Descobre a empresa e o papel do usuário (Robust Check)
@@ -52,17 +51,15 @@ export async function GET(request: Request) {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-        // 2. VERIFICA O PLANO (DESATIVADO TEMPORARIAMENTE PARA DEBUG)
-        /*
+        // 2. VERIFICA O PLANO (Sempre pelo dono da empresa)
         const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
-        
+
         if (userId !== SUPER_ADMIN) {
             const sub = await prisma.subscription.findUnique({ where: { userId: ownerId } });
             if (!sub || sub.plan === "INDIVIDUAL") {
-                return NextResponse.json({ error: `O Módulo Financeiro requer PREMIUM/MASTER. Atual: ${sub?.plan || 'FREE'}. ID: ${userId}` }, { status: 403 });
+                return NextResponse.json({ error: "O Módulo Financeiro está disponível apenas para planos PREMIUM e MASTER." }, { status: 403 });
             }
         }
-        */
 
         // PEGA A DATA DA URL OU USA A ATUAL
         const { searchParams } = new URL(request.url);
