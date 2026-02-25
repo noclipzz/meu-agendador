@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, FileText, Download, Calendar as CalendarIcon, Filter, X, ChevronLeft, ChevronRight, TrendingUp, ArrowDownRight, MoreVertical, Pencil, Trash2, CheckCircle2, Eye, Receipt, CreditCard, Banknote, HelpCircle, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, CheckCircle } from "lucide-react";
+import { Plus, Search, FileText, Download, Calendar as CalendarIcon, Filter, X, ChevronLeft, ChevronRight, TrendingUp, ArrowDownRight, MoreVertical, Pencil, Trash2, CheckCircle2, Eye, Receipt, CreditCard, Banknote, HelpCircle, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, CheckCircle, Barcode } from "lucide-react";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -203,6 +203,33 @@ export default function ContasReceberPage() {
     }
 
     const [isEmitindoNfe, setIsEmitindoNfe] = useState(false);
+    const [isGerandoCora, setIsGerandoCora] = useState(false);
+
+    async function gerarCobrancaCora(metodo: 'BOOT' | 'PIX') {
+        if (!selectedInvoice) return;
+        setIsGerandoCora(true);
+
+        const promise = fetch('/api/painel/financeiro/cora/cobranca', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                invoiceId: selectedInvoice.id
+            })
+        }).then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Erro desconhecido");
+            return data;
+        }).finally(() => {
+            setIsGerandoCora(false);
+            carregarDados();
+        });
+
+        toast.promise(promise, {
+            loading: `Gerando cobrança na Cora...`,
+            success: (data) => `Cobrança gerada com sucesso!`,
+            error: (err) => `Atenção: ${err.message}`,
+        });
+    }
 
     async function emitirNfe() {
         if (!selectedInvoice) return;
@@ -770,6 +797,27 @@ export default function ContasReceberPage() {
 
                             {modalType === "view" && (
                                 <div className="flex flex-col gap-3 mt-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => gerarCobrancaCora('BOOT')}
+                                            disabled={isGerandoCora || selectedInvoice?.status === 'PAGO'}
+                                            className="w-full bg-blue-50 text-blue-600 border border-blue-200 p-4 rounded-2xl font-black text-sm hover:bg-blue-100 transition flex justify-center items-center gap-2"
+                                        >
+                                            {isGerandoCora ? <Loader2 className="animate-spin" size={18} /> : <Barcode size={18} />}
+                                            {isGerandoCora ? "Gerando..." : "Boleto Cora"}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => gerarCobrancaCora('PIX')}
+                                            disabled={isGerandoCora || selectedInvoice?.status === 'PAGO'}
+                                            className="w-full bg-emerald-50 text-emerald-600 border border-emerald-200 p-4 rounded-2xl font-black text-sm hover:bg-emerald-100 transition flex justify-center items-center gap-2"
+                                        >
+                                            {isGerandoCora ? <Loader2 className="animate-spin" size={18} /> : <QrCode size={18} />}
+                                            {isGerandoCora ? "Gerando..." : "PIX Cora"}
+                                        </button>
+                                    </div>
+
                                     <button
                                         type="button"
                                         onClick={emitirNfe}
@@ -779,6 +827,17 @@ export default function ContasReceberPage() {
                                         {isEmitindoNfe ? <Loader2 className="animate-spin" /> : <FileText size={20} />}
                                         {isEmitindoNfe ? "Conectando..." : "Emitir Nota Fiscal (NFS-e)"}
                                     </button>
+
+                                    {selectedInvoice?.bankUrl && (
+                                        <a
+                                            href={selectedInvoice.bankUrl}
+                                            target="_blank"
+                                            className="w-full bg-gray-900 text-white p-5 rounded-2xl font-black text-lg flex justify-center items-center gap-2 text-center"
+                                        >
+                                            Visualizar Boleto/PIX
+                                        </a>
+                                    )}
+
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
