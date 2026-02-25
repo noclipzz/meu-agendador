@@ -573,24 +573,24 @@ export default function ContasPagarPage() {
                                                 {openActionMenuId === exp.id && (
                                                     <>
                                                         <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionMenuId(null)} />
-                                                        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                                        <div className="absolute right-0 bottom-full mb-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in slide-in-from-bottom-2 duration-100 origin-bottom-right">
                                                             <button
                                                                 onClick={() => handleConfirmPayment(exp)}
-                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                                className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
                                                             >
-                                                                <Check size={16} /> Confirmar pagamento
+                                                                <Check size={16} className="text-emerald-500" /> Confirmar pagamento
                                                             </button>
                                                             <button
                                                                 onClick={() => handlePrintReceipt(exp)}
-                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                                className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
                                                             >
-                                                                <Printer size={16} /> Imprimir recibo
+                                                                <Printer size={16} className="text-blue-500" /> Imprimir recibo
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDuplicatePayment(exp)}
-                                                                className="w-full text-left px-4 py-2 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
+                                                                className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
                                                             >
-                                                                <Copy size={16} /> Duplicar pagamento
+                                                                <Copy size={16} className="text-purple-500" /> Duplicar pagamento
                                                             </button>
                                                         </div>
                                                     </>
