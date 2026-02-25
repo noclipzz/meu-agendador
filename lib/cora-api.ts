@@ -44,17 +44,17 @@ export async function getCoraValidToken(companyId: string) {
         return company.coraAccessToken;
     }
 
-    // Caso contrário, tenta renovar usando refresh_token ou buscar novo access_token via client_credentials
+    // No ambiente de Stage da Cora com mTLS, a autenticação geralmente espera o client_id no corpo
     try {
-        const authHeader = Buffer.from(`${company.coraClientId}:${company.coraClientSecret}`).toString('base64');
+        console.log(`🔐 [CORA] Iniciando autenticação mTLS para Company: ${companyId}`);
 
-        // Simplificando para busca de novo token via client_credentials para facilitar o MVP
-        // Nota: Em produção, boletos/pix PJ geralmente exigem mTLS (Certificados A1) na Cora
-        // Obrigatório uso de mTLS (Agente com Certificado) para comunicação com a Cora
-        const response = await axios.post(CORA_AUTH_URL, 'grant_type=client_credentials', {
+        const params = new URLSearchParams();
+        params.append('grant_type', 'client_credentials');
+        params.append('client_id', company.coraClientId);
+
+        const response = await axios.post(CORA_AUTH_URL, params.toString(), {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${authHeader}`,
             },
             httpsAgent: getCoraAgent()
         });
