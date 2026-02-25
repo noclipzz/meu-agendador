@@ -9,7 +9,7 @@ import {
 import {
     TrendingUp, ArrowDownCircle, ArrowUpCircle, Repeat, Trash2, Pencil, CheckCircle2,
     AlertTriangle, Calendar, MessageCircle, Printer, FileText, DollarSign, Receipt,
-    Loader2, X, ChevronLeft, ChevronRight
+    Loader2, X, ChevronLeft, ChevronRight, CreditCard, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, addMonths, subMonths } from "date-fns";
@@ -310,6 +310,29 @@ export default function FinanceiroPage() {
         window.open(link, '_blank');
     }
 
+    async function gerarCora(invoiceId: string) {
+        setSalvando(true);
+        try {
+            const res = await fetch('/api/painel/financeiro/cora/cobranca', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ invoiceId })
+            });
+
+            if (res.ok) {
+                toast.success("Cobrança Cora gerada com sucesso!");
+                carregarResumo(dataResumo);
+            } else {
+                const error = await res.json();
+                toast.error(error.message || "Erro ao gerar cobrança Cora.");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão ao gerar Cora.");
+        } finally {
+            setSalvando(false);
+        }
+    }
+
     function fecharModalDespesa() {
         setModalDespesa(false);
         setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", dueDate: new Date().toISOString().split('T')[0] });
@@ -450,6 +473,30 @@ export default function FinanceiroPage() {
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <p className="font-black text-red-600">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         <div className="flex gap-2">
+                                            {fat.gatewayId ? (
+                                                <>
+                                                    {fat.bankUrl && (
+                                                        <a href={fat.bankUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white text-orange-600 px-3 py-1.5 rounded shadow-sm hover:bg-orange-50 transition flex items-center gap-1">
+                                                            <ExternalLink size={12} /> Boleto
+                                                        </a>
+                                                    )}
+                                                    {fat.pixCopyPaste && (
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(fat.pixCopyPaste);
+                                                                toast.success("Código PIX copiado!");
+                                                            }}
+                                                            className="text-[10px] font-bold bg-white text-blue-600 px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition flex items-center gap-1"
+                                                        >
+                                                            <CreditCard size={12} /> Pix
+                                                        </button>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <button onClick={() => gerarCora(fat.id)} disabled={salvando} className="text-[10px] font-bold bg-blue-600 text-white px-3 py-1.5 rounded shadow-sm hover:bg-blue-700 transition flex items-center gap-1 disabled:opacity-50">
+                                                    {salvando ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />} Gerar Cora
+                                                </button>
+                                            )}
                                             <button onClick={() => handleCobrar(fat, 'ATRASADO')} className="text-[10px] font-bold bg-white text-blue-600 px-3 py-1.5 rounded shadow-sm hover:bg-blue-50 transition flex items-center gap-1">
                                                 <MessageCircle size={12} /> Cobrar
                                             </button>
@@ -477,6 +524,30 @@ export default function FinanceiroPage() {
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <p className="font-black dark:text-white">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                         <div className="flex gap-2">
+                                            {fat.gatewayId ? (
+                                                <>
+                                                    {fat.bankUrl && (
+                                                        <a href={fat.bankUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-orange-600 hover:text-orange-700 transition flex items-center gap-1">
+                                                            <ExternalLink size={12} /> Boleto
+                                                        </a>
+                                                    )}
+                                                    {fat.pixCopyPaste && (
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(fat.pixCopyPaste);
+                                                                toast.success("Código PIX copiado!");
+                                                            }}
+                                                            className="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition flex items-center gap-1"
+                                                        >
+                                                            <CreditCard size={12} /> Pix
+                                                        </button>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <button onClick={() => gerarCora(fat.id)} disabled={salvando} className="text-[10px] font-black text-blue-600 hover:text-blue-700 transition flex items-center gap-1 disabled:opacity-50">
+                                                    {salvando ? <Loader2 size={12} className="animate-spin" /> : <CreditCard size={12} />} Gerar Cora
+                                                </button>
+                                            )}
                                             <button onClick={() => handleCobrar(fat, 'LEMBRETE')} className="text-[10px] font-bold text-gray-400 hover:text-blue-500 transition flex items-center gap-1">
                                                 <MessageCircle size={12} /> Lembrar
                                             </button>

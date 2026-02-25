@@ -64,6 +64,11 @@ export default function Configuracoes() {
     const [certificadoSenha, setCertificadoSenha] = useState("");
     const [creditCardTax, setCreditCardTax] = useState("");
     const [debitCardTax, setDebitCardTax] = useState("");
+
+    // --- CAMPOS CORA ---
+    const [coraClientId, setCoraClientId] = useState("");
+    const [coraClientSecret, setCoraClientSecret] = useState("");
+
     const inputCertRef = useRef<HTMLInputElement>(null);
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
@@ -125,6 +130,10 @@ export default function Configuracoes() {
                 setCertificadoSenha(dataConfig.certificadoSenha || "");
                 setCreditCardTax(String(dataConfig.creditCardTax || "0"));
                 setDebitCardTax(String(dataConfig.debitCardTax || "0"));
+
+                // Popula campos Cora
+                setCoraClientId(dataConfig.coraClientId || "");
+                setCoraClientSecret(dataConfig.coraClientSecret || "");
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
@@ -194,7 +203,8 @@ export default function Configuracoes() {
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state,
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
                     codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), certificadoA1Url, certificadoSenha,
-                    creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0")
+                    creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
+                    coraClientId, coraClientSecret
                 })
             });
 
@@ -428,6 +438,36 @@ export default function Configuracoes() {
                                 />
                                 <p className="text-[10px] text-gray-400 mt-2 ml-1">Valor descontado automaticamente em pagamentos via CARTÃO DÉBITO.</p>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t dark:border-gray-700 pt-8 mt-6">
+                        <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                            <RotateCcw className="text-orange-500" size={20} /> Integração Bancária (Cora)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-orange-50/50 dark:bg-gray-800/30 rounded-3xl border border-orange-100 dark:border-gray-800">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Client ID Cora</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                    placeholder="Ex: d84f...921b"
+                                    value={coraClientId}
+                                    onChange={e => setCoraClientId(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Client Secret Cora</label>
+                                <input
+                                    type="password"
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                    placeholder="••••••••••••••••"
+                                    value={coraClientSecret}
+                                    onChange={e => setCoraClientSecret(e.target.value)}
+                                />
+                            </div>
+                            <p className="col-span-2 text-[10px] text-gray-400 ml-1">
+                                Ative a emissão de <strong>PIX e Boletos</strong> com baixas automáticas. Obtenha as chaves no painel da Cora.
+                            </p>
                         </div>
                     </div>
 

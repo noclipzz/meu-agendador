@@ -53,7 +53,14 @@ model Company {
   whatsappCancelSuccessMessage String?            @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
   whatsappConfirmMessage       String?            @default("✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
   whatsappWaitingListMessage   String?            @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
+  whatsappPaymentSuccessMessage String?            @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
   corporateName                String?
+  // Cora Integration
+  coraClientId                 String?
+  coraClientSecret             String?
+  coraAccessToken              String?
+  coraRefreshToken             String?
+  coraTokenExpiry              DateTime?
   bookings                     Booking[]
   clients                      Client[]
   expenses                     Expense[]
@@ -174,6 +181,13 @@ model Invoice {
   companyId   String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  
+  // Cora Cobrança
+  gatewayId      String?   @unique
+  bankUrl        String?
+  pixQrCode      String?
+  pixCopyPaste   String?
+
   booking     Booking?  @relation(fields: [bookingId], references: [id])
   client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)

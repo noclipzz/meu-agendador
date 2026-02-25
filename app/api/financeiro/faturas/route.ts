@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataApenas } from "@/app/utils/formatters";
+import { createCoraCharge } from "@/lib/cora-api";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -206,6 +207,15 @@ export async function POST(req: Request) {
                 }
             } catch (pushErr) {
                 console.error("Erro ao enviar push de conclusão:", pushErr);
+            }
+        }
+
+        // 6. INTEGRAÇÃO CORA (Se método for CORA)
+        if (method === 'CORA') {
+            try {
+                await createCoraCharge(companyId, invoice.id);
+            } catch (coraErr) {
+                console.error("Erro ao gerar cobrança Cora automático:", coraErr);
             }
         }
 

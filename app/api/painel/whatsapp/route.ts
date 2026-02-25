@@ -66,7 +66,8 @@ export async function GET(req: Request) {
         whatsappCancelPromptMessage: targetCompany.whatsappCancelPromptMessage,
         whatsappCancelSuccessMessage: targetCompany.whatsappCancelSuccessMessage,
         whatsappCancelRevertMessage: targetCompany.whatsappCancelRevertMessage,
-        whatsappWaitingListMessage: targetCompany.whatsappWaitingListMessage
+        whatsappWaitingListMessage: (targetCompany as any).whatsappWaitingListMessage,
+        whatsappPaymentSuccessMessage: (targetCompany as any).whatsappPaymentSuccessMessage
     });
 }
 
@@ -95,7 +96,8 @@ export async function POST(req: Request) {
             whatsappCancelPromptMessage,
             whatsappCancelSuccessMessage,
             whatsappCancelRevertMessage,
-            whatsappWaitingListMessage
+            whatsappWaitingListMessage,
+            whatsappPaymentSuccessMessage
         } = body;
 
         await db.company.update({
@@ -106,8 +108,9 @@ export async function POST(req: Request) {
                 whatsappCancelPromptMessage,
                 whatsappCancelSuccessMessage,
                 whatsappCancelRevertMessage,
-                whatsappWaitingListMessage
-            }
+                whatsappWaitingListMessage,
+                whatsappPaymentSuccessMessage
+            } as any
         });
         return NextResponse.json({ success: true });
     }

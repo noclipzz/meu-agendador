@@ -130,7 +130,10 @@ export async function POST(req: Request) {
       certificadoSenha: body.certificadoSenha || null,
       // Taxas
       creditCardTax: body.creditCardTax ? Number(body.creditCardTax) : 0,
-      debitCardTax: body.debitCardTax ? Number(body.debitCardTax) : 0
+      debitCardTax: body.debitCardTax ? Number(body.debitCardTax) : 0,
+      // Cora Integration
+      coraClientId: body.coraClientId || null,
+      coraClientSecret: body.coraClientSecret || null
     };
 
     if (existingConfig) {

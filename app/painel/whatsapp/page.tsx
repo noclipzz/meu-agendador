@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert, ChevronDown, ChevronUp, MessageSquare, CheckCircle, AlertTriangle, XCircle, RotateCcw, Clock } from "lucide-react";
+import { MessageCircle, QrCode, LogOut, Loader2, Save, CheckCircle2, ShieldAlert, ChevronDown, ChevronUp, MessageSquare, CheckCircle, AlertTriangle, XCircle, RotateCcw, Clock, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 import Image from "next/image";
@@ -17,6 +17,7 @@ export default function WhatsappPage() {
     const [whatsappCancelSuccessMessage, setWhatsappCancelSuccessMessage] = useState("");
     const [whatsappCancelRevertMessage, setWhatsappCancelRevertMessage] = useState("");
     const [whatsappWaitingListMessage, setWhatsappWaitingListMessage] = useState("");
+    const [whatsappPaymentSuccessMessage, setWhatsappPaymentSuccessMessage] = useState("");
 
     const [activeDrawer, setActiveDrawer] = useState<string | null>("confirmacao");
     const [saving, setSaving] = useState(false);
@@ -56,6 +57,7 @@ export default function WhatsappPage() {
                 setWhatsappCancelSuccessMessage(data.whatsappCancelSuccessMessage || "");
                 setWhatsappCancelRevertMessage(data.whatsappCancelRevertMessage || "");
                 setWhatsappWaitingListMessage(data.whatsappWaitingListMessage || "");
+                setWhatsappPaymentSuccessMessage(data.whatsappPaymentSuccessMessage || "");
             } else {
                 setConfigured(false);
             }
@@ -124,7 +126,8 @@ export default function WhatsappPage() {
                     whatsappCancelPromptMessage,
                     whatsappCancelSuccessMessage,
                     whatsappCancelRevertMessage,
-                    whatsappWaitingListMessage
+                    whatsappWaitingListMessage,
+                    whatsappPaymentSuccessMessage
                 })
             });
             if (res.ok) {
@@ -398,6 +401,36 @@ export default function WhatsappPage() {
                                     />
                                     <div className="mt-2 flex flex-wrap gap-1">
                                         {["{nome}", "{dia}", "{link}"].map(tag => (
+                                            <span key={tag} className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[8px] font-black text-gray-500 dark:text-gray-400">{tag}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* GAVETA 7: PAGAMENTO CONFIRMADO */}
+                        <div className="border dark:border-gray-700 rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-900/50">
+                            <button
+                                onClick={() => setActiveDrawer(activeDrawer === "pagamento_sucesso" ? null : "pagamento_sucesso")}
+                                className="w-full flex items-center justify-between p-4 hover:bg-white dark:hover:bg-gray-900 transition-colors"
+                            >
+                                <div className="flex items-center gap-3 text-left">
+                                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400"><DollarSign size={16} /></div>
+                                    <h4 className="font-black text-gray-800 dark:text-white uppercase text-[10px] tracking-widest">7. Confirmação de Pagamento (Cora)</h4>
+                                </div>
+                                {activeDrawer === "pagamento_sucesso" ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+                            </button>
+                            {activeDrawer === "pagamento_sucesso" && (
+                                <div className="p-4 pt-0 animate-in slide-in-from-top-1 duration-200">
+                                    <textarea
+                                        rows={4}
+                                        className="w-full p-4 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white text-xs outline-none focus:ring-2 ring-emerald-500 resize-none font-medium"
+                                        value={whatsappPaymentSuccessMessage}
+                                        onChange={(e) => setWhatsappPaymentSuccessMessage(e.target.value)}
+                                        placeholder="✅ *Pagamento Confirmado!*..."
+                                    />
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {["{nome}", "{valor}", "{descricao}"].map(tag => (
                                             <span key={tag} className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-[8px] font-black text-gray-500 dark:text-gray-400">{tag}</span>
                                         ))}
                                     </div>

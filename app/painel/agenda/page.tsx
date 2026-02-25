@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Zap, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -730,12 +730,13 @@ export default function PainelDashboard() {
                                     <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { id: 'PIX', icon: <QrCode size={16} /> },
+                                            { id: 'CORA', icon: <ExternalLink size={16} />, label: 'Pix/Boleto' },
                                             { id: 'CREDITO', icon: <CreditCard size={16} />, label: 'Crédito' },
                                             { id: 'DEBITO', icon: <CreditCard size={16} />, label: 'Débito' },
                                             { id: 'DINHEIRO', icon: <Banknote size={16} /> },
                                             { id: 'FATURADO', icon: <Clock size={16} /> }
                                         ].map(m => (
-                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: m.id === 'FATURADO' ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {(m as any).label || m.id}</button>
+                                            <button key={m.id} onClick={() => setCheckoutData({ ...checkoutData, method: m.id, status: (m.id === 'FATURADO' || m.id === 'CORA') ? 'PENDENTE' : 'PAGO' })} className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 font-black text-xs transition ${checkoutData.method === m.id ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-100 dark:border-gray-800 text-gray-500'}`}>{m.icon} {(m as any).label || m.id}</button>
                                         ))}
                                     </div>
                                     {checkoutData.method === 'FATURADO' && (
