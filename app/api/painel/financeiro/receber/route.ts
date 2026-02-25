@@ -1,0 +1,93 @@
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { auth } from "@clerk/nextjs/server";
+import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+
+const prisma = db;
+
+export async function GET(request: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+        if (!company) {
+            // Se não for dono, tenta como membro da equipe
+            const member = await prisma.teamMember.findUnique({
+                where: { clerkUserId: userId },
+                include: { company: true }
+            });
+            if (!member || !(member.permissions as any)?.financeiro) {
+                return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
+            }
+        }
+
+        const targetCompanyId = company?.id || (await prisma.teamMember.findUnique({ where: { clerkUserId: userId } }))?.companyId;
+
+        if (!targetCompanyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        const { searchParams } = new URL(request.url);
+        const month = parseInt(searchParams.get("month") || "");
+        const year = parseInt(searchParams.get("year") || "");
+
+        const TIMEZONE = 'America/Sao_Paulo';
+        const hoje = toZonedTime(new Date(), TIMEZONE);
+
+        let startDate, endDate;
+
+        if (month && year) {
+            const date = new Date(year, month - 1, 1);
+            startDate = startOfMonth(date);
+            endDate = endOfMonth(date);
+        } else {
+            startDate = startOfMonth(hoje);
+            endDate = endOfMonth(hoje);
+        }
+
+        // 1. Busca todas as faturas do mês (ou geral para os resumos)
+        const [invoices, summaryInvoices] = await Promise.all([
+            prisma.invoice.findMany({
+                where: {
+                    companyId: targetCompanyId,
+                    dueDate: { gte: startDate, lte: endDate }
+                },
+                include: { client: true },
+                orderBy: { dueDate: "asc" }
+            }),
+            prisma.invoice.findMany({
+                where: { companyId: targetCompanyId }
+            })
+        ]);
+
+        // 2. Cálculos dos Cards (Baseado em HOJE para vencidos e hoje)
+        const startOfToday = startOfDay(hoje);
+        const endOfToday = endOfDay(hoje);
+
+        const vencidos = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate < startOfToday);
+        const vencemHoje = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate >= startOfToday && i.dueDate <= endOfToday);
+        const avencer = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate > endOfToday);
+        const recebidos = summaryInvoices.filter(i => i.status === "PAGO" && i.paidAt && i.paidAt >= startDate && i.paidAt <= endDate);
+
+        const totalVencidos = vencidos.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalHoje = vencemHoje.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalAVencer = avencer.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalRecebidos = recebidos.reduce((acc, i) => acc + Number(i.value), 0);
+        const totalGeral = invoices.reduce((acc, i) => acc + Number(i.value), 0);
+
+        return NextResponse.json({
+            invoices,
+            summary: {
+                overdue: totalVencidos,
+                today: totalHoje,
+                upcoming: totalAVencer,
+                received: totalRecebidos,
+                total: totalGeral
+            }
+        });
+
+    } catch (error: any) {
+        console.error("ERRO_RECEBER_GET:", error);
+        return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    }
+}
