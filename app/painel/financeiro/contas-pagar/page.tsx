@@ -29,6 +29,7 @@ export default function ContasPagarPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
     const [editingExpense, setEditingExpense] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
 
@@ -563,7 +564,14 @@ export default function ContasPagarPage() {
                                             {/* Botão Mais Opções (Verde) */}
                                             <div className="relative">
                                                 <button
-                                                    onClick={() => setOpenActionMenuId(openActionMenuId === exp.id ? null : exp.id)}
+                                                    onClick={(e) => {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setMenuPosition({
+                                                            top: rect.bottom + window.scrollY,
+                                                            left: rect.right + window.scrollX - 208 // largura do menu (52 * 4)
+                                                        });
+                                                        setOpenActionMenuId(openActionMenuId === exp.id ? null : exp.id);
+                                                    }}
                                                     className={`p-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition shadow-sm ${openActionMenuId === exp.id ? 'ring-2 ring-emerald-300' : ''}`}
                                                     title="Mais ações"
                                                 >
@@ -572,8 +580,15 @@ export default function ContasPagarPage() {
 
                                                 {openActionMenuId === exp.id && (
                                                     <>
-                                                        <div className="fixed inset-0 z-[100]" onClick={() => setOpenActionMenuId(null)} />
-                                                        <div className="absolute right-full top-0 mr-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-[110] animate-in fade-in slide-in-from-right-2 duration-100 origin-right">
+                                                        <div className="fixed inset-0 z-[150]" onClick={() => setOpenActionMenuId(null)} />
+                                                        <div
+                                                            style={{
+                                                                position: 'fixed',
+                                                                top: `${menuPosition.top + 8}px`,
+                                                                left: `${menuPosition.left}px`
+                                                            }}
+                                                            className="w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-[160] animate-in fade-in zoom-in-95 duration-100 origin-top-right"
+                                                        >
                                                             <button
                                                                 onClick={() => handleConfirmPayment(exp)}
                                                                 className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition"
