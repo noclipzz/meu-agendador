@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, ArrowLeft, Plus, Search, Calendar, Filter, MoreHorizontal, CheckCircle, Clock, AlertCircle, Eye, Pencil, Trash2, CheckCircle2, QrCode, CreditCard, Banknote, FileText, ChevronLeft, ChevronRight, Loader2, Download, ChevronDown } from "lucide-react";
+import { Plus, Search, FileText, Download, Calendar as CalendarIcon, Filter, X, ChevronLeft, ChevronRight, TrendingUp, ArrowDownRight, MoreVertical, Pencil, Trash2, CheckCircle2, Eye, Receipt, CreditCard, Banknote, HelpCircle, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -170,6 +170,51 @@ export default function ContasReceberPage() {
                 error: 'Erro ao excluir.',
             }
         );
+    }
+
+    const [isEmitindoNfe, setIsEmitindoNfe] = useState(false);
+
+    async function emitirNfe() {
+        if (!selectedInvoice) return;
+
+        const discriminacaoInput = window.prompt(
+            "✍️ Digite a Discriminação dos Serviços que sairá na Nota Fiscal:",
+            selectedInvoice.description || "Serviços Prestados"
+        );
+
+        if (discriminacaoInput === null) return; // cancelou
+
+        if (discriminacaoInput.trim() === "") {
+            toast.error("A discriminação não pode estar vazia.");
+            return;
+        }
+
+        setIsEmitindoNfe(true);
+
+        const promise = fetch('/api/painel/financeiro/nfe', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                invoiceId: selectedInvoice.id,
+                environment: 'HOMOLOGATION',
+                discriminacao: discriminacaoInput
+            })
+        }).then(async res => {
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.details || data.error);
+            }
+            return data;
+        }).finally(() => {
+            setIsEmitindoNfe(false);
+            carregarDados();
+        });
+
+        toast.promise(promise, {
+            loading: 'Enviando XML para a Prefeitura...',
+            success: (data) => `Retorno: ${data.message}`,
+            error: (err) => `Atenção (Prefeitura): ${err.message}`, // Para o usuário ler oq estourou
+        });
     }
 
     async function salvarFatura(e: React.FormEvent<HTMLFormElement>) {
@@ -427,6 +472,11 @@ export default function ContasReceberPage() {
                                         </td>
                                         <td className="px-6 py-5 text-right font-black text-gray-900 dark:text-white text-sm">
                                             {formatCurrency(inv.value)}
+                                            {inv.nfeStatus && (
+                                                <span className={`block text-[9px] uppercase font-black tracking-widest mt-1 ${inv.nfeStatus === 'PROCESSANDO' ? 'text-blue-500' : 'text-orange-500'}`}>
+                                                    NFS-e: {inv.nfeStatus}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-5 text-center">
                                             <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition">
@@ -585,13 +635,24 @@ export default function ContasReceberPage() {
                             )}
 
                             {modalType === "view" && (
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition mt-4"
-                                >
-                                    Fechar
-                                </button>
+                                <div className="flex flex-col gap-3 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={emitirNfe}
+                                        disabled={isEmitindoNfe}
+                                        className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg hover:bg-blue-700 transition flex justify-center items-center gap-2 shadow-lg shadow-blue-500/30"
+                                    >
+                                        {isEmitindoNfe ? <Loader2 className="animate-spin" /> : <FileText size={20} />}
+                                        {isEmitindoNfe ? "Conectando..." : "Emitir Nota Fiscal (NFS-e)"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 p-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition"
+                                    >
+                                        Fechar
+                                    </button>
+                                </div>
                             )}
                         </form>
                     </div>

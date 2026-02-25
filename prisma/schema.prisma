@@ -188,6 +188,12 @@ model Invoice {
   pixQrCode      String?
   pixCopyPaste   String?
 
+  // NFS-e (Nota Fiscal)
+  nfeStatus      String?
+  nfeNumber      String?
+  nfeUrl         String?
+  nfeProtocol    String?
+
   booking     Booking?  @relation(fields: [bookingId], references: [id])
   client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)

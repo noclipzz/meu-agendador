@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search, CreditCard, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, XCircle, RotateCcw } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, MessageSquare, X, MapPin, Search, CreditCard, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, XCircle, RotateCcw, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useTheme } from "../../../hooks/useTheme";
@@ -437,6 +437,92 @@ export default function Configuracoes() {
                                     onChange={e => setDebitCardTax(e.target.value)}
                                 />
                                 <p className="text-[10px] text-gray-400 mt-2 ml-1">Valor descontado automaticamente em pagamentos via CARTÃO DÉBITO.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="border-t dark:border-gray-700 pt-8 mt-6">
+                        <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                            <FileText className="text-green-500" size={20} /> Emissão Fiscal (NFS-e)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-green-50/50 dark:bg-gray-800/30 rounded-3xl border border-green-100 dark:border-gray-800">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Inscrição Municipal</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white"
+                                    placeholder="Apenas números"
+                                    value={inscricaoMunicipal}
+                                    onChange={e => setInscricaoMunicipal(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Código de Serviço (Município)</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white"
+                                    placeholder="Ex: 04.01"
+                                    value={codigoServico}
+                                    onChange={e => setCodigoServico(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Regime Tributário</label>
+                                <select
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white dark:text-gray-300"
+                                    value={regimeTributario}
+                                    onChange={e => setRegimeTributario(e.target.value)}
+                                >
+                                    <option value="1">Simples Nacional</option>
+                                    <option value="2">Simples Nacional (Excesso Sublimite)</option>
+                                    <option value="3">Regime Normal</option>
+                                    <option value="4">Microempreendedor Individual (MEI)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Natureza da Operação</label>
+                                <select
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white dark:text-gray-300"
+                                    value={naturezaOperacao}
+                                    onChange={e => setNaturezaOperacao(e.target.value)}
+                                >
+                                    <option value="1">Tributação no Município</option>
+                                    <option value="2">Tributação fora do Município</option>
+                                    <option value="3">Isenção</option>
+                                    <option value="4">Imune</option>
+                                </select>
+                            </div>
+
+                            <div className="md:col-span-2 p-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Certificado Digital (A1 .pfx)</label>
+                                    <p className="text-[10px] text-gray-400 mt-1">Obrigatório para assinar as Notas Fiscais eletrônicas.</p>
+                                    {certificadoA1Url && (
+                                        <div className="flex items-center gap-2 mt-2 text-green-600 font-bold text-xs bg-green-50 p-2 rounded-lg">
+                                            <CheckCircle size={14} /> Certificado Instalado
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <input type="file" accept=".pfx,.p12" ref={inputCertRef} onChange={handleCertUpload} className="hidden" />
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); inputCertRef.current?.click(); }}
+                                        disabled={isUploading}
+                                        className="bg-gray-800 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition text-sm shadow-md dark:bg-gray-700 dark:hover:bg-gray-600 shrink-0"
+                                    >
+                                        {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} {isUploading ? "Enviando..." : "Fazer Upload (.PFX)"}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Senha do Certificado Digital</label>
+                                <input
+                                    type="password"
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-green-500 font-bold dark:text-white"
+                                    placeholder="••••••••"
+                                    value={certificadoSenha}
+                                    onChange={e => setCertificadoSenha(e.target.value)}
+                                />
                             </div>
                         </div>
                     </div>
