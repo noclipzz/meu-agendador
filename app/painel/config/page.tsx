@@ -157,6 +157,48 @@ export default function Configuracoes() {
         }
     }
 
+    async function handleCNPJChange(v: string) {
+        const formatado = formatarCNPJ(v);
+        setCnpj(formatado);
+
+        const raw = v.replace(/\D/g, "");
+        if (raw.length === 14) {
+            toast.loading("Buscando dados da Receita Federal...", { id: "cnpjSearch" });
+            try {
+                // Existe a BrasilAPI, bem confiável e pública para CNPJ
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${raw}`);
+                if (res.ok) {
+                    const data = await res.json();
+
+                    if (data.razao_social) setCorporateName(data.razao_social);
+                    if (data.nome_fantasia) setName(data.nome_fantasia || data.razao_social);
+
+                    // Email e telefone muitas vezes vêm com padrão ruim, mas injeta 
+                    if (data.email && !notificationEmail) setNotificationEmail(data.email);
+                    if (data.ddd_telefone_1 && !phone) setPhone(data.ddd_telefone_1);
+
+                    // Endereço
+                    if (data.cep) {
+                        const rawCep = String(data.cep).replace(/\D/g, "");
+                        setCep(rawCep.length === 8 ? `${rawCep.slice(0, 5)}-${rawCep.slice(5)}` : rawCep);
+                    }
+                    if (data.logradouro) setAddress(data.logradouro);
+                    if (data.numero) setNumber(String(data.numero));
+                    if (data.complemento) setComplement(data.complemento);
+                    if (data.bairro) setNeighborhood(data.bairro);
+                    if (data.municipio) setCity(data.municipio);
+                    if (data.uf) setState(data.uf);
+
+                    toast.success("Dados da empresa auto-preenchidos!", { id: "cnpjSearch" });
+                } else {
+                    toast.error("CNPJ não localizado na Receita.", { id: "cnpjSearch" });
+                }
+            } catch (err) {
+                toast.error("Erro ao puxar dados do CNPJ.", { id: "cnpjSearch" });
+            }
+        }
+    }
+
     async function handleLogoUpload() {
         if (!inputFileRef.current?.files?.[0]) return;
         const file = inputFileRef.current.files[0];
@@ -248,7 +290,25 @@ export default function Configuracoes() {
 
                 <fieldset disabled={userRole !== "ADMIN"} className="border-none p-0 m-0 min-w-0 opacity-100 disabled:opacity-80">
                     <div className="mb-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        {/* REPOSICIONANDO CNPJ PARA O TOPO COMO PEDIDO */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100/50 dark:bg-blue-900/10 dark:border-blue-900/30">
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1 dark:text-gray-400">
+                                    <Search size={14} className="text-blue-500" /> Busca Rápida por CNPJ
+                                </label>
+                                <input
+                                    maxLength={18}
+                                    className="w-full border-2 border-blue-100 dark:border-blue-800 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 focus:border-transparent font-bold dark:text-white transition"
+                                    placeholder="Digite o CNPJ para preencher os dados automaticamente..."
+                                    value={cnpj}
+                                    onChange={e => handleCNPJChange(e.target.value)}
+                                />
+                                <p className="text-[10px] uppercase font-black tracking-widest text-blue-400 mt-2 ml-1">Preenche Razão Social, Endereço e mais automaticamente.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Nome da Empresa</label>
                                 <input
@@ -287,13 +347,12 @@ export default function Configuracoes() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">CNPJ (Opcional)</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Inscrição Municipal (ISS)</label>
                                 <input
-                                    maxLength={18}
                                     className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
-                                    placeholder="00.000.000/0000-00"
-                                    value={cnpj}
-                                    onChange={e => setCnpj(formatarCNPJ(e.target.value))}
+                                    placeholder="Apenas números se preferir"
+                                    value={inscricaoMunicipal}
+                                    onChange={e => setInscricaoMunicipal(e.target.value)}
                                 />
                             </div>
                             <div>

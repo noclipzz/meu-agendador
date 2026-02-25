@@ -18,10 +18,12 @@ export default function ContasReceberPage() {
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
         status: "TODAS",
-        search: ""
+        search: "",
+        entityType: "Cliente" // Novo Filtro
     });
     const [selectedPeriod, setSelectedPeriod] = useState("");
     const [isPeriodSelectorOpen, setIsPeriodSelectorOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false); // Novo Estado Busca Avançada
     const [isCustomDateModalOpen, setIsCustomDateModalOpen] = useState(false);
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
 
@@ -280,21 +282,33 @@ export default function ContasReceberPage() {
     }
 
     const invoicesFiltradas = data?.invoices?.filter((inv: any) => {
-        const matchBusca = inv.description?.toLowerCase().includes(busca.toLowerCase()) ||
-            inv.client?.name?.toLowerCase().includes(busca.toLowerCase());
+        // Busca textual
+        const termo = filters.search.toLowerCase() || busca.toLowerCase();
+        const matchBusca = inv.description?.toLowerCase().includes(termo) ||
+            inv.client?.name?.toLowerCase().includes(termo);
 
-        let matchStatus = true;
-        const isVencido = new Date(inv.dueDate) < new Date() && inv.status === "PENDENTE";
-
-        if (filtroStatus === "PAGO") {
-            matchStatus = inv.status === "PAGO";
-        } else if (filtroStatus === "PENDENTE") {
-            matchStatus = inv.status === "PENDENTE" && !isVencido;
-        } else if (filtroStatus === "ATRASADO") {
-            matchStatus = isVencido;
+        // Filtro de Entidade (Por enquanto só tem Cliente, mas deixa preparado)
+        let matchEntity = true;
+        if (filters.entityType === "Cliente") {
+            matchEntity = !!inv.clientId;
         }
 
-        return matchBusca && matchStatus;
+        // Status
+        let matchStatus = true;
+        const statusReq = filters.status !== "TODAS" ? filters.status : filtroStatus;
+        const isVencido = new Date(inv.dueDate) < new Date() && inv.status === "PENDENTE";
+
+        if (statusReq === "PAGO") {
+            matchStatus = inv.status === "PAGO";
+        } else if (statusReq === "PENDENTE") {
+            matchStatus = inv.status === "PENDENTE" && !isVencido;
+        } else if (statusReq === "ATRASADO") {
+            matchStatus = isVencido;
+        } else if (statusReq === "CANCELADO") {
+            matchStatus = inv.status === "CANCELADO";
+        }
+
+        return matchBusca && matchStatus && matchEntity;
     }) || [];
 
     const getStatusStyle = (status: string, dueDate: string) => {
@@ -346,8 +360,16 @@ export default function ContasReceberPage() {
                     >
                         <Plus size={20} /> Lançar Entrada
                     </button>
-                    <button className="bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 px-4 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-750 transition active:scale-95">
-                        <MoreHorizontal size={20} />
+                    <div className="relative group">
+                        <button className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-5 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-sm">
+                            <MoreHorizontal size={20} />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setIsSearchOpen(!isSearchOpen)}
+                        className={`px-5 py-3 rounded-2xl font-black flex items-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
+                    >
+                        <Filter size={18} /> Busca avançada
                     </button>
                 </div>
             </div>
@@ -370,62 +392,145 @@ export default function ContasReceberPage() {
                 ))}
             </div>
 
-            {/* FILTROS E BUSCA */}
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-[2rem] shadow-sm border dark:border-gray-700 flex flex-col md:flex-row items-center gap-4">
-                <div className="flex items-center bg-gray-50 dark:bg-gray-900 px-4 py-3 rounded-2xl flex-1 w-full border dark:border-gray-700 focus-within:ring-2 ring-emerald-500/20 transition">
-                    <Search size={18} className="text-gray-400 mr-2" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por descrição ou cliente..."
-                        className="bg-transparent outline-none text-sm font-bold w-full"
-                        value={busca}
-                        onChange={(e) => setBusca(e.target.value)}
-                    />
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-                    {/* Seletor de Período igual ao Contas a Pagar */}
-                    <div className="relative w-full sm:w-auto">
+            {/* Busca Avançada (Desenhado Igual Pagamentos) */}
+            {isSearchOpen && (
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-xl border dark:border-gray-700 animate-in slide-in-from-top-4 duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Descrição do Pagamento</label>
+                            <input
+                                type="text"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold placeholder-gray-400"
+                                placeholder="O que você busca?"
+                                value={filters.search}
+                                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Entidade</label>
+                            <select
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold text-gray-600 dark:text-gray-300 outline-none"
+                                value={filters.entityType}
+                                onChange={(e) => setFilters({ ...filters, entityType: e.target.value })}
+                            >
+                                <option value="Selecione">Selecione...</option>
+                                <option value="Cliente">Cliente</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Início</label>
+                            <input
+                                type="date"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold shadow-inner"
+                                value={filters.start}
+                                onChange={(e) => setFilters({ ...filters, start: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fim</label>
+                            <input
+                                type="date"
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold shadow-inner"
+                                value={filters.end}
+                                onChange={(e) => setFilters({ ...filters, end: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Situação</label>
+                            <select
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold text-gray-600 dark:text-gray-300 outline-none"
+                                value={filters.status}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                            >
+                                <option value="TODAS">Todas As Situações</option>
+                                <option value="PENDENTE">A Vencer/Pendente</option>
+                                <option value="PAGO">Creditado na Conta</option>
+                                <option value="ATRASADO">Pagamento Vencido</option>
+                                <option value="CANCELADO">Pagamento Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6 pt-6 border-t dark:border-gray-700">
                         <button
-                            onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
-                            className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#1e293b] transition min-w-[180px] justify-between text-sm shadow-md"
+                            onClick={() => {
+                                setFilters({
+                                    start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                                    end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+                                    status: "TODAS",
+                                    search: "",
+                                    entityType: "Cliente"
+                                });
+                                setSelectedPeriod(format(new Date(), "MMMM 'de' yyyy", { locale: ptBR }));
+                                setBusca("");
+                                setFiltroStatus("todos");
+                                carregarDados();
+                            }}
+                            className="px-6 py-2.5 bg-red-50 text-red-500 rounded-xl font-black text-sm hover:bg-red-100 transition flex items-center gap-2"
                         >
-                            <span className="capitalize">{selectedPeriod}</span>
-                            <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
+                            <X size={18} /> Limpar
                         </button>
+                    </div>
+                </div>
+            )}
 
-                        {isPeriodSelectorOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-10"
-                                    onClick={() => setIsPeriodSelectorOpen(false)}
-                                />
-                                <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left">
-                                    <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
-                                    <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
-                                    <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
-                                    <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
-                                    <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
-                                    <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Escolha o período</button>
-                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-                                    <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
-                                </div>
-                            </>
-                        )}
+            {/* FILTROS E BUSCA (Somente Exibidos se Busca Avançada Fechada para não poluir) */}
+            {!isSearchOpen && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-[2rem] shadow-sm border dark:border-gray-700 flex flex-col md:flex-row items-center gap-4">
+                    <div className="flex items-center bg-gray-50 dark:bg-gray-900 px-4 py-3 rounded-2xl flex-1 w-full border dark:border-gray-700 focus-within:ring-2 ring-emerald-500/20 transition">
+                        <Search size={18} className="text-gray-400 mr-2" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por descrição ou cliente..."
+                            className="bg-transparent outline-none text-sm font-bold w-full"
+                            value={busca}
+                            onChange={(e) => setBusca(e.target.value)}
+                        />
                     </div>
 
-                    <select
-                        className="bg-gray-50 dark:bg-gray-900 px-4 py-3 rounded-2xl border dark:border-gray-700 outline-none text-sm font-bold text-gray-600 dark:text-gray-300 w-full sm:w-auto"
-                        value={filtroStatus}
-                        onChange={(e) => setFiltroStatus(e.target.value)}
-                    >
-                        <option value="todos">Todos Status</option>
-                        <option value="PAGO">Confirmados</option>
-                        <option value="PENDENTE">Pendentes</option>
-                        <option value="ATRASADO">Atrasados</option>
-                    </select>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
+                        {/* Seletor de Período igual ao Contas a Pagar */}
+                        <div className="relative w-full sm:w-auto">
+                            <button
+                                onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
+                                className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#1e293b] transition min-w-[180px] justify-between text-sm shadow-md"
+                            >
+                                <span className="capitalize">{selectedPeriod}</span>
+                                <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isPeriodSelectorOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-10"
+                                        onClick={() => setIsPeriodSelectorOpen(false)}
+                                    />
+                                    <div className="absolute right-0 sm:left-0 sm:right-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left">
+                                        <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
+                                        <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
+                                        <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
+                                        <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
+                                        <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
+                                        <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Escolha o período</button>
+                                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                                        <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <select
+                            className="bg-gray-50 dark:bg-gray-900 px-4 py-3 rounded-2xl border dark:border-gray-700 outline-none text-sm font-bold text-gray-600 dark:text-gray-300 w-full sm:w-auto"
+                            value={filtroStatus}
+                            onChange={(e) => setFiltroStatus(e.target.value)}
+                        >
+                            <option value="todos">Todos Status</option>
+                            <option value="PAGO">Confirmados</option>
+                            <option value="PENDENTE">Pendentes</option>
+                            <option value="ATRASADO">Atrasados</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* TABELA */}
             <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-xl shadow-gray-200/50 dark:shadow-none border dark:border-gray-700 overflow-hidden">
