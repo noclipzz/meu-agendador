@@ -9,13 +9,22 @@ import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
-const formatarCNPJ = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 14);
-    if (raw.length <= 2) return raw;
-    if (raw.length <= 5) return `${raw.slice(0, 2)}.${raw.slice(2)}`;
-    if (raw.length <= 8) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5)}`;
-    if (raw.length <= 12) return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8)}`;
-    return `${raw.slice(0, 2)}.${raw.slice(2, 5)}.${raw.slice(5, 8)}/${raw.slice(8, 12)}-${raw.slice(12)}`;
+const formatarCpfCnpj = (value: string) => {
+    const raw = value.replace(/\D/g, "");
+    if (raw.length <= 11) {
+        let v = raw;
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d)/, "$1.$2");
+        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        return v;
+    } else {
+        let v = raw.slice(0, 14);
+        v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+        v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+        v = v.replace(/(\d{4})(\d)/, "$1-$2");
+        return v;
+    }
 };
 
 export default function Configuracoes() {
@@ -158,7 +167,7 @@ export default function Configuracoes() {
     }
 
     async function handleCNPJChange(v: string) {
-        const formatado = formatarCNPJ(v);
+        const formatado = formatarCpfCnpj(v);
         setCnpj(formatado);
 
         const raw = v.replace(/\D/g, "");
@@ -295,16 +304,16 @@ export default function Configuracoes() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/50 p-4 rounded-3xl border border-blue-100/50 dark:bg-blue-900/10 dark:border-blue-900/30">
                             <div className="md:col-span-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1 dark:text-gray-400">
-                                    <Search size={14} className="text-blue-500" /> Busca Rápida por CNPJ
+                                    <Search size={14} className="text-blue-500" /> Busca Rápida por CPF ou CNPJ
                                 </label>
                                 <input
                                     maxLength={18}
                                     className="w-full border-2 border-blue-100 dark:border-blue-800 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 focus:border-transparent font-bold dark:text-white transition"
-                                    placeholder="Digite o CNPJ para preencher os dados automaticamente..."
+                                    placeholder="CPF ou CNPJ (Opcional)..."
                                     value={cnpj}
                                     onChange={e => handleCNPJChange(e.target.value)}
                                 />
-                                <p className="text-[10px] uppercase font-black tracking-widest text-blue-400 mt-2 ml-1">Preenche Razão Social, Endereço e mais automaticamente.</p>
+                                <p className="text-[10px] uppercase font-black tracking-widest text-blue-400 mt-2 ml-1">Para CNPJ: Preenche Razão Social e Endereço automaticamente.</p>
                             </div>
                         </div>
 
