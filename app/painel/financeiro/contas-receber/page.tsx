@@ -22,6 +22,8 @@ export default function ContasReceberPage() {
     });
     const [selectedPeriod, setSelectedPeriod] = useState("");
     const [isPeriodSelectorOpen, setIsPeriodSelectorOpen] = useState(false);
+    const [isCustomDateModalOpen, setIsCustomDateModalOpen] = useState(false);
+    const [customDates, setCustomDates] = useState({ start: '', end: '' });
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
@@ -79,10 +81,36 @@ export default function ContasReceberPage() {
                 break;
         }
 
+        if (period === "CUSTOM") {
+            setIsCustomDateModalOpen(true);
+            setIsPeriodSelectorOpen(false);
+            return;
+        }
+
         const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
         setSelectedPeriod(capitalizedLabel);
         setFilters({ ...filters, start, end });
         setIsPeriodSelectorOpen(false);
+    };
+
+    const handleCustomDateSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!customDates.start || !customDates.end) {
+            toast.error("Preencha as duas datas.");
+            return;
+        }
+
+        const startStr = customDates.start;
+        const endStr = customDates.end;
+
+        const startParsed = new Date(`${startStr}T12:00:00`);
+        const endParsed = new Date(`${endStr}T12:00:00`);
+
+        const label = `${format(startParsed, 'dd/MM/yy')} até ${format(endParsed, 'dd/MM/yy')}`;
+
+        setSelectedPeriod(label);
+        setFilters({ ...filters, start: startStr, end: endStr });
+        setIsCustomDateModalOpen(false);
     };
 
     async function carregarDados() {
@@ -378,6 +406,7 @@ export default function ContasReceberPage() {
                                     <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
                                     <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
                                     <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
+                                    <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Escolha o período</button>
                                     <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
                                     <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
                                 </div>
@@ -681,6 +710,54 @@ export default function ContasReceberPage() {
                                 Cancelar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL PERÍODO CUSTOMIZADO */}
+            {isCustomDateModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 scale-in-95">
+                        <button onClick={() => setIsCustomDateModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition">
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">
+                                Escolher Período
+                            </h2>
+                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Defina as datas de início e fim</p>
+                        </div>
+
+                        <form onSubmit={handleCustomDateSubmit} className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Data Inicial</label>
+                                <input
+                                    type="date"
+                                    required
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                    value={customDates.start}
+                                    onChange={(e) => setCustomDates({ ...customDates, start: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Data Final</label>
+                                <input
+                                    type="date"
+                                    required
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                    value={customDates.end}
+                                    onChange={(e) => setCustomDates({ ...customDates, end: e.target.value })}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 mt-6"
+                            >
+                                <CheckCircle2 size={24} /> Aplicar Período
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}
