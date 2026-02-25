@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, isToday, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
     TrendingDown, Plus, Search, Trash2, Pencil, X,
     ArrowLeft, Calendar, Filter, ChevronDown, CheckCircle2,
     AlertCircle, Clock, MoreHorizontal, Download, FileText,
     Truck, Wallet, Hash, Loader2
 } from "lucide-react";
-import Link from "next/link";
-import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, isToday, isBefore } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 export default function ContasPagarPage() {
     const [loading, setLoading] = useState(true);
@@ -35,6 +35,66 @@ export default function ContasPagarPage() {
         status: "TODAS",
         search: ""
     });
+
+    const [selectedPeriod, setSelectedPeriod] = useState("");
+
+    useEffect(() => {
+        const label = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
+        setSelectedPeriod(label.charAt(0).toUpperCase() + label.slice(1));
+    }, []);
+
+    const [isPeriodSelectorOpen, setIsPeriodSelectorOpen] = useState(false);
+
+    const handlePeriodChange = (period: string) => {
+        const now = new Date();
+        let start = "";
+        let end = "";
+        let label = period;
+
+        switch (period) {
+            case "HOJE":
+                start = format(startOfDay(now), 'yyyy-MM-dd');
+                end = format(endOfDay(now), 'yyyy-MM-dd');
+                label = "Hoje";
+                break;
+            case "SEMANA":
+                start = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                end = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+                label = "Esta semana";
+                break;
+            case "MES_PASSADO":
+                const lastMonth = subMonths(now, 1);
+                start = format(startOfMonth(lastMonth), 'yyyy-MM-dd');
+                end = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
+                label = format(lastMonth, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "ESTE_MES":
+                start = format(startOfMonth(now), 'yyyy-MM-dd');
+                end = format(endOfMonth(now), 'yyyy-MM-dd');
+                label = format(now, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "PROXIMO_MES":
+                const nextMonth = addMonths(now, 1);
+                start = format(startOfMonth(nextMonth), 'yyyy-MM-dd');
+                end = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
+                label = format(nextMonth, "MMMM 'de' yyyy", { locale: ptBR });
+                break;
+            case "TODO":
+                start = "";
+                end = "";
+                label = "Todo o período";
+                break;
+            case "CUSTOM":
+                setIsSearchOpen(true);
+                setIsPeriodSelectorOpen(false);
+                return;
+        }
+
+        const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+        setSelectedPeriod(capitalizedLabel);
+        setFilters({ ...filters, start, end });
+        setIsPeriodSelectorOpen(false);
+    };
 
     // Formulário
     const [form, setForm] = useState({
@@ -144,7 +204,7 @@ export default function ContasPagarPage() {
         }
         if (isToday(date)) return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Hoje</span>;
 
-        return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercasetracking-tighter">Pendente</span>;
+        return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Pendente</span>;
     };
 
     return (
@@ -164,7 +224,36 @@ export default function ContasPagarPage() {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                    {/* Filtro de Período Estilo Neon */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
+                            className="bg-[#0f172a] text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-[#1e293b] transition shadow-lg min-w-[180px] justify-between text-sm"
+                        >
+                            <span className="capitalize">{selectedPeriod}</span>
+                            <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {isPeriodSelectorOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setIsPeriodSelectorOpen(false)}
+                                />
+                                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
+                                    <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
+                                    <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
+                                    <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
+                                    <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
+                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                                    <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
+                                    <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">Escolha o período</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <button
                         onClick={() => {
                             setEditingExpense(null);
@@ -276,6 +365,7 @@ export default function ContasPagarPage() {
                                     status: "TODAS",
                                     search: ""
                                 });
+                                setSelectedPeriod(format(new Date(), "MMMM 'de' yyyy", { locale: ptBR }));
                                 loadData();
                             }}
                             className="px-6 py-2.5 bg-red-50 text-red-500 rounded-xl font-black text-sm hover:bg-red-100 transition flex items-center gap-2"
