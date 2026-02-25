@@ -111,7 +111,10 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         console.log("📤 [CORA] Enviando Payload:", JSON.stringify(payload));
 
         const response = await axios.post(`${CORA_API_URL}/invoices`, payload, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Idempotency-Key': invoice.id
+            },
             httpsAgent: getCoraAgent()
         });
 
