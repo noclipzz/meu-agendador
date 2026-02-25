@@ -1,8 +1,27 @@
 import axios from 'axios';
 import { db } from './db';
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
 
-const CORA_AUTH_URL = 'https://matls-auth.cora.com.br/token';
-const CORA_API_URL = 'https://matls-api.cora.com.br';
+// URLs de STAGE/SANDBOX (conforme arquivos recebidos)
+const CORA_AUTH_URL = 'https://matls-auth.stage.cora.com.br/token';
+const CORA_API_URL = 'https://matls-api.stage.cora.com.br';
+
+// Carrega os certificados para o mTLS
+function getCoraAgent() {
+    const certPath = path.join(process.cwd(), 'lib/cora/certs/certificate.pem');
+    const keyPath = path.join(process.cwd(), 'lib/cora/certs/private-key.key');
+
+    if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+        throw new Error('Certificados da Cora não encontrados em lib/cora/certs/');
+    }
+
+    return new https.Agent({
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+    });
+}
 
 export async function getCoraValidToken(companyId: string) {
     const company = await db.company.findUnique({
@@ -31,11 +50,13 @@ export async function getCoraValidToken(companyId: string) {
 
         // Simplificando para busca de novo token via client_credentials para facilitar o MVP
         // Nota: Em produção, boletos/pix PJ geralmente exigem mTLS (Certificados A1) na Cora
+        // Obrigatório uso de mTLS (Agente com Certificado) para comunicação com a Cora
         const response = await axios.post(CORA_AUTH_URL, 'grant_type=client_credentials', {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Authorization': `Basic ${authHeader}`,
             },
+            httpsAgent: getCoraAgent()
         });
 
         const { access_token, expires_in, refresh_token } = response.data;
@@ -83,7 +104,8 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
             payment_methods: ['PIX', 'BANK_SLIP'],
             due_date: invoice.dueDate.toISOString().split('T')[0],
         }, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            httpsAgent: getCoraAgent()
         });
 
         const coraData = response.data;
