@@ -219,7 +219,11 @@ export default function ContasReceberPage() {
             })
         }).then(async res => {
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message || "Erro desconhecido");
+            if (!res.ok) {
+                // Se a API retornou um erro estruturado da Cora, tenta pegar a mensagem interna
+                const detail = data.message || data.error || "Erro desconhecido";
+                throw new Error(detail);
+            }
             return data;
         }).finally(() => {
             setIsGerandoCora(false);
