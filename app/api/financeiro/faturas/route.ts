@@ -9,6 +9,43 @@ import { createCoraCharge } from "@/lib/cora-api";
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+export async function GET(req: Request) {
+    try {
+        const { userId } = await auth();
+        if (!userId) return new NextResponse("Não autorizado", { status: 401 });
+
+        const { searchParams } = new URL(req.url);
+        const status = searchParams.get("status");
+
+        // Busca a empresa do usuário
+        const company = await prisma.company.findUnique({ where: { ownerId: userId } });
+        let targetCompanyId = company?.id;
+
+        if (!targetCompanyId) {
+            const member = await prisma.teamMember.findUnique({ where: { clerkUserId: userId } });
+            targetCompanyId = member?.companyId;
+        }
+
+        if (!targetCompanyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
+
+        const where: any = { companyId: targetCompanyId };
+        if (status && status !== "TODAS") {
+            where.status = status;
+        }
+
+        const invoices = await prisma.invoice.findMany({
+            where,
+            include: { client: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return NextResponse.json({ invoices });
+    } catch (error) {
+        console.error("ERRO_FATURA_GET:", error);
+        return NextResponse.json({ error: "Erro ao buscar faturas" }, { status: 500 });
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const { userId } = await auth();
