@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { clientId, value, description, method, date } = body;
+        const { clientId, value, description, method, date, bankAccountId } = body;
 
         // 1. Descobre a empresa (Robust Check)
         const company = await (prisma.company as any).findFirst({
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
                 status: "PAGO",
                 dueDate: new Date(`${date}T12:00:00`),
                 paidAt: new Date(`${date}T12:00:00`),
+                bankAccountId: bankAccountId || null
             }
         });
 

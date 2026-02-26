@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -379,11 +379,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'fluxo_caixa', name: "Fluxo de caixa", path: "/painel/financeiro/fluxo-caixa", icon: <BarChart4 size={18} /> },
         { key: 'boletos', name: "Boleto bancários", path: "/painel/financeiro/boletos", icon: <Barcode size={18} /> },
         { key: 'auxiliares', name: "Opções auxiliares", path: "/painel/financeiro/auxiliares", icon: <Settings2 size={18} /> },
+        { key: 'contas_bancarias', name: "Contas e fundos", path: "/painel/financeiro/contas-bancarias", icon: <Wallet size={18} /> }
     ];
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key)) return false;
+            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key)) return false;
         }
         if (userPlan === "PREMIUM") {
             if (["prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
@@ -393,7 +394,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         if (userRole === "ADMIN") return true;
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"].includes(item.key) ? "financeiro" : item.key;
+        const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key) ? "financeiro" : item.key;
         return userPermissions[permKey as keyof typeof userPermissions];
     });
 
@@ -611,7 +612,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && !isOwner;
 
                     // Mapeia sub-rotas do financeiro para a permissão principal 'financeiro'
-                    const finSubKeys = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"];
+                    const finSubKeys = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"];
                     const permKeyForRoute = currentRoute ? (finSubKeys.includes(currentRoute.key) ? "financeiro" : currentRoute.key) : null;
                     const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute] && !isOwner);
 

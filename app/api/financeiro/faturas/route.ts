@@ -97,7 +97,7 @@ export async function POST(req: Request) {
             // B) LÓGICA DE ESTOQUE
             const booking = await prisma.booking.findUnique({
                 where: { id: bookingId },
-                select: { serviceId: true }
+                select: { serviceId: true, professionalId: true }
             });
 
             if (booking?.serviceId) {
@@ -158,6 +158,34 @@ export async function POST(req: Request) {
                                 reason: `Serviço: ${description}`
                             }
                         });
+                    }
+                }
+
+                // C) LANÇAMENTO DE COMISSÃO (SE PROFISSIONAL EXISTE E SERVIÇO TEM COMISSÃO)
+                if (booking.professionalId && booking.serviceId) {
+                    const servicoData = await prisma.service.findUnique({ where: { id: booking.serviceId } });
+                    const profData = await prisma.professional.findUnique({ where: { id: booking.professionalId } });
+
+                    if (servicoData && servicoData.commission > 0 && profData) {
+                        const comissaoPercent = servicoData.commission;
+                        const valorComissao = (valorLiquido * comissaoPercent) / 100;
+
+                        // Criação do Contas a Pagar para o Profissional
+                        await prisma.expense.create({
+                            data: {
+                                companyId,
+                                description: `Comissão - ${profData.name} - ${servicoData.name}`,
+                                value: valorComissao,
+                                category: "COMISSOES",
+                                status: "PENDENTE",
+                                dueDate: new Date(), // Vence no dia
+                                paymentMethod: method || "OUTRO",
+                                notes: `Comissão gerada automaticamente do Agendamento ID: ${bookingId}`,
+                                createdBy: "SISTEMA",
+                                updatedBy: "SISTEMA",
+                            }
+                        });
+                        console.log(`🤑 [COMISSÃO] Lançada despesa de R$ ${valorComissao} para ${profData.name}`);
                     }
                 }
             }

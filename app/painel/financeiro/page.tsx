@@ -59,6 +59,7 @@ export default function FinanceiroPage() {
         value: "",
         frequency: "ONCE",
         category: "Outros",
+        bankAccountId: "",
         dueDate: format(new Date(), 'yyyy-MM-dd')
     });
 
@@ -67,14 +68,24 @@ export default function FinanceiroPage() {
         description: "",
         value: "",
         method: "PIX",
+        bankAccountId: "",
         date: format(new Date(), 'yyyy-MM-dd')
     });
 
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "Empresa", logo: "" });
+    const [contasBancarias, setContasBancarias] = useState<any[]>([]);
 
     useEffect(() => { carregarResumo(dataResumo); }, [dataResumo]);
     useEffect(() => { carregarDespesas(dataDespesas); }, [dataDespesas]);
-    useEffect(() => { carregarClientes(); carregarEmpresa(); }, []);
+    useEffect(() => { carregarClientes(); carregarEmpresa(); carregarContas(); }, []);
+
+    async function carregarContas() {
+        try {
+            const res = await fetch("/api/painel/financeiro/contas-bancarias");
+            const data = await res.json();
+            if (res.ok) setContasBancarias(data);
+        } catch (e) { console.error("Erro contas", e); }
+    }
 
     async function carregarEmpresa() {
         try {
@@ -153,6 +164,7 @@ export default function FinanceiroPage() {
             value: exp.value ? formatarMoeda(exp.value.toString()) : "",
             category: exp.category,
             frequency: exp.frequency || "ONCE",
+            bankAccountId: exp.bankAccountId || "",
             dueDate: (exp.dueDate || exp.date)
                 ? (exp.dueDate || exp.date).split('T')[0]
                 : format(new Date(), 'yyyy-MM-dd')
@@ -338,12 +350,12 @@ export default function FinanceiroPage() {
 
     function fecharModalDespesa() {
         setModalDespesa(false);
-        setNovaDespesa({ id: null, description: "", value: "", category: "Outros", frequency: "ONCE", dueDate: new Date().toISOString().split('T')[0] });
+        setNovaDespesa({ id: null, description: "", value: "", category: "Outros", bankAccountId: "", frequency: "ONCE", dueDate: new Date().toISOString().split('T')[0] });
     }
 
     function fecharModalEntrada() {
         setModalEntrada(false);
-        setNovaEntrada({ clientId: "", description: "", value: "", method: "PIX", date: new Date().toISOString().split('T')[0] });
+        setNovaEntrada({ clientId: "", description: "", value: "", method: "PIX", bankAccountId: "", date: new Date().toISOString().split('T')[0] });
         setBuscaCliente("");
         setMostrarDropdownBusca(false);
     }
@@ -984,6 +996,24 @@ export default function FinanceiroPage() {
                                 </select>
                             </div>
 
+                            {contasBancarias.length > 0 && (
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1 font-bold">
+                                        Fundo de Caixa (Opcional)
+                                    </label>
+                                    <select
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
+                                        value={novaEntrada.bankAccountId || ""}
+                                        onChange={e => setNovaEntrada({ ...novaEntrada, bankAccountId: e.target.value })}
+                                    >
+                                        <option value="">-- Não associar caixa --</option>
+                                        {contasBancarias.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
                             <button onClick={salvarEntrada} disabled={salvando} className="w-full mt-4 bg-blue-600 text-white p-5 rounded-[1.8rem] font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
                                 {salvando ? <Loader2 className="animate-spin" /> : <DollarSign size={20} />}
                                 {salvando ? 'Salvando...' : 'Confirmar Recebimento'}
@@ -1067,6 +1097,24 @@ export default function FinanceiroPage() {
                                     <option value="OUTROS">Outros</option>
                                 </select>
                             </div>
+
+                            {contasBancarias.length > 0 && (
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block flex items-center gap-1 font-bold">
+                                        Fundo de Caixa (Opcional)
+                                    </label>
+                                    <select
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-red-500 font-bold dark:text-white transition-all"
+                                        value={novaDespesa.bankAccountId || ""}
+                                        onChange={e => setNovaDespesa({ ...novaDespesa, bankAccountId: e.target.value })}
+                                    >
+                                        <option value="">-- Não associar caixa --</option>
+                                        {contasBancarias.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <button onClick={salvarDespesa} disabled={salvando} className="w-full mt-4 bg-red-500 text-white p-5 rounded-[1.8rem] font-black text-lg shadow-xl shadow-red-500/20 hover:bg-red-600 transition flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50">
                                 {salvando ? <Loader2 className="animate-spin" /> : novaDespesa.id ? "Salvar Alterações" : "Confirmar Gasto"}

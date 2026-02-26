@@ -78,6 +78,7 @@ model Company {
   suppliers                    Supplier[]
   teamMembers                  TeamMember[]
   waitingList                  WaitingList[]
+  bankAccounts                 BankAccount[]
 }
 
 model OrganizationPost {
@@ -168,10 +169,12 @@ model Expense {
   createdBy      String?
   updatedBy      String?
   companyId      String
+  bankAccountId  String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
 }
 
 model Invoice {
@@ -202,9 +205,12 @@ model Invoice {
   nfeUrl         String?
   nfeProtocol    String?
 
-  booking     Booking?  @relation(fields: [bookingId], references: [id])
-  client      Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAccountId  String?
+
+  booking     Booking?     @relation(fields: [bookingId], references: [id])
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
 }
 
 model Booking {
@@ -427,4 +433,17 @@ model SupplierProduct {
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([supplierId, productId])
+}
+
+model BankAccount {
+  id        String    @id @default(cuid())
+  name      String
+  balance   Decimal   @default(0)
+  companyId String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  expenses  Expense[]
+  invoices  Invoice[]
 }
