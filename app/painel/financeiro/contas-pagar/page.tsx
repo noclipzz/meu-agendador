@@ -32,6 +32,7 @@ export default function ContasPagarPage() {
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
     const [editingExpense, setEditingExpense] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
+    const [isViewOnly, setIsViewOnly] = useState(false);
 
     // Filtros
     const [filters, setFilters] = useState({
@@ -340,6 +341,7 @@ export default function ContasPagarPage() {
                                 category: "FIXA", paymentAccount: "CAIXA", costCenter: "ADMINISTRATIVO",
                                 nfe: "", notes: "", installments: 1, frequency: "ONCE"
                             });
+                            setIsViewOnly(false);
                             setIsModalOpen(true);
                         }}
                         className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-emerald-600 transition shadow-md active:scale-95 text-sm"
@@ -526,6 +528,16 @@ export default function ContasPagarPage() {
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition">
                                             {/* Botão Visualizar (Azul) */}
                                             <button
+                                                onClick={() => {
+                                                    setEditingExpense(exp);
+                                                    setForm({
+                                                        ...exp,
+                                                        dueDate: format(new Date(exp.dueDate), 'yyyy-MM-dd'),
+                                                        value: Number(exp.value).toString()
+                                                    });
+                                                    setIsViewOnly(true);
+                                                    setIsModalOpen(true);
+                                                }}
                                                 className="p-1.5 bg-cyan-500 text-white rounded hover:bg-cyan-600 transition shadow-sm"
                                                 title="Visualizar"
                                             >
@@ -541,6 +553,7 @@ export default function ContasPagarPage() {
                                                         dueDate: format(new Date(exp.dueDate), 'yyyy-MM-dd'),
                                                         value: Number(exp.value).toString()
                                                     });
+                                                    setIsViewOnly(false);
                                                     setIsModalOpen(true);
                                                 }}
                                                 className="p-1.5 bg-amber-500 text-white rounded hover:bg-amber-600 transition shadow-sm"
@@ -626,8 +639,12 @@ export default function ContasPagarPage() {
                     <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]">
                         <div className="p-5 md:p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                             <div>
-                                <h2 className="text-2xl font-black dark:text-white">{editingExpense ? "Editar Despesa" : "Novo Lançamento"}</h2>
-                                <p className="text-sm text-gray-500 font-bold tracking-tight">Registre uma nova obrigação financeira.</p>
+                                <h2 className="text-2xl font-black dark:text-white">
+                                    {isViewOnly ? "Detalhes da Despesa" : editingExpense ? "Editar Despesa" : "Novo Lançamento"}
+                                </h2>
+                                <p className="text-sm text-gray-500 font-bold tracking-tight">
+                                    {isViewOnly ? "Confira as informações registradas." : "Registre uma nova obrigação financeira."}
+                                </p>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-2xl transition">
                                 <X size={24} />
@@ -642,6 +659,7 @@ export default function ContasPagarPage() {
                                         type="text"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
                                         placeholder="Ex: Aluguel Fevereiro"
+                                        disabled={isViewOnly}
                                         value={form.description}
                                         onChange={(e) => setForm({ ...form, description: e.target.value })}
                                     />
@@ -653,6 +671,7 @@ export default function ContasPagarPage() {
                                         step="0.01"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
                                         placeholder="0,00"
+                                        disabled={isViewOnly}
                                         value={form.value}
                                         onChange={(e) => setForm({ ...form, value: e.target.value })}
                                     />
@@ -662,6 +681,7 @@ export default function ContasPagarPage() {
                                     <input
                                         type="date"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
                                         value={form.dueDate}
                                         onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
                                     />
@@ -670,6 +690,7 @@ export default function ContasPagarPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Fornecedor</label>
                                     <select
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner h-[58px]"
+                                        disabled={isViewOnly}
                                         value={form.supplierId}
                                         onChange={(e) => setForm({ ...form, supplierId: e.target.value })}
                                     >
@@ -683,6 +704,7 @@ export default function ContasPagarPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Pagamento</label>
                                     <select
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
                                         value={form.paymentMethod}
                                         onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
                                     >
@@ -698,6 +720,7 @@ export default function ContasPagarPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Situação</label>
                                     <select
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
                                         value={form.status}
                                         onChange={(e) => setForm({ ...form, status: e.target.value })}
                                     >
@@ -717,6 +740,7 @@ export default function ContasPagarPage() {
                                         <input
                                             type="text"
                                             className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                            disabled={isViewOnly}
                                             placeholder="Nº do documento"
                                             value={form.nfe}
                                             onChange={(e) => setForm({ ...form, nfe: e.target.value })}
@@ -727,6 +751,7 @@ export default function ContasPagarPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Frequência</label>
                                     <select
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
                                         value={form.frequency}
                                         onChange={(e) => setForm({ ...form, frequency: e.target.value, installments: e.target.value === 'ONCE' ? 1 : 12 })}
                                     >
@@ -744,6 +769,7 @@ export default function ContasPagarPage() {
                                         type="number"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
                                         placeholder="Ex: 12"
+                                        disabled={isViewOnly}
                                         value={form.installments}
                                         onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })}
                                     />
@@ -755,11 +781,30 @@ export default function ContasPagarPage() {
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Observações</label>
                                 <textarea
                                     className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner h-24 resize-none"
+                                    disabled={isViewOnly}
                                     placeholder="Detalhes adicionais..."
                                     value={form.notes}
                                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                                 />
                             </div>
+
+                            {editingExpense && (
+                                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed dark:border-gray-700 space-y-2">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Histórico de Registro</p>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-bold">Lançado por:</p>
+                                            <p className="text-xs font-black text-gray-700 dark:text-gray-300">{editingExpense.createdBy || "Sistema"}</p>
+                                            <p className="text-[10px] text-gray-400">{format(new Date(editingExpense.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-gray-500 font-bold">Última edição:</p>
+                                            <p className="text-xs font-black text-gray-700 dark:text-gray-300">{editingExpense.updatedBy || editingExpense.createdBy || "Sistema"}</p>
+                                            <p className="text-[10px] text-gray-400">{format(new Date(editingExpense.updatedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-5 md:p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex gap-3 md:gap-4">
@@ -769,13 +814,23 @@ export default function ContasPagarPage() {
                             >
                                 Cancelar
                             </button>
-                            <button
-                                onClick={handleSave}
-                                disabled={salvando}
-                                className="flex-[2] bg-red-500 text-white px-2 md:px-8 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-sm md:text-lg shadow-xl hover:bg-red-600 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
-                            >
-                                {salvando ? <Loader2 className="animate-spin" /> : editingExpense ? "Salvar Alterações" : "Confirmar Lançamento"}
-                            </button>
+                            {!isViewOnly && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={salvando}
+                                    className="flex-[2] bg-red-500 text-white px-2 md:px-8 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-sm md:text-lg shadow-xl hover:bg-red-600 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
+                                >
+                                    {salvando ? <Loader2 className="animate-spin" /> : editingExpense ? "Salvar Alterações" : "Confirmar Lançamento"}
+                                </button>
+                            )}
+                            {isViewOnly && (
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="flex-[2] bg-blue-600 text-white px-2 md:px-8 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-sm md:text-lg shadow-xl hover:bg-blue-700 transition active:scale-95 flex items-center justify-center"
+                                >
+                                    Entendido
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

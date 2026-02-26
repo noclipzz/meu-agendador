@@ -164,6 +164,8 @@ model Expense {
   nfe            String?
   notes          String?
   frequency      String?   @default("ONCE")
+  createdBy      String?
+  updatedBy      String?
   companyId      String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { startOfDay, endOfDay, addWeeks, addMonths, addYears, isBefore, isToday } from "date-fns";
 
 const prisma = db;
@@ -103,6 +103,10 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const user = await currentUser();
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : "Desconhecido";
+
     const body = await req.json();
 
     // 1. Descobre a empresa
@@ -158,6 +162,8 @@ export async function POST(req: Request) {
         nfe: body.nfe,
         notes: body.notes,
         frequency: body.frequency || "ONCE",
+        createdBy: userName,
+        updatedBy: userName,
         companyId: companyId
       });
     }
@@ -182,6 +188,9 @@ export async function PUT(req: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
+    const user = await currentUser();
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : "Desconhecido";
+
     const body = await req.json();
     const { id, ...data } = body;
 
@@ -199,7 +208,8 @@ export async function PUT(req: Request) {
       costCenter: data.costCenter,
       nfe: data.nfe,
       notes: data.notes,
-      frequency: data.frequency
+      frequency: data.frequency,
+      updatedBy: userName
     };
 
     const updated = await prisma.expense.update({
