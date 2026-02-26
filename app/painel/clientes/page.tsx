@@ -140,23 +140,6 @@ export default function ClientesPage() {
     useEffect(() => {
         carregarClientes();
         carregarEmpresa();
-
-        // Carregar preferências de impressão do localStorage
-        const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
-        if (savedPrintPrefs) {
-            try {
-                const prefs = JSON.parse(savedPrintPrefs);
-                // Atualizamos apenas as flags, não o entry
-                setPrintConfigModal((prev: any) => ({
-                    ...prev,
-                    dateVisible: prefs.dateVisible ?? true,
-                    twoColumns: prefs.twoColumns ?? false,
-                    signatures: prefs.signatures ?? { client: true, prof: true, company: false }
-                }));
-            } catch (e) {
-                console.error("Erro ao carregar preferências de impressão:", e);
-            }
-        }
     }, []);
 
     // Salvar preferências sempre que mudarem

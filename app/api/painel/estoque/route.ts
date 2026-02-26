@@ -10,6 +10,16 @@ export async function GET(req: Request) {
         const { userId } = await auth();
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
+        // Adiciona colunas se faltarem para evitar falha no local DEV por rede bloqueada.
+        try {
+            await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "costPrice" DECIMAL(65,30);`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "totalCost" DECIMAL(65,30);`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "costPrice" DECIMAL(65,30);`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "totalCost" DECIMAL(65,30);`);
+        } catch (e) {
+            console.log("Colunas já existem ou erro interno");
+        }
+
         // 1. Identifica a empresa (Dono ou Membro)
         let companyId = null;
         let ownerId = null;
@@ -136,7 +146,7 @@ export async function POST(req: Request) {
         return NextResponse.json(result);
     } catch (error) {
         console.error("ERRO_CRIAR_PRODUTO:", error);
-        return new NextResponse("Erro ao criar produto", { status: 500 });
+        return NextResponse.json({ error: "Erro ao criar produto", debug: String(error) }, { status: 500 });
     }
 }
 
