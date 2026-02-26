@@ -38,6 +38,7 @@ export default function FinanceiroPage() {
     const [modalDespesa, setModalDespesa] = useState(false);
     const [modalEntrada, setModalEntrada] = useState(false);
     const [modalExcluir, setModalExcluir] = useState(false);
+    const [selectedBankAccount, setSelectedBankAccount] = useState("");
     const [modalConfirm, setModalConfirm] = useState({
         aberto: false,
         titulo: "",
@@ -75,8 +76,8 @@ export default function FinanceiroPage() {
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "Empresa", logo: "" });
     const [contasBancarias, setContasBancarias] = useState<any[]>([]);
 
-    useEffect(() => { carregarResumo(dataResumo); }, [dataResumo]);
-    useEffect(() => { carregarDespesas(dataDespesas); }, [dataDespesas]);
+    useEffect(() => { carregarResumo(dataResumo, selectedBankAccount); }, [dataResumo, selectedBankAccount]);
+    useEffect(() => { carregarDespesas(dataDespesas, selectedBankAccount); }, [dataDespesas, selectedBankAccount]);
     useEffect(() => { carregarClientes(); carregarEmpresa(); carregarContas(); }, []);
 
     async function carregarContas() {
@@ -109,29 +110,30 @@ export default function FinanceiroPage() {
     }
 
     // Função para carregar DADOS DO RESUMO (Gráfico, Cards, Totais)
-    async function carregarResumo(dataBase = new Date()) {
+    async function carregarResumo(dataBase = new Date(), bankAccountId = "") {
         try {
             const mes = dataBase.getMonth() + 1;
             const ano = dataBase.getFullYear();
-            const res = await fetch(`/api/painel/financeiro?month=${mes}&year=${ano}`);
+            let url = `/api/painel/financeiro?month=${mes}&year=${ano}`;
+            if (bankAccountId) url += `&bankAccountId=${bankAccountId}`;
+            const res = await fetch(url);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setDadosResumo(data);
         } catch (error: any) { toast.error(error.message || "Erro ao carregar resumo."); }
         finally {
-            // Only set loading to false if both initial loads are done, or handle separately
-            // For simplicity, we'll assume initial load is done after both are called once.
-            // A more robust solution would use a counter or Promise.all
             setLoading(false);
         }
     }
 
     // Função para carregar DADOS DAS DESPESAS (Lista)
-    async function carregarDespesas(dataBase = new Date()) {
+    async function carregarDespesas(dataBase = new Date(), bankAccountId = "") {
         try {
             const mes = dataBase.getMonth() + 1;
             const ano = dataBase.getFullYear();
-            const res = await fetch(`/api/painel/financeiro?month=${mes}&year=${ano}`);
+            let url = `/api/painel/financeiro?month=${mes}&year=${ano}`;
+            if (bankAccountId) url += `&bankAccountId=${bankAccountId}`;
+            const res = await fetch(url);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setDadosDespesas(data);
@@ -417,10 +419,25 @@ export default function FinanceiroPage() {
 
             {/* --- SELETOR DE MÊS (RESUMO FINANCEIRO) --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 mb-8 mt-4 print:hidden">
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
-                    <button onClick={() => setDataResumo(prev => subMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={20} /></button>
-                    <span className="font-black text-sm uppercase w-40 text-center text-gray-700 dark:text-white select-none">{format(dataResumo, "MMMM 'de' yyyy", { locale: ptBR })}</span>
-                    <button onClick={() => setDataResumo(prev => addMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={20} /></button>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
+                        <button onClick={() => setDataResumo(prev => subMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronLeft size={20} /></button>
+                        <span className="font-black text-sm uppercase w-40 text-center text-gray-700 dark:text-white select-none">{format(dataResumo, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+                        <button onClick={() => setDataResumo(prev => addMonths(prev, 1))} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition text-gray-500 hover:text-blue-600"><ChevronRight size={20} /></button>
+                    </div>
+
+                    {contasBancarias.length > 0 && (
+                        <select
+                            value={selectedBankAccount}
+                            onChange={(e) => setSelectedBankAccount(e.target.value)}
+                            className="bg-white dark:bg-gray-800 p-3.5 rounded-2xl border dark:border-gray-700 shadow-sm font-bold text-sm outline-none focus:ring-2 ring-blue-500 transition"
+                        >
+                            <option value="">Todas as Contas</option>
+                            {contasBancarias.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
             </div>
 

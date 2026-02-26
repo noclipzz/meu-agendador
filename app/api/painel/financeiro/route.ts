@@ -65,6 +65,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const mesParam = searchParams.get('month');
         const anoParam = searchParams.get('year');
+        const bankAccountIdParam = searchParams.get('bankAccountId');
 
         const TIMEZONE = 'America/Sao_Paulo';
 
@@ -93,14 +94,16 @@ export async function GET(request: Request) {
                 where: {
                     companyId: companyId,
                     status: 'PAGO',
-                    paidAt: { gte: seisMesesAtras, lte: fimMesAtual }
+                    paidAt: { gte: seisMesesAtras, lte: fimMesAtual },
+                    bankAccountId: bankAccountIdParam || undefined
                 },
                 select: { value: true, paidAt: true }
             }),
             prisma.expense.findMany({
                 where: {
                     companyId: companyId,
-                    dueDate: { gte: seisMesesAtras, lte: fimMesAtual }
+                    dueDate: { gte: seisMesesAtras, lte: fimMesAtual },
+                    bankAccountId: bankAccountIdParam || undefined
                 },
                 select: { value: true, dueDate: true }
             })
@@ -137,27 +140,46 @@ export async function GET(request: Request) {
         const startFilter = startOfDay(hoje) > inicioMes ? startOfDay(hoje) : inicioMes;
         const endFilter = isCurrentMonth ? undefined : fimMes;
 
-        const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos, estoqueLotesAdicionados] = await Promise.all([
+        const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos, estoqueLotesAdicionados, todasContasBancarias] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
-                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } },
+                where: {
+                    companyId: companyId,
+                    status: "PAGO",
+                    paidAt: { gte: inicioMes, lte: fimMes },
+                    bankAccountId: bankAccountIdParam || undefined
+                },
                 include: { client: true },
                 orderBy: { paidAt: 'desc' }
             }),
             // 2. Despesas do Mês SELECIONADO
             prisma.expense.findMany({
-                where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                where: {
+                    companyId: companyId,
+                    dueDate: { gte: inicioMes, lte: fimMes },
+                    bankAccountId: bankAccountIdParam || undefined
+                },
                 include: { supplier: true },
                 orderBy: { dueDate: 'desc' }
             }),
             // 3. Receitas Mês Anterior ao SELECIONADO
             prisma.invoice.findMany({
-                where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior } }
+                where: {
+                    companyId: companyId,
+                    status: "PAGO",
+                    paidAt: { gte: inicioMesAnterior, lte: fimMesAnterior },
+                    bankAccountId: bankAccountIdParam || undefined
+                }
             }),
             // 4. Ranking Serviços (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['serviceId'],
-                where: { companyId: companyId, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+                where: {
+                    companyId: companyId,
+                    status: 'CONCLUIDO',
+                    date: { gte: inicioMes, lte: fimMes }
+                    // Booking não tem bankAccountId diretamente, geralmente 1:1 com a fatura se quiséssemos ser rígidos
+                },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
@@ -165,14 +187,22 @@ export async function GET(request: Request) {
             // 5. Ranking Profissionais (Top 5) - Mês Selecionado
             prisma.booking.groupBy({
                 by: ['professionalId'],
-                where: { companyId: companyId, status: 'CONCLUIDO', date: { gte: inicioMes, lte: fimMes } },
+                where: {
+                    companyId: companyId,
+                    status: 'CONCLUIDO',
+                    date: { gte: inicioMes, lte: fimMes }
+                },
                 _count: { id: true },
                 orderBy: { _count: { id: 'desc' } },
                 take: 5
             }),
             // 6. Despesas LISTGEM - DO MÊS SELECIONADO (Removendo limite 20 pra ver todas do mês)
             prisma.expense.findMany({
-                where: { companyId: companyId, dueDate: { gte: inicioMes, lte: fimMes } },
+                where: {
+                    companyId: companyId,
+                    dueDate: { gte: inicioMes, lte: fimMes },
+                    bankAccountId: bankAccountIdParam || undefined
+                },
                 include: { supplier: true },
                 orderBy: { dueDate: 'desc' }
             }),
@@ -181,7 +211,8 @@ export async function GET(request: Request) {
                 where: {
                     companyId: companyId,
                     status: "PENDENTE",
-                    dueDate: { lt: startOfDay(hoje) } // Vencido em relação a HOJE sempre
+                    dueDate: { lt: startOfDay(hoje) }, // Vencido em relação a HOJE sempre
+                    bankAccountId: bankAccountIdParam || undefined
                 },
                 include: { client: true },
                 orderBy: { dueDate: 'asc' }
@@ -191,7 +222,8 @@ export async function GET(request: Request) {
                 where: {
                     companyId: companyId,
                     status: "PENDENTE",
-                    dueDate: endFilter ? { gte: startFilter, lte: endFilter } : { gte: startFilter }
+                    dueDate: endFilter ? { gte: startFilter, lte: endFilter } : { gte: startFilter },
+                    bankAccountId: bankAccountIdParam || undefined
                 },
                 include: { client: true },
                 orderBy: { dueDate: 'asc' },
@@ -203,17 +235,22 @@ export async function GET(request: Request) {
                     product: { companyId: companyId },
                     type: 'ENTRADA',
                     createdAt: { gte: inicioMes, lte: fimMes }
+                    // Lote estoque não tem bankAccount ainda, sai do "caixa geral"
                 }
+            }),
+            // 10. Todas as contas bancárias para o resumo segmentado
+            prisma.bankAccount.findMany({
+                where: { companyId: companyId }
             })
         ]);
 
         // Cálculos de Totais
-        const totalReceita = receitasMes.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
-        const totalDespesaConvencional = despesasMes.reduce((acc, i: any) => acc + Number(i.value || 0), 0);
-        const totalCustoEstoque = estoqueLotesAdicionados.reduce((acc, log: any) => acc + Number(log.totalCost || 0), 0);
+        const totalReceita = receitasMes.reduce((acc: number, i: any) => acc + Number(i.netValue || i.value || 0), 0);
+        const totalDespesaConvencional = despesasMes.reduce((acc: number, i: any) => acc + Number(i.value || 0), 0);
+        const totalCustoEstoque = estoqueLotesAdicionados.reduce((acc: number, log: any) => acc + Number(log.totalCost || 0), 0);
         const totalDespesa = totalDespesaConvencional + totalCustoEstoque;
 
-        const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
+        const totalReceitaAnterior = receitasMesAnterior.reduce((acc: number, i: any) => acc + Number(i.netValue || i.value || 0), 0);
 
         // Cálculo Crescimento
         let crescimento = 0;
@@ -265,7 +302,8 @@ export async function GET(request: Request) {
             ),
             allInvoices: receitasMes,
             boletosVencidos,
-            boletosAbertos
+            boletosAbertos,
+            contasBancarias: todasContasBancarias
         };
 
         return NextResponse.json(responseData);
