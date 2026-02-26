@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import axios from 'axios';
 import { db } from './db';
 import fs from 'fs';
@@ -178,7 +179,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
                 methods: ['PIX', 'BANK_SLIP']
             },
             payment_terms: {
-                due_date: invoice.dueDate.toISOString().split('T')[0],
+                due_date: format(invoice.dueDate, 'yyyy-MM-dd'),
             },
         };
 
