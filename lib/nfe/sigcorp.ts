@@ -14,13 +14,21 @@ function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, passwor
     try {
         const trimmedPassword = (password || "").trim();
 
-        // Converte P12/PFX para o formato binário que o node-forge espera
-        // Se for Buffer (veio do axios), usamos 'binary'. Se for string (base64), decodificamos.
-        const p12Binary = Buffer.isBuffer(pfxBase64OrBuffer)
-            ? pfxBase64OrBuffer.toString('binary')
-            : forge.util.decode64(pfxBase64OrBuffer);
+        // Diagnóstico: Se estiver falhando com "Invalid password", vamos tentar sem trim se falhar?
+        // Mas por ora, vamos apenas garantir a decodificação correta do PFX.
 
-        const p12Asn1 = forge.asn1.fromDer(p12Binary);
+        // Se vier como Buffer, converte para binary string do forge.
+        // Se vier como string (base64 direta), decodifica.
+        let p12Der;
+        if (Buffer.isBuffer(pfxBase64OrBuffer)) {
+            p12Der = pfxBase64OrBuffer.toString('binary');
+        } else {
+            // Se for string, assume base64
+            p12Der = forge.util.decode64(pfxBase64OrBuffer);
+        }
+
+        const p12Asn1 = forge.asn1.fromDer(p12Der);
+        // Tenta carregar o P12. Se falhar o MAC, o forge estoura o erro que o usuário vê.
         const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, trimmedPassword);
 
         let privateKeyForge: any = null;

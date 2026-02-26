@@ -179,7 +179,7 @@ export default function NotasFiscaisPage() {
             // Por enquanto, simularemos o sucesso, já que depende de salvar uma fatura e passar pela Sigcorp
 
             await new Promise(r => setTimeout(r, 2000));
-            toast.success("Nota enviada com sucesso para a fila!", { id: "nfe_manual" });
+            toast.success("AMB. SIMULAÇÃO: Nota enviada para a fila de testes!", { id: "nfe_manual" });
             setIsNovaNotaOpen(false);
             carregarTudo();
         } catch (error) {
