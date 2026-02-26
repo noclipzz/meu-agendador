@@ -58,7 +58,19 @@ export async function GET() {
       return {
         ...p,
         role: member?.role || "PROFESSIONAL", // ✅ Agora retorna o cargo real (ADMIN ou PROFESSIONAL)
-        permissions: member?.permissions || { agenda: true, clientes: true }
+        permissions: member?.permissions || {
+          dashboard: false,
+          agenda: true,
+          listaEspera: false,
+          clientes: true,
+          financeiro: false,
+          estoque: false,
+          prontuarios: false,
+          servicos: false,
+          profissionais: false,
+          config: false,
+          mural: true
+        }
       };
     });
 
@@ -219,7 +231,12 @@ export async function PUT(req: Request) {
 
     const body = await req.json();
 
-    // Atualiza apenas dados visuais do profissional
+    // 1. Busca dados atuais para referência (e-mail antigo)
+    const oldProfessional = await prisma.professional.findUnique({
+      where: { id: body.id }
+    });
+
+    // 2. Atualiza dados do profissional
     const updated = await prisma.professional.update({
       where: { id: body.id },
       data: {
@@ -227,11 +244,17 @@ export async function PUT(req: Request) {
         phone: body.phone,
         color: body.color,
         photoUrl: body.photoUrl,
-        cpf: body.cpf, rg: body.rg,
+        cpf: body.cpf,
+        rg: body.rg,
         birthDate: body.birthDate,
-        cep: body.cep, address: body.address, number: body.number,
-        complement: body.complement, neighborhood: body.neighborhood,
-        city: body.city, state: body.state, notes: body.notes,
+        cep: body.cep,
+        address: body.address,
+        number: body.number,
+        complement: body.complement,
+        neighborhood: body.neighborhood,
+        city: body.city,
+        state: body.state,
+        notes: body.notes,
         maritalStatus: body.maritalStatus,
         status: body.status,
         services: {
@@ -240,21 +263,43 @@ export async function PUT(req: Request) {
       }
     });
 
-    // Se houver e-mail ou userId, atualiza permissões e cargo no TeamMember
-    if (updated.email || updated.userId) {
-      await prisma.teamMember.updateMany({
+    // 3. Sincroniza com TeamMember (Acesso ao Sistema)
+    const targetEmail = body.email || updated.email || oldProfessional?.email;
+
+    if (targetEmail) {
+      // Tenta encontrar por e-mail (atual ou antigo) ou clerkUserId
+      const member = await prisma.teamMember.findFirst({
         where: {
           OR: [
-            { email: updated.email || undefined },
+            { email: targetEmail },
+            { email: oldProfessional?.email || undefined },
             { clerkUserId: updated.userId || undefined }
           ],
           companyId: updated.companyId
-        },
-        data: {
-          role: body.role || "PROFESSIONAL", // ✅ Agora permite mudar o cargo (ADMIN/PROFESSIONAL)
-          permissions: body.permissions
         }
       });
+
+      if (member) {
+        // Atualiza membro existente
+        await prisma.teamMember.update({
+          where: { id: member.id },
+          data: {
+            email: body.email || member.email,
+            role: body.role || "PROFESSIONAL",
+            permissions: body.permissions || member.permissions
+          }
+        });
+      } else if (body.email) {
+        // Cria novo registro de acesso se o funcionário agora tem e-mail
+        await prisma.teamMember.create({
+          data: {
+            email: body.email,
+            role: body.role || "PROFESSIONAL",
+            companyId: updated.companyId,
+            permissions: body.permissions || { agenda: true, clientes: true }
+          }
+        });
+      }
     }
 
     return NextResponse.json(updated);

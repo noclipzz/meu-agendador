@@ -635,8 +635,8 @@ export default function ContasPagarPage() {
 
             {/* MODAL Lançamento */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-2 md:p-4 overflow-hidden">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh] mx-auto border dark:border-gray-800">
                         <div className="p-5 md:p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                             <div>
                                 <h2 className="text-2xl font-black dark:text-white">
@@ -651,7 +651,7 @@ export default function ContasPagarPage() {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-8 space-y-6 custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Descrição *</label>
