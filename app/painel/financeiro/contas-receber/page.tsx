@@ -226,7 +226,13 @@ export default function ContasReceberPage() {
 
         toast.promise(promise, {
             loading: `Gerando cobrança na Cora...`,
-            success: (data) => `Cobrança gerada com sucesso!`,
+            success: (data) => {
+                const url = data.payment_options?.bank_slip?.url;
+                if (url) {
+                    window.open(url, '_blank');
+                }
+                return `Cobrança pronta com sucesso!`;
+            },
             error: (err) => `Atenção: ${err.message}`,
         });
     }

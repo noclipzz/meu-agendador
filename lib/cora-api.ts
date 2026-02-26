@@ -84,13 +84,27 @@ export async function getCoraValidToken(companyId: string) {
 }
 
 export async function createCoraCharge(companyId: string, invoiceId: string) {
-    const token = await getCoraValidToken(companyId);
     const invoice = await db.invoice.findUnique({
         where: { id: invoiceId },
         include: { client: true },
     });
 
     if (!invoice) throw new Error('Fatura não encontrada.');
+
+    // Se já foi gerado na Cora, não gera de novo. Retorna o que já temos.
+    if (invoice.gatewayId && invoice.bankUrl) {
+        console.log("♻️ [CORA] Cobrança já existente para esta fatura. Retornando dados salvos.");
+        return {
+            id: invoice.gatewayId,
+            payment_options: {
+                bank_slip: { url: invoice.bankUrl },
+                pix: { emv: invoice.pixCopyPaste, image_url: invoice.pixQrCode }
+            }
+        };
+    }
+
+    const token = await getCoraValidToken(companyId);
+
     if (!invoice.client) throw new Error('Cliente não vinculado à fatura.');
 
     try {
