@@ -11,12 +11,31 @@ const CORA_AUTH_URL = 'https://matls-clients.api.stage.cora.com.br/token';
 const CORA_API_URL = 'https://matls-clients.api.stage.cora.com.br/v2';
 
 // Carrega os certificados para o mTLS
-function getCoraAgent() {
+async function getCoraAgent(certUrl?: string | null, keyUrl?: string | null) {
+    if (certUrl && keyUrl) {
+        try {
+            console.log("📥 [CORA] Buscando certificados mTLS de URLs externas...");
+            const [certRes, keyRes] = await Promise.all([
+                axios.get(certUrl, { responseType: 'arraybuffer' }),
+                axios.get(keyUrl, { responseType: 'arraybuffer' })
+            ]);
+
+            return new https.Agent({
+                cert: Buffer.from(certRes.data),
+                key: Buffer.from(keyRes.data),
+            });
+        } catch (error) {
+            console.error("❌ [CORA] Erro ao baixar certificados mTLS:", error);
+            throw new Error("Não foi possível carregar os certificados mTLS da Cora. Verifique as URLs.");
+        }
+    }
+
+    // Fallback para arquivos locais (apenas para ambiente de desenvolvimento/seu uso)
     const certPath = path.join(process.cwd(), 'lib/cora/certs/certificate.pem');
     const keyPath = path.join(process.cwd(), 'lib/cora/certs/private-key.key');
 
     if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
-        throw new Error('Certificados da Cora não encontrados em lib/cora/certs/');
+        throw new Error('Certificados da Cora não encontrados/configurados.');
     }
 
     return new https.Agent({
@@ -27,21 +46,11 @@ function getCoraAgent() {
 
 export async function getCoraValidToken(companyId: string) {
     const company = await db.company.findUnique({
-        where: { id: companyId },
-        select: {
-            coraClientId: true,
-            coraClientSecret: true,
-            coraAccessToken: true,
-            coraRefreshToken: true,
-            coraTokenExpiry: true,
-            coraFineRate: true,
-            coraInterestRate: true,
-            coraDiscountRate: true,
-        },
+        where: { id: companyId }
     });
 
-    if (!company?.coraClientId || !company?.coraClientSecret) {
-        throw new Error('Empresa sem credenciais Cora configuradas.');
+    if (!company?.coraClientId) {
+        throw new Error('Empresa sem Client ID Cora configurado.');
     }
 
     // Retorna o token e as taxas para uso na criação da cobrança
@@ -50,7 +59,7 @@ export async function getCoraValidToken(companyId: string) {
     if (!company.coraAccessToken || !company.coraTokenExpiry || new Date(company.coraTokenExpiry) <= new Date()) {
         try {
             console.log(`🔐 [CORA] Autenticando Company: ${companyId}`);
-            const agent = getCoraAgent();
+            const agent = await getCoraAgent((company as any)?.coraCertUrl, (company as any)?.coraKeyUrl);
 
             const params = new URLSearchParams();
             params.append('grant_type', 'client_credentials');
@@ -107,9 +116,11 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         console.log("♻️ [CORA] Cobrança já iniciada. Sincronizando dados com a API...");
         try {
             const { token } = await getCoraValidToken(companyId);
+            const companyData = await db.company.findUnique({ where: { id: companyId }, select: { coraCertUrl: true, coraKeyUrl: true } as any });
+
             const response = await axios.get(`${CORA_API_URL}/invoices/${invoice.gatewayId}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
-                httpsAgent: getCoraAgent()
+                httpsAgent: await getCoraAgent((companyData as any)?.coraCertUrl, (companyData as any)?.coraKeyUrl)
             });
             const coraData = response.data;
 
@@ -138,6 +149,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
     }
 
     const { token, rules } = await getCoraValidToken(companyId);
+    const company = await db.company.findUnique({ where: { id: companyId } });
 
     if (!invoice.client) throw new Error('Cliente não vinculado à fatura.');
 
@@ -195,7 +207,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
                 'Authorization': `Bearer ${token}`,
                 'Idempotency-Key': crypto.randomUUID()
             },
-            httpsAgent: getCoraAgent()
+            httpsAgent: await getCoraAgent((company as any)?.coraCertUrl, (company as any)?.coraKeyUrl)
         });
 
         console.log("✅ [CORA] Cobrança criada!");

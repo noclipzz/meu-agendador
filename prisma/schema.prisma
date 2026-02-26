@@ -58,7 +58,8 @@ model Company {
   corporateName                String?
   // Cora Integration
   coraClientId                 String?
-  coraClientSecret             String?
+  coraCertUrl                  String?
+  coraKeyUrl                   String?
   coraAccessToken              String?
   coraRefreshToken             String?
   coraTokenExpiry              DateTime?

@@ -77,12 +77,15 @@ export default function Configuracoes() {
 
     // --- CAMPOS CORA ---
     const [coraClientId, setCoraClientId] = useState("");
-    const [coraClientSecret, setCoraClientSecret] = useState("");
+    const [coraCertUrl, setCoraCertUrl] = useState("");
+    const [coraKeyUrl, setCoraKeyUrl] = useState("");
     const [coraFineRate, setCoraFineRate] = useState("2.0");
     const [coraInterestRate, setCoraInterestRate] = useState("1.0");
     const [coraDiscountRate, setCoraDiscountRate] = useState("0");
 
     const inputCertRef = useRef<HTMLInputElement>(null);
+    const inputCoraCertRef = useRef<HTMLInputElement>(null);
+    const inputCoraKeyRef = useRef<HTMLInputElement>(null);
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
     const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag de dono
@@ -147,7 +150,8 @@ export default function Configuracoes() {
 
                 // Popula campos Cora
                 setCoraClientId(dataConfig.coraClientId || "");
-                setCoraClientSecret(dataConfig.coraClientSecret || "");
+                setCoraCertUrl(dataConfig.coraCertUrl || "");
+                setCoraKeyUrl(dataConfig.coraKeyUrl || "");
                 setCoraFineRate(String(dataConfig.coraFineRate || "2.0"));
                 setCoraInterestRate(String(dataConfig.coraInterestRate || "1.0"));
                 setCoraDiscountRate(String(dataConfig.coraDiscountRate || "0"));
@@ -252,6 +256,25 @@ export default function Configuracoes() {
         finally { setIsUploading(false); }
     }
 
+    async function handleCoraFileUpload(type: 'CERT' | 'KEY') {
+        const ref = type === 'CERT' ? inputCoraCertRef : inputCoraKeyRef;
+        if (!ref.current?.files?.[0]) return;
+        const file = ref.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`cora_${type.toLowerCase()}_${file.name}`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            if (type === 'CERT') setCoraCertUrl(newBlob.url);
+            else setCoraKeyUrl(newBlob.url);
+            toast.success(`${type === 'CERT' ? 'Certificado' : 'Chave'} Cora enviada!`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Erro no upload Cora.");
+        } finally { setIsUploading(false); }
+    }
+
     async function salvarConfig() {
         try {
             const res = await fetch('/api/painel/config', {
@@ -263,7 +286,7 @@ export default function Configuracoes() {
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
                     codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"), certificadoA1Url, certificadoSenha,
                     creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
-                    coraClientId, coraClientSecret,
+                    coraClientId, coraCertUrl, coraKeyUrl,
                     coraFineRate: parseFloat(coraFineRate || "0"),
                     coraInterestRate: parseFloat(coraInterestRate || "0"),
                     coraDiscountRate: parseFloat(coraDiscountRate || "0")
@@ -644,15 +667,42 @@ export default function Configuracoes() {
                                     onChange={e => setCoraClientId(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Client Secret Cora</label>
-                                <input
-                                    type="password"
-                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
-                                    placeholder="••••••••••••••••"
-                                    value={coraClientSecret}
-                                    onChange={e => setCoraClientSecret(e.target.value)}
-                                />
+                            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex flex-col justify-between gap-3">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Certificado Cora (.pem)</label>
+                                        <p className="text-[10px] text-gray-400 mt-1">Necessário para autenticação mTLS.</p>
+                                        {coraCertUrl && (
+                                            <div className="flex items-center gap-2 mt-2 text-blue-600 font-bold text-[10px] bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                                                <CheckCircle size={12} /> Instalado
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input type="file" accept=".pem" ref={inputCoraCertRef} onChange={() => handleCoraFileUpload('CERT')} className="hidden" />
+                                        <button onClick={(e) => { e.preventDefault(); inputCoraCertRef.current?.click(); }} disabled={isUploading} className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-200 transition text-xs shadow-sm dark:bg-gray-800 dark:text-gray-300">
+                                            {isUploading ? <Loader2 className="animate-spin" size={12} /> : <UploadCloud size={12} />} {isUploading ? "..." : "Upload .pem"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex flex-col justify-between gap-3">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Chave Privada Cora (.key)</label>
+                                        <p className="text-[10px] text-gray-400 mt-1">Chave gerada junto com seu CSR.</p>
+                                        {coraKeyUrl && (
+                                            <div className="flex items-center gap-2 mt-2 text-blue-600 font-bold text-[10px] bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                                                <CheckCircle size={12} /> Instalada
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input type="file" accept=".key" ref={inputCoraKeyRef} onChange={() => handleCoraFileUpload('KEY')} className="hidden" />
+                                        <button onClick={(e) => { e.preventDefault(); inputCoraKeyRef.current?.click(); }} disabled={isUploading} className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-200 transition text-xs shadow-sm dark:bg-gray-800 dark:text-gray-300">
+                                            {isUploading ? <Loader2 className="animate-spin" size={12} /> : <UploadCloud size={12} />} {isUploading ? "..." : "Upload .key"}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="md:col-span-2 pt-4 border-t dark:border-gray-700 mt-2">
