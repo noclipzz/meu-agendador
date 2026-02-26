@@ -39,8 +39,14 @@ export async function GET(request: Request) {
         // Define onde buscar
         const where: any = { companyId: targetCompanyId };
 
-        let startDate, endDate;
-        if (start && end) {
+        let startDate: Date = startOfMonth(hoje);
+        let endDate: Date = endOfMonth(hoje);
+
+        if (start === "ALL") {
+            // Sem filtro de data para dueDate
+            startDate = new Date(0); // Início dos tempos
+            endDate = new Date(2100, 0, 1); // Longe no futuro
+        } else if (start && end) {
             startDate = new Date(start);
             endDate = new Date(end);
             if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
@@ -50,8 +56,6 @@ export async function GET(request: Request) {
                 };
             }
         } else {
-            startDate = startOfMonth(hoje);
-            endDate = endOfMonth(hoje);
             where.dueDate = { gte: startDate, lte: endDate };
         }
 
@@ -85,7 +89,13 @@ export async function GET(request: Request) {
         const vencidos = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate < startOfToday);
         const vencemHoje = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate >= startOfToday && i.dueDate <= endOfToday);
         const avencer = summaryInvoices.filter(i => i.status === "PENDENTE" && i.dueDate > endOfToday);
-        const recebidos = summaryInvoices.filter(i => i.status === "PAGO" && i.paidAt && i.paidAt >= startDate && i.paidAt <= endDate);
+
+        // Se for ALL, os recebidos são todos que foram pagos. Caso contrário, respeita o período.
+        const recebidos = summaryInvoices.filter(i => {
+            if (i.status !== "PAGO" || !i.paidAt) return false;
+            if (start === "ALL") return true;
+            return i.paidAt >= startDate && i.paidAt <= endDate;
+        });
 
         const totalVencidos = vencidos.reduce((acc, i) => acc + Number(i.value), 0);
         const totalHoje = vencemHoje.reduce((acc, i) => acc + Number(i.value), 0);
@@ -98,9 +108,9 @@ export async function GET(request: Request) {
             summary: {
                 overdue: totalVencidos,
                 today: totalHoje,
-                upcoming: totalAVencer,
                 received: totalRecebidos,
-                total: totalGeral
+                total: totalGeral,
+                companyId: targetCompanyId
             }
         });
 

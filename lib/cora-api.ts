@@ -102,16 +102,39 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
 
     if (!invoice) throw new Error('Fatura não encontrada.');
 
-    // Se já foi gerado na Cora, não gera de novo. Retorna o que já temos.
-    if (invoice.gatewayId && invoice.bankUrl) {
-        console.log("♻️ [CORA] Cobrança já existente para esta fatura. Retornando dados salvos.");
-        return {
-            id: invoice.gatewayId,
-            payment_options: {
-                bank_slip: { url: invoice.bankUrl },
-                pix: { emv: invoice.pixCopyPaste, image_url: invoice.pixQrCode }
-            }
-        };
+    // Se já foi gerado na Cora, tenta buscar os dados mais recentes para garantir que temos o PIX
+    if (invoice.gatewayId) {
+        console.log("♻️ [CORA] Cobrança já iniciada. Sincronizando dados com a API...");
+        try {
+            const { token } = await getCoraValidToken(companyId);
+            const response = await axios.get(`${CORA_API_URL}/invoices/${invoice.gatewayId}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+                httpsAgent: getCoraAgent()
+            });
+            const coraData = response.data;
+
+            // Sincroniza nosso banco com os dados da Cora (caso o PIX tenha aparecido ou o boleto mudado)
+            await db.invoice.update({
+                where: { id: invoiceId },
+                data: {
+                    bankUrl: coraData.payment_options?.bank_slip?.url,
+                    pixCopyPaste: coraData.payment_options?.pix?.emv,
+                    pixQrCode: coraData.payment_options?.pix?.image_url,
+                }
+            });
+
+            console.log("💎 [CORA] Dados sincronizados com sucesso.");
+            return coraData;
+        } catch (syncErr) {
+            console.error("⚠️ [CORA] Erro ao sincronizar cobrança, retornando cache do banco.", syncErr);
+            return {
+                id: invoice.gatewayId,
+                payment_options: {
+                    bank_slip: { url: invoice.bankUrl },
+                    pix: { emv: invoice.pixCopyPaste, image_url: invoice.pixQrCode }
+                }
+            };
+        }
     }
 
     const { token, rules } = await getCoraValidToken(companyId);
@@ -176,8 +199,8 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         });
 
         console.log("✅ [CORA] Cobrança criada!");
-
         const coraData = response.data;
+        console.log("📦 [CORA_RESPONSE_DATA]:", JSON.stringify(coraData, null, 2));
 
         await db.invoice.update({
             where: { id: invoiceId },

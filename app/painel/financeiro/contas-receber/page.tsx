@@ -79,8 +79,8 @@ export default function ContasReceberPage() {
                 label = format(nextMonth, "MMMM 'de' yyyy", { locale: ptBR });
                 break;
             case "TODO":
-                start = "";
-                end = "";
+                start = "ALL";
+                end = "ALL";
                 label = "Todo o período";
                 break;
         }
@@ -229,6 +229,7 @@ export default function ContasReceberPage() {
         toast.promise(promise, {
             loading: `Gerando cobrança na Cora...`,
             success: (data) => {
+                console.log("🔍 [DEBUG CORA RETURN]:", data);
                 if (metodo === 'PIX') {
                     const emv = data.payment_options?.pix?.emv;
                     const qrCode = data.payment_options?.pix?.image_url;
@@ -238,6 +239,8 @@ export default function ContasReceberPage() {
                         setIsModalOpen(false); // Fecha o modal de detalhes
                         return `PIX pronto para pagamento!`;
                     }
+                    console.warn("⚠️ PIX solicitado mas não retornado pela Cora.");
+                    throw new Error("Este documento não possui dados de PIX. Tente gerar o Boleto Cora.");
                 }
 
                 const url = data.payment_options?.bank_slip?.url;
@@ -300,8 +303,8 @@ export default function ContasReceberPage() {
         const formData = new FormData(e.currentTarget);
         const payload = Object.fromEntries(formData.entries());
 
-        // Se for edição, usamos o selectedInvoice.companyId
-        const companyId = selectedInvoice?.companyId || data?.invoices?.[0]?.companyId;
+        // Busca o companyId correto
+        const companyId = selectedInvoice?.companyId || data?.summary?.companyId || data?.invoices?.[0]?.companyId;
 
         try {
             const res = await fetch("/api/financeiro/faturas", {
@@ -849,13 +852,21 @@ export default function ContasReceberPage() {
                                     </button>
 
                                     {selectedInvoice?.bankUrl && (
-                                        <a
-                                            href={selectedInvoice.bankUrl}
-                                            target="_blank"
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (selectedInvoice.pixCopyPaste) {
+                                                    setPixData({ emv: selectedInvoice.pixCopyPaste, qrCode: selectedInvoice.pixQrCode });
+                                                    setIsPixModalOpen(true);
+                                                    setIsModalOpen(false);
+                                                } else {
+                                                    window.open(selectedInvoice.bankUrl, '_blank');
+                                                }
+                                            }}
                                             className="w-full bg-gray-900 text-white p-5 rounded-2xl font-black text-lg flex justify-center items-center gap-2 text-center"
                                         >
                                             Visualizar Boleto/PIX
-                                        </a>
+                                        </button>
                                     )}
 
                                     <button
