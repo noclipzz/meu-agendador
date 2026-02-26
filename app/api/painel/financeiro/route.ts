@@ -137,7 +137,7 @@ export async function GET(request: Request) {
         const startFilter = startOfDay(hoje) > inicioMes ? startOfDay(hoje) : inicioMes;
         const endFilter = isCurrentMonth ? undefined : fimMes;
 
-        const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos] = await Promise.all([
+        const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos, estoqueLotesAdicionados] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
                 where: { companyId: companyId, status: "PAGO", paidAt: { gte: inicioMes, lte: fimMes } },
@@ -196,12 +196,23 @@ export async function GET(request: Request) {
                 include: { client: true },
                 orderBy: { dueDate: 'asc' },
                 take: 50
+            }),
+            // 9. Custos de Lotes Adicionados no Mês (Para Contabilizar como Despesa no DRE)
+            prisma.stockLog.findMany({
+                where: {
+                    product: { companyId: companyId },
+                    type: 'ADD',
+                    createdAt: { gte: inicioMes, lte: fimMes }
+                }
             })
         ]);
 
         // Cálculos de Totais
         const totalReceita = receitasMes.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
-        const totalDespesa = despesasMes.reduce((acc, i: any) => acc + Number(i.value || 0), 0);
+        const totalDespesaConvencional = despesasMes.reduce((acc, i: any) => acc + Number(i.value || 0), 0);
+        const totalCustoEstoque = estoqueLotesAdicionados.reduce((acc, log: any) => acc + Number(log.totalCost || 0), 0);
+        const totalDespesa = totalDespesaConvencional + totalCustoEstoque;
+
         const totalReceitaAnterior = receitasMesAnterior.reduce((acc, i: any) => acc + Number(i.netValue || i.value || 0), 0);
 
         // Cálculo Crescimento
@@ -240,7 +251,18 @@ export async function GET(request: Request) {
             allExpenses: (allExpenses as any[]).map(e => ({
                 ...e,
                 date: e.dueDate || e.date || new Date()
-            })),
+            })).concat(
+                (estoqueLotesAdicionados as any[])
+                    .filter(log => Number(log.totalCost || 0) > 0)
+                    .map(log => ({
+                        id: `estoque-${log.id}`,
+                        description: `Compra de Lote (Estoque)`,
+                        value: Number(log.totalCost),
+                        category: "PRODUTOS",
+                        date: log.createdAt,
+                        supplier: null
+                    }))
+            ),
             allInvoices: receitasMes,
             boletosVencidos,
             boletosAbertos
