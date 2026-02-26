@@ -163,6 +163,7 @@ model Expense {
   costCenter     String?
   nfe            String?
   notes          String?
+  frequency      String?   @default("ONCE")
   companyId      String
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

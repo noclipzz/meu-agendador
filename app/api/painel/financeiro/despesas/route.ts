@@ -157,6 +157,7 @@ export async function POST(req: Request) {
         costCenter: body.costCenter,
         nfe: body.nfe,
         notes: body.notes,
+        frequency: body.frequency || "ONCE",
         companyId: companyId
       });
     }
@@ -197,7 +198,8 @@ export async function PUT(req: Request) {
       paymentAccount: data.paymentAccount,
       costCenter: data.costCenter,
       nfe: data.nfe,
-      notes: data.notes
+      notes: data.notes,
+      frequency: data.frequency
     };
 
     const updated = await prisma.expense.update({

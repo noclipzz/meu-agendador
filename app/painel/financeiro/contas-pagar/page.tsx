@@ -318,7 +318,7 @@ export default function ContasPagarPage() {
                                     className="fixed inset-0 z-10"
                                     onClick={() => setIsPeriodSelectorOpen(false)}
                                 />
-                                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                <div className="absolute left-0 md:right-0 md:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left md:origin-top-right">
                                     <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
                                     <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
                                     <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
@@ -623,8 +623,8 @@ export default function ContasPagarPage() {
             {/* MODAL Lançamento */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] md:max-h-[90vh]">
+                        <div className="p-5 md:p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                             <div>
                                 <h2 className="text-2xl font-black dark:text-white">{editingExpense ? "Editar Despesa" : "Novo Lançamento"}</h2>
                                 <p className="text-sm text-gray-500 font-bold tracking-tight">Registre uma nova obrigação financeira.</p>
@@ -634,7 +634,7 @@ export default function ContasPagarPage() {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 custom-scrollbar">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Descrição *</label>
@@ -748,17 +748,17 @@ export default function ContasPagarPage() {
                             </div>
                         </div>
 
-                        <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex gap-4">
+                        <div className="p-5 md:p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex gap-3 md:gap-4">
                             <button
                                 onClick={() => setIsModalOpen(false)}
-                                className="flex-1 px-8 py-5 rounded-[1.5rem] font-black text-gray-500 hover:bg-gray-100 transition border dark:border-gray-700"
+                                className="flex-1 px-4 md:px-8 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-gray-500 hover:bg-gray-100 transition border dark:border-gray-700 text-sm"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={salvando}
-                                className="flex-[2] bg-red-500 text-white px-8 py-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-red-600 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
+                                className="flex-[2] bg-red-500 text-white px-2 md:px-8 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-sm md:text-lg shadow-xl hover:bg-red-600 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
                             >
                                 {salvando ? <Loader2 className="animate-spin" /> : editingExpense ? "Salvar Alterações" : "Confirmar Lançamento"}
                             </button>

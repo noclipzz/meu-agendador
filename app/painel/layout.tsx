@@ -416,7 +416,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
             {/* --- HEADER MOBILE --- */}
             <div className="md:hidden h-[73px] shrink-0 print:hidden" /> {/* Placeholder para o header fixo */}
-            <header className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-4 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b dark:border-gray-800 z-[60] h-[73px] shadow-sm">
+            <header className="md:hidden fixed top-0 left-0 right-0 flex items-center justify-between p-4 bg-white dark:bg-gray-950 border-b dark:border-gray-800 z-[60] h-[73px] shadow-sm">
                 <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
