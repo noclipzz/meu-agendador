@@ -22,8 +22,13 @@
 
 # misc
 .DS_Store
+# Security / Certs
 *.pem
-!lib/cora/certs/certificate.pem
+*.key
+*.crt
+*.pfx
+/lib/cora/certs/*
+!/lib/cora/certs/.keep
 
 # debug
 npm-debug.log*
