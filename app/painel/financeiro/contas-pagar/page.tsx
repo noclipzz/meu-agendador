@@ -728,7 +728,7 @@ export default function ContasPagarPage() {
                                     <select
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
                                         value={form.frequency}
-                                        onChange={(e) => setForm({ ...form, frequency: e.target.value })}
+                                        onChange={(e) => setForm({ ...form, frequency: e.target.value, installments: e.target.value === 'ONCE' ? 1 : 12 })}
                                     >
                                         <option value="ONCE">Única</option>
                                         <option value="MONTHLY">Mensal</option>
@@ -736,6 +736,20 @@ export default function ContasPagarPage() {
                                     </select>
                                 </div>
                             </div>
+
+                            {form.frequency !== 'ONCE' && (
+                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Número de Parcelas / Repetições</label>
+                                    <input
+                                        type="number"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        placeholder="Ex: 12"
+                                        value={form.installments}
+                                        onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })}
+                                    />
+                                    <p className="text-[10px] text-gray-500 font-bold ml-2 italic text-red-500">Serão gerados {form.installments} lançamentos automaticamente.</p>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Observações</label>

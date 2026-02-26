@@ -146,7 +146,7 @@ export async function POST(req: Request) {
       }
 
       expensesToCreate.push({
-        description: body.description,
+        description: occurrences > 1 ? `${body.description} (${i + 1}/${occurrences})` : body.description,
         value: Math.abs(parseFloat(body.value.toString().replace(',', '.'))) || 0,
         category: body.category || "Outros",
         status: body.status || "PENDENTE",
