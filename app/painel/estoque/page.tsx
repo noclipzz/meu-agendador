@@ -79,13 +79,16 @@ export default function EstoquePage() {
             if (!produtoSelecionado) {
                 if (!formBasico.name) return toast.error("Nome do produto é obrigatório");
 
+                const totalCost = formBasico.costPrice ? desformatarMoeda(formBasico.costPrice) : 0;
+                const unitCost = Number(qtdInput) > 0 ? totalCost / Number(qtdInput) : totalCost;
+
                 const res = await fetch('/api/painel/estoque', {
                     method: 'POST',
                     body: JSON.stringify({
                         name: formBasico.name,
                         unit: formBasico.unit,
                         minStock: formBasico.minStock,
-                        costPrice: desformatarMoeda(formBasico.costPrice),
+                        costPrice: unitCost,
                         quantity: qtdInput,
                         expiryDate: validadeInput
                     })
@@ -101,6 +104,9 @@ export default function EstoquePage() {
             }
 
             // LÓGICA 2: MOVIMENTAÇÃO DE LOTE (EXISTENTE)
+            const totalCostAdd = costPriceInput ? desformatarMoeda(costPriceInput) : 0;
+            const unitCostAdd = Number(qtdInput) > 0 ? totalCostAdd / Number(qtdInput) : totalCostAdd;
+
             const res = await fetch('/api/painel/estoque', {
                 method: 'PUT',
                 body: JSON.stringify({
@@ -109,7 +115,7 @@ export default function EstoquePage() {
                     amountAdjustment: qtdInput,
                     expiryDate: validadeInput,
                     reason: motivoInput,
-                    costPrice: desformatarMoeda(costPriceInput)
+                    costPrice: operacao === 'ADD' ? unitCostAdd : undefined
                 })
             });
 
@@ -259,8 +265,11 @@ export default function EstoquePage() {
                                             <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Preço de Custo (Opcional)</label>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Preço de Custo Total do Lote (Opcional)</label>
                                             <input type="text" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} />
+                                            {formBasico.costPrice && Number(desformatarMoeda(formBasico.costPrice)) > 0 && Number(qtdInput) > 0 && (
+                                                <p className="text-[10px] text-gray-500 font-bold ml-2 mt-1">Custo Unitário: {(Number(desformatarMoeda(formBasico.costPrice)) / Number(qtdInput)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / {formBasico.unit}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Validade (Opcional)</label>
@@ -290,9 +299,12 @@ export default function EstoquePage() {
                                             </div>
                                             {operacao === "ADD" && (
                                                 <>
-                                                    <div className="md:w-32">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Custo (Un)</label>
-                                                        <input type="text" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="R$ 0,00" value={costPriceInput} onChange={e => setCostPriceInput(formatarMoeda(e.target.value))} title="Custo individual por unidade/litro/kg" />
+                                                    <div className="md:w-40 flex flex-col">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Custo do Lote</label>
+                                                        <input type="text" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="R$ Custo Total" value={costPriceInput} onChange={e => setCostPriceInput(formatarMoeda(e.target.value))} title="Custo total correspondente à quantidade informada" />
+                                                        {costPriceInput && Number(desformatarMoeda(costPriceInput)) > 0 && Number(qtdInput) > 0 && (
+                                                            <p className="text-[10px] text-gray-500 font-bold ml-1 mt-1">Unidade: {(Number(desformatarMoeda(costPriceInput)) / Number(qtdInput)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / {produtoSelecionado.unit}</p>
+                                                        )}
                                                     </div>
                                                     <div className="md:w-48">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
@@ -375,7 +387,7 @@ export default function EstoquePage() {
                                         <div><label className="text-xs font-bold text-gray-400 uppercase">Nome</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} /></div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input type="number" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
-                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo</label><input type="text" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} /></div>
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo (Unidade)</label><input type="text" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} /></div>
                                         </div>
                                         <button onClick={atualizarDadosBasicos} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">Salvar Alterações</button>
                                     </div>
