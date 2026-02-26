@@ -297,6 +297,7 @@ model Product {
   company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   batches        ProductBatch[]
   usedInServices ServiceProduct[]
+  supplierProducts SupplierProduct[]
   logs           StockLog[]
 }
 
@@ -403,5 +404,22 @@ model Supplier {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   expenses      Expense[]
+  products      SupplierProduct[]
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model SupplierProduct {
+  id         String   @id @default(cuid())
+  supplierId String
+  productId  String
+  price      Decimal  @default(0)
+  sku        String?  // Código do fornecedor
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, productId])
 }

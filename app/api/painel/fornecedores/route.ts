@@ -4,9 +4,12 @@ import { db as prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
     try {
         let companyId = null;
@@ -32,8 +35,32 @@ export async function GET() {
 
         if (!companyId) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
+        if (id) {
+            const supplier = await prisma.supplier.findUnique({
+                where: { id, companyId },
+                include: {
+                    products: {
+                        include: {
+                            product: true
+                        },
+                        orderBy: { product: { name: 'asc' } }
+                    },
+                    expenses: {
+                        take: 10,
+                        orderBy: { dueDate: 'desc' }
+                    }
+                }
+            });
+            return NextResponse.json(supplier);
+        }
+
         const suppliers = await prisma.supplier.findMany({
             where: { companyId },
+            include: {
+                _count: {
+                    select: { products: true, expenses: true }
+                }
+            },
             orderBy: { name: 'asc' }
         });
 

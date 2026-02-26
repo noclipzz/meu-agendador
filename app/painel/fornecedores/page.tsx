@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import {
     Truck, Plus, Search, Trash2, Pencil, X,
     Phone, Mail, FileText, MapPin, Loader2,
-    Building2, Globe
+    Building2, Globe, Eye, Package, DollarSign,
+    ExternalLink, Calendar, Receipt, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function FornecedoresPage() {
     const [loading, setLoading] = useState(true);
@@ -15,6 +18,21 @@ export default function FornecedoresPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
+
+    // Profile States
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [selectedSupplierProfile, setSelectedSupplierProfile] = useState<any>(null);
+    const [loadingProfile, setLoadingProfile] = useState(false);
+
+    // Linked Products States
+    const [allProducts, setAllProducts] = useState<any[]>([]);
+    const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+    const [vinculoForm, setVinculoForm] = useState({
+        productId: "",
+        price: "",
+        sku: "",
+        notes: ""
+    });
 
     const [form, setForm] = useState({
         name: "",
@@ -131,13 +149,82 @@ export default function FornecedoresPage() {
             if (Array.isArray(data)) {
                 setSuppliers(data);
             } else {
-                console.error("Recebido algo que não é array:", data);
                 setSuppliers([]);
             }
+
+            // Load all products for the vincular dropdown
+            const resProducts = await fetch('/api/painel/estoque');
+            const productsData = await resProducts.json();
+            if (Array.isArray(productsData)) setAllProducts(productsData);
+
         } catch (error) {
-            toast.error("Erro ao carregar fornecedores");
+            toast.error("Erro ao carregar dados");
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function openProfile(supplierId: string) {
+        setLoadingProfile(true);
+        setIsProfileOpen(true);
+        try {
+            const res = await fetch(`/api/painel/fornecedores?id=${supplierId}`);
+            if (res.ok) {
+                const fullData = await res.json();
+                setSelectedSupplierProfile(fullData);
+            } else {
+                toast.error("Erro ao carregar ficha");
+            }
+        } catch (error) {
+            toast.error("Erro de conexão");
+        } finally {
+            setLoadingProfile(false);
+        }
+    }
+
+    async function handleVincularProduto() {
+        if (!vinculoForm.productId) return toast.error("Selecione um produto");
+        setSalvando(true);
+
+        try {
+            const res = await fetch('/api/painel/fornecedores/produtos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...vinculoForm,
+                    supplierId: selectedSupplierProfile.id
+                })
+            });
+
+            if (res.ok) {
+                toast.success("Produto vinculado!");
+                setIsVincularModalOpen(false);
+                setVinculoForm({ productId: "", price: "", sku: "", notes: "" });
+                openProfile(selectedSupplierProfile.id); // Refresh profile
+            } else {
+                toast.error("Erro ao vincular");
+            }
+        } catch (error) {
+            toast.error("Erro de conexão");
+        } finally {
+            setSalvando(false);
+        }
+    }
+
+    async function desvincularProduto(id: string) {
+        if (!confirm("Remover este produto deste fornecedor?")) return;
+
+        try {
+            const res = await fetch(`/api/painel/fornecedores/produtos?id=${id}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                toast.success("Vínculo removido");
+                openProfile(selectedSupplierProfile.id);
+            }
+        } catch (error) {
+            toast.error("Erro ao desvincular");
         }
     }
 
@@ -248,6 +335,7 @@ export default function FornecedoresPage() {
                 {filteredSuppliers.map(supplier => (
                     <div key={supplier.id} className="bg-white dark:bg-gray-800 p-6 rounded-[2rem] border dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openProfile(supplier.id)} className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition" title="Ver Ficha"><Eye size={18} /></button>
                             <button onClick={() => openEdit(supplier)} className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-100 transition"><Pencil size={18} /></button>
                             <button onClick={() => handleDelete(supplier.id)} className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 transition"><Trash2 size={18} /></button>
                         </div>
@@ -303,6 +391,8 @@ export default function FornecedoresPage() {
 
             {/* MODAL CADASTRO/EDIÇÃO */}
             {isModalOpen && (
+                // ... (existing modal remains, I'll close it and then add physical ones below)
+                // Actually I should keep it for the replacement to work
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
@@ -466,6 +556,250 @@ export default function FornecedoresPage() {
                                 className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-blue-700 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400"
                             >
                                 {salvando ? <Loader2 className="animate-spin" /> : editingSupplier ? "Salvar Alterações" : "Cadastrar Fornecedor"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FICHA DO FORNECEDOR (PROFILE) */}
+            {isProfileOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-end">
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] w-full max-w-4xl h-full shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-right duration-500">
+                        {loadingProfile ? (
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                                <Loader2 className="animate-spin text-blue-600 mb-4" size={48} />
+                                <p className="font-black text-gray-400 uppercase tracking-widest text-[10px]">Carregando Ficha...</p>
+                            </div>
+                        ) : selectedSupplierProfile && (
+                            <>
+                                <div className="p-8 bg-white dark:bg-gray-900 border-b dark:border-gray-800 flex justify-between items-start">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-20 h-20 bg-blue-600 text-white rounded-[2rem] flex items-center justify-center text-3xl font-black shadow-xl shadow-blue-500/20">
+                                            {selectedSupplierProfile.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-3xl font-black dark:text-white leading-tight">{selectedSupplierProfile.name}</h2>
+                                            <p className="text-sm font-bold text-gray-500 flex items-center gap-2 mt-1">
+                                                <Building2 size={16} /> {selectedSupplierProfile.corporateName || "Pessoa Física"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setIsProfileOpen(false)} className="p-4 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded-2xl hover:bg-red-50 hover:text-red-500 transition"><X size={24} /></button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                                    {/* Grid de Contato e Localização */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800 space-y-4">
+                                            <h3 className="font-black text-gray-400 uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                                <Phone size={14} className="text-blue-500" /> Informações de Contato
+                                            </h3>
+                                            <div className="space-y-3 pt-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-500 font-bold">Telefone:</span>
+                                                    <span className="text-sm font-black dark:text-white">{selectedSupplierProfile.phone || "-"}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-500 font-bold">E-mail:</span>
+                                                    <span className="text-sm font-black dark:text-white">{selectedSupplierProfile.email || "-"}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-sm text-gray-500 font-bold">CNPJ:</span>
+                                                    <span className="text-sm font-black dark:text-white">{selectedSupplierProfile.cnpj || "-"}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] shadow-sm border dark:border-gray-800 space-y-4">
+                                            <h3 className="font-black text-gray-400 uppercase text-[10px] tracking-widest flex items-center gap-2">
+                                                <MapPin size={14} className="text-emerald-500" /> Localização
+                                            </h3>
+                                            <div className="space-y-3 pt-2">
+                                                <p className="text-sm font-black dark:text-white">
+                                                    {selectedSupplierProfile.address}, {selectedSupplierProfile.number}
+                                                </p>
+                                                <p className="text-sm text-gray-500 font-bold">
+                                                    {selectedSupplierProfile.neighborhood} - {selectedSupplierProfile.city} / {selectedSupplierProfile.state}
+                                                </p>
+                                                <p className="text-xs font-mono text-gray-400">{selectedSupplierProfile.cep}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* PRODUTOS VINCULADOS */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center px-4">
+                                            <h3 className="text-xl font-black dark:text-white flex items-center gap-2">
+                                                <Package className="text-orange-500" size={24} />
+                                                Produtos Fornecidos
+                                                <span className="bg-orange-100 text-orange-600 text-[10px] px-2 py-0.5 rounded-md ml-2">{selectedSupplierProfile.products?.length || 0}</span>
+                                            </h3>
+                                            <button
+                                                onClick={() => setIsVincularModalOpen(true)}
+                                                className="bg-orange-500 text-white px-5 py-2 rounded-xl text-sm font-black hover:bg-orange-600 transition flex items-center gap-2 shadow-lg shadow-orange-500/20"
+                                            >
+                                                <Plus size={18} /> Vincular Produto
+                                            </button>
+                                        </div>
+
+                                        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800 overflow-hidden shadow-sm">
+                                            {selectedSupplierProfile.products?.length === 0 ? (
+                                                <div className="p-12 text-center">
+                                                    <Package size={40} className="mx-auto text-gray-200 mb-4" />
+                                                    <p className="text-gray-400 font-bold">Nenhum produto vinculado ainda.</p>
+                                                </div>
+                                            ) : (
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-800">
+                                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase">Produto</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase">SKU Fornecedor</th>
+                                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase text-right">Preço de Custo</th>
+                                                            <th className="px-6 py-4 text-center"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y dark:divide-gray-800">
+                                                        {selectedSupplierProfile.products.map((sp: any) => (
+                                                            <tr key={sp.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition group">
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500">
+                                                                            <Package size={16} />
+                                                                        </div>
+                                                                        <p className="font-black text-gray-800 dark:text-white text-sm">{sp.product.name}</p>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 font-mono text-xs text-gray-400">
+                                                                    {sp.sku || "-"}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="flex flex-col items-end">
+                                                                        <span className="font-black text-blue-600 dark:text-blue-400 text-sm">
+                                                                            {Number(sp.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                                        </span>
+                                                                        {sp.notes && <span className="text-[10px] text-gray-400">{sp.notes}</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <button
+                                                                        onClick={() => desvincularProduto(sp.id)}
+                                                                        className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* HISTORICO DE DESPESAS */}
+                                    <div className="space-y-4">
+                                        <h3 className="text-xl font-black dark:text-white flex items-center gap-2 px-4 pt-4">
+                                            <Receipt className="text-purple-500" size={24} />
+                                            Últimas Compras / Despesas
+                                        </h3>
+                                        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800 overflow-hidden shadow-sm">
+                                            {selectedSupplierProfile.expenses?.length === 0 ? (
+                                                <div className="p-12 text-center">
+                                                    <Receipt size={40} className="mx-auto text-gray-200 mb-4" />
+                                                    <p className="text-gray-400 font-bold">Nenhuma despesa registrada para este fornecedor.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y dark:divide-gray-800">
+                                                    {selectedSupplierProfile.expenses.map((exp: any) => (
+                                                        <div key={exp.id} className="flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl flex items-center justify-center">
+                                                                    <Calendar size={20} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-black text-gray-800 dark:text-white text-sm">{exp.description}</p>
+                                                                    <p className="text-xs font-bold text-gray-400">{format(new Date(exp.dueDate), "dd 'de' MMMM", { locale: ptBR })}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-black text-gray-900 dark:text-white">{Number(exp.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${exp.status === 'PAGO' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
+                                                                    {exp.status}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL VINCULAR PRODUTO */}
+            {isVincularModalOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center">
+                            <h3 className="text-xl font-black dark:text-white">Vincular Produto</h3>
+                            <button onClick={() => setIsVincularModalOpen(false)} className="text-gray-400 font-bold"><X size={24} /></button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase">Selecione o Produto</label>
+                                <select
+                                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-2xl outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                    value={vinculoForm.productId}
+                                    onChange={(e) => setVinculoForm({ ...vinculoForm, productId: e.target.value })}
+                                >
+                                    <option value="">Escolha...</option>
+                                    {allProducts.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase">Preço de Custo (R$)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-2xl outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                        value={vinculoForm.price}
+                                        onChange={(e) => setVinculoForm({ ...vinculoForm, price: e.target.value })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-gray-400 uppercase">SKU Fornecedor</label>
+                                    <input
+                                        type="text"
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-2xl outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                        placeholder="Código"
+                                        value={vinculoForm.sku}
+                                        onChange={(e) => setVinculoForm({ ...vinculoForm, sku: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-400 uppercase">Observações</label>
+                                <input
+                                    type="text"
+                                    className="w-full p-4 bg-gray-50 dark:bg-gray-800 border dark:border-gray-700 rounded-2xl outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                    value={vinculoForm.notes}
+                                    onChange={(e) => setVinculoForm({ ...vinculoForm, notes: e.target.value })}
+                                />
+                            </div>
+                            <button
+                                onClick={handleVincularProduto}
+                                disabled={salvando}
+                                className="w-full bg-orange-500 text-white p-5 rounded-2xl font-black text-lg shadow-xl shadow-orange-500/20 hover:bg-orange-600 transition disabled:bg-gray-400"
+                            >
+                                {salvando ? <Loader2 className="animate-spin mx-auto" strokeWidth={3} /> : "Confirmar Vínculo"}
                             </button>
                         </div>
                     </div>
