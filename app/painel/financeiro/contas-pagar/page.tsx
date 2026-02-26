@@ -714,6 +714,9 @@ export default function ContasPagarPage() {
                                         <div className="flex items-center gap-2">
                                             <Wallet size={14} className="text-gray-400" />
                                             <span className="text-xs font-black text-gray-500 uppercase">{exp.paymentMethod || "Não informado"}</span>
+                                            {exp.bankAccount && (
+                                                <span className="text-[9px] font-bold text-blue-500 uppercase block leading-none mt-0.5">({exp.bankAccount.name})</span>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">

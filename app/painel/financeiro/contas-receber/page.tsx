@@ -735,13 +735,16 @@ export default function ContasReceberPage() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <div className="flex flex-col">
                                             <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 font-bold text-[11px]">
                                                 {getPaymentIcon(inv.method)}
                                                 <span className="uppercase tracking-tighter">{inv.method || "A definir"}</span>
                                                 {(inv.method === 'PIX_CORA' || inv.method === 'BOLETO') && <CheckCircle size={10} className="text-blue-500" />}
                                             </div>
-                                        </td>
+                                            {inv.bankAccount && (
+                                                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-tighter mt-0.5">({inv.bankAccount.name})</span>
+                                            )}
+                                        </div>
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-gray-700 dark:text-gray-300 text-xs">

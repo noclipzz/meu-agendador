@@ -74,7 +74,7 @@ export async function GET(request: Request) {
         const [invoices, summaryInvoices] = await Promise.all([
             prisma.invoice.findMany({
                 where,
-                include: { client: true },
+                include: { client: true, bankAccount: true },
                 orderBy: { dueDate: "asc" }
             }),
             prisma.invoice.findMany({
