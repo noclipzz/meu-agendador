@@ -839,8 +839,6 @@ export default function ClientesPage() {
             </div>` : '<div style="margin-top: 40px;"></div>'}
 
             <div class="signature-footer-container">
-                ${customFooter ? `<div class="custom-footer-text">${customFooter}</div>` : ''}
-
                 ${signatures.client || signatures.prof || signatures.company ? `
                 <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
                     ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
@@ -848,8 +846,8 @@ export default function ClientesPage() {
                     ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
                 </div>` : ''}
 
-                <div class="footer">
-                    <strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}
+                <div class="footer" style="${customFooter ? 'font-size: 11px; color: #4b5563; font-weight: 500;' : ''}">
+                    ${customFooter ? customFooter : `<strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`}
                 </div>
             </div>
         </div>

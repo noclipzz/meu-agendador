@@ -177,7 +177,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         const dadosSync = await resSync.json();
                         setCompanyId(dadosSync.companyId);
                         setUserRole(dadosSync.role);
-                        setHasAccess(true); // Permite acesso para profissionais
+                        setUserPermissions(dadosSync.permissions || null);
+                        setUserPlan(dadosSync.plan || null);
+                        setIsOwner(!!dadosSync.isOwner);
+                        setHasAccess(true);
                         setVerificando(false);
                         return;
                     }
@@ -606,7 +609,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     // Bloqueio Hard para WhatsApp (Apenas OWNER)
                     const isWhatsAppBlocked = currentRoute?.key === 'whatsapp' && !isOwner;
 
-                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && !userPermissions[currentRoute.key] && !isOwner);
+                    // Mapeia sub-rotas do financeiro para a permissão principal 'financeiro'
+                    const finSubKeys = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares"];
+                    const permKeyForRoute = currentRoute ? (finSubKeys.includes(currentRoute.key) ? "financeiro" : currentRoute.key) : null;
+                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute] && !isOwner);
 
                     if (isDenied) {
                         return (

@@ -17,8 +17,20 @@ export async function GET() {
         if (owner) return NextResponse.json({ role: "OWNER", companyId: owner.id });
 
         // 2. Já está vinculado?
-        const existingMember = await prisma.teamMember.findUnique({ where: { clerkUserId: clerkId } });
-        if (existingMember) return NextResponse.json({ role: existingMember.role, companyId: existingMember.companyId });
+        const existingMember = await prisma.teamMember.findUnique({
+            where: { clerkUserId: clerkId },
+            include: { company: true }
+        });
+        if (existingMember) {
+            const ownerSub = await prisma.subscription.findUnique({ where: { userId: existingMember.company.ownerId } });
+            return NextResponse.json({
+                role: existingMember.role,
+                companyId: existingMember.companyId,
+                permissions: existingMember.permissions || { agenda: true, clientes: true },
+                plan: ownerSub?.plan || "INDIVIDUAL",
+                isOwner: false
+            });
+        }
 
         // 3. TENTA VINCULAR PELO E-MAIL (A MÁGICA ACONTECE AQUI)
         if (email) {
@@ -32,30 +44,37 @@ export async function GET() {
 
             if (memberToLink) {
                 // A) Atualiza a tabela de Login (TeamMember)
-                await prisma.teamMember.update({
+                const updatedMember = await prisma.teamMember.update({
                     where: { id: memberToLink.id },
                     data: { clerkUserId: clerkId }
                 });
 
                 // B) Atualiza a tabela da Agenda (Professional) para o Admin ver "Vinculado"
-                // Tenta encontrar um profissional na mesma empresa que tenha o mesmo nome ou email (se tiver)
-                // Como não temos o email no professional, vamos tentar atualizar todos que estão 'soltos' nessa empresa
-                // Ou melhor: Vamos assumir que o Admin criou o Professional e o TeamMember juntos.
-                // Vamos tentar achar o Professional criado recentemente ou tentar vincular.
-
-                // ATUALIZAÇÃO: Busca profissionais da empresa que não tem userId e tenta vincular
-                // Isso garante que a ficha fique verde.
                 await prisma.professional.updateMany({
                     where: {
                         companyId: memberToLink.companyId,
-                        userId: null // Só atualiza quem tá sem dono
-                        // Idealmente filtraríamos por nome, mas como o clerkId é único, 
-                        // o risco é baixo se o admin cadastrou certinho.
+                        email: { equals: email, mode: 'insensitive' },
+                        userId: null
                     },
                     data: { userId: clerkId }
                 });
 
-                return NextResponse.json({ role: memberToLink.role, companyId: memberToLink.companyId, status: "LINKED" });
+                // C) Busca o plano do dono da empresa para retornar ao layout
+                const company = await prisma.company.findUnique({ where: { id: memberToLink.companyId } });
+                let plan = "INDIVIDUAL";
+                if (company) {
+                    const ownerSub = await prisma.subscription.findUnique({ where: { userId: company.ownerId } });
+                    plan = ownerSub?.plan || "INDIVIDUAL";
+                }
+
+                return NextResponse.json({
+                    role: updatedMember.role,
+                    companyId: memberToLink.companyId,
+                    status: "LINKED",
+                    permissions: updatedMember.permissions || { agenda: true, clientes: true },
+                    plan,
+                    isOwner: false
+                });
             }
         }
 

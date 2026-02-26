@@ -108,6 +108,7 @@ export async function GET(request: Request) {
             summary: {
                 overdue: totalVencidos,
                 today: totalHoje,
+                upcoming: totalAVencer,
                 received: totalRecebidos,
                 total: totalGeral,
                 companyId: targetCompanyId

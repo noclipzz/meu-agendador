@@ -33,12 +33,16 @@ export default function ContasPagarPage() {
     const [editingExpense, setEditingExpense] = useState<any>(null);
     const [salvando, setSalvando] = useState(false);
     const [isViewOnly, setIsViewOnly] = useState(false);
+    const [isCustomDateModalOpen, setIsCustomDateModalOpen] = useState(false);
+    const [customDates, setCustomDates] = useState({ start: '', end: '' });
 
     // Filtros
     const [filters, setFilters] = useState({
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
         status: "TODAS",
+        category: "TODAS",
+        frequency: "TODAS",
         search: ""
     });
 
@@ -91,7 +95,7 @@ export default function ContasPagarPage() {
                 label = "Todo o período";
                 break;
             case "CUSTOM":
-                setIsSearchOpen(true);
+                setIsCustomDateModalOpen(true);
                 setIsPeriodSelectorOpen(false);
                 return;
         }
@@ -100,6 +104,20 @@ export default function ContasPagarPage() {
         setSelectedPeriod(capitalizedLabel);
         setFilters({ ...filters, start, end });
         setIsPeriodSelectorOpen(false);
+    };
+
+    const handleCustomDateSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!customDates.start || !customDates.end) return toast.error("Selecione as duas datas");
+
+        const start = customDates.start;
+        const end = customDates.end;
+
+        const label = `${format(new Date(start), 'dd/MM/yy')} - ${format(new Date(end), 'dd/MM/yy')}`;
+        setSelectedPeriod(label);
+        setFilters({ ...filters, start, end });
+        setIsCustomDateModalOpen(false);
+        setIsSearchOpen(true);
     };
 
     // Formulário
@@ -124,7 +142,7 @@ export default function ContasPagarPage() {
     useEffect(() => {
         loadData();
         loadSuppliers();
-    }, [filters.start, filters.end, filters.status]);
+    }, [filters.start, filters.end, filters.status, filters.category, filters.frequency]);
 
     async function loadData() {
         setLoading(true);
@@ -133,6 +151,8 @@ export default function ContasPagarPage() {
                 start: filters.start,
                 end: filters.end,
                 status: filters.status,
+                category: filters.category,
+                frequency: filters.frequency,
                 search: filters.search
             }).toString();
 
@@ -275,9 +295,13 @@ export default function ContasPagarPage() {
 
     const getStatusBadge = (exp: any) => {
         if (exp.status === "PAGO") return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-black uppercase">Pago</span>;
+        if (exp.status === "CANCELADO") return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-[10px] font-black uppercase">Cancelado</span>;
 
         const date = new Date(exp.dueDate);
-        if (isBefore(date, startOfMonth(new Date())) || (isBefore(date, new Date()) && !isToday(date))) {
+        const today = startOfDay(new Date());
+        const dueDate = startOfDay(date);
+
+        if (isBefore(dueDate, today)) {
             return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Atrasado</span>;
         }
         if (isToday(date)) return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Hoje</span>;
@@ -348,14 +372,21 @@ export default function ContasPagarPage() {
                     >
                         <Plus size={18} /> Adicionar
                     </button>
-                    <button className="bg-purple-900/10 text-purple-700 px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-purple-900/20 transition text-sm">
+                    <button
+                        onClick={() => {
+                            setFilters({ ...filters, frequency: filters.frequency === "MONTHLY" ? "TODAS" : "MONTHLY" });
+                            loadData();
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-black flex items-center gap-2 transition text-sm ${filters.frequency === 'MONTHLY' ? 'bg-purple-600 text-white' : 'bg-purple-900/10 text-purple-700 hover:bg-purple-900/20'}`}
+                    >
                         <Wallet size={18} /> Contas fixas
                     </button>
-                    <div className="relative group">
-                        <button className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-sm">
-                            Mais ações <ChevronDown size={16} />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => toast.info("Exportação em PDF iniciada...")}
+                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-sm"
+                    >
+                        <Download size={18} /> Exportar
+                    </button>
                     <button
                         onClick={() => setIsSearchOpen(!isSearchOpen)}
                         className={`px-5 py-2.5 rounded-xl font-black flex items-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
@@ -434,6 +465,37 @@ export default function ContasPagarPage() {
                                 <option value="CANCELADO">Cancelado</option>
                             </select>
                         </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categoria</label>
+                            <select
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold outline-none"
+                                value={filters.category}
+                                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                            >
+                                <option value="TODAS">Todas</option>
+                                <option value="ALUGUEL">Aluguel</option>
+                                <option value="AGUA_LUZ_INTERNET">Água/Luz/Internet</option>
+                                <option value="FORNECEDORES">Fornecedores</option>
+                                <option value="FOLHA_PAGAMENTO">Folha de Pagamento</option>
+                                <option value="IMPOSTOS">Impostos</option>
+                                <option value="MARKETING">Marketing</option>
+                                <option value="MANUTENCAO">Manutenção</option>
+                                <option value="OUTROS">Outros</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Frequência</label>
+                            <select
+                                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl p-3 text-sm font-bold outline-none"
+                                value={filters.frequency}
+                                onChange={(e) => setFilters({ ...filters, frequency: e.target.value })}
+                            >
+                                <option value="TODAS">Todas</option>
+                                <option value="ONCE">Única</option>
+                                <option value="MONTHLY">Mensal</option>
+                                <option value="YEARLY">Anual</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="flex justify-end gap-3 mt-6 pt-6 border-t dark:border-gray-700">
                         <button
@@ -442,6 +504,8 @@ export default function ContasPagarPage() {
                                     start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
                                     end: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
                                     status: "TODAS",
+                                    category: "TODAS",
+                                    frequency: "TODAS",
                                     search: ""
                                 });
                                 setSelectedPeriod(format(new Date(), "MMMM 'de' yyyy", { locale: ptBR }));
@@ -730,6 +794,24 @@ export default function ContasPagarPage() {
                                         <option value="CANCELADO">Cancelado</option>
                                     </select>
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Categoria</label>
+                                    <select
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
+                                        value={form.category}
+                                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                    >
+                                        <option value="OUTROS">Outros</option>
+                                        <option value="ALUGUEL">Aluguel</option>
+                                        <option value="AGUA_LUZ_INTERNET">Água/Luz/Internet</option>
+                                        <option value="FORNECEDORES">Fornecedores</option>
+                                        <option value="FOLHA_PAGAMENTO">Folha de Pagamento</option>
+                                        <option value="IMPOSTOS">Impostos</option>
+                                        <option value="MARKETING">Marketing</option>
+                                        <option value="MANUTENCAO">Manutenção</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -863,6 +945,53 @@ export default function ContasPagarPage() {
                                 Cancelar
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* MODAL PERÍODO CUSTOMIZADO */}
+            {isCustomDateModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[250] p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 scale-in-95">
+                        <button onClick={() => setIsCustomDateModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition">
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-6">
+                            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">
+                                Escolher Período
+                            </h2>
+                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Defina as datas de início e fim</p>
+                        </div>
+
+                        <form onSubmit={handleCustomDateSubmit} className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Data Inicial</label>
+                                <input
+                                    type="date"
+                                    required
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-red-500 transition"
+                                    value={customDates.start}
+                                    onChange={(e) => setCustomDates({ ...customDates, start: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Data Final</label>
+                                <input
+                                    type="date"
+                                    required
+                                    className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-red-500 transition"
+                                    value={customDates.end}
+                                    onChange={(e) => setCustomDates({ ...customDates, end: e.target.value })}
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full bg-red-600 text-white p-5 rounded-2xl font-black text-lg shadow-xl shadow-red-500/20 hover:bg-red-700 transition flex items-center justify-center gap-2 active:scale-95 mt-6"
+                            >
+                                <CheckCircle2 size={24} /> Aplicar Período
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}

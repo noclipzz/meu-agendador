@@ -15,6 +15,8 @@ export async function GET(req: Request) {
     const start = searchParams.get("start");
     const end = searchParams.get("end");
     const status = searchParams.get("status");
+    const category = searchParams.get("category");
+    const frequency = searchParams.get("frequency");
     const search = searchParams.get("search");
 
     // 1. Descobre a empresa
@@ -49,6 +51,12 @@ export async function GET(req: Request) {
     }
     if (status && status !== "TODAS") {
       where.status = status;
+    }
+    if (category && category !== "TODAS") {
+      where.category = category;
+    }
+    if (frequency && frequency !== "TODAS") {
+      where.frequency = frequency;
     }
     if (search) {
       where.OR = [
