@@ -22,7 +22,11 @@ export async function POST(request: Request): Promise<NextResponse> {
                         'application/pdf',
                         'image/jpg',
                         'application/x-pkcs12',
-                        'application/octet-stream'
+                        'application/octet-stream',
+                        'application/x-x509-ca-cert',
+                        'application/x-pem-file',
+                        'text/plain',
+                        'application/vnd.apple.keynote'
                     ],
                     addRandomSuffix: true,
                     tokenPayload: JSON.stringify({

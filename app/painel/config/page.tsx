@@ -265,6 +265,7 @@ export default function Configuracoes() {
             const newBlob = await upload(`cora_${type.toLowerCase()}_${file.name}`, file, {
                 access: 'public',
                 handleUploadUrl: '/api/upload/token',
+                contentType: 'application/octet-stream', // Força um tipo genérico aceito para evitar erros de MIME do navegador
             });
             if (type === 'CERT') setCoraCertUrl(newBlob.url);
             else setCoraKeyUrl(newBlob.url);
