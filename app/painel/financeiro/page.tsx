@@ -12,7 +12,7 @@ import {
     Loader2, X, ChevronLeft, ChevronRight, CreditCard, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 function ModalPortal({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export default function FinanceiroPage() {
         value: "",
         frequency: "ONCE",
         category: "Outros",
-        dueDate: new Date().toISOString().split('T')[0]
+        dueDate: format(new Date(), 'yyyy-MM-dd')
     });
 
     const [novaEntrada, setNovaEntrada] = useState({
@@ -65,7 +65,7 @@ export default function FinanceiroPage() {
         description: "",
         value: "",
         method: "PIX",
-        date: new Date().toISOString().split('T')[0]
+        date: format(new Date(), 'yyyy-MM-dd')
     });
 
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "Empresa", logo: "" });
@@ -151,9 +151,9 @@ export default function FinanceiroPage() {
             value: exp.value.toString(),
             category: exp.category,
             frequency: exp.frequency || "ONCE",
-            dueDate: (exp.dueDate || exp.date) && !isNaN(new Date(exp.dueDate || exp.date).getTime())
-                ? new Date(exp.dueDate || exp.date).toISOString().split('T')[0]
-                : new Date().toISOString().split('T')[0]
+            dueDate: (exp.dueDate || exp.date)
+                ? (exp.dueDate || exp.date).split('T')[0]
+                : format(new Date(), 'yyyy-MM-dd')
         });
         setModalDespesa(true);
     }
@@ -297,7 +297,7 @@ export default function FinanceiroPage() {
         if (!telefone) return toast.error("Cliente sem telefone cadastrado.");
 
         const valor = Number(fatura.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const dataVenc = format(new Date(fatura.dueDate), 'dd/MM/yyyy');
+        const dataVenc = format(parseISO(fatura.dueDate.split('T')[0]), 'dd/MM/yyyy');
         let mensagem = "";
 
         if (tipo === 'ATRASADO') {
@@ -468,7 +468,7 @@ export default function FinanceiroPage() {
                                 <div key={fat.id} className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 flex justify-between items-center group">
                                     <div>
                                         <p className="font-bold text-sm text-red-700 dark:text-red-300">{fat.client?.name || 'Cliente Avulso'}</p>
-                                        <p className="text-[10px] font-black text-red-400 uppercase">Venceu: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
+                                        <p className="text-[10px] font-black text-red-400 uppercase">Venceu: {format(parseISO(fat.dueDate.split('T')[0]), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <p className="font-black text-red-600">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -519,7 +519,7 @@ export default function FinanceiroPage() {
                                 <div key={fat.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border dark:border-gray-800 flex justify-between items-center group">
                                     <div>
                                         <p className="font-bold text-sm dark:text-white">{fat.client?.name || 'Cliente Avulso'}</p>
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Vence: {format(new Date(fat.dueDate), 'dd/MM/yyyy')}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Vence: {format(parseISO(fat.dueDate.split('T')[0]), 'dd/MM/yyyy')}</p>
                                     </div>
                                     <div className="text-right flex flex-col items-end gap-1">
                                         <p className="font-black dark:text-white">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -632,7 +632,7 @@ export default function FinanceiroPage() {
                                             {inv.client?.name || 'Cliente Avulso'}
                                         </span>
                                         <span className="text-[9px] font-bold text-gray-300 uppercase">
-                                            {format(new Date(inv.paidAt || inv.dueDate), 'dd/MM')}
+                                            {format(parseISO((inv.paidAt || inv.dueDate).split('T')[0]), 'dd/MM')}
                                         </span>
                                     </div>
                                 </div>
@@ -727,7 +727,7 @@ export default function FinanceiroPage() {
                         <tbody>
                             {dadosResumo?.allInvoices?.map((inv: any, i: number) => (
                                 <tr key={i} className="border-b border-gray-100">
-                                    <td className="p-2 font-mono">{format(new Date(inv.paidAt || inv.dueDate), 'dd/MM/yyyy')}</td>
+                                    <td className="p-2 font-mono">{format(parseISO((inv.paidAt || inv.dueDate).split('T')[0]), 'dd/MM/yyyy')}</td>
                                     <td className="p-2 font-bold uppercase">{inv.description}</td>
                                     <td className="p-2 uppercase">{inv.client?.name || 'Cliente Avulso'}</td>
                                     <td className="p-2"><span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">{inv.method || 'PIX'}</span></td>
@@ -803,7 +803,7 @@ export default function FinanceiroPage() {
                         <tbody>
                             {dadosResumo?.boletosVencidos?.map((fat: any, i: number) => (
                                 <tr key={i} className="border-b border-orange-100 bg-orange-50/30">
-                                    <td className="p-2 font-mono text-red-600 font-bold">{format(new Date(fat.dueDate), 'dd/MM/yyyy')}</td>
+                                    <td className="p-2 font-mono text-red-600 font-bold">{format(parseISO(fat.dueDate.split('T')[0]), 'dd/MM/yyyy')}</td>
                                     <td className="p-2 font-bold uppercase">{fat.client.name}</td>
                                     <td className="p-2 uppercase text-gray-500">{fat.description || 'Cobrança Avulsa'}</td>
                                     <td className="p-2 text-right font-black text-orange-700">R$ {Number(fat.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>

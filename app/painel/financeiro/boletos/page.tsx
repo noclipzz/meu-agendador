@@ -8,7 +8,7 @@ import {
     TrendingUp, TrendingDown, Layers, MoreHorizontal
 } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -52,7 +52,7 @@ export default function BoletosPage() {
         if (status === "PAGO") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400";
         if (status === "CANCELADO") return "bg-gray-100 text-gray-500";
 
-        const isVencido = new Date(dueDate) < new Date();
+        const isVencido = parseISO(dueDate.split('T')[0]) < startOfDay(new Date());
         if (isVencido) return "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400";
 
         return "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400";
@@ -62,7 +62,7 @@ export default function BoletosPage() {
         if (status === "PAGO") return "Liquidado";
         if (status === "CANCELADO") return "Cancelado";
 
-        const isVencido = new Date(dueDate) < new Date();
+        const isVencido = parseISO(dueDate.split('T')[0]) < startOfDay(new Date());
         return isVencido ? "Vencido" : "Aguardando";
     };
 
@@ -75,7 +75,7 @@ export default function BoletosPage() {
             if (filtroStatus === "PAGO") matchStatus = inv.status === "PAGO";
             else if (filtroStatus === "PENDENTE") matchStatus = inv.status === "PENDENTE";
             else if (filtroStatus === "ATRASADO") {
-                matchStatus = inv.status === "PENDENTE" && new Date(inv.dueDate) < new Date();
+                matchStatus = inv.status === "PENDENTE" && parseISO(inv.dueDate.split('T')[0]) < startOfDay(new Date());
             }
         }
 
@@ -131,11 +131,11 @@ export default function BoletosPage() {
                 </div>
                 <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-[2rem] shadow-sm border border-amber-100 dark:border-amber-900/30 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">A vencer</p>
-                    <h3 className="text-xl font-black text-amber-700 dark:text-amber-400">{formatCurrency(data?.filter((i: any) => i.status === "PENDENTE" && new Date(i.dueDate) >= new Date()).reduce((acc: any, curr: any) => acc + Number(curr.value), 0))}</h3>
+                    <h3 className="text-xl font-black text-amber-700 dark:text-amber-400">{formatCurrency(data?.filter((i: any) => i.status === "PENDENTE" && parseISO(i.dueDate.split('T')[0]) >= startOfDay(new Date())).reduce((acc: any, curr: any) => acc + Number(curr.value), 0))}</h3>
                 </div>
                 <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-[2rem] shadow-sm border border-red-100 dark:border-red-900/30 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Vencidos</p>
-                    <h3 className="text-xl font-black text-red-700 dark:text-red-400">{formatCurrency(data?.filter((i: any) => i.status === "PENDENTE" && new Date(i.dueDate) < new Date()).reduce((acc: any, curr: any) => acc + Number(curr.value), 0))}</h3>
+                    <h3 className="text-xl font-black text-red-700 dark:text-red-400">{formatCurrency(data?.filter((i: any) => i.status === "PENDENTE" && parseISO(i.dueDate.split('T')[0]) < startOfDay(new Date())).reduce((acc: any, curr: any) => acc + Number(curr.value), 0))}</h3>
                 </div>
             </div>
 
@@ -212,10 +212,10 @@ export default function BoletosPage() {
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-gray-700 dark:text-gray-300 text-xs">
-                                                    {format(new Date(inv.dueDate), "dd/MM/yyyy")}
+                                                    {format(parseISO(inv.dueDate.split('T')[0]), "dd/MM/yyyy")}
                                                 </span>
                                                 <span className="text-[9px] text-gray-400 font-black">
-                                                    {format(new Date(inv.dueDate), "EEEE", { locale: ptBR })}
+                                                    {format(parseISO(inv.dueDate.split('T')[0]), "EEEE", { locale: ptBR })}
                                                 </span>
                                             </div>
                                         </td>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, FileText, Download, Calendar as CalendarIcon, Filter, X, ChevronLeft, ChevronRight, TrendingUp, ArrowDownRight, MoreVertical, Pencil, Trash2, CheckCircle2, Eye, Receipt, CreditCard, Banknote, HelpCircle, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, CheckCircle, Barcode } from "lucide-react";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -390,7 +390,7 @@ export default function ContasReceberPage() {
         // Status
         let matchStatus = true;
         const statusReq = filters.status !== "TODAS" ? filters.status : filtroStatus;
-        const isVencido = new Date(inv.dueDate) < new Date() && inv.status === "PENDENTE";
+        const isVencido = parseISO(inv.dueDate.split('T')[0]) < startOfDay(new Date()) && inv.status === "PENDENTE";
 
         if (statusReq === "PAGO") {
             matchStatus = inv.status === "PAGO";
@@ -406,14 +406,14 @@ export default function ContasReceberPage() {
     }) || [];
 
     const getStatusStyle = (status: string, dueDate: string) => {
-        const isVencido = new Date(dueDate) < new Date() && status === "PENDENTE";
+        const isVencido = parseISO(dueDate.split('T')[0]) < startOfDay(new Date()) && status === "PENDENTE";
         if (status === "PAGO") return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400";
         if (isVencido) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
         return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400";
     };
 
     const getStatusLabel = (status: string, dueDate: string) => {
-        const isVencido = new Date(dueDate) < new Date() && status === "PENDENTE";
+        const isVencido = parseISO(dueDate.split('T')[0]) < startOfDay(new Date()) && status === "PENDENTE";
         if (status === "PAGO") return "Confirmado";
         if (isVencido) return "Atrasado";
         return "Pendente";
@@ -731,10 +731,10 @@ export default function ContasReceberPage() {
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-gray-700 dark:text-gray-300 text-xs">
-                                                    {format(new Date(inv.dueDate), "dd/MM/yyyy")}
+                                                    {format(parseISO(inv.dueDate.split('T')[0]), "dd/MM/yyyy")}
                                                 </span>
                                                 <span className="text-[9px] text-gray-400 font-black">
-                                                    {format(new Date(inv.dueDate), "EEEE", { locale: ptBR })}
+                                                    {format(parseISO(inv.dueDate.split('T')[0]), "EEEE", { locale: ptBR })}
                                                 </span>
                                             </div>
                                         </td>
@@ -856,7 +856,7 @@ export default function ContasReceberPage() {
                                             name="dueDate"
                                             type="date"
                                             className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
-                                            defaultValue={selectedInvoice?.dueDate ? format(new Date(selectedInvoice.dueDate), "yyyy-MM-dd") : ""}
+                                            defaultValue={selectedInvoice?.dueDate ? selectedInvoice.dueDate.split('T')[0] : ""}
                                             required
                                             disabled={modalType === "view"}
                                         />

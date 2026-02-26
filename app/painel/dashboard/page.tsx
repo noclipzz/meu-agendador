@@ -6,7 +6,7 @@ import {
     Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell, Megaphone
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -250,7 +250,7 @@ export default function DashboardPage() {
                                         <div key={b.id} className="flex justify-between text-sm items-center">
                                             <div>
                                                 <p className="text-gray-800 dark:text-gray-200 font-bold text-xs">{b.client?.name || 'Cliente'}</p>
-                                                <p className="text-gray-400 text-[9px] font-black uppercase">{b.dueDate ? format(new Date(b.dueDate), 'dd/MM') : '--/--'}</p>
+                                                <p className="text-gray-400 text-[9px] font-black uppercase">{b.dueDate ? format(parseISO(b.dueDate.split('T')[0]), 'dd/MM') : '--/--'}</p>
                                             </div>
                                             <span className="font-black text-gray-800 dark:text-white">R$ {Number(b.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                         </div>

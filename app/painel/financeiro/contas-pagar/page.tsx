@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, isToday, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, isToday, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
     TrendingDown, Plus, Search, Trash2, Pencil, X,
@@ -239,7 +239,7 @@ export default function ContasPagarPage() {
                     ...data,
                     description: `${data.description} (Cópia)`,
                     status: 'PENDENTE',
-                    dueDate: format(addMonths(new Date(data.dueDate), 1), 'yyyy-MM-dd')
+                    dueDate: format(addMonths(parseISO(data.dueDate.split('T')[0]), 1), 'yyyy-MM-dd')
                     // supplierId no backend pós refactor já resolve se for string vazia ou ID
                 })
             });
@@ -292,7 +292,7 @@ export default function ContasPagarPage() {
                     body: JSON.stringify({
                         ...data,
                         status: 'PENDENTE',
-                        dueDate: format(addMonths(new Date(data.dueDate), 1), 'yyyy-MM-dd')
+                        dueDate: format(addMonths(parseISO(data.dueDate.split('T')[0]), 1), 'yyyy-MM-dd')
                     })
                 });
             });
@@ -335,7 +335,7 @@ export default function ContasPagarPage() {
                         <hr/>
                         <p><strong>Descrição:</strong> ${exp.description}</p>
                         <p><strong>Valor:</strong> R$ ${Number(exp.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                        <p><strong>Data de Vencimento:</strong> ${format(new Date(exp.dueDate), 'dd/MM/yyyy')}</p>
+                        <p><strong>Data de Vencimento:</strong> ${format(parseISO(exp.dueDate.split('T')[0]), 'dd/MM/yyyy')}</p>
                         <p><strong>Status:</strong> ${exp.status}</p>
                         <p><strong>Fornecedor:</strong> ${exp.supplier?.name || 'Não informado'}</p>
                         <br/><br/>
@@ -371,14 +371,13 @@ export default function ContasPagarPage() {
         if (exp.status === "PAGO") return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[10px] font-black uppercase">Pago</span>;
         if (exp.status === "CANCELADO") return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-[10px] font-black uppercase">Cancelado</span>;
 
-        const date = new Date(exp.dueDate);
         const today = startOfDay(new Date());
-        const dueDate = startOfDay(date);
+        const dueDate = parseISO(exp.dueDate.split('T')[0]);
 
         if (isBefore(dueDate, today)) {
             return <span className="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Atrasado</span>;
         }
-        if (isToday(date)) return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Hoje</span>;
+        if (isToday(dueDate)) return <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Hoje</span>;
 
         return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[10px] font-black uppercase tracking-tighter">Pendente</span>;
     };
@@ -704,7 +703,7 @@ export default function ContasPagarPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <p className="text-sm font-bold text-gray-600 dark:text-gray-300">
-                                            {format(new Date(exp.dueDate), "dd/MM/yyyy", { locale: ptBR })}
+                                            {format(parseISO(exp.dueDate.split('T')[0]), "dd/MM/yyyy", { locale: ptBR })}
                                         </p>
                                     </td>
                                     <td className="px-6 py-4 text-center">
@@ -741,7 +740,7 @@ export default function ContasPagarPage() {
                                                     setEditingExpense(exp);
                                                     setForm({
                                                         ...exp,
-                                                        dueDate: format(new Date(exp.dueDate), 'yyyy-MM-dd'),
+                                                        dueDate: exp.dueDate.split('T')[0],
                                                         value: Number(exp.value).toString()
                                                     });
                                                     setIsViewOnly(false);
