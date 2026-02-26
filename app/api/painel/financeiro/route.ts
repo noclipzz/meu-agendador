@@ -201,7 +201,7 @@ export async function GET(request: Request) {
             prisma.stockLog.findMany({
                 where: {
                     product: { companyId: companyId },
-                    type: 'ADD',
+                    type: 'ENTRADA',
                     createdAt: { gte: inicioMes, lte: fimMes }
                 }
             })

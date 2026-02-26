@@ -120,11 +120,15 @@ export async function POST(req: Request) {
 
             // Cria o lote inicial se houver quantidade
             if (Number(body.quantity) > 0) {
+                const totalCost = body.costPrice ? Number(body.costPrice) * Number(body.quantity) : null;
+
                 await tx.productBatch.create({
                     data: {
                         productId: product.id,
                         quantity: body.quantity,
-                        expiryDate: body.expiryDate ? new Date(body.expiryDate) : null
+                        expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
+                        costPrice: body.costPrice ? Number(body.costPrice) : null,
+                        totalCost: totalCost
                     }
                 });
 
@@ -135,7 +139,9 @@ export async function POST(req: Request) {
                         oldStock: 0,
                         newStock: body.quantity,
                         type: "ENTRADA",
-                        reason: "Cadastro Inicial"
+                        reason: "Cadastro Inicial",
+                        costPrice: body.costPrice ? Number(body.costPrice) : null,
+                        totalCost: totalCost
                     }
                 });
             }
