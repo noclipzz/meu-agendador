@@ -138,10 +138,14 @@ export default function ContasPagarPage() {
     });
 
     const [suppliers, setSuppliers] = useState<any[]>([]);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [isBulkDuplicating, setIsBulkDuplicating] = useState(false);
 
     useEffect(() => {
         loadData();
         loadSuppliers();
+        setSelectedIds([]);
     }, [filters.start, filters.end, filters.status, filters.category, filters.frequency]);
 
     async function loadData() {
@@ -236,6 +240,7 @@ export default function ContasPagarPage() {
                     description: `${data.description} (Cópia)`,
                     status: 'PENDENTE',
                     dueDate: format(addMonths(new Date(data.dueDate), 1), 'yyyy-MM-dd')
+                    // supplierId no backend pós refactor já resolve se for string vazia ou ID
                 })
             });
             if (res.ok) {
@@ -246,6 +251,75 @@ export default function ContasPagarPage() {
         } catch (error) {
             toast.error("Erro ao duplicar");
         }
+    }
+
+    async function handleBulkDelete() {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Deseja excluir ${selectedIds.length} lançamentos selecionados?`)) return;
+
+        setIsBulkDeleting(true);
+        try {
+            const res = await fetch('/api/painel/financeiro/despesas', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            if (res.ok) {
+                toast.success(`${selectedIds.length} lançamentos excluídos`);
+                setSelectedIds([]);
+                loadData();
+            }
+        } catch (error) {
+            toast.error("Erro ao excluir em massa");
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    }
+
+    async function handleBulkDuplicate() {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Deseja duplicar ${selectedIds.length} lançamentos para o próximo mês?`)) return;
+
+        setIsBulkDuplicating(true);
+        try {
+            const promises = selectedIds.map(id => {
+                const exp = expenses.find(e => e.id === id);
+                if (!exp) return Promise.resolve();
+                const { id: _, createdAt, updatedAt, supplier, ...data } = exp;
+                return fetch('/api/painel/financeiro/despesas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...data,
+                        status: 'PENDENTE',
+                        dueDate: format(addMonths(new Date(data.dueDate), 1), 'yyyy-MM-dd')
+                    })
+                });
+            });
+
+            await Promise.all(promises);
+            toast.success(`${selectedIds.length} lançamentos duplicados`);
+            setSelectedIds([]);
+            loadData();
+        } catch (error) {
+            toast.error("Erro ao duplicar em massa");
+        } finally {
+            setIsBulkDuplicating(false);
+        }
+    }
+
+    function toggleSelectAll() {
+        if (selectedIds.length === expenses.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(expenses.map(exp => exp.id));
+        }
+    }
+
+    function toggleSelect(id: string) {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
     }
 
     function handlePrintReceipt(exp: any) {
@@ -310,7 +384,44 @@ export default function ContasPagarPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* Barra de Ações em Massa */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-300 border border-white/10">
+                    <div className="flex items-center gap-3 pr-6 border-r border-white/20">
+                        <div className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">
+                            {selectedIds.length}
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Selecionados</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleBulkDuplicate}
+                            disabled={isBulkDuplicating}
+                            className="px-4 py-2 hover:bg-white/10 rounded-xl transition flex items-center gap-2 text-sm font-bold text-emerald-400"
+                        >
+                            {isBulkDuplicating ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+                            Duplicar
+                        </button>
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="px-4 py-2 hover:bg-red-500/20 rounded-xl transition flex items-center gap-2 text-sm font-bold text-red-400"
+                        >
+                            {isBulkDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                            Excluir
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => setSelectedIds([])}
+                        className="ml-4 p-2 hover:bg-white/10 rounded-full transition text-gray-400"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+            )}
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -531,6 +642,14 @@ export default function ContasPagarPage() {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b dark:border-gray-800">
                             <tr>
+                                <th className="px-6 py-5 w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        checked={expenses.length > 0 && selectedIds.length === expenses.length}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Entidade</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Pagamento</th>
@@ -558,7 +677,15 @@ export default function ContasPagarPage() {
                                     </td>
                                 </tr>
                             ) : expenses.map(exp => (
-                                <tr key={exp.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition group">
+                                <tr key={exp.id} className={`hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition group ${selectedIds.includes(exp.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                                    <td className="px-6 py-4">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            checked={selectedIds.includes(exp.id)}
+                                            onChange={() => toggleSelect(exp.id)}
+                                        />
+                                    </td>
                                     <td className="px-6 py-4">
                                         <p className="font-black text-gray-800 dark:text-white text-sm">{exp.description}</p>
                                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{exp.category || "GERAL"}</p>

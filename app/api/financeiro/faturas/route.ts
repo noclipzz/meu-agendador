@@ -275,9 +275,9 @@ export async function PUT(req: Request) {
             where: { id },
             data: {
                 status,
-                value: value ? parseFloat(value) : undefined,
+                value: value ? parseFloat(value.toString().replace(',', '.')) : undefined,
                 description,
-                dueDate: dueDate ? new Date(dueDate) : undefined,
+                dueDate: dueDate ? new Date(`${dueDate.toString().split('T')[0]}T12:00:00`) : undefined,
                 method,
                 paidAt: status === "PAGO" ? new Date() : undefined
             }
@@ -296,13 +296,21 @@ export async function DELETE(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get("id");
+        const urlId = searchParams.get("id");
 
-        if (!id) return new NextResponse("ID não fornecido", { status: 400 });
+        // Tenta ler o corpo para exclusão em massa
+        let body: any = {};
+        try { body = await req.json(); } catch (e) { }
 
-        await prisma.invoice.delete({ where: { id } });
+        const idsToDelete = body.ids || (body.id ? [body.id] : (urlId ? [urlId] : []));
 
-        return NextResponse.json({ success: true });
+        if (idsToDelete.length === 0) return new NextResponse("ID não fornecido", { status: 400 });
+
+        await (prisma.invoice as any).deleteMany({
+            where: { id: { in: idsToDelete } }
+        });
+
+        return NextResponse.json({ success: true, count: idsToDelete.length });
     } catch (error) {
         console.error("ERRO_FATURA_DELETE:", error);
         return NextResponse.json({ error: "Erro ao excluir fatura" }, { status: 500 });

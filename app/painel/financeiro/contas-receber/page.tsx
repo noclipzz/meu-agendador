@@ -38,6 +38,8 @@ export default function ContasReceberPage() {
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
     const [clients, setClients] = useState<any[]>([]);
     const [formLoading, setFormLoading] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
     useEffect(() => {
         const label = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
@@ -206,6 +208,44 @@ export default function ContasReceberPage() {
 
     const [isEmitindoNfe, setIsEmitindoNfe] = useState(false);
     const [isGerandoCora, setIsGerandoCora] = useState(false);
+
+    async function handleBulkDelete() {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`Deseja excluir ${selectedIds.length} faturas selecionadas?`)) return;
+
+        setIsBulkDeleting(true);
+        try {
+            const res = await fetch('/api/financeiro/faturas', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            if (res.ok) {
+                toast.success(`${selectedIds.length} faturas excluídas`);
+                setSelectedIds([]);
+                carregarDados();
+            }
+        } catch (error) {
+            toast.error("Erro ao excluir em massa");
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    }
+
+    function toggleSelectAll() {
+        const invoices = data?.invoices || [];
+        if (selectedIds.length === invoices.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(invoices.map((inv: any) => inv.id));
+        }
+    }
+
+    function toggleSelect(id: string) {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    }
 
     async function gerarCobrancaCora(metodo: 'BOLETO' | 'PIX') {
         if (!selectedInvoice) return;
@@ -392,7 +432,36 @@ export default function ContasReceberPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* Barra de Ações em Massa */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-6 animate-in slide-in-from-bottom-4 duration-300 border border-white/10">
+                    <div className="flex items-center gap-3 pr-6 border-r border-white/20">
+                        <div className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">
+                            {selectedIds.length}
+                        </div>
+                        <span className="text-sm font-bold uppercase tracking-widest text-gray-400">Selecionados</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isBulkDeleting}
+                            className="px-4 py-2 hover:bg-red-500/20 rounded-xl transition flex items-center gap-2 text-sm font-bold text-red-400"
+                        >
+                            {isBulkDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                            Excluir faturas
+                        </button>
+                    </div>
+
+                    <button
+                        onClick={() => setSelectedIds([])}
+                        className="ml-4 p-2 hover:bg-white/10 rounded-full transition text-gray-400"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+            )}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -592,6 +661,14 @@ export default function ContasReceberPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50 dark:bg-gray-900/50 border-b dark:border-gray-700">
+                                <th className="px-6 py-5 w-10">
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                        checked={(data?.invoices?.length || 0) > 0 && selectedIds.length === (data?.invoices?.length || 0)}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Descrição</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Entidade (Cliente)</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Pagamento</th>
@@ -618,7 +695,15 @@ export default function ContasReceberPage() {
                                 </tr>
                             ) : (
                                 invoicesFiltradas.map((inv: any) => (
-                                    <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition group">
+                                    <tr key={inv.id} className={`hover:bg-gray-50 dark:hover:bg-gray-750 transition group ${selectedIds.includes(inv.id) ? 'bg-emerald-50/50 dark:bg-emerald-900/10' : ''}`}>
+                                        <td className="px-6 py-5">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                checked={selectedIds.includes(inv.id)}
+                                                onChange={() => toggleSelect(inv.id)}
+                                            />
+                                        </td>
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate max-w-[200px]">{inv.description || "Atendimento"}</span>

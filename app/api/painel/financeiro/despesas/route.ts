@@ -202,16 +202,18 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { id, ...data } = body;
 
+    if (!id) throw new Error("ID não informado");
+
     // Sanitização dos dados
     const updateData: any = {
       description: data.description,
-      value: data.value ? parseFloat(data.value) : undefined,
+      value: data.value ? Math.abs(parseFloat(data.value.toString().replace(',', '.'))) : undefined,
       category: data.category,
       status: data.status,
       paymentMethod: data.paymentMethod,
-      dueDate: data.dueDate ? new Date(`${data.dueDate}T12:00:00`) : undefined,
-      paidAt: data.paidAt ? new Date(`${data.paidAt}T12:00:00`) : undefined,
-      supplierId: data.supplierId,
+      dueDate: data.dueDate ? new Date(`${data.dueDate.split('T')[0]}T12:00:00`) : undefined,
+      paidAt: data.paidAt ? new Date(`${data.paidAt.split('T')[0]}T12:00:00`) : undefined,
+      supplierId: data.supplierId && data.supplierId.length > 5 ? data.supplierId : null,
       paymentAccount: data.paymentAccount,
       costCenter: data.costCenter,
       nfe: data.nfe,
@@ -220,15 +222,15 @@ export async function PUT(req: Request) {
       updatedBy: userName
     };
 
-    const updated = await prisma.expense.update({
+    const updated = await (prisma.expense as any).update({
       where: { id },
       data: updateData
     });
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: any) {
     console.error("ERRO_PUT_DESPESA:", error);
-    return NextResponse.json({ error: "Erro ao atualizar" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao atualizar", message: error.message }, { status: 500 });
   }
 }
 
@@ -237,12 +239,23 @@ export async function DELETE(req: Request) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    const { id, deleteSeries } = await req.json();
+    const body = await req.json();
+    const { id, ids, deleteSeries } = body;
+
+    // Supote para exclusão em massa
+    if (ids && Array.isArray(ids)) {
+      await (prisma.expense as any).deleteMany({
+        where: {
+          id: { in: ids }
+        }
+      });
+      return NextResponse.json({ success: true, count: ids.length });
+    }
 
     if (deleteSeries) {
-      const original = await prisma.expense.findUnique({ where: { id } });
+      const original = await (prisma.expense as any).findUnique({ where: { id } });
       if (original) {
-        await prisma.expense.deleteMany({
+        await (prisma.expense as any).deleteMany({
           where: {
             companyId: original.companyId,
             description: original.description,
@@ -252,11 +265,12 @@ export async function DELETE(req: Request) {
         });
       }
     } else {
-      await prisma.expense.delete({ where: { id } });
+      await (prisma.expense as any).delete({ where: { id } });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("ERRO_DELETE_DESPESA:", error);
     return NextResponse.json({ error: "Erro ao excluir" }, { status: 500 });
   }
 }
