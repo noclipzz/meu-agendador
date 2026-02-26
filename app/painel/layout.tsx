@@ -112,8 +112,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         async function verificarStatus() {
             try {
                 // 1. O SUPER CHECK traz tudo: Status de Pagamento, Plano, Role e CompanyID
-                let res = await fetch('/api/checkout');
+                let res = await fetch('/api/checkout', { cache: 'no-store' });
                 let dados = await res.json();
+                console.log("👤 [DEBUG LAYOUT] Dados Checkout:", { role: dados.role, plan: dados.plan, perms: !!dados.permissions, isOwner: dados.isOwner });
 
                 const acabouDePagar = window.location.search.includes('success=true');
                 const autoSync = window.location.search.includes('autoSync=true');
@@ -172,7 +173,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         return;
                     }
                     // Tenta o Sync para ver se ele foi convidado
-                    const resSync = await fetch('/api/sync');
+                    const resSync = await fetch('/api/sync', { cache: 'no-store' });
                     if (resSync.ok) {
                         const dadosSync = await resSync.json();
                         setCompanyId(dadosSync.companyId);

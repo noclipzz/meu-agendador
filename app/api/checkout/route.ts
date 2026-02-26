@@ -283,20 +283,42 @@ export async function GET() {
                 where: { userId: professional.company.ownerId }
             }));
 
-            const member = await queryWithRetry(() => prisma.teamMember.findUnique({
+            // Busca TeamMember por clerkUserId
+            let member = await queryWithRetry(() => prisma.teamMember.findUnique({
                 where: { clerkUserId: userId }
             }));
 
+            // FALLBACK: Se não encontrou por clerkUserId, tenta por email
+            if (!member && professional.email) {
+                console.log("⚠️ [CHECKOUT] TeamMember não encontrado por clerkUserId, tentando por email:", professional.email);
+                member = await queryWithRetry(() => prisma.teamMember.findFirst({
+                    where: {
+                        email: { equals: professional.email!, mode: 'insensitive' },
+                        companyId: professional.companyId
+                    }
+                }));
+
+                // Se encontrou por email, vincula o clerkUserId para próximas vezes
+                if (member) {
+                    console.log("✅ [CHECKOUT] TeamMember encontrado por email! Vinculando clerkUserId...");
+                    await prisma.teamMember.update({
+                        where: { id: member.id },
+                        data: { clerkUserId: userId }
+                    });
+                }
+            }
+
             const isActive = subPatrao?.status === "ACTIVE" && subPatrao.expiresAt && new Date(subPatrao.expiresAt) > new Date();
-            console.log("✅ [CHECKOUT] Identificado como STAFF");
+            console.log("✅ [CHECKOUT] Identificado como STAFF | member:", member?.id || "NULL", "| perms:", JSON.stringify(member?.permissions || "NENHUMA"));
 
             return NextResponse.json({
                 active: !!isActive,
                 plan: subPatrao?.plan,
-                role: member?.role || "PROFESSIONAL", // ✅ Agora usa o cargo real (ADMIN ou PROFESSIONAL)
+                role: member?.role || "PROFESSIONAL",
                 permissions: member?.permissions || { agenda: true, clientes: true },
                 companyId: professional.companyId,
-                companyName: professional.company.name
+                companyName: professional.company.name,
+                isOwner: false
             });
         }
 
