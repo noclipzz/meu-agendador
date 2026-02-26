@@ -134,7 +134,10 @@ export async function POST(req: Request) {
       debitCardTax: body.debitCardTax ? Number(body.debitCardTax) : 0,
       // Cora Integration
       coraClientId: body.coraClientId || null,
-      coraClientSecret: body.coraClientSecret || null
+      coraClientSecret: body.coraClientSecret || null,
+      coraFineRate: body.coraFineRate ? Number(body.coraFineRate) : 2.0,
+      coraInterestRate: body.coraInterestRate ? Number(body.coraInterestRate) : 1.0,
+      coraDiscountRate: body.coraDiscountRate ? Number(body.coraDiscountRate) : 0
     };
 
     if (existingConfig) {

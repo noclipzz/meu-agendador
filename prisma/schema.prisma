@@ -62,6 +62,9 @@ model Company {
   coraAccessToken              String?
   coraRefreshToken             String?
   coraTokenExpiry              DateTime?
+  coraFineRate                 Decimal?           @default(2.0)
+  coraInterestRate             Decimal?           @default(1.0)
+  coraDiscountRate             Decimal?           @default(0.0)
   bookings                     Booking[]
   clients                      Client[]
   expenses                     Expense[]

@@ -28,6 +28,8 @@ export default function ContasReceberPage() {
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+    const [pixData, setPixData] = useState<{ qrCode: string, emv: string } | null>(null);
     const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
 
     // Estados para Modais e Ações
@@ -205,7 +207,7 @@ export default function ContasReceberPage() {
     const [isEmitindoNfe, setIsEmitindoNfe] = useState(false);
     const [isGerandoCora, setIsGerandoCora] = useState(false);
 
-    async function gerarCobrancaCora(metodo: 'BOOT' | 'PIX') {
+    async function gerarCobrancaCora(metodo: 'BOLETO' | 'PIX') {
         if (!selectedInvoice) return;
         setIsGerandoCora(true);
 
@@ -227,9 +229,21 @@ export default function ContasReceberPage() {
         toast.promise(promise, {
             loading: `Gerando cobrança na Cora...`,
             success: (data) => {
+                if (metodo === 'PIX') {
+                    const emv = data.payment_options?.pix?.emv;
+                    const qrCode = data.payment_options?.pix?.image_url;
+                    if (emv || qrCode) {
+                        setPixData({ emv: emv || "", qrCode: qrCode || "" });
+                        setIsPixModalOpen(true);
+                        setIsModalOpen(false); // Fecha o modal de detalhes
+                        return `PIX pronto para pagamento!`;
+                    }
+                }
+
                 const url = data.payment_options?.bank_slip?.url;
                 if (url) {
                     window.open(url, '_blank');
+                    return `Abrindo boleto em nova aba...`;
                 }
                 return `Cobrança pronta com sucesso!`;
             },
@@ -806,7 +820,7 @@ export default function ContasReceberPage() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             type="button"
-                                            onClick={() => gerarCobrancaCora('BOOT')}
+                                            onClick={() => gerarCobrancaCora('BOLETO')}
                                             disabled={isGerandoCora || selectedInvoice?.status === 'PAGO'}
                                             className="w-full bg-blue-50 text-blue-600 border border-blue-200 p-4 rounded-2xl font-black text-sm hover:bg-blue-100 transition flex justify-center items-center gap-2"
                                         >
@@ -928,6 +942,66 @@ export default function ContasReceberPage() {
                                 <CheckCircle2 size={24} /> Aplicar Período
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL PIX CORA (QR CODE + COPIA E COLA) */}
+            {isPixModalOpen && pixData && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[250] p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 text-center animate-in zoom-in-95 duration-300">
+                        <button
+                            onClick={() => setIsPixModalOpen(false)}
+                            className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <div className="mb-6">
+                            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <QrCode size={32} />
+                            </div>
+                            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">
+                                Pagamento via PIX
+                            </h2>
+                            <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Escaneie o QR Code abaixo</p>
+                        </div>
+
+                        {pixData.qrCode && (
+                            <div className="bg-white p-4 rounded-3xl border-2 border-gray-100 dark:border-gray-800 mb-6 mx-auto w-fit">
+                                <img src={pixData.qrCode} alt="QR Code PIX" className="w-48 h-48" />
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase mb-1 block">Código Copia e Cola</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        readOnly
+                                        className="flex-1 bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-3 rounded-xl font-mono text-[10px] dark:text-gray-300 outline-none"
+                                        value={pixData.emv}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(pixData.emv);
+                                            toast.success("Código PIX copiado!");
+                                        }}
+                                        className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-700 transition active:scale-95"
+                                        title="Copiar código"
+                                    >
+                                        <Download size={18} className="rotate-180" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setIsPixModalOpen(false)}
+                                className="w-full bg-gray-900 text-white p-4 rounded-2xl font-black uppercase text-sm hover:bg-black transition active:scale-95 mt-4"
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

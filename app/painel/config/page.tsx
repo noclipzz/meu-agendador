@@ -78,6 +78,9 @@ export default function Configuracoes() {
     // --- CAMPOS CORA ---
     const [coraClientId, setCoraClientId] = useState("");
     const [coraClientSecret, setCoraClientSecret] = useState("");
+    const [coraFineRate, setCoraFineRate] = useState("2.0");
+    const [coraInterestRate, setCoraInterestRate] = useState("1.0");
+    const [coraDiscountRate, setCoraDiscountRate] = useState("0");
 
     const inputCertRef = useRef<HTMLInputElement>(null);
 
@@ -145,6 +148,9 @@ export default function Configuracoes() {
                 // Popula campos Cora
                 setCoraClientId(dataConfig.coraClientId || "");
                 setCoraClientSecret(dataConfig.coraClientSecret || "");
+                setCoraFineRate(String(dataConfig.coraFineRate || "2.0"));
+                setCoraInterestRate(String(dataConfig.coraInterestRate || "1.0"));
+                setCoraDiscountRate(String(dataConfig.coraDiscountRate || "0"));
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
@@ -257,7 +263,10 @@ export default function Configuracoes() {
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
                     codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"), certificadoA1Url, certificadoSenha,
                     creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
-                    coraClientId, coraClientSecret
+                    coraClientId, coraClientSecret,
+                    coraFineRate: parseFloat(coraFineRate || "0"),
+                    coraInterestRate: parseFloat(coraInterestRate || "0"),
+                    coraDiscountRate: parseFloat(coraDiscountRate || "0")
                 })
             });
 
@@ -645,6 +654,46 @@ export default function Configuracoes() {
                                     onChange={e => setCoraClientSecret(e.target.value)}
                                 />
                             </div>
+
+                            <div className="md:col-span-2 pt-4 border-t dark:border-gray-700 mt-2">
+                                <h4 className="text-[10px] font-black uppercase text-orange-600 tracking-widest mb-4">Regras de Cobrança (Boleto/PIX)</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Multa (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                            value={coraFineRate}
+                                            onChange={e => setCoraFineRate(e.target.value)}
+                                        />
+                                        <p className="text-[9px] text-gray-400 mt-1">Cobrada uma vez após o vencimento.</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Juros Mensal (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                            value={coraInterestRate}
+                                            onChange={e => setCoraInterestRate(e.target.value)}
+                                        />
+                                        <p className="text-[9px] text-gray-400 mt-1">Mora diária pro-rata.</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Desconto Antecipado (%)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 outline-none focus:ring-2 ring-orange-500 font-bold dark:text-white"
+                                            value={coraDiscountRate}
+                                            onChange={e => setCoraDiscountRate(e.target.value)}
+                                        />
+                                        <p className="text-[9px] text-gray-400 mt-1">Até 1 dia antes do vencimento.</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <p className="col-span-2 text-[10px] text-gray-400 ml-1">
                                 Ative a emissão de <strong>PIX e Boletos</strong> com baixas automáticas. Obtenha as chaves no painel da Cora.
                             </p>

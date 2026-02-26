@@ -34,6 +34,9 @@ export async function getCoraValidToken(companyId: string) {
             coraAccessToken: true,
             coraRefreshToken: true,
             coraTokenExpiry: true,
+            coraFineRate: true,
+            coraInterestRate: true,
+            coraDiscountRate: true,
         },
     });
 
@@ -41,46 +44,54 @@ export async function getCoraValidToken(companyId: string) {
         throw new Error('Empresa sem credenciais Cora configuradas.');
     }
 
-    // Se o token ainda é válido, retorna ele mesmo
-    if (company.coraAccessToken && company.coraTokenExpiry && new Date(company.coraTokenExpiry) > new Date()) {
-        return company.coraAccessToken;
+    // Retorna o token e as taxas para uso na criação da cobrança
+    let accessToken = company.coraAccessToken;
+
+    if (!company.coraAccessToken || !company.coraTokenExpiry || new Date(company.coraTokenExpiry) <= new Date()) {
+        try {
+            console.log(`🔐 [CORA] Autenticando Company: ${companyId}`);
+            const agent = getCoraAgent();
+
+            const params = new URLSearchParams();
+            params.append('grant_type', 'client_credentials');
+            params.append('client_id', company.coraClientId);
+
+            const response = await axios.post(CORA_AUTH_URL, params.toString(), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                httpsAgent: agent
+            });
+
+            console.log("✅ [CORA] Autenticado!");
+
+            const { access_token, expires_in, refresh_token } = response.data;
+            const expiryDate = new Date();
+            expiryDate.setSeconds(expiryDate.getSeconds() + expires_in - 60);
+
+            await db.company.update({
+                where: { id: companyId },
+                data: {
+                    coraAccessToken: access_token,
+                    coraRefreshToken: refresh_token || company.coraRefreshToken,
+                    coraTokenExpiry: expiryDate,
+                },
+            });
+
+            accessToken = access_token;
+        } catch (error: any) {
+            const errInfo = error.response?.data || error.message;
+            console.error('❌ [CORA_AUTH_ERROR]:', JSON.stringify(errInfo));
+            throw new Error(`Cora Auth: ${JSON.stringify(errInfo)}`);
+        }
     }
 
-    // No ambiente de Stage da Cora com mTLS, a autenticação geralmente espera o client_id no corpo
-    try {
-        console.log(`🔐 [CORA] Autenticando Company: ${companyId}`);
-        const agent = getCoraAgent();
-
-        const params = new URLSearchParams();
-        params.append('grant_type', 'client_credentials');
-        params.append('client_id', company.coraClientId);
-
-        const response = await axios.post(CORA_AUTH_URL, params.toString(), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            httpsAgent: agent
-        });
-
-        console.log("✅ [CORA] Autenticado!");
-
-        const { access_token, expires_in, refresh_token } = response.data;
-        const expiryDate = new Date();
-        expiryDate.setSeconds(expiryDate.getSeconds() + expires_in - 60);
-
-        await db.company.update({
-            where: { id: companyId },
-            data: {
-                coraAccessToken: access_token,
-                coraRefreshToken: refresh_token || company.coraRefreshToken,
-                coraTokenExpiry: expiryDate,
-            },
-        });
-
-        return access_token;
-    } catch (error: any) {
-        const errInfo = error.response?.data || error.message;
-        console.error('❌ [CORA_AUTH_ERROR]:', JSON.stringify(errInfo));
-        throw new Error(`Cora Auth: ${JSON.stringify(errInfo)}`);
-    }
+    return {
+        token: accessToken,
+        rules: {
+            fine: Number(company.coraFineRate || 0),
+            interest: Number(company.coraInterestRate || 0),
+            discount: Number(company.coraDiscountRate || 0)
+        }
+    };
 }
 
 export async function createCoraCharge(companyId: string, invoiceId: string) {
@@ -103,7 +114,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         };
     }
 
-    const token = await getCoraValidToken(companyId);
+    const { token, rules } = await getCoraValidToken(companyId);
 
     if (!invoice.client) throw new Error('Cliente não vinculado à fatura.');
 
@@ -113,7 +124,7 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
 
         const totalAmount = Math.round(Number(invoice.value) * 100);
 
-        const payload = {
+        const payload: any = {
             amount: totalAmount,
             code: invoice.id,
             customer: {
@@ -135,6 +146,24 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
                 due_date: invoice.dueDate.toISOString().split('T')[0],
             },
         };
+
+        // Adiciona Multa se configurado
+        if (rules.fine > 0) {
+            payload.payment_terms.fine = { rate: rules.fine };
+        }
+
+        // Adiciona Juros se configurado
+        if (rules.interest > 0) {
+            payload.payment_terms.interest = { rate: rules.interest };
+        }
+
+        // Adiciona Desconto se configurado
+        if (rules.discount > 0) {
+            payload.payment_terms.discount = {
+                type: 'PERCENT',
+                value: rules.discount
+            };
+        }
 
         console.log("📤 [CORA] Enviando Payload:", JSON.stringify(payload));
 
