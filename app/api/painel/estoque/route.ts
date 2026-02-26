@@ -85,7 +85,7 @@ export async function GET(req: Request) {
         return NextResponse.json(products);
     } catch (error) {
         console.error("ERRO_GET_ESTOQUE:", error);
-        return new NextResponse("Erro ao buscar estoque", { status: 500 });
+        return NextResponse.json({ error: "Erro ao buscar estoque", debug: String(error) }, { status: 500 });
     }
 }
 
