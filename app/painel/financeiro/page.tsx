@@ -14,6 +14,8 @@ import {
 import { toast } from "sonner";
 import { format, addMonths, subMonths, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import axios from 'axios';
+import { formatarMoeda, desformatarMoeda } from '@/lib/validators';
 
 function ModalPortal({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
@@ -148,7 +150,7 @@ export default function FinanceiroPage() {
         setNovaDespesa({
             id: exp.id,
             description: exp.description,
-            value: exp.value.toString(),
+            value: exp.value ? formatarMoeda(exp.value.toString()) : "",
             category: exp.category,
             frequency: exp.frequency || "ONCE",
             dueDate: (exp.dueDate || exp.date)
@@ -166,7 +168,7 @@ export default function FinanceiroPage() {
             const res = await fetch('/api/painel/financeiro/despesas', {
                 method: metodo,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(novaDespesa)
+                body: JSON.stringify({ ...novaDespesa, value: desformatarMoeda(String(novaDespesa.value)) })
             });
             if (res.ok) {
                 toast.success(novaDespesa.id ? "Alteração salva!" : "Gasto registrado!");
@@ -187,6 +189,7 @@ export default function FinanceiroPage() {
         // Se o usuário digitou um nome mas não selecionou no dropdown, usamos esse nome na descrição
         const dadosParaEnviar = {
             ...novaEntrada,
+            value: desformatarMoeda(String(novaEntrada.value)),
             description: novaEntrada.description || (buscaCliente && !novaEntrada.clientId ? `Entrada: ${buscaCliente}` : "Entrada Manual")
         };
 
@@ -946,13 +949,13 @@ export default function FinanceiroPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$)</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white transition-all"
-                                        placeholder="0.00"
+                                        placeholder="R$ 0,00"
                                         value={novaEntrada.value}
-                                        onChange={e => setNovaEntrada({ ...novaEntrada, value: e.target.value })}
+                                        onChange={e => setNovaEntrada({ ...novaEntrada, value: formatarMoeda(e.target.value) })}
                                     />
                                 </div>
                                 <div>
@@ -1015,13 +1018,13 @@ export default function FinanceiroPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$)</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-red-500 font-bold dark:text-white transition-all"
-                                        placeholder="0.00"
+                                        placeholder="R$ 0,00"
                                         value={novaDespesa.value}
-                                        onChange={e => setNovaDespesa({ ...novaDespesa, value: e.target.value })}
+                                        onChange={e => setNovaDespesa({ ...novaDespesa, value: formatarMoeda(e.target.value) })}
                                     />
                                 </div>
                                 <div>

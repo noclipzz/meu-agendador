@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, FileText, Download, Calendar as CalendarIcon, Filter, X, ChevronLeft, ChevronRight, TrendingUp, ArrowDownRight, MoreVertical, Pencil, Trash2, CheckCircle2, Eye, Receipt, CreditCard, Banknote, HelpCircle, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, CheckCircle, Barcode } from "lucide-react";
+import { Calendar as CalIcon, Filter, Search, Plus, User, FileText, CheckCircle, Clock, AlertTriangle, FileCheck, Trash2, Box, Info, X, MapPin, Phone, MessageSquare, Download, Hash, ShieldCheck, UploadCloud, TrendingUp, HelpCircle, ArrowDownRight, MoreVertical, Pencil, CheckCircle2, Eye, Receipt, CreditCard, Banknote, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, Barcode, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -356,6 +358,7 @@ export default function ContasReceberPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...payload,
+                    value: desformatarMoeda(String(payload.value)),
                     id: selectedInvoice?.id,
                     companyId
                 })
@@ -841,11 +844,11 @@ export default function ContasReceberPage() {
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$)</label>
                                         <input
                                             name="value"
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0,00"
+                                            type="text"
+                                            placeholder="R$ 0,00"
                                             className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
-                                            defaultValue={selectedInvoice?.value || ""}
+                                            defaultValue={selectedInvoice?.value ? formatarMoeda(selectedInvoice.value.toString()) : ""}
+                                            onChange={(e) => e.target.value = formatarMoeda(e.target.value)}
                                             required
                                             disabled={modalType === "view"}
                                         />

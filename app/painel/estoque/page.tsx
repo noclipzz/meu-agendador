@@ -5,6 +5,7 @@ import { Plus, Search, Package, AlertTriangle, Trash2, Save, X, ArrowUpCircle, A
 import { toast } from "sonner";
 import { format, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { ModalPortal } from "../../../components/ui/ModalPortal";
 
@@ -51,7 +52,7 @@ export default function EstoquePage() {
 
     function abrirFicha(produto: any) {
         setProdutoSelecionado(produto);
-        setFormBasico({ name: produto.name, unit: produto.unit, minStock: produto.minStock, costPrice: produto.costPrice || "" });
+        setFormBasico({ name: produto.name, unit: produto.unit, minStock: produto.minStock, costPrice: produto.costPrice ? formatarMoeda(produto.costPrice) : "" });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
         setQtdInput("");
@@ -84,7 +85,7 @@ export default function EstoquePage() {
                         name: formBasico.name,
                         unit: formBasico.unit,
                         minStock: formBasico.minStock,
-                        costPrice: formBasico.costPrice,
+                        costPrice: desformatarMoeda(formBasico.costPrice),
                         quantity: qtdInput,
                         expiryDate: validadeInput
                     })
@@ -108,7 +109,7 @@ export default function EstoquePage() {
                     amountAdjustment: qtdInput,
                     expiryDate: validadeInput,
                     reason: motivoInput,
-                    costPrice: costPriceInput
+                    costPrice: desformatarMoeda(costPriceInput)
                 })
             });
 
@@ -131,7 +132,7 @@ export default function EstoquePage() {
                 id: produtoSelecionado.id,
                 name: formBasico.name,
                 minStock: formBasico.minStock,
-                costPrice: formBasico.costPrice
+                costPrice: desformatarMoeda(formBasico.costPrice)
             })
         });
         if (res.ok) {
@@ -259,7 +260,7 @@ export default function EstoquePage() {
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Preço de Custo (Opcional)</label>
-                                            <input type="number" step="0.01" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0.00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: e.target.value })} />
+                                            <input type="text" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Validade (Opcional)</label>
@@ -291,7 +292,7 @@ export default function EstoquePage() {
                                                 <>
                                                     <div className="md:w-32">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Custo (Un)</label>
-                                                        <input type="number" step="0.01" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="R$ 0,00" value={costPriceInput} onChange={e => setCostPriceInput(e.target.value)} title="Custo individual por unidade/litro/kg" />
+                                                        <input type="text" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="R$ 0,00" value={costPriceInput} onChange={e => setCostPriceInput(formatarMoeda(e.target.value))} title="Custo individual por unidade/litro/kg" />
                                                     </div>
                                                     <div className="md:w-48">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
@@ -374,7 +375,7 @@ export default function EstoquePage() {
                                         <div><label className="text-xs font-bold text-gray-400 uppercase">Nome</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} /></div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input type="number" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
-                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo (R$)</label><input type="number" step="0.01" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: e.target.value })} /></div>
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo</label><input type="text" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} /></div>
                                         </div>
                                         <button onClick={atualizarDadosBasicos} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">Salvar Alterações</button>
                                     </div>

@@ -12,6 +12,8 @@ import {
     Truck, Wallet, Hash, Loader2, Check, Printer, Copy, Eye,
     MoreVertical
 } from "lucide-react";
+import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 export default function ContasPagarPage() {
     const [loading, setLoading] = useState(true);
@@ -187,10 +189,11 @@ export default function ContasPagarPage() {
 
         try {
             const method = editingExpense ? 'PUT' : 'POST';
+            const bodyData = editingExpense ? { ...form, id: editingExpense.id, value: desformatarMoeda(String(form.value)) } : { ...form, value: desformatarMoeda(String(form.value)) };
             const res = await fetch('/api/painel/financeiro/despesas', {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editingExpense ? { ...form, id: editingExpense.id } : form)
+                body: JSON.stringify(bodyData)
             });
 
             if (res.ok) {
@@ -722,8 +725,9 @@ export default function ContasPagarPage() {
                                                     setEditingExpense(exp);
                                                     setForm({
                                                         ...exp,
-                                                        dueDate: format(new Date(exp.dueDate), 'yyyy-MM-dd'),
-                                                        value: Number(exp.value).toString()
+                                                        supplierId: exp.supplierId || "",
+                                                        value: exp.value ? formatarMoeda(exp.value.toString()) : "",
+                                                        dueDate: exp.dueDate ? format(parseISO(exp.dueDate), 'yyyy-MM-dd') : "",
                                                     });
                                                     setIsViewOnly(true);
                                                     setIsModalOpen(true);
@@ -740,8 +744,9 @@ export default function ContasPagarPage() {
                                                     setEditingExpense(exp);
                                                     setForm({
                                                         ...exp,
+                                                        supplierId: exp.supplierId || "",
                                                         dueDate: exp.dueDate.split('T')[0],
-                                                        value: Number(exp.value).toString()
+                                                        value: exp.value ? formatarMoeda(exp.value.toString()) : "",
                                                     });
                                                     setIsViewOnly(false);
                                                     setIsModalOpen(true);
@@ -855,15 +860,14 @@ export default function ContasPagarPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Valor (R$) *</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Valor (R$) *</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
                                         className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
-                                        placeholder="0,00"
+                                        placeholder="R$ 0,00"
                                         disabled={isViewOnly}
                                         value={form.value}
-                                        onChange={(e) => setForm({ ...form, value: e.target.value })}
+                                        onChange={e => setForm({ ...form, value: formatarMoeda(e.target.value) })}
                                     />
                                 </div>
                                 <div className="space-y-2">

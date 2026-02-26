@@ -6,6 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ptBR } from "date-fns/locale";
+import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 
 export default function NotasFiscaisPage() {
     const [loading, setLoading] = useState(true);
@@ -51,11 +52,11 @@ export default function NotasFiscaisPage() {
         codigoTributacao: "",
         codigoCnae: "",
         descricaoAtividade: "",
-        valorServicos: 0,
+        valorServicos: "",
         baseCalculo: 0,
         aliquota: 0,
-        valorDeducoes: 0,
-        descontos: 0,
+        valorDeducoes: "",
+        descontos: "",
         valorIss: 0,
         issRetido: false,
         construcaoCivil: false,
@@ -121,7 +122,7 @@ export default function NotasFiscaisPage() {
 
     // Calcula Totais quando valores mudam
     useEffect(() => {
-        const base = Number(form.valorServicos) - Number(form.valorDeducoes) - Number(form.descontos);
+        const base = desformatarMoeda(String(form.valorServicos)) - desformatarMoeda(String(form.valorDeducoes)) - desformatarMoeda(String(form.descontos));
         const calcIss = (base * Number(form.aliquota)) / 100;
         const calcInss = (base * Number(form.percInss)) / 100;
         const calcCofins = (base * Number(form.percCofins)) / 100;
@@ -462,15 +463,15 @@ export default function NotasFiscaisPage() {
                                         <div className="col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                                             <div>
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Valor dos Serviços (R$)*</label>
-                                                <input required type="number" step="0.01" value={form.valorServicos} onChange={e => setForm({ ...form, valorServicos: Number(e.target.value) })} className="w-full bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-900/40 rounded-xl p-3 text-sm font-black text-emerald-700 dark:text-emerald-400 outline-none focus:ring-2 ring-emerald-500" />
+                                                <input required type="text" value={form.valorServicos} onChange={e => setForm({ ...form, valorServicos: formatarMoeda(e.target.value) })} className="w-full bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-900/40 rounded-xl p-3 text-sm font-black text-emerald-700 dark:text-emerald-400 outline-none focus:ring-2 ring-emerald-500" />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Deduções (R$)</label>
-                                                <input type="number" step="0.01" value={form.valorDeducoes} onChange={e => setForm({ ...form, valorDeducoes: Number(e.target.value) })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
+                                                <input type="text" value={form.valorDeducoes} onChange={e => setForm({ ...form, valorDeducoes: formatarMoeda(e.target.value) })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Descontos (R$)</label>
-                                                <input type="number" step="0.01" value={form.descontos} onChange={e => setForm({ ...form, descontos: Number(e.target.value) })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
+                                                <input type="text" value={form.descontos} onChange={e => setForm({ ...form, descontos: formatarMoeda(e.target.value) })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
                                             </div>
                                             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 flex flex-col justify-center items-center">
                                                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Base P/ Cálculo</span>

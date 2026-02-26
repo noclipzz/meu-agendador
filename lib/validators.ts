@@ -97,3 +97,17 @@ export function formatarCEP(value: string): string {
     if (raw.length <= 5) return raw;
     return `${raw.slice(0, 5)}-${raw.slice(5)}`;
 }
+
+export function formatarMoeda(value: string | number): string {
+    if (value === undefined || value === null) return "";
+    let cleanValue = String(value).replace(/\D/g, "");
+    if (!cleanValue) return "";
+    let numericalValue = (Number(cleanValue) / 100).toFixed(2);
+    return Number(numericalValue).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+export function desformatarMoeda(value: string): number {
+    if (!value) return 0;
+    let cleanValue = value.replace(/[^\d,-]/g, '').replace(',', '.');
+    return Number(cleanValue) || 0;
+}
