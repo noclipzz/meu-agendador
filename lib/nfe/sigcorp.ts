@@ -12,10 +12,16 @@ function cleanXMLWhitespace(xml: string) {
  */
 function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, password: string) {
     try {
-        // Converte P12/PFX para resgatar Chave Privada e Certificado
-        const p12Der = forge.util.decode64(Buffer.isBuffer(pfxBase64OrBuffer) ? pfxBase64OrBuffer.toString('base64') : pfxBase64OrBuffer);
-        const p12Asn1 = forge.asn1.fromDer(p12Der);
-        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, password);
+        const trimmedPassword = (password || "").trim();
+
+        // Converte P12/PFX para o formato binário que o node-forge espera
+        // Se for Buffer (veio do axios), usamos 'binary'. Se for string (base64), decodificamos.
+        const p12Binary = Buffer.isBuffer(pfxBase64OrBuffer)
+            ? pfxBase64OrBuffer.toString('binary')
+            : forge.util.decode64(pfxBase64OrBuffer);
+
+        const p12Asn1 = forge.asn1.fromDer(p12Binary);
+        const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, trimmedPassword);
 
         let privateKeyForge: any = null;
         let certForge: any = null;
