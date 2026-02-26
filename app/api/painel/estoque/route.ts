@@ -103,6 +103,7 @@ export async function POST(req: Request) {
                     quantity: body.quantity || 0,
                     unit: body.unit || "UN",
                     minStock: body.minStock || 5,
+                    costPrice: body.costPrice ? Number(body.costPrice) : 0,
                     companyId: company.id,
                 }
             });
@@ -151,15 +152,15 @@ export async function PUT(req: Request) {
         }
 
         const body = await req.json();
-        const { id, operation, amountAdjustment, expiryDate, reason, name, minStock } = body;
+        const { id, operation, amountAdjustment, expiryDate, reason, name, minStock, costPrice } = body;
 
         console.log("Recebendo PUT Estoque:", { id, operation, amountAdjustment, expiryDate });
 
-        // 1. Edição Simples (Nome/Mínimo)
+        // 1. Edição Simples (Nome/Mínimo/Preço Custo)
         if (!operation) {
             const updated = await prisma.product.update({
                 where: { id },
-                data: { name, minStock: Number(minStock) }
+                data: { name, minStock: Number(minStock), costPrice: costPrice ? Number(costPrice) : null }
             });
             return NextResponse.json(updated);
         }

@@ -27,7 +27,7 @@ export default function EstoquePage() {
     const [operacao, setOperacao] = useState<"ADD" | "REMOVE">("ADD");
 
     // Form de Criação/Edição Básica
-    const [formBasico, setFormBasico] = useState({ name: "", unit: "UN", minStock: "5" });
+    const [formBasico, setFormBasico] = useState({ name: "", unit: "UN", minStock: "5", costPrice: "" });
 
     useEffect(() => { carregarEstoque(); }, []);
 
@@ -50,7 +50,7 @@ export default function EstoquePage() {
 
     function abrirFicha(produto: any) {
         setProdutoSelecionado(produto);
-        setFormBasico({ name: produto.name, unit: produto.unit, minStock: produto.minStock });
+        setFormBasico({ name: produto.name, unit: produto.unit, minStock: produto.minStock, costPrice: produto.costPrice || "" });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
         setQtdInput("");
@@ -61,7 +61,7 @@ export default function EstoquePage() {
 
     function abrirNovoProduto() {
         setProdutoSelecionado(null);
-        setFormBasico({ name: "", unit: "UN", minStock: "5" });
+        setFormBasico({ name: "", unit: "UN", minStock: "5", costPrice: "" });
         setQtdInput("");
         setValidadeInput("");
         setModalOpen(true);
@@ -81,6 +81,7 @@ export default function EstoquePage() {
                         name: formBasico.name,
                         unit: formBasico.unit,
                         minStock: formBasico.minStock,
+                        costPrice: formBasico.costPrice,
                         quantity: qtdInput,
                         expiryDate: validadeInput
                     })
@@ -124,7 +125,8 @@ export default function EstoquePage() {
             body: JSON.stringify({
                 id: produtoSelecionado.id,
                 name: formBasico.name,
-                minStock: formBasico.minStock
+                minStock: formBasico.minStock,
+                costPrice: formBasico.costPrice
             })
         });
         if (res.ok) {
@@ -251,6 +253,10 @@ export default function EstoquePage() {
                                             <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} />
                                         </div>
                                         <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Preço de Custo (Opcional)</label>
+                                            <input type="number" step="0.01" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0.00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: e.target.value })} />
+                                        </div>
+                                        <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Validade (Opcional)</label>
                                             <input type="date" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
                                         </div>
@@ -345,7 +351,10 @@ export default function EstoquePage() {
                                 <div className="space-y-6 animate-in fade-in">
                                     <div className="space-y-4">
                                         <div><label className="text-xs font-bold text-gray-400 uppercase">Nome</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} /></div>
-                                        <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input type="number" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo (R$)</label><input type="number" step="0.01" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: e.target.value })} /></div>
+                                        </div>
                                         <button onClick={atualizarDadosBasicos} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">Salvar Alterações</button>
                                     </div>
 
