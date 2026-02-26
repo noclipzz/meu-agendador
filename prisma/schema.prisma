@@ -306,6 +306,8 @@ model ProductBatch {
   id         String    @id @default(cuid())
   productId  String
   quantity   Decimal
+  costPrice  Decimal?
+  totalCost  Decimal?
   expiryDate DateTime?
   createdAt  DateTime  @default(now())
   product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -317,9 +319,11 @@ model StockLog {
   quantity  Decimal
   oldStock  Decimal
   newStock  Decimal
-  type      String
-  reason    String?
-  createdAt DateTime @default(now())
+  type       String
+  reason     String?
+  costPrice  Decimal?
+  totalCost  Decimal?
+  createdAt  DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 

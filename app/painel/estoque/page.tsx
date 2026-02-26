@@ -24,6 +24,7 @@ export default function EstoquePage() {
     const [qtdInput, setQtdInput] = useState("");
     const [validadeInput, setValidadeInput] = useState("");
     const [motivoInput, setMotivoInput] = useState("");
+    const [costPriceInput, setCostPriceInput] = useState("");
     const [operacao, setOperacao] = useState<"ADD" | "REMOVE">("ADD");
 
     // Form de Criação/Edição Básica
@@ -55,6 +56,7 @@ export default function EstoquePage() {
         setOperacao("ADD");
         setQtdInput("");
         setValidadeInput("");
+        setCostPriceInput("");
         carregarLogs(produto.id);
         setModalOpen(true);
     }
@@ -64,6 +66,7 @@ export default function EstoquePage() {
         setFormBasico({ name: "", unit: "UN", minStock: "5", costPrice: "" });
         setQtdInput("");
         setValidadeInput("");
+        setCostPriceInput("");
         setModalOpen(true);
     }
 
@@ -104,7 +107,8 @@ export default function EstoquePage() {
                     operation: operacao,
                     amountAdjustment: qtdInput,
                     expiryDate: validadeInput,
-                    reason: motivoInput
+                    reason: motivoInput,
+                    costPrice: costPriceInput
                 })
             });
 
@@ -113,6 +117,7 @@ export default function EstoquePage() {
                 setQtdInput("");
                 setValidadeInput("");
                 setMotivoInput("");
+                setCostPriceInput("");
                 carregarEstoque();
                 carregarLogs(produtoSelecionado.id);
             }
@@ -283,10 +288,16 @@ export default function EstoquePage() {
                                                 <input type="number" autoFocus className="w-full p-4 rounded-2xl border-2 border-blue-100 dark:border-blue-900 bg-white dark:bg-gray-900 font-black text-lg outline-none focus:border-blue-500" placeholder="Quantidade" value={qtdInput} onChange={e => setQtdInput(e.target.value)} />
                                             </div>
                                             {operacao === "ADD" && (
-                                                <div className="md:w-48">
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
-                                                    <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
-                                                </div>
+                                                <>
+                                                    <div className="md:w-32">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Custo (Un)</label>
+                                                        <input type="number" step="0.01" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" placeholder="R$ 0,00" value={costPriceInput} onChange={e => setCostPriceInput(e.target.value)} title="Custo individual por unidade/litro/kg" />
+                                                    </div>
+                                                    <div className="md:w-48">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
+                                                        <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
 
@@ -311,9 +322,16 @@ export default function EstoquePage() {
                                                     <div key={batch.id} className={`p-4 rounded-2xl border-2 bg-white dark:bg-gray-900 relative overflow-hidden ${vencido ? 'border-red-200 bg-red-50' : proximo ? 'border-orange-200' : 'border-gray-100 dark:border-gray-700'}`}>
                                                         <div className="relative z-10">
                                                             <p className="text-2xl font-black dark:text-white">{Number(batch.quantity)} <span className="text-xs text-gray-400">{produtoSelecionado.unit}</span></p>
-                                                            <p className={`text-[10px] font-bold uppercase mt-1 flex items-center gap-1 ${vencido ? 'text-red-600' : 'text-gray-500'}`}>
-                                                                <CalIcon size={10} /> {validade ? format(validade, "dd/MM/yyyy", { locale: ptBR }) : "Sem Validade"}
-                                                            </p>
+                                                            <div className="flex gap-2 mt-1">
+                                                                <p className={`text-[10px] font-bold uppercase flex items-center gap-1 ${vencido ? 'text-red-600' : 'text-gray-500'}`}>
+                                                                    <CalIcon size={10} /> {validade ? format(validade, "dd/MM/yyyy", { locale: ptBR }) : "Sem Validade"}
+                                                                </p>
+                                                                {batch.costPrice && Number(batch.costPrice) > 0 && (
+                                                                    <p className="text-[10px] font-bold uppercase flex items-center gap-1 text-green-500">
+                                                                        Custo: {Number(batch.costPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/{produtoSelecionado.unit}
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 )
@@ -335,6 +353,9 @@ export default function EstoquePage() {
                                                 <div>
                                                     <p className="font-bold text-sm dark:text-white uppercase">{log.reason || log.type}</p>
                                                     <p className="text-[10px] text-gray-400 flex items-center gap-1"><Clock size={10} /> {format(new Date(log.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                    {log.costPrice && Number(log.costPrice) > 0 && (
+                                                        <p className="text-[10px] text-green-500 font-bold mt-1">Custo Unid: {Number(log.costPrice).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="text-right">

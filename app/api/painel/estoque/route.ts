@@ -186,7 +186,9 @@ export async function PUT(req: Request) {
                     data: {
                         productId: id,
                         quantity: amount,
-                        expiryDate: validadeFinal
+                        expiryDate: validadeFinal,
+                        costPrice: costPrice ? Number(costPrice) : null,
+                        totalCost: costPrice ? Number(costPrice) * amount : null
                     }
                 });
                 newTotal += amount;
@@ -239,7 +241,9 @@ export async function PUT(req: Request) {
                     oldStock: currentTotal,
                     newStock: newTotal,
                     type: operation === 'ADD' ? 'ENTRADA' : 'SAIDA',
-                    reason: reason || (operation === 'ADD' ? 'Novo Lote' : 'Ajuste Manual')
+                    reason: reason || (operation === 'ADD' ? 'Novo Lote' : 'Ajuste Manual'),
+                    costPrice: operation === 'ADD' && costPrice ? Number(costPrice) : null,
+                    totalCost: operation === 'ADD' && costPrice ? Number(costPrice) * amount : null
                 }
             });
 
