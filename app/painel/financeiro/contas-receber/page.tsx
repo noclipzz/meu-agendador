@@ -163,8 +163,19 @@ export default function ContasReceberPage() {
         carregarDados();
     }, [filters.start, filters.end, filters.status, filtroStatus, busca]);
 
+    const [contasBancarias, setContasBancarias] = useState<any[]>([]);
+
+    async function carregarContas() {
+        try {
+            const res = await fetch("/api/painel/financeiro/contas-bancarias");
+            const data = await res.json();
+            if (res.ok) setContasBancarias(data);
+        } catch (e) { console.error("Erro contas", e); }
+    }
+
     useEffect(() => {
         if (isModalOpen && clients.length === 0) carregarClientes();
+        if (isModalOpen && contasBancarias.length === 0) carregarContas();
     }, [isModalOpen]);
 
     const formatCurrency = (val: number) => {
@@ -897,6 +908,22 @@ export default function ContasReceberPage() {
                                         </select>
                                     </div>
                                 </div>
+                                {contasBancarias.length > 0 && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Fundo de Caixa/Banco</label>
+                                        <select
+                                            name="bankAccountId"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.bankAccountId || ""}
+                                            disabled={modalType === "view"}
+                                        >
+                                            <option value="">Não associar</option>
+                                            {contasBancarias.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             {modalType !== "view" && (

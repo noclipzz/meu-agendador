@@ -133,6 +133,7 @@ export default function ContasPagarPage() {
         category: "FIXA",
         paymentAccount: "CAIXA",
         costCenter: "ADMINISTRATIVO",
+        bankAccountId: "",
         nfe: "",
         notes: "",
         installments: 1,
@@ -140,6 +141,7 @@ export default function ContasPagarPage() {
     });
 
     const [suppliers, setSuppliers] = useState<any[]>([]);
+    const [contasBancarias, setContasBancarias] = useState<any[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [isBulkDuplicating, setIsBulkDuplicating] = useState(false);
@@ -147,8 +149,17 @@ export default function ContasPagarPage() {
     useEffect(() => {
         loadData();
         loadSuppliers();
+        carregarContas();
         setSelectedIds([]);
     }, [filters.start, filters.end, filters.status, filters.category, filters.frequency]);
+
+    async function carregarContas() {
+        try {
+            const res = await fetch("/api/painel/financeiro/contas-bancarias");
+            const data = await res.json();
+            if (res.ok) setContasBancarias(data);
+        } catch (e) { console.error("Erro contas", e); }
+    }
 
     async function loadData() {
         setLoading(true);
@@ -476,6 +487,7 @@ export default function ContasPagarPage() {
                                 description: "", value: "", dueDate: format(new Date(), 'yyyy-MM-dd'),
                                 status: "PENDENTE", paymentMethod: "PIX", supplierId: "",
                                 category: "FIXA", paymentAccount: "CAIXA", costCenter: "ADMINISTRATIVO",
+                                bankAccountId: "",
                                 nfe: "", notes: "", installments: 1, frequency: "ONCE"
                             });
                             setIsViewOnly(false);
@@ -727,6 +739,7 @@ export default function ContasPagarPage() {
                                                         ...exp,
                                                         supplierId: exp.supplierId || "",
                                                         value: exp.value ? formatarMoeda(exp.value.toString()) : "",
+                                                        bankAccountId: exp.bankAccountId || "",
                                                         dueDate: exp.dueDate ? format(parseISO(exp.dueDate), 'yyyy-MM-dd') : "",
                                                     });
                                                     setIsViewOnly(true);
@@ -746,6 +759,7 @@ export default function ContasPagarPage() {
                                                         ...exp,
                                                         supplierId: exp.supplierId || "",
                                                         dueDate: exp.dueDate.split('T')[0],
+                                                        bankAccountId: exp.bankAccountId || "",
                                                         value: exp.value ? formatarMoeda(exp.value.toString()) : "",
                                                     });
                                                     setIsViewOnly(false);
@@ -942,6 +956,22 @@ export default function ContasPagarPage() {
                                         <option value="MANUTENCAO">Manutenção</option>
                                     </select>
                                 </div>
+                                {contasBancarias.length > 0 && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Fundo de Caixa/Banco</label>
+                                        <select
+                                            className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                            disabled={isViewOnly}
+                                            value={form.bankAccountId || ""}
+                                            onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })}
+                                        >
+                                            <option value="">Não associar</option>
+                                            {contasBancarias.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
