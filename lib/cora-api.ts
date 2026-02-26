@@ -97,7 +97,10 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
         const docNumber = invoice.client.cpf?.replace(/\D/g, '') || invoice.client.cnpj?.replace(/\D/g, '');
         const docType = (invoice.client.cnpj && invoice.client.cnpj.replace(/\D/g, '').length > 11) ? 'CNPJ' : 'CPF';
 
+        const totalAmount = Math.round(Number(invoice.value) * 100);
+
         const payload = {
+            amount: totalAmount,
             code: invoice.id,
             customer: {
                 name: invoice.client.name,
@@ -109,10 +112,14 @@ export async function createCoraCharge(companyId: string, invoiceId: string) {
             },
             services: [{
                 name: invoice.description || 'Serviço prestado',
-                amount: Math.round(Number(invoice.value) * 100),
+                amount: totalAmount,
             }],
-            payment_methods: ['PIX', 'BANK_SLIP'],
-            due_date: invoice.dueDate.toISOString().split('T')[0],
+            payment_options: {
+                methods: ['PIX', 'BANK_SLIP']
+            },
+            payment_terms: {
+                due_date: invoice.dueDate.toISOString().split('T')[0],
+            },
         };
 
         console.log("📤 [CORA] Enviando Payload:", JSON.stringify(payload));
