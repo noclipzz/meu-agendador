@@ -46,6 +46,8 @@ export async function GET() {
     return NextResponse.json({
       ...config,
       plan: subscription?.plan || "FREE",
+      expiresAt: subscription?.expiresAt || null,
+      subscriptionStatus: subscription?.status || "INACTIVE",
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });
   } catch (error) {

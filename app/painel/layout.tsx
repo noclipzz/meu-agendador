@@ -384,7 +384,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const configItems = [
         { key: 'gerais', name: "Gerais", path: "/painel/config/gerais", icon: <Settings size={18} /> },
-        { key: 'faturamento', name: "Nota Fiscal e Boleto", path: "/painel/config/faturamento", icon: <FileText size={18} /> },
+        { key: 'faturamento', name: "Nota Fiscal e Banco", path: "/painel/config/faturamento", icon: <FileText size={18} /> },
         { key: 'plano', name: "Meu Plano", path: "/painel/config/plano", icon: <Star size={18} className="text-yellow-500" /> },
     ];
 

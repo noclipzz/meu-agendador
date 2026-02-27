@@ -32,10 +32,31 @@ export default function ConfigPlano() {
         }
     }
 
+    async function handleOpenPortal() {
+        try {
+            toast.loading("Abrindo portal de pagamentos...");
+            const res = await fetch('/api/checkout/portal', { method: 'POST' });
+            const data = await res.json();
+
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                toast.error(data.error || "Erro ao abrir portal.");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão.");
+        } finally {
+            toast.dismiss();
+        }
+    }
+
     if (loading) return <div className="p-8 text-center text-gray-500">Carregando detalhes do plano...</div>;
 
     const planName = config?.plan === "MASTER" ? "Master" : config?.plan === "PREMIUM" ? "Prata" : "Individual";
     const planColor = config?.plan === "MASTER" ? "from-purple-600 to-blue-600" : config?.plan === "PREMIUM" ? "from-gray-400 to-gray-600" : "from-blue-400 to-blue-600";
+    const expiresAt = config?.expiresAt ? format(new Date(config.expiresAt), "dd/MM/yyyy", { locale: ptBR }) : "---";
+    const statusLabel = config?.subscriptionStatus === "ACTIVE" ? "Ativo" : config?.subscriptionStatus === "PAST_DUE" ? "Atrasado" : "Inativo";
+    const statusColor = config?.subscriptionStatus === "ACTIVE" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50";
 
     const features = [
         { name: "Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : config?.plan === "PREMIUM" ? "3" : "1", included: true },
@@ -90,11 +111,11 @@ export default function ConfigPlano() {
                                                     {planName}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-sm font-bold text-gray-700 dark:text-gray-300">02/07/2026</td>
-                                            <td className="p-4 text-sm font-bold text-gray-700 dark:text-gray-300">Anual</td>
+                                            <td className="p-4 text-sm font-bold text-gray-700 dark:text-gray-300">{expiresAt}</td>
+                                            <td className="p-4 text-sm font-bold text-gray-700 dark:text-gray-300">Mensal / Anual</td>
                                             <td className="p-4 text-right">
-                                                <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800/50">
-                                                    Ativo
+                                                <span className={`${statusColor} px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border`}>
+                                                    {statusLabel}
                                                 </span>
                                             </td>
                                         </tr>
@@ -103,14 +124,11 @@ export default function ConfigPlano() {
                             </div>
 
                             <div className="mt-6 flex flex-wrap gap-3">
-                                <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-emerald-500/20">
-                                    <RotateCcw size={16} /> Renovar assinatura
+                                <button onClick={handleOpenPortal} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-emerald-500/20">
+                                    <RotateCcw size={16} /> Detalhes da Assinatura
                                 </button>
-                                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-blue-500/20">
-                                    <Star size={16} /> Alterar plano
-                                </button>
-                                <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-purple-500/20">
-                                    <Plus size={16} /> Recursos
+                                <button onClick={() => window.location.href = '/'} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-blue-500/20">
+                                    <Star size={16} /> Mudar de Plano
                                 </button>
                             </div>
                         </div>
@@ -120,41 +138,18 @@ export default function ConfigPlano() {
                     <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800 shadow-sm overflow-hidden">
                         <div className="p-8 pb-4 flex items-center gap-3">
                             <CreditCard className="text-blue-500" size={20} />
-                            <h2 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-tight">Forma de pagamento</h2>
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-tight">Pagamento e Faturas</h2>
                         </div>
 
                         <div className="px-8 pb-8">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Titular do cartão</label>
-                                    <p className="text-sm font-black text-gray-700 dark:text-white uppercase">{config?.name || "N/A"}</p>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Número</label>
-                                    <div className="flex items-center gap-2">
-                                        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-md">
-                                            <div className="w-6 h-4 bg-red-500 rounded-sm"></div>
-                                        </div>
-                                        <p className="text-sm font-bold text-gray-700 dark:text-white">**** **** **** 5201</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase block mb-1">Vencimento</label>
-                                    <p className="text-sm font-bold text-gray-700 dark:text-white">08/28</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 mb-8">
-                                <p className="text-xs font-bold text-gray-500">Renovação automática:</p>
-                                <span className="text-xs font-black text-red-500 uppercase">Desabilitada</span>
-                            </div>
+                            <p className="text-sm text-gray-500 mb-6">Utilizamos o **Stripe** para processar seus pagamentos de forma segura. Clique abaixo para gerenciar seus cartões e baixar faturas antigas.</p>
 
                             <div className="flex flex-wrap gap-3">
-                                <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-orange-500/20">
-                                    <ExternalLink size={16} /> Editar forma de pagamento
+                                <button onClick={handleOpenPortal} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-orange-500/20">
+                                    <ExternalLink size={16} /> Abrir Portal de Pagamentos
                                 </button>
-                                <button className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95">
-                                    <History size={16} /> Histórico de pagamentos
+                                <button onClick={handleOpenPortal} className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95">
+                                    <History size={16} /> Histórico Completo na Stripe
                                 </button>
                             </div>
                         </div>
