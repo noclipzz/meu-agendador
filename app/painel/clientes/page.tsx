@@ -1823,9 +1823,9 @@ export default function ClientesPage() {
                                             );
                                         })}
                                     </div>
-                                    {printConfigModal.signatures.prof && (
+                                    {(printConfigModal.signatures.prof || printConfigModal.signatures.company) && (
                                         <div className="mt-4 animate-in slide-in-from-top-2">
-                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'}`}>
+                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500'}`}>
                                                 <input
                                                     type="checkbox"
                                                     className="accent-teal-600 w-4 h-4"
@@ -1834,7 +1834,7 @@ export default function ClientesPage() {
                                                 />
                                                 <div className="flex-1">
                                                     <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
-                                                    <p className="text-[10px] text-gray-400">Usa a imagem da assinatura cadastrada no perfil do profissional.</p>
+                                                    <p className="text-[10px] text-gray-400">Insere automaticamente a imagem da assinatura cadastrada (do Profissional ou da Empresa) nos campos marcados acima.</p>
                                                 </div>
                                             </label>
                                         </div>
