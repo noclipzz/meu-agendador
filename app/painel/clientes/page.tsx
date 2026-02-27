@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import QRCode from "qrcode";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -72,6 +73,7 @@ export default function ClientesPage() {
         twoColumns: boolean;
         signatures: { client: boolean; prof: boolean; company: boolean };
         useDigitalSignature: boolean;
+        includeQR: boolean;
         docNumber: string;
         customFooter: string;
     } | null>(null);
@@ -637,7 +639,8 @@ export default function ClientesPage() {
             dateVisible: true,
             twoColumns: false,
             signatures: { client: true, prof: true, company: false },
-            useDigitalSignature: true
+            useDigitalSignature: true,
+            includeQR: true
         };
 
         if (savedPrintPrefs) {
@@ -654,9 +657,9 @@ export default function ClientesPage() {
         });
     }
 
-    function executarImpressaoDaFicha() {
+    async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, useDigitalSignature, twoColumns, docNumber, customFooter } = printConfigModal;
+        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -709,6 +712,15 @@ export default function ClientesPage() {
         });
         if (currentSection.items.length > 0 || currentSection.header) {
             sections.push(currentSection);
+        }
+
+        // --- GERAR QR CODE ---
+        let qrCodeDataUrl = "";
+        if (includeQR) {
+            try {
+                const verifyUrl = `${window.location.origin}/verificar/documento/${entry.id}`;
+                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200, color: { dark: '#0d9488', light: '#ffffff' } });
+            } catch (err) { console.error("Erro QR Code:", err); }
         }
 
         // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
@@ -854,6 +866,17 @@ export default function ClientesPage() {
                 <div class="footer" style="${customFooter ? 'font-size: 11px; color: #4b5563; font-weight: 500;' : ''}">
                     ${customFooter ? customFooter : `<strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`}
                 </div>
+
+                ${includeQR ? `
+                <div style="margin-top: 30px; padding: 20px; border: 1px dashed #e5e7eb; border-radius: 16px; display: flex; align-items: center; gap: 20px;">
+                    <img src="${qrCodeDataUrl}" style="width: 80px; height: 80px;" />
+                    <div style="flex: 1;">
+                        <div style="font-size: 10px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Autenticidade Digital</div>
+                        <div style="font-size: 11px; color: #4b5563; line-height: 1.4; margin-bottom: 8px;">Aponte a câmera do seu celular para o QR Code para validar a autenticidade deste documento em nosso portal oficial.</div>
+                        <div style="font-size: 9px; font-family: 'Courier New', monospace; color: #9ca3af;">HASH: ${entry.id.toUpperCase()}</div>
+                    </div>
+                </div>
+                ` : ''}
             </div>
         </div>
         </body></html>`;
@@ -1835,6 +1858,29 @@ export default function ClientesPage() {
                                             <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
                                         </div>
                                         <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
+                                    </label>
+                                </div>
+
+                                {/* Autenticação */}
+                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck size={14} /> Autenticação Digital
+                                    </label>
+                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={printConfigModal.includeQR}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, includeQR: e.target.checked })}
+                                            />
+                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm text-gray-600 dark:text-gray-300">Incluir QR Code e Hash</p>
+                                            <p className="text-[10px] text-gray-400">Permite validar a veracidade do documento online.</p>
+                                        </div>
                                     </label>
                                 </div>
 
