@@ -9,7 +9,7 @@ import {
     Calendar, Clock, MapPin, FileText, CheckCircle2, UserCircle,
     DollarSign, Receipt, Trash2, Download, Image as ImageIcon,
     FileIcon, Loader2, UploadCloud, CreditCard, QrCode, Banknote, AlertTriangle,
-    ClipboardList, Printer, ChevronDown, Eye
+    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
