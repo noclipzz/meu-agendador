@@ -241,9 +241,9 @@ function PlanosSection({ billingCycle, setBillingCycle }: { billingCycle: 'month
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-      else toast.error("Erro ao iniciar pagamento.");
+      else toast.error(`Erro: ${data.details || "A sessão expirou. Recarregue a página."}`);
     } catch (error) {
-      toast.error("Erro de conexão.");
+      toast.error("Erro de conexão com o servidor.");
     } finally {
       setLoading(null);
     }

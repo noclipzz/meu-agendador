@@ -165,13 +165,12 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: session.url });
 
     } catch (error: any) {
-        console.error("❌ [CHECKOUT] ERRO FATAL:");
-        console.error("- Message:", error?.message);
-        console.error("- Details:", error);
+        console.error("❌ [CHECKOUT] ERRO FATAL:", error);
 
         return NextResponse.json({
             error: "Erro ao processar pagamento",
-            details: error?.message || "Erro desconhecido"
+            details: error?.message || "Erro desconhecido",
+            stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
         }, { status: 500 });
     }
 }
