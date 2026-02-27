@@ -87,24 +87,27 @@ export async function POST(req: Request) {
         let priceId = "";
 
         // Mapeamento dinâmico baseado no plano e ciclo
-        // Ex: STRIPE_PRICE_BRONZE_YEAR, STRIPE_PRICE_PRATA_MONTH, etc.
-        const cycleSuffix = cycle === 'year' ? 'YEAR' : cycle === 'semester' ? 'SEMESTER' : 'MONTH';
+        const cycleSuffix = cycle === 'year' ? 'YEAR' : 'MONTH';
         const envKey = `STRIPE_PRICE_${plan}_${cycleSuffix}`;
 
-        priceId = process.env[envKey]!;
+        priceId = process.env[envKey] || "";
 
-        // Fallback para os planos antigos se não encontrar o novo padrão
-        if (!priceId) {
+        // Se o priceId for o placeholder ou estiver vazio, tenta o fallback para os planos antigos
+        if (!priceId || priceId === "price_id_aqui" || !priceId.startsWith('price_')) {
+            console.log(`⚠️ [CHECKOUT] Usando fallback para o plano ${plan} pois ${envKey} está ausente ou inválido.`);
             switch (plan) {
-                case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
-                case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM!; break;
-                case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
+                case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL || ""; break;
+                case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM || ""; break;
+                case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER || ""; break;
             }
         }
 
-        if (!priceId) {
-            console.error("❌ [CHECKOUT] Price ID não encontrado para:", envKey);
-            return NextResponse.json({ error: "Preço não configurado para este plano/ciclo" }, { status: 400 });
+        if (!priceId || priceId === "price_id_aqui" || !priceId.startsWith('price_')) {
+            console.error("❌ [CHECKOUT] Price ID não configurado ou inválido para:", envKey);
+            return NextResponse.json({
+                error: "Preço não configurado",
+                details: `O ID de preço do Stripe para ${plan} (${cycle}) não foi definido corretamente no ambiente.`
+            }, { status: 400 });
         }
 
         console.log("⏳ [CHECKOUT] Buscando assinatura no banco (com retry)...");
