@@ -67,6 +67,30 @@ export default function ConfigPlano() {
         }
     }
 
+    async function handleAddItem(itemType: string) {
+        try {
+            toast.loading("Adicionando recurso ao seu plano...");
+            const res = await fetch('/api/checkout/subscription/add-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemType })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success("Recurso adicionado com sucesso! Sua fatura foi atualizada.");
+                carregarConfig(); // Recarrega para mostrar o status "Ativo"
+            } else {
+                toast.error(data.error || "Erro ao adicionar recurso.");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão.");
+        } finally {
+            toast.dismiss();
+        }
+    }
+
     async function handleOpenPortal() {
         try {
             toast.loading("Abrindo portal de pagamentos...");
@@ -242,7 +266,9 @@ export default function ConfigPlano() {
                                     {!config?.hasNfeModule ? (
                                         <>
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 29,90/mês</span>
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleAddItem('NFE')}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
                                                 <Plus size={14} /> Adicionar
                                             </button>
                                         </>
@@ -273,7 +299,9 @@ export default function ConfigPlano() {
                                     {!config?.hasBoletoModule ? (
                                         <>
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 24,90/mês</span>
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                            <button
+                                                onClick={() => handleAddItem('BOLETO')}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
                                                 <Plus size={14} /> Adicionar
                                             </button>
                                         </>
@@ -300,7 +328,9 @@ export default function ConfigPlano() {
                                 </div>
                                 <div className="flex flex-col items-end gap-2 text-right">
                                     <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 15,00/mês cada</span>
-                                    <button className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleAddItem('STAFF')}
+                                        className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
                                         <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
                                     </button>
                                 </div>

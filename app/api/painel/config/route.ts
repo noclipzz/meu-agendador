@@ -49,7 +49,7 @@ export async function GET() {
         cancelAtPeriodEnd: false,
         hasNfeModule: true,
         hasBoletoModule: true,
-        extraUsersCount: 10,
+        extraUsersCount: 0,
         isOwner: true
       });
     }
