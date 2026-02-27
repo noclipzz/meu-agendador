@@ -105,8 +105,8 @@ export default function ConfigPlano() {
         { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER" },
-        { name: "Emissão de Notas Fiscais", value: config?.hasFiscalModule ? "Ativo" : "Add-on", included: !!config?.hasFiscalModule },
-        { name: "Emissão de Boletos", value: config?.hasFiscalModule ? "Ativo" : "Add-on", included: !!config?.hasFiscalModule },
+        { name: "Emissão de Notas Fiscais", value: config?.hasNfeModule ? "Ativo" : "Add-on", included: !!config?.hasNfeModule },
+        { name: "Emissão de Boletos", value: config?.hasBoletoModule ? "Ativo" : "Add-on", included: !!config?.hasBoletoModule },
     ];
 
     return (
@@ -223,25 +223,56 @@ export default function ConfigPlano() {
                         <div className="px-8 pb-8 space-y-4">
                             <p className="text-sm text-gray-500 mb-6">Personalize seu plano com recursos extras. O valor será adicionado mensalmente à sua fatura.</p>
 
-                            {/* Módulo Fiscal */}
-                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasFiscalModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
+                            {/* Módulo NF-e */}
+                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasNfeModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
-                                        <FileText className={config?.hasFiscalModule ? "text-emerald-600" : "text-blue-600"} size={24} />
+                                        <FileText className={config?.hasNfeModule ? "text-emerald-600" : "text-blue-600"} size={24} />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
-                                            Módulo Fiscal & Bancário
+                                            Emissão de NF-e
                                         </h3>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic text-blue-600/70">
-                                            + Emissão de NFS-e e Boletos PIX Cora
+                                            Emita notas fiscais de serviço (NFS-e) ilimitadas
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 text-right">
-                                    {!config?.hasFiscalModule ? (
+                                    {!config?.hasNfeModule ? (
                                         <>
-                                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 49,90/mês</span>
+                                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 29,90/mês</span>
+                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                                <Plus size={14} /> Adicionar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                            <Check size={14} /> Ativo no Plano
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Módulo Boletos */}
+                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasBoletoModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
+                                        <CreditCard className={config?.hasBoletoModule ? "text-emerald-600" : "text-blue-600"} size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                            Emissão de Boletos / PIX
+                                        </h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic text-blue-600/70">
+                                            Cobranças automáticas via PIX e Boleto Cora
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 text-right">
+                                    {!config?.hasBoletoModule ? (
+                                        <>
+                                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 24,90/mês</span>
                                             <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
                                                 <Plus size={14} /> Adicionar
                                             </button>

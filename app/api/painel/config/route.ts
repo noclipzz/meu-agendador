@@ -47,7 +47,8 @@ export async function GET() {
         expiresAt: "2099-12-31T23:59:59.000Z",
         subscriptionStatus: "ACTIVE",
         cancelAtPeriodEnd: false,
-        hasFiscalModule: true,
+        hasNfeModule: true,
+        hasBoletoModule: true,
         extraUsersCount: 10,
         isOwner: true
       });
@@ -64,7 +65,8 @@ export async function GET() {
       expiresAt: subscription?.expiresAt || null,
       subscriptionStatus: subscription?.status || "INACTIVE",
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
-      hasFiscalModule: subscription?.hasFiscalModule || false,
+      hasNfeModule: subscription?.hasNfeModule || false,
+      hasBoletoModule: subscription?.hasBoletoModule || false,
       extraUsersCount: subscription?.extraUsersCount || 0,
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });
