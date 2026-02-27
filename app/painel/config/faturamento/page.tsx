@@ -1,0 +1,231 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Save, Loader2, UploadCloud, CreditCard, FileText, CheckCircle, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
+
+export default function ConfigFaturamento() {
+    const [loading, setLoading] = useState(true);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // --- CAMPOS FISCAIS (FOCUS NFe) ---
+    const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
+    const [regimeTributario, setRegimeTributario] = useState("1");
+    const [naturezaOperacao, setNaturezaOperacao] = useState("1");
+    const [codigoServico, setCodigoServico] = useState("");
+    const [aliquotaServico, setAliquotaServico] = useState("");
+    const [inssTax, setInssTax] = useState("");
+    const [certificadoA1Url, setCertificadoA1Url] = useState("");
+    const [certificadoSenha, setCertificadoSenha] = useState("");
+    const [creditCardTax, setCreditCardTax] = useState("");
+    const [debitCardTax, setDebitCardTax] = useState("");
+
+    // --- CAMPOS CORA ---
+    const [coraClientId, setCoraClientId] = useState("");
+    const [coraCertUrl, setCoraCertUrl] = useState("");
+    const [coraKeyUrl, setCoraKeyUrl] = useState("");
+    const [coraFineRate, setCoraFineRate] = useState("2.0");
+    const [coraInterestRate, setCoraInterestRate] = useState("1.0");
+    const [coraDiscountRate, setCoraDiscountRate] = useState("0");
+
+    const inputCertRef = useRef<HTMLInputElement>(null);
+    const inputCoraCertRef = useRef<HTMLInputElement>(null);
+    const inputCoraKeyRef = useRef<HTMLInputElement>(null);
+
+    const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
+
+    useEffect(() => { carregarTudo(); }, []);
+
+    async function carregarTudo() {
+        try {
+            const [resConfig, resCheckout] = await Promise.all([
+                fetch('/api/painel/config'),
+                fetch('/api/checkout')
+            ]);
+            const dataConfig = await resConfig.json();
+            const dataCheckout = await resCheckout.json();
+            setUserRole(dataCheckout.role || "PROFESSIONAL");
+
+            if (dataConfig && dataConfig.id) {
+                setInscricaoMunicipal(dataConfig.inscricaoMunicipal || "");
+                setRegimeTributario(String(dataConfig.regimeTributario || "1"));
+                setNaturezaOperacao(String(dataConfig.naturezaOperacao || "1"));
+                setCodigoServico(dataConfig.codigoServico || "");
+                setAliquotaServico(String(dataConfig.aliquotaServico || ""));
+                setInssTax(String(dataConfig.inssTax || ""));
+                setCertificadoA1Url(dataConfig.certificadoA1Url || "");
+                setCertificadoSenha(dataConfig.certificadoSenha || "");
+                setCreditCardTax(String(dataConfig.creditCardTax || "0"));
+                setDebitCardTax(String(dataConfig.debitCardTax || "0"));
+
+                setCoraClientId(dataConfig.coraClientId || "");
+                setCoraCertUrl(dataConfig.coraCertUrl || "");
+                setCoraKeyUrl(dataConfig.coraKeyUrl || "");
+                setCoraFineRate(String(dataConfig.coraFineRate || "2.0"));
+                setCoraInterestRate(String(dataConfig.coraInterestRate || "1.0"));
+                setCoraDiscountRate(String(dataConfig.coraDiscountRate || "0"));
+            }
+        } catch (e) { console.error(e) }
+        finally { setLoading(false); }
+    }
+
+    async function handleCertUpload() {
+        if (!inputCertRef.current?.files?.[0]) return;
+        const file = inputCertRef.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`cert_${file.name}`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            setCertificadoA1Url(newBlob.url);
+            toast.success("Certificado enviado!");
+        } catch (error) { toast.error("Falha ao enviar certificado."); }
+        finally { setIsUploading(false); }
+    }
+
+    async function handleCoraFileUpload(type: 'CERT' | 'KEY') {
+        const ref = type === 'CERT' ? inputCoraCertRef : inputCoraKeyRef;
+        if (!ref.current?.files?.[0]) return;
+        const file = ref.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`cora_${type.toLowerCase()}_${file.name}`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+                contentType: 'application/octet-stream',
+            });
+            if (type === 'CERT') setCoraCertUrl(newBlob.url);
+            else setCoraKeyUrl(newBlob.url);
+            toast.success(`${type === 'CERT' ? 'Certificado' : 'Chave'} Cora enviada!`);
+        } catch (error) { toast.error("Erro no upload Cora."); }
+        finally { setIsUploading(false); }
+    }
+
+    async function salvarConfig() {
+        try {
+            const res = await fetch('/api/painel/config', {
+                method: 'POST',
+                body: JSON.stringify({
+                    inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
+                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"), certificadoA1Url, certificadoSenha,
+                    creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
+                    coraClientId, coraCertUrl, coraKeyUrl,
+                    coraFineRate: parseFloat(coraFineRate || "0"),
+                    coraInterestRate: parseFloat(coraInterestRate || "0"),
+                    coraDiscountRate: parseFloat(coraDiscountRate || "0")
+                })
+            });
+            if (res.ok) toast.success("Dados de faturamento salvos!");
+            else toast.error("Erro ao salvar.");
+        } catch (error) { toast.error("Erro de conexão."); }
+    }
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Carregando...</div>;
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-8 pb-20 p-4 font-sans animate-in fade-in duration-500">
+            <header className="flex flex-col gap-1">
+                <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Faturamento</h1>
+                <p className="text-gray-500 dark:text-gray-400 font-medium">Configurações de nota fiscal, boletos e taxas.</p>
+            </header>
+
+            <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm border dark:border-gray-800">
+                <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                    <CreditCard className="text-blue-500" size={20} /> Taxas de Cartão
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-blue-50/50 dark:bg-gray-800/30 rounded-3xl border border-blue-100 dark:border-gray-800">
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Taxa de Crédito (%)</label>
+                        <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={creditCardTax} onChange={e => setCreditCardTax(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Taxa de Débito (%)</label>
+                        <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white" value={debitCardTax} onChange={e => setDebitCardTax(e.target.value)} />
+                    </div>
+                </div>
+
+                <div className="border-t dark:border-gray-700 pt-8 mt-10">
+                    <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                        <FileText className="text-emerald-500" size={20} /> Emissão Fiscal (NFS-e)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-emerald-50/50 dark:bg-gray-800/30 rounded-3xl border border-emerald-100 dark:border-gray-800">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Inscrição Municipal</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Código de Serviço</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Alíquota ISS (%)</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Natureza da Operação</label>
+                            <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={naturezaOperacao} onChange={e => setNaturezaOperacao(e.target.value)}>
+                                <option value="1">Tributação no Município</option>
+                                <option value="2">Tributação fora do Município</option>
+                                <option value="3">Isenção</option>
+                                <option value="4">Imune</option>
+                            </select>
+                        </div>
+                        <div className="md:col-span-2 p-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-3xl flex items-center justify-between gap-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Certificado Digital (A1 .pfx)</label>
+                                {certificadoA1Url && <div className="text-emerald-600 font-bold text-xs mt-1 flex items-center gap-1"><CheckCircle size={14} /> Instalado</div>}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <input type="file" accept=".pfx,.p12" ref={inputCertRef} onChange={handleCertUpload} className="hidden" />
+                                <button onClick={() => inputCertRef.current?.click()} disabled={isUploading} className="bg-gray-800 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black transition text-sm">
+                                    {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Upload
+                                </button>
+                            </div>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Senha do Certificado</label>
+                            <input type="password" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={certificadoSenha} onChange={e => setCertificadoSenha(e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t dark:border-gray-700 pt-8 mt-10">
+                    <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                        <RotateCcw className="text-orange-500" size={20} /> Integração Cora (Bolero/PIX)
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 p-6 bg-orange-50/50 dark:bg-gray-800/30 rounded-3xl border border-orange-100 dark:border-gray-800">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Client ID Cora</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={coraClientId} onChange={e => setCoraClientId(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-500 uppercase">Certificado .pem</span>
+                                <button onClick={() => inputCoraCertRef.current?.click()} className="text-[10px] font-bold text-blue-600">Upload</button>
+                                <input type="file" accept=".pem" ref={inputCoraCertRef} onChange={() => handleCoraFileUpload('CERT')} className="hidden" />
+                            </div>
+                            <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex items-center justify-between">
+                                <span className="text-xs font-bold text-gray-500 uppercase">Chave .key</span>
+                                <button onClick={() => inputCoraKeyRef.current?.click()} className="text-[10px] font-bold text-blue-600">Upload</button>
+                                <input type="file" accept=".key" ref={inputCoraKeyRef} onChange={() => handleCoraFileUpload('KEY')} className="hidden" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">Multa (%)</label><input type="number" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 font-bold dark:text-white" value={coraFineRate} onChange={e => setCoraFineRate(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">Juros (%)</label><input type="number" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 font-bold dark:text-white" value={coraInterestRate} onChange={e => setCoraInterestRate(e.target.value)} /></div>
+                            <div><label className="text-[10px] font-bold text-gray-400 uppercase">Desconto (%)</label><input type="number" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 font-bold dark:text-white" value={coraDiscountRate} onChange={e => setCoraDiscountRate(e.target.value)} /></div>
+                        </div>
+                    </div>
+                </div>
+
+                {userRole === "ADMIN" && (
+                    <button onClick={salvarConfig} className="mt-8 bg-black dark:bg-blue-600 text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl hover:scale-[1.02] transition active:scale-95 flex items-center justify-center gap-2">
+                        <Save size={18} /> Salvar Faturamento
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}

@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -382,6 +382,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'contas_bancarias', name: "Contas e fundos", path: "/painel/financeiro/contas-bancarias", icon: <Wallet size={18} /> }
     ];
 
+    const configItems = [
+        { key: 'gerais', name: "Gerais", path: "/painel/config/gerais", icon: <Settings size={18} /> },
+        { key: 'faturamento', name: "Nota Fiscal e Boleto", path: "/painel/config/faturamento", icon: <FileText size={18} /> },
+        { key: 'plano', name: "Meu Plano", path: "/painel/config/plano", icon: <Star size={18} className="text-yellow-500" /> },
+    ];
+
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
             if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key)) return false;
@@ -401,6 +407,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const visibleItems = filterMenu(allItems);
     const visibleCadastros = filterMenu(cadastrosItems);
     const visibleFinanceiro = filterMenu(financeiroItems);
+    const visibleConfig = configItems.filter(() => isOwner || userPermissions?.config);
 
     const toggleMenu = (key: string) => {
         setOpenMenus(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
@@ -563,6 +570,39 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             )}
                         </div>
                     )}
+
+                    {/* GRUPO: CONFIGURAÇÕES */}
+                    {visibleConfig.length > 0 && (
+                        <div className="pt-2">
+                            <button
+                                onClick={() => toggleMenu("config_group")}
+                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+                            >
+                                <div className="flex items-center gap-4 md:gap-3">
+                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                        <Settings size={20} />
+                                    </div>
+                                    <span className="text-base md:text-[14px]">Configurações</span>
+                                </div>
+                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("config_group") ? "" : "-rotate-90"}`} />
+                            </button>
+
+                            {openMenus.includes("config_group") && (
+                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
+                                    {visibleConfig.map(sub => (
+                                        <Link
+                                            key={sub.path}
+                                            href={sub.path}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+                                        >
+                                            {sub.icon}
+                                            {sub.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </nav>
 
                 <div className="p-4 md:p-3 space-y-4 md:space-y-2 shrink-0">
@@ -579,11 +619,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     <div className="p-4 border-t dark:border-gray-800 flex items-center justify-between md:hidden shrink-0">
                         <div className="flex items-center gap-2">
                             <UserButton showName />
-                            {(isOwner || userPermissions?.config) && (
-                                <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
-                                    <Settings size={20} />
-                                </Link>
-                            )}
                         </div>
                         <div className="italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                     </div>
@@ -592,11 +627,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 <div className="p-4 border-t dark:border-gray-800 hidden md:block shrink-0">
                     <div className="flex items-center justify-between mb-2">
                         <UserButton showName />
-                        {(isOwner || userPermissions?.config) && (
-                            <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition" title="Configurações">
-                                <Settings size={18} />
-                            </Link>
-                        )}
                     </div>
                     <div className="px-1 italic text-[10px] text-gray-400 uppercase tracking-widest">Modo: {userRole}</div>
                 </div>
