@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool } from "lucide-react";
 import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
@@ -32,6 +32,7 @@ export default function ConfigGerais() {
     const [loading, setLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const inputFileRef = useRef<HTMLInputElement>(null);
+    const inputSignatureRef = useRef<HTMLInputElement>(null);
 
     // --- CAMPOS GERAIS ---
     const [name, setName] = useState("");
@@ -40,6 +41,7 @@ export default function ConfigGerais() {
     const [instagramUrl, setInstagramUrl] = useState("");
     const [facebookUrl, setFacebookUrl] = useState("");
     const [logoUrl, setLogoUrl] = useState("");
+    const [signatureUrl, setSignatureUrl] = useState("");
     const [openTime, setOpenTime] = useState("09:00");
     const [closeTime, setCloseTime] = useState("18:00");
     const [lunchStart, setLunchStart] = useState("12:00");
@@ -84,6 +86,7 @@ export default function ConfigGerais() {
                 setInstagramUrl(dataConfig.instagramUrl || "");
                 setFacebookUrl(dataConfig.facebookUrl || "");
                 setLogoUrl(dataConfig.logoUrl || "");
+                setSignatureUrl(dataConfig.signatureUrl || "");
                 setOpenTime(dataConfig.openTime || "09:00");
                 setCloseTime(dataConfig.closeTime || "18:00");
                 setLunchStart(dataConfig.lunchStart || "12:00");
@@ -177,12 +180,30 @@ export default function ConfigGerais() {
         finally { setIsUploading(false); }
     }
 
+    async function handleSignatureUpload() {
+        if (!inputSignatureRef.current?.files?.[0]) return;
+        const file = inputSignatureRef.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`signature-company.png`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            setSignatureUrl(newBlob.url);
+            toast.success("Assinatura da empresa carregada!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Falha no upload da assinatura.");
+        }
+        finally { setIsUploading(false); }
+    }
+
     async function salvarConfig() {
         try {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl,
+                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state
                 })
@@ -324,17 +345,35 @@ export default function ConfigGerais() {
                             </div>
                         </div>
 
-                        <div className="border-t dark:border-gray-700 pt-6">
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Logotipo</label>
-                            <div className="flex items-center gap-6">
-                                <div className="w-24 h-24 bg-gray-100 dark:bg-gray-900 rounded-3xl border dark:border-gray-700 flex items-center justify-center overflow-hidden shadow-inner">
-                                    {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <UploadCloud className="text-gray-400" size={32} />}
+                        <div className="border-t dark:border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Logotipo</label>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-24 h-24 bg-gray-100 dark:bg-gray-900 rounded-3xl border dark:border-gray-700 flex items-center justify-center overflow-hidden shadow-inner">
+                                        {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <UploadCloud className="text-gray-400" size={32} />}
+                                    </div>
+                                    <div>
+                                        <input type="file" accept="image/*" ref={inputFileRef} onChange={handleLogoUpload} className="hidden" />
+                                        <button onClick={() => inputFileRef.current?.click()} disabled={isUploading} className="bg-gray-800 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black transition text-sm dark:bg-gray-700">
+                                            {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Alterar Imagem
+                                        </button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <input type="file" accept="image/*" ref={inputFileRef} onChange={handleLogoUpload} className="hidden" />
-                                    <button onClick={() => inputFileRef.current?.click()} disabled={isUploading} className="bg-gray-800 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black transition text-sm dark:bg-gray-700">
-                                        {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Alterar Imagem
-                                    </button>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Assinatura Digital da Empresa</label>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-48 h-24 bg-white dark:bg-gray-950 rounded-3xl border-2 border-dashed dark:border-gray-800 flex items-center justify-center overflow-hidden">
+                                        {signatureUrl ? <img src={signatureUrl} alt="Assinatura" className="h-full object-contain mix-blend-multiply" /> : <PenTool className="text-gray-300" size={32} />}
+                                    </div>
+                                    <div>
+                                        <input type="file" accept="image/*" ref={inputSignatureRef} onChange={handleSignatureUpload} className="hidden" />
+                                        <button onClick={() => inputSignatureRef.current?.click()} disabled={isUploading} className="bg-blue-600 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition text-sm">
+                                            {isUploading ? <Loader2 className="animate-spin" /> : <PenTool size={16} />} Carregar Assinatura
+                                        </button>
+                                        <p className="text-[9px] text-gray-400 mt-2">Use um arquivo PNG transparente.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -221,7 +221,8 @@ export default function ClientesPage() {
                     address: data.address || "",
                     phone: data.phone || "",
                     cnpj: data.cnpj || "",
-                    corporateName: data.corporateName || ""
+                    corporateName: data.corporateName || "",
+                    signatureUrl: data.signatureUrl || ""
                 });
             }
         } catch { }
@@ -841,7 +842,13 @@ export default function ClientesPage() {
                         : `<div class="signature-line"></div>`}
                             <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
                         </div>` : ''}
-                    ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
+                    ${signatures.company ? `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && empresaInfo.signatureUrl)
+                        ? `<img src="${empresaInfo.signatureUrl}" style="height: 70px; max-width: 250px; object-fit: contain; margin-bottom: -15px; display: block; margin-left: auto; margin-right: auto; mix-blend-mode: multiply;" />`
+                        : `<div class="signature-line"></div>`}
+                            <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                        </div>` : ''}
                 </div>` : ''}
 
                 <div class="footer" style="${customFooter ? 'font-size: 11px; color: #4b5563; font-weight: 500;' : ''}">

@@ -14,6 +14,7 @@ model Company {
   ownerId                      String             @unique
   createdAt                    DateTime           @default(now())
   logoUrl                      String?            @default("")
+  signatureUrl                 String?            @default("")
   openTime                     String             @default("09:00")
   closeTime                    String             @default("18:00")
   lunchStart                   String             @default("12:00")
