@@ -47,6 +47,8 @@ export async function GET() {
         expiresAt: "2099-12-31T23:59:59.000Z",
         subscriptionStatus: "ACTIVE",
         cancelAtPeriodEnd: false,
+        hasFiscalModule: true,
+        extraUsersCount: 10,
         isOwner: true
       });
     }
@@ -54,7 +56,7 @@ export async function GET() {
     // Busca o plano do DONO da empresa
     const subscription = await prisma.subscription.findUnique({
       where: { userId: config.ownerId }
-    });
+    }) as any;
 
     return NextResponse.json({
       ...config,
@@ -62,6 +64,8 @@ export async function GET() {
       expiresAt: subscription?.expiresAt || null,
       subscriptionStatus: subscription?.status || "INACTIVE",
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
+      hasFiscalModule: subscription?.hasFiscalModule || false,
+      extraUsersCount: subscription?.extraUsersCount || 0,
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });
   } catch (error) {

@@ -243,6 +243,8 @@ model Subscription {
   stripeSubscriptionId String?   @unique
   stripePriceId        String?
   cancelAtPeriodEnd    Boolean   @default(false)
+  hasFiscalModule      Boolean   @default(false)
+  extraUsersCount      Int       @default(0)
   expiresAt            DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

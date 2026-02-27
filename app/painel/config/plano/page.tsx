@@ -6,7 +6,8 @@ import {
     ArrowRight, Sparkles, Zap, ShieldCheck, History,
     TrendingUp, Layout, Users, Store, FileText,
     Shield, Briefcase, MousePointer2, Smartphone, Globe,
-    MessageCircle, Download, ExternalLink, Printer, RotateCcw
+    MessageCircle, Download, ExternalLink, Printer, RotateCcw,
+    ShoppingBag, Plus, Sparkle
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -92,19 +93,20 @@ export default function ConfigPlano() {
     const statusLabel = config?.subscriptionStatus === "ACTIVE" ? "Ativo" : config?.subscriptionStatus === "PAST_DUE" ? "Atrasado" : "Inativo";
     const statusColor = config?.subscriptionStatus === "ACTIVE" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50";
 
+    const limitPrefix = config?.plan === "MASTER" ? "Ilimitados" : ((config?.plan === "PREMIUM" ? 3 : 1) + (config?.extraUsersCount || 0));
+
     const features = [
-        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : config?.plan === "PREMIUM" ? "Até 3" : "1", included: true },
+        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : `Até ${limitPrefix}`, included: true },
         { name: "Agendamentos Online", value: "Ilimitados", included: true },
         { name: "Financeiro Completo", value: "", included: true },
         { name: "Gestão de Clientes", value: "", included: true },
         { name: "Prontuários e Histórico", value: "", included: true },
         { name: "WhatsApp Automático", value: "", included: config?.plan === "MASTER" },
-        { name: "Emissão de Notas Fiscais", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
-        { name: "Emissão de Boletos (PIX/Boleto)", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER" },
-        { name: "Múltiplas Unidades", value: config?.plan === "MASTER" ? "Até 5" : "1", included: true },
+        { name: "Emissão de Notas Fiscais", value: config?.hasFiscalModule ? "Ativo" : "Add-on", included: !!config?.hasFiscalModule },
+        { name: "Emissão de Boletos", value: config?.hasFiscalModule ? "Ativo" : "Add-on", included: !!config?.hasFiscalModule },
     ];
 
     return (
@@ -192,8 +194,8 @@ export default function ConfigPlano() {
                                 <button
                                     onClick={toggleRenovacao}
                                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm ${!config?.cancelAtPeriodEnd
-                                            ? "bg-white text-red-600 border border-red-200 hover:bg-red-50"
-                                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                        ? "bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                                        : "bg-emerald-600 text-white hover:bg-emerald-700"
                                         }`}
                                 >
                                     {!config?.cancelAtPeriodEnd ? "Desativar" : "Ativar"}
@@ -207,6 +209,70 @@ export default function ConfigPlano() {
                                 <button onClick={handleOpenPortal} className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95">
                                     <History size={16} /> Histórico Completo na Stripe
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ADICIONAIS / EXTRAS */}
+                    <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border dark:border-gray-800 shadow-sm overflow-hidden border-dashed border-blue-500/30">
+                        <div className="p-8 pb-4 flex items-center gap-3">
+                            <ShoppingBag className="text-blue-500" size={20} />
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-tight">Add-ons / Extras</h2>
+                        </div>
+
+                        <div className="px-8 pb-8 space-y-4">
+                            <p className="text-sm text-gray-500 mb-6">Personalize seu plano com recursos extras. O valor será adicionado mensalmente à sua fatura.</p>
+
+                            {/* Módulo Fiscal */}
+                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasFiscalModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
+                                        <FileText className={config?.hasFiscalModule ? "text-emerald-600" : "text-blue-600"} size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                            Módulo Fiscal & Bancário
+                                        </h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic text-blue-600/70">
+                                            + Emissão de NFS-e e Boletos PIX Cora
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 text-right">
+                                    {!config?.hasFiscalModule ? (
+                                        <>
+                                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 49,90/mês</span>
+                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                                <Plus size={14} /> Adicionar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                            <Check size={14} /> Ativo no Plano
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Colaborador Extra */}
+                            <div className="flex items-center justify-between p-6 bg-gray-50 dark:bg-white/5 rounded-3xl border dark:border-white/10 group hover:border-gray-400 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
+                                        <Users className="text-gray-600 dark:text-gray-400" size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Colaboradores Extras</h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic">
+                                            {config?.extraUsersCount > 0 ? `Você possui ${config.extraUsersCount} slots adicionais` : "Contrate slots de acesso avulsos"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 text-right">
+                                    <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 15,00/mês cada</span>
+                                    <button className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                        <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -302,6 +368,4 @@ export default function ConfigPlano() {
     );
 }
 
-function Plus({ size }: { size: number }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
-}
+
