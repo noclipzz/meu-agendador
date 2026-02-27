@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, isToday, isBefore, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
@@ -14,6 +15,14 @@ import {
 } from "lucide-react";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 export default function ContasPagarPage() {
     const [loading, setLoading] = useState(true);
@@ -847,7 +856,7 @@ export default function ContasPagarPage() {
 
             {/* MODAL Lançamento */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-2 md:p-4 overflow-hidden">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-2 md:p-4 overflow-hidden">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh] mx-auto border dark:border-gray-800">
                         <div className="p-5 md:p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-900">
                             <div>
@@ -1079,11 +1088,12 @@ export default function ContasPagarPage() {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* MODAL Exclusão (Personalizado como na imagem) */}
             {isDeleteModalOpen && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
                     <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-6">
                             <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
@@ -1110,10 +1120,11 @@ export default function ContasPagarPage() {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
             {/* MODAL PERÍODO CUSTOMIZADO */}
             {isCustomDateModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[250] p-4 animate-in fade-in duration-200">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[250] p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 scale-in-95">
                         <button onClick={() => setIsCustomDateModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition">
                             <X size={24} />
@@ -1156,7 +1167,7 @@ export default function ContasPagarPage() {
                             </button>
                         </form>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
         </div>
     );

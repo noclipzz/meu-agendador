@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Calendar as CalIcon, Filter, Search, Plus, User, FileText, CheckCircle, Clock, AlertTriangle, FileCheck, Trash2, Box, Info, X, MapPin, Phone, MessageSquare, Download, Hash, ShieldCheck, UploadCloud, TrendingUp, HelpCircle, ArrowDownRight, MoreVertical, Pencil, CheckCircle2, Eye, Receipt, CreditCard, Banknote, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, Barcode, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -8,6 +9,14 @@ import Link from "next/link";
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 export default function ContasReceberPage() {
     const [loading, setLoading] = useState(true);
@@ -812,7 +821,7 @@ export default function ContasReceberPage() {
 
             {/* MODAL LANÇAMENTO / EDIÇÃO */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-lg relative shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar border dark:border-gray-800">
                         <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition"><TrendingUp className="rotate-45" size={24} /></button>
 
@@ -986,12 +995,12 @@ export default function ContasReceberPage() {
                             )}
                         </form>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
 
             {/* MODAL Exclusão (Personalizado como na imagem) */}
             {isDeleteModalOpen && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+                <ModalPortal><div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
                     <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-6">
                             <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
@@ -1012,12 +1021,12 @@ export default function ContasReceberPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
 
             {/* MODAL PERÍODO CUSTOMIZADO */}
             {isCustomDateModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 animate-in fade-in duration-200">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 scale-in-95">
                         <button onClick={() => setIsCustomDateModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-red-500 transition">
                             <X size={24} />
@@ -1060,12 +1069,12 @@ export default function ContasReceberPage() {
                             </button>
                         </form>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
 
             {/* MODAL PIX CORA (QR CODE + COPIA E COLA) */}
             {isPixModalOpen && pixData && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[250] p-4 animate-in fade-in duration-300">
+                <ModalPortal><div className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-[250] p-4 animate-in fade-in duration-300">
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm relative shadow-2xl border dark:border-gray-800 text-center animate-in zoom-in-95 duration-300">
                         <button
                             onClick={() => setIsPixModalOpen(false)}
@@ -1120,7 +1129,7 @@ export default function ContasReceberPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
         </div>
     );

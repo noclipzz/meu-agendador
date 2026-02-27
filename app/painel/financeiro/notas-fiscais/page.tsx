@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ptBR } from "date-fns/locale";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 export default function NotasFiscaisPage() {
     const [loading, setLoading] = useState(true);
@@ -306,7 +315,7 @@ export default function NotasFiscaisPage() {
 
             {/* MODAL FULLSCREEN: EMISSÃO DE NOTA MANUAL (Réplica do Modelo) */}
             {isNovaNotaOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto custom-scrollbar">
+                <ModalPortal><div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto custom-scrollbar">
                     <div className="bg-white dark:bg-gray-900 w-full max-w-6xl my-8 rounded-[2rem] shadow-2xl flex flex-col h-fit max-h-[95vh] overflow-hidden">
 
                         {/* Header do Form */}
@@ -563,7 +572,7 @@ export default function NotasFiscaisPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div></ModalPortal>
             )}
         </div>
     );
