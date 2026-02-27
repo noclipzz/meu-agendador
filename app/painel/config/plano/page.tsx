@@ -111,16 +111,16 @@ export default function ConfigPlano() {
 
     if (loading) return <div className="p-8 text-center text-gray-500">Carregando detalhes do plano...</div>;
 
-    const planName = config?.plan === "MASTER" ? "Master" : config?.plan === "PREMIUM" ? "Prata" : "Individual";
-    const planColor = config?.plan === "MASTER" ? "from-purple-600 to-blue-600" : config?.plan === "PREMIUM" ? "from-gray-400 to-gray-600" : "from-blue-400 to-blue-600";
+    const planName = config?.plan === "MASTER" ? "Master" : config?.plan === "PREMIUM" ? "Premium" : "Individual";
+    const planColor = config?.plan === "MASTER" ? "from-amber-500 to-yellow-600" : config?.plan === "PREMIUM" ? "from-blue-500 to-blue-700" : "from-gray-600 to-gray-800";
     const expiresAt = config?.expiresAt ? format(new Date(config.expiresAt), "dd/MM/yyyy", { locale: ptBR }) : "---";
     const statusLabel = config?.subscriptionStatus === "ACTIVE" ? "Ativo" : config?.subscriptionStatus === "PAST_DUE" ? "Atrasado" : "Inativo";
     const statusColor = config?.subscriptionStatus === "ACTIVE" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50";
 
-    const limitPrefix = config?.plan === "MASTER" ? "Ilimitados" : ((config?.plan === "PREMIUM" ? 3 : 1) + (config?.extraUsersCount || 0));
+    const limitPrefix = config?.plan === "MASTER" ? 15 : ((config?.plan === "PREMIUM" ? 5 : 1) + (config?.extraUsersCount || 0));
 
     const features = [
-        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : `Até ${limitPrefix}`, included: true },
+        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" && !config?.extraUsersCount ? "Até 15" : `Até ${limitPrefix}`, included: true },
         { name: "Agendamentos Online", value: "Ilimitados", included: true },
         { name: "Financeiro Completo", value: "", included: true },
         { name: "Gestão de Clientes", value: "", included: true },

@@ -81,18 +81,30 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         const plan = body.plan;
-        console.log("📦 [CHECKOUT] Plano solicitado:", plan);
+        const cycle = body.cycle || 'month';
+        console.log(`📦 [CHECKOUT] Plano solicitado: ${plan} | Ciclo: ${cycle}`);
 
         let priceId = "";
-        switch (plan) {
-            case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
-            case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM!; break;
-            case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
+
+        // Mapeamento dinâmico baseado no plano e ciclo
+        // Ex: STRIPE_PRICE_BRONZE_YEAR, STRIPE_PRICE_PRATA_MONTH, etc.
+        const cycleSuffix = cycle === 'year' ? 'YEAR' : cycle === 'semester' ? 'SEMESTER' : 'MONTH';
+        const envKey = `STRIPE_PRICE_${plan}_${cycleSuffix}`;
+
+        priceId = process.env[envKey]!;
+
+        // Fallback para os planos antigos se não encontrar o novo padrão
+        if (!priceId) {
+            switch (plan) {
+                case "INDIVIDUAL": priceId = process.env.STRIPE_PRICE_INDIVIDUAL!; break;
+                case "PREMIUM": priceId = process.env.STRIPE_PRICE_PREMIUM!; break;
+                case "MASTER": priceId = process.env.STRIPE_PRICE_MASTER!; break;
+            }
         }
 
         if (!priceId) {
-            console.error("❌ [CHECKOUT] Price ID não encontrado para o plano:", plan);
-            return NextResponse.json({ error: "Preço não configurado para este plano" }, { status: 400 });
+            console.error("❌ [CHECKOUT] Price ID não encontrado para:", envKey);
+            return NextResponse.json({ error: "Preço não configurado para este plano/ciclo" }, { status: 400 });
         }
 
         console.log("⏳ [CHECKOUT] Buscando assinatura no banco (com retry)...");

@@ -27,9 +27,15 @@ export async function POST(req: Request) {
         // 2. Define o Price ID baseado no tipo
         let priceId = "";
         switch (itemType) {
-            case "NFE": priceId = process.env.STRIPE_PRICE_NFE!; break;
-            case "BOLETO": priceId = process.env.STRIPE_PRICE_BOLETO!; break;
-            case "STAFF": priceId = process.env.STRIPE_PRICE_STAFF_SLOT!; break;
+            case "NFE":
+                priceId = process.env.STRIPE_PRICE_NFE || "price_1T5UZLDVX38Ti5nKLSBiSGFk";
+                break;
+            case "BOLETO":
+                priceId = process.env.STRIPE_PRICE_BOLETO || "price_1T5Ub8DVX38Ti5nKqiFxMqR0";
+                break;
+            case "STAFF":
+                priceId = process.env.STRIPE_PRICE_STAFF_SLOT || "price_1T5UblDVX38Ti5nK1ghzzZ54";
+                break;
             default: return NextResponse.json({ error: "Tipo de item inválido" }, { status: 400 });
         }
 
