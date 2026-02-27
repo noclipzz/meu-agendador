@@ -846,20 +846,38 @@ export default function ClientesPage() {
             <div class="signature-footer-container">
                 ${signatures.client || signatures.prof || signatures.company ? `
                 <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
-                    ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
+                    ${signatures.client ? `
+                        <div class="signature-block">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; display: flex; align-items: flex-end; justify-content: center;">
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
+                            </div>
+                        </div>` : ''}
                     ${signatures.prof ? `
                         <div class="signature-block">
-                            ${(useDigitalSignature && entry.professional?.signatureUrl)
-                        ? `<img src="${entry.professional.signatureUrl}" style="height: 70px; max-width: 250px; object-fit: contain; margin-bottom: -15px; display: block; margin-left: auto; margin-right: auto; mix-blend-mode: multiply;" />`
-                        : `<div class="signature-line"></div>`}
-                            <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
+                                    ${(useDigitalSignature && entry.professional?.signatureUrl)
+                        ? `<img src="${entry.professional.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
+                        : ''}
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                            </div>
                         </div>` : ''}
                     ${signatures.company ? `
                         <div class="signature-block">
-                            ${(useDigitalSignature && empresaInfo.signatureUrl)
-                        ? `<img src="${empresaInfo.signatureUrl}" style="height: 70px; max-width: 250px; object-fit: contain; margin-bottom: -15px; display: block; margin-left: auto; margin-right: auto; mix-blend-mode: multiply;" />`
-                        : `<div class="signature-line"></div>`}
-                            <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
+                                    ${(useDigitalSignature && empresaInfo.signatureUrl)
+                        ? `<img src="${empresaInfo.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
+                        : ''}
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                            </div>
                         </div>` : ''}
                 </div>` : ''}
 
