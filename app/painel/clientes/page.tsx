@@ -818,9 +818,20 @@ export default function ClientesPage() {
                         <div class="company-name">${nomeEmpresa}</div>
                     </div>
                 </div>
-                <div class="header-right">
-                    <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
-                    <div class="header-doc">Documento Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
+                    ${includeQR ? `
+                    <div style="text-align: right; display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #f0fdfa; border-radius: 12px; border: 1px solid #ccfbf1;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px;">Autenticidade</div>
+                            <div style="font-size: 7px; font-family: monospace; color: #9ca3af;">${entry.id.slice(0, 10).toUpperCase()}</div>
+                        </div>
+                        <img src="${qrCodeDataUrl}" style="width: 40px; height: 40px; border-radius: 4px;" />
+                    </div>
+                    ` : ''}
+                    <div style="text-align: right;">
+                        <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
+                        <div class="header-doc">Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
+                    </div>
                 </div>
             </div>
 
@@ -885,16 +896,7 @@ export default function ClientesPage() {
                     ${customFooter ? customFooter : `<strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`}
                 </div>
 
-                ${includeQR ? `
-                <div style="margin-top: 30px; padding: 20px; border: 1px dashed #e5e7eb; border-radius: 16px; display: flex; align-items: center; gap: 20px;">
-                    <img src="${qrCodeDataUrl}" style="width: 80px; height: 80px;" />
-                    <div style="flex: 1;">
-                        <div style="font-size: 10px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Autenticidade Digital</div>
-                        <div style="font-size: 11px; color: #4b5563; line-height: 1.4; margin-bottom: 8px;">Aponte a câmera do seu celular para o QR Code para validar a autenticidade deste documento em nosso portal oficial.</div>
-                        <div style="font-size: 9px; font-family: 'Courier New', monospace; color: #9ca3af;">HASH: ${entry.id.toUpperCase()}</div>
-                    </div>
-                </div>
-                ` : ''}
+
             </div>
         </div>
         </body></html>`;
