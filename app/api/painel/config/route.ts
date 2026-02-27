@@ -38,6 +38,19 @@ export async function GET() {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
+    // --- 🔐 SUPER ADMIN VITALÍCIO ---
+    const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
+    if (userId === SUPER_ADMIN) {
+      return NextResponse.json({
+        ...config,
+        plan: "MASTER",
+        expiresAt: "2099-12-31T23:59:59.000Z",
+        subscriptionStatus: "ACTIVE",
+        cancelAtPeriodEnd: false,
+        isOwner: true
+      });
+    }
+
     // Busca o plano do DONO da empresa
     const subscription = await prisma.subscription.findUnique({
       where: { userId: config.ownerId }
