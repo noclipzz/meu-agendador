@@ -155,6 +155,7 @@ export async function POST(req: Request) {
           phone,
           email, // Salva o email agora!
           photoUrl,
+          signatureUrl: body.signatureUrl || null,
           color: color || "#3b82f6",
           companyId: company.id,
           cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO",
@@ -244,6 +245,7 @@ export async function PUT(req: Request) {
         phone: body.phone,
         color: body.color,
         photoUrl: body.photoUrl,
+        signatureUrl: body.signatureUrl,
         cpf: body.cpf,
         rg: body.rg,
         birthDate: body.birthDate,

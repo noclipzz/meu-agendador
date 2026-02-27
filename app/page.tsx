@@ -716,7 +716,7 @@ export default function LandingPage() {
                 { icon: UserCircle, title: "Gestão de Clientes", desc: "Fichas técnicas, histórico de atendimentos e preferências de cada cliente.", color: "bg-pink-100 text-pink-600" },
                 { icon: FileText, title: "Nota Fiscal", desc: "Emissão de NFS-e integrada para automatizar sua burocracia fiscal.", color: "bg-amber-100 text-amber-600" },
                 { icon: CreditCard, title: "Boletos e PIX", desc: "Gere cobranças profissionais com baixa automática e gestão de recebíveis.", color: "bg-emerald-100 text-emerald-600" },
-                { icon: PenTool, title: "Assinatura Digital", desc: "Assine prontuários e contratos digitalmente com validade jurídica.", color: "bg-indigo-100 text-indigo-600" }
+                { icon: PenTool, title: "Assinatura Digital", desc: "Assine documentos e contratos digitalmente com validade jurídica.", color: "bg-indigo-100 text-indigo-600" }
               ].map((f, i) => (
                 <div key={i} className="bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all border border-white/20 group hover:-translate-y-1 duration-300">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-500 ${f.color}`}><f.icon size={28} strokeWidth={2.5} /></div>

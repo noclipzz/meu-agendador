@@ -66,7 +66,15 @@ export default function ClientesPage() {
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
-    const [printConfigModal, setPrintConfigModal] = useState<{ entry: any; dateVisible: boolean; twoColumns: boolean; signatures: { client: boolean; prof: boolean; company: boolean }; docNumber: string; customFooter: string } | null>(null);
+    const [printConfigModal, setPrintConfigModal] = useState<{
+        entry: any;
+        dateVisible: boolean;
+        twoColumns: boolean;
+        signatures: { client: boolean; prof: boolean; company: boolean };
+        useDigitalSignature: boolean;
+        docNumber: string;
+        customFooter: string;
+    } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
@@ -627,7 +635,8 @@ export default function ClientesPage() {
         let initialPrefs = {
             dateVisible: true,
             twoColumns: false,
-            signatures: { client: true, prof: true, company: false }
+            signatures: { client: true, prof: true, company: false },
+            useDigitalSignature: true
         };
 
         if (savedPrintPrefs) {
@@ -646,7 +655,7 @@ export default function ClientesPage() {
 
     function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, twoColumns, docNumber, customFooter } = printConfigModal;
+        const { entry, dateVisible, signatures, useDigitalSignature, twoColumns, docNumber, customFooter } = printConfigModal;
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -825,7 +834,13 @@ export default function ClientesPage() {
                 ${signatures.client || signatures.prof || signatures.company ? `
                 <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
                     ${signatures.client ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div></div>` : ''}
-                    ${signatures.prof ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">Assinatura do Profissional</div></div>` : ''}
+                    ${signatures.prof ? `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && entry.professional?.signatureUrl)
+                        ? `<img src="${entry.professional.signatureUrl}" style="height: 70px; max-width: 250px; object-fit: contain; margin-bottom: -15px; display: block; margin-left: auto; margin-right: auto; mix-blend-mode: multiply;" />`
+                        : `<div class="signature-line"></div>`}
+                            <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                        </div>` : ''}
                     ${signatures.company ? `<div class="signature-block"><div class="signature-line"></div><div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div></div>` : ''}
                 </div>` : ''}
 
@@ -1778,6 +1793,22 @@ export default function ClientesPage() {
                                             );
                                         })}
                                     </div>
+                                    {printConfigModal.signatures.prof && (
+                                        <div className="mt-4 animate-in slide-in-from-top-2">
+                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900'}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="accent-teal-600 w-4 h-4"
+                                                    checked={printConfigModal.useDigitalSignature}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, useDigitalSignature: e.target.checked })}
+                                                />
+                                                <div className="flex-1">
+                                                    <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
+                                                    <p className="text-[10px] text-gray-400">Usa a imagem da assinatura cadastrada no perfil do profissional.</p>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Data */}

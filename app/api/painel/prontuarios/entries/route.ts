@@ -31,11 +31,27 @@ export async function GET(req: Request) {
 
         const entries = await db.formEntry.findMany({
             where: { clientId },
-            include: { template: { select: { name: true, fields: true } } },
+            include: {
+                template: { select: { name: true, fields: true } }
+            },
             orderBy: { createdAt: 'desc' }
         });
 
-        return NextResponse.json(entries);
+        // Buscar profissionais dos preenchedores em uma única query
+        const userIds = entries.map(e => e.filledBy).filter(Boolean) as string[];
+        const uniqueUserIds = [...new Set(userIds)];
+
+        const professionals = await db.professional.findMany({
+            where: { userId: { in: uniqueUserIds } },
+            select: { userId: true, name: true, signatureUrl: true }
+        });
+
+        const entriesWithProf = entries.map(e => ({
+            ...e,
+            professional: professionals.find(p => p.userId === e.filledBy) || null
+        }));
+
+        return NextResponse.json(entriesWithProf);
     } catch (error) {
         console.error("Erro ao buscar prontuários:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });

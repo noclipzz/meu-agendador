@@ -127,6 +127,7 @@ model Professional {
   rg            String?
   state         String?
   status        String        @default("ATIVO")
+  signatureUrl  String?
   updatedAt     DateTime      @default(now()) @updatedAt
   maritalStatus String?
   attachments   Attachment[]

@@ -5,7 +5,7 @@ import {
     Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
     Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon, Search,
     MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon, Megaphone,
-    Download, Eye, Receipt, QrCode, CreditCard, Banknote
+    Download, Eye, Receipt, QrCode, CreditCard, Banknote, PenTool
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -59,6 +59,7 @@ export default function GestaoEquipe() {
         phone: "",
         color: "#3b82f6",
         photoUrl: "",
+        signatureUrl: "",
         cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
         role: "PROFESSIONAL", // ✅ Novo campo: Cargo
         permissions: {
@@ -161,6 +162,22 @@ export default function GestaoEquipe() {
             console.error("ERRO_UPLOAD_FOTO_PRO:", error);
             toast.error("Erro no upload: " + (error.message || "Verifique o console"));
         }
+    }
+
+    async function handleUploadAssinatura(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        toast.info("Enviando assinatura...");
+        try {
+            const blob = await upload(`signature-${form.name || 'pro'}.png`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            if (blob.url) {
+                setForm(prev => ({ ...prev, signatureUrl: blob.url }));
+                toast.success("Assinatura digital salva!");
+            }
+        } catch (error) { toast.error("Falha ao subir assinatura."); }
     }
 
     async function adicionarNotaRapidaPro() {
@@ -338,6 +355,7 @@ export default function GestaoEquipe() {
             phone: formatarTelefone(p.phone || ""),
             color: p.color || "#3b82f6",
             photoUrl: p.photoUrl || "",
+            signatureUrl: p.signatureUrl || "",
             cpf: formatarCPF(p.cpf || ""),
             rg: p.rg || "",
             birthDate: p.birthDate || "",
@@ -373,7 +391,7 @@ export default function GestaoEquipe() {
     function fecharModal() {
         setModalAberto(false);
         setForm({
-            id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "",
+            id: "", name: "", email: "", phone: "", color: "#3b82f6", photoUrl: "", signatureUrl: "",
             cpf: "", rg: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
             role: "PROFESSIONAL",
             permissions: {
@@ -574,6 +592,14 @@ export default function GestaoEquipe() {
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-sm">{proSelecionado.rg || "---"}</p></div>
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nascimento</label><p className="font-bold dark:text-white text-sm">{proSelecionado.birthDate && !isNaN(new Date(proSelecionado.birthDate).getTime()) ? format(new Date(proSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Estado Civil</label><p className="font-bold dark:text-white text-sm">{proSelecionado.maritalStatus || "---"}</p></div>
+                                                    <div className="col-span-12 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800">
+                                                        <label className="text-[9px] font-black text-gray-400 uppercase">Assinatura Digital</label>
+                                                        {proSelecionado.signatureUrl ? (
+                                                            <div className="mt-2 bg-white rounded-xl p-2 w-fit border dark:border-gray-700">
+                                                                <img src={proSelecionado.signatureUrl} alt="Assinatura" className="h-16 object-contain mix-multiply" />
+                                                            </div>
+                                                        ) : <p className="text-xs text-gray-400 italic">Não cadastrada</p>}
+                                                    </div>
                                                 </div>
                                             </section>
                                             <section>
@@ -736,6 +762,18 @@ export default function GestaoEquipe() {
                                             <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Telefone / WhatsApp</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
                                         </div>
                                         <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">URL da Foto (Opcional)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white text-xs" placeholder="Cole um link de imagem..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} /></div>
+                                        <div className="pt-2">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Assinatura Digital (PNG Transparente)</label>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-40 h-16 bg-white border-2 border-dashed dark:border-gray-700 rounded-xl flex items-center justify-center overflow-hidden">
+                                                    {form.signatureUrl ? <img src={form.signatureUrl} className="h-full object-contain" /> : <PenTool size={24} className="text-gray-200" />}
+                                                </div>
+                                                <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Enviar Arquivo</span>
+                                                    <input type="file" className="hidden" onChange={handleUploadAssinatura} accept="image/*" />
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
