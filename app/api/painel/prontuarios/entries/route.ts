@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
         // Buscar profissionais dos preenchedores em uma única query
         const userIds = entries.map(e => e.filledBy).filter(Boolean) as string[];
-        const uniqueUserIds = [...new Set(userIds)];
+        const uniqueUserIds = Array.from(new Set(userIds));
 
         const professionals = await db.professional.findMany({
             where: { userId: { in: uniqueUserIds } },
