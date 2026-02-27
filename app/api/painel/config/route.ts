@@ -48,6 +48,7 @@ export async function GET() {
       plan: subscription?.plan || "FREE",
       expiresAt: subscription?.expiresAt || null,
       subscriptionStatus: subscription?.status || "INACTIVE",
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });
   } catch (error) {

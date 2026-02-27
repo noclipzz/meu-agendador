@@ -15,10 +15,21 @@ import { ptBR } from "date-fns/locale";
 export default function ConfigPlano() {
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState<any>(null);
+    const [invoices, setInvoices] = useState<any[]>([]);
 
     useEffect(() => {
-        carregarConfig();
+        Promise.all([carregarConfig(), carregarFaturas()]).finally(() => setLoading(false));
     }, []);
+
+    async function carregarFaturas() {
+        try {
+            const res = await fetch('/api/checkout/invoices');
+            const data = await res.json();
+            if (Array.isArray(data)) setInvoices(data);
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
     async function carregarConfig() {
         try {
@@ -29,6 +40,29 @@ export default function ConfigPlano() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function toggleRenovacao() {
+        try {
+            const novoEstado = !config?.cancelAtPeriodEnd;
+            toast.loading(novoEstado ? "Desativando renovação..." : "Ativando renovação...");
+
+            const res = await fetch('/api/checkout/subscription/toggle-recurrence', {
+                method: 'POST',
+                body: JSON.stringify({ cancelAtPeriodEnd: novoEstado })
+            });
+
+            if (res.ok) {
+                setConfig({ ...config, cancelAtPeriodEnd: novoEstado });
+                toast.success(novoEstado ? "Renovação automática desativada." : "Renovação automática ativada!");
+            } else {
+                toast.error("Erro ao atualizar status.");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão.");
+        } finally {
+            toast.dismiss();
         }
     }
 
@@ -59,19 +93,18 @@ export default function ConfigPlano() {
     const statusColor = config?.subscriptionStatus === "ACTIVE" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50";
 
     const features = [
-        { name: "Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : config?.plan === "PREMIUM" ? "3" : "1", included: true },
-        { name: "Lojas", value: config?.plan === "MASTER" ? "5" : "1", included: true },
-        { name: "Emissão de notas fiscais", value: "", included: config?.plan !== "INDIVIDUAL" },
-        { name: "Emissão de boletos", value: "", included: config?.plan !== "INDIVIDUAL" },
-        { name: "Layout e domínio personalizado", value: "", included: config?.plan === "MASTER" },
-        { name: "Conta Integrada", value: "", included: true },
-        { name: "Recursos Humanos", value: "", included: config?.plan === "MASTER" },
-        { name: "Assinatura Digital", value: "0/mês", included: config?.plan === "MASTER" },
-        { name: "Agenda Pro", value: "", included: true },
-        { name: "MDF-e", value: "", included: config?.plan === "MASTER" },
-        { name: "Tray", value: "", included: config?.plan === "MASTER" },
-        { name: "Mercado Pago", value: "", included: true },
-        { name: "Mercado Livre", value: "", included: config?.plan === "MASTER" },
+        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" ? "Ilimitados" : config?.plan === "PREMIUM" ? "Até 3" : "1", included: true },
+        { name: "Agendamentos Online", value: "Ilimitados", included: true },
+        { name: "Financeiro Completo", value: "", included: true },
+        { name: "Gestão de Clientes", value: "", included: true },
+        { name: "Prontuários e Histórico", value: "", included: true },
+        { name: "WhatsApp Automático", value: "", included: config?.plan === "MASTER" },
+        { name: "Emissão de Notas Fiscais", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
+        { name: "Emissão de Boletos (PIX/Boleto)", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
+        { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
+        { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
+        { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER" },
+        { name: "Múltiplas Unidades", value: config?.plan === "MASTER" ? "Até 5" : "1", included: true },
     ];
 
     return (
@@ -144,6 +177,29 @@ export default function ConfigPlano() {
                         <div className="px-8 pb-8">
                             <p className="text-sm text-gray-500 mb-6">Utilizamos o **Stripe** para processar seus pagamentos de forma segura. Clique abaixo para gerenciar seus cartões e baixar faturas antigas.</p>
 
+                            <div className="flex items-center gap-3 mb-8 p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border dark:border-white/10">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Renovação automática</p>
+                                        {!config?.cancelAtPeriodEnd ? (
+                                            <span className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded text-[8px] font-black uppercase">Ativa</span>
+                                        ) : (
+                                            <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[8px] font-black uppercase">Manual</span>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 mt-0.5">Sua assinatura será renovada automaticamente em {expiresAt}.</p>
+                                </div>
+                                <button
+                                    onClick={toggleRenovacao}
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm ${!config?.cancelAtPeriodEnd
+                                            ? "bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                        }`}
+                                >
+                                    {!config?.cancelAtPeriodEnd ? "Desativar" : "Ativar"}
+                                </button>
+                            </div>
+
                             <div className="flex flex-wrap gap-3">
                                 <button onClick={handleOpenPortal} className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase flex items-center gap-2 transition active:scale-95 shadow-lg shadow-orange-500/20">
                                     <ExternalLink size={16} /> Abrir Portal de Pagamentos
@@ -199,6 +255,7 @@ export default function ConfigPlano() {
                 <div className="p-8 pt-4">
                     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-[2rem] border dark:border-gray-800 overflow-hidden">
                         <div className="overflow-x-auto">
+
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b dark:border-gray-800">
@@ -210,23 +267,31 @@ export default function ConfigPlano() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {[
-                                        { id: "202500000042250", date: "01/07/2025", desc: config?.corporateName || config?.name || "Empresa Cliente LTDA", value: "R$ 1.507,79" },
-                                        { id: "202400000044948", date: "10/07/2024", desc: config?.corporateName || config?.name || "Empresa Cliente LTDA", value: "R$ 1.507,82" },
-                                        { id: "202400000003686", date: "15/01/2024", desc: config?.corporateName || config?.name || "Empresa Cliente LTDA", value: "R$ 117,05" },
-                                    ].map((n, i) => (
-                                        <tr key={i} className="border-b dark:border-gray-800 last:border-0 hover:bg-white dark:hover:bg-white/5 transition">
-                                            <td className="p-5 text-sm font-bold text-gray-700 dark:text-gray-300">{n.id}</td>
-                                            <td className="p-5 text-sm font-bold text-gray-700 dark:text-gray-300">{n.date}</td>
-                                            <td className="p-5 text-xs font-black text-gray-500 dark:text-gray-400 uppercase truncate max-w-[200px]">{n.desc}</td>
-                                            <td className="p-5 text-sm font-black text-gray-900 dark:text-white">{n.value}</td>
-                                            <td className="p-5">
-                                                <button className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-xl text-[10px] font-black uppercase transition active:scale-95">
-                                                    <Printer size={14} /> Imprimir NFS-e
-                                                </button>
+                                    {invoices.length > 0 ? (
+                                        invoices.map((n, i) => (
+                                            <tr key={i} className="border-b dark:border-gray-800 last:border-0 hover:bg-white dark:hover:bg-white/5 transition">
+                                                <td className="p-5 text-sm font-bold text-gray-700 dark:text-gray-300">{n.id}</td>
+                                                <td className="p-5 text-sm font-bold text-gray-700 dark:text-gray-300">{n.date}</td>
+                                                <td className="p-5 text-xs font-black text-gray-500 dark:text-gray-400 uppercase truncate max-w-[200px]">{config?.corporateName || config?.name || "Cliente Nohud"}</td>
+                                                <td className="p-5 text-sm font-black text-gray-900 dark:text-white">{n.value}</td>
+                                                <td className="p-5">
+                                                    {n.pdf ? (
+                                                        <button onClick={() => window.open(n.pdf, '_blank')} className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-xl text-[10px] font-black uppercase transition active:scale-95">
+                                                            <Printer size={14} /> Imprimir / PDF
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-gray-400 font-bold uppercase block text-center italic">Processando...</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="p-10 text-center text-gray-400 text-xs font-bold uppercase italic">
+                                                Nenhuma fatura encontrada.
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
