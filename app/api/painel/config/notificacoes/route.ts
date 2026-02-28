@@ -7,18 +7,46 @@ export async function GET() {
         const { userId } = auth();
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
+        // Retrieve User Pref
         let pref = await db.userNotificationPref.findUnique({
             where: { userId }
         });
 
-        // Initialize with defaults if it doesn't exist
         if (!pref) {
             pref = await db.userNotificationPref.create({
-                data: { userId }
+                data: { userId, settings: {} }
             });
         }
 
-        return NextResponse.json(pref);
+        // Retrieve Company Settings
+        const company = await db.company.findFirst({
+            where: {
+                OR: [
+                    { ownerId: userId },
+                    { professionals: { some: { userId: userId } } }
+                ]
+            }
+        });
+
+        // Determine if user has permission to edit company settings
+        let canEditCompany = false;
+        if (company) {
+            if (company.ownerId === userId) {
+                canEditCompany = true;
+            } else {
+                const member = await db.teamMember.findUnique({
+                    where: { clerkUserId: userId }
+                });
+                if (member?.role === "ADMIN") canEditCompany = true;
+            }
+        }
+
+        return NextResponse.json({
+            userPref: pref,
+            companySettings: company?.notificationSettings || {},
+            companyId: company?.id,
+            canEditCompany
+        });
     } catch (error) {
         console.error("[NOTIFICATIONS_GET]", error);
         return new NextResponse("Erro Interno", { status: 500 });
@@ -31,26 +59,49 @@ export async function POST(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { email, whatsapp, push, phone } = body;
+        const { userPref, companySettings, companyId, canEditCompany } = body;
 
-        const pref = await db.userNotificationPref.upsert({
-            where: { userId },
-            create: {
-                userId,
-                email,
-                whatsapp,
-                push,
-                phone
-            },
-            update: {
-                email,
-                whatsapp,
-                push,
-                phone
+        // 1. Upsert User Pref
+        if (userPref) {
+            await db.userNotificationPref.upsert({
+                where: { userId },
+                create: {
+                    userId,
+                    email: userPref.email ?? true,
+                    whatsapp: userPref.whatsapp ?? true,
+                    push: userPref.push ?? true,
+                    phone: userPref.phone || null,
+                    settings: userPref.settings || {}
+                },
+                update: {
+                    email: userPref.email ?? true,
+                    whatsapp: userPref.whatsapp ?? true,
+                    push: userPref.push ?? true,
+                    phone: userPref.phone || null,
+                    settings: userPref.settings || {}
+                }
+            });
+        }
+
+        // 2. Update Company Settings if allowed
+        if (canEditCompany && companyId && companySettings) {
+            const company = await db.company.findUnique({ where: { id: companyId } });
+            let allowed = false;
+            if (company?.ownerId === userId) allowed = true;
+            else {
+                const member = await db.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
+                if (member?.role === "ADMIN") allowed = true;
             }
-        });
 
-        return NextResponse.json(pref);
+            if (allowed) {
+                await db.company.update({
+                    where: { id: companyId },
+                    data: { notificationSettings: companySettings }
+                });
+            }
+        }
+
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[NOTIFICATIONS_POST]", error);
         return new NextResponse("Erro Interno", { status: 500 });

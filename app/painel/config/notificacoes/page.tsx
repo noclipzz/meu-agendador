@@ -1,18 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Loader2, Bell, Mail, MessageCircle, Smartphone } from "lucide-react";
+import { Save, Loader2, Bell, Mail, MessageCircle, Smartphone, CheckCircle, Info, Building2, User } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../../contexts/AgendaContext";
 
 export default function NotificacoesPage() {
+    const { userRole, isOwner } = useAgenda();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    const [email, setEmail] = useState(true);
-    const [whatsapp, setWhatsapp] = useState(true);
-    const [push, setPush] = useState(true);
-    const [phone, setPhone] = useState("");
+    // Configurações do User (UserNotificationPref)
+    const [userPref, setUserPref] = useState({
+        email: true,
+        whatsapp: true,
+        push: true,
+        phone: "",
+        settings: {
+            new_booking_email: true,
+            new_booking_push: true,
+            daily_agenda_push: true,
+            financial_summaries_email: true
+        } as Record<string, boolean>
+    });
+
+    // Configurações da Empresa (Company.notificationSettings)
+    const [companySettings, setCompanySettings] = useState({
+        client_new_booking_whatsapp: true,
+        client_reminder_whatsapp: true,
+        client_waiting_list_whatsapp: true,
+        client_payment_whatsapp: true
+    } as Record<string, boolean>);
+
+    const [companyId, setCompanyId] = useState("");
+    const [canEditCompany, setCanEditCompany] = useState(false);
 
     useEffect(() => {
         carregarConfig();
@@ -23,10 +44,31 @@ export default function NotificacoesPage() {
             const res = await fetch("/api/painel/config/notificacoes");
             if (res.ok) {
                 const data = await res.json();
-                setEmail(data.email);
-                setWhatsapp(data.whatsapp);
-                setPush(data.push);
-                setPhone(data.phone || "");
+
+                if (data.userPref) {
+                    setUserPref({
+                        email: data.userPref.email,
+                        whatsapp: data.userPref.whatsapp,
+                        push: data.userPref.push,
+                        phone: data.userPref.phone || "",
+                        settings: {
+                            new_booking_email: data.userPref.settings?.new_booking_email ?? true,
+                            new_booking_push: data.userPref.settings?.new_booking_push ?? true,
+                            daily_agenda_push: data.userPref.settings?.daily_agenda_push ?? true,
+                            financial_summaries_email: data.userPref.settings?.financial_summaries_email ?? true,
+                        }
+                    });
+                }
+
+                setCompanySettings({
+                    client_new_booking_whatsapp: data.companySettings?.client_new_booking_whatsapp ?? true,
+                    client_reminder_whatsapp: data.companySettings?.client_reminder_whatsapp ?? true,
+                    client_waiting_list_whatsapp: data.companySettings?.client_waiting_list_whatsapp ?? true,
+                    client_payment_whatsapp: data.companySettings?.client_payment_whatsapp ?? true,
+                });
+
+                setCompanyId(data.companyId || "");
+                setCanEditCompany(data.canEditCompany || false);
             }
         } catch (error) {
             console.error(error);
@@ -50,7 +92,12 @@ export default function NotificacoesPage() {
             const res = await fetch("/api/painel/config/notificacoes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, whatsapp, push, phone })
+                body: JSON.stringify({
+                    userPref,
+                    companySettings,
+                    companyId,
+                    canEditCompany
+                })
             });
             if (res.ok) {
                 toast.success("Preferências de notificação salvas!");
@@ -64,19 +111,33 @@ export default function NotificacoesPage() {
         }
     };
 
+    const toggleUserSetting = (key: string) => {
+        setUserPref(prev => ({
+            ...prev,
+            settings: { ...prev.settings, [key]: !prev.settings[key] }
+        }));
+    };
+
+    const toggleCompanySetting = (key: string) => {
+        setCompanySettings(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
     if (loading) {
-        return <div className="p-8 flex items-center justify-center"><Loader2 className="animate-spin text-blue-600" /></div>;
+        return <div className="p-8 flex items-center justify-center min-h-[50vh]"><Loader2 className="animate-spin text-blue-600" size={32} /></div>;
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-6 pb-24 space-y-6">
+        <div className="max-w-4xl mx-auto p-4 md:p-6 pb-24 space-y-8">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                        <Bell size={32} className="text-blue-600" /> Preferências de Notificação
+                        <Bell size={32} className="text-blue-600" /> Notificações e Alertas
                     </h1>
                     <p className="text-gray-500 font-medium mt-1">
-                        Escolha onde e como receber os alertas do sistema.
+                        Personalize os avisos para você e para os clientes do salão.
                     </p>
                 </div>
                 <button
@@ -89,80 +150,136 @@ export default function NotificacoesPage() {
                 </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-8">
 
-                {/* 1. E-MAIL */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 md:p-8 flex items-start gap-4 shadow-sm border dark:border-gray-700">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shrink-0">
-                        <Mail size={24} />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                        <div className="flex justify-between items-start">
-                            <h2 className="text-xl font-black dark:text-white">Alertas por E-mail</h2>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={email} onChange={(e) => setEmail(e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <p className="text-sm text-gray-500 font-medium">
-                            Receber resumo diário, alertas de login em novos dispositivos e relatórios.
-                        </p>
-                    </div>
-                </div>
+                {/* SESSÃO 1: NOTIFICAÇÕES PARA MIM (USER) */}
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold dark:text-white flex items-center gap-2 border-b dark:border-gray-800 pb-2">
+                        <User size={20} className="text-blue-500" /> Minhas Notificações Pessoais
+                    </h2>
 
-                {/* 2. PUSH (APP) */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 md:p-8 flex items-start gap-4 shadow-sm border dark:border-gray-700">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
-                        <Smartphone size={24} />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                        <div className="flex justify-between items-start">
-                            <h2 className="text-xl font-black dark:text-white">Notificações Push (Tela)</h2>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={push} onChange={(e) => setPush(e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <p className="text-sm text-gray-500 font-medium">
-                            Alertas instantâneos na tela do celular/PC de novos agendamentos e lembretes diários.
-                        </p>
-                    </div>
-                </div>
-
-                {/* 3. WHATSAPP */}
-                <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 md:p-8 flex items-start gap-4 shadow-sm border dark:border-gray-700">
-                    <div className="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center shrink-0">
-                        <MessageCircle size={24} />
-                    </div>
-                    <div className="flex-1 space-y-4">
-                        <div className="flex justify-between items-start">
-                            <h2 className="text-xl font-black dark:text-white">Resumo via WhatsApp</h2>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={whatsapp} onChange={(e) => setWhatsapp(e.target.checked)} />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                            </label>
-                        </div>
-                        <p className="text-sm text-gray-500 font-medium">
-                            Receber avisos pelo assistente automático do sistema no seu número.
-                        </p>
-
-                        {/* INPUT PARA TEFELONE SE ATIVO */}
-                        {whatsapp && (
-                            <div className="pt-2 animate-in fade-in zoom-in-95 duration-200">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Qual seu WhatsApp para ser avisado?</label>
-                                <input
-                                    type="tel"
-                                    maxLength={15}
-                                    className="w-full max-w-sm p-3.5 rounded-xl border-2 dark:border-gray-700/50 bg-gray-50 dark:bg-gray-900/50 font-bold dark:text-white outline-none focus:ring-2 ring-green-500 transition-all text-sm"
-                                    placeholder="(11) 90000-0000"
-                                    value={phone}
-                                    onChange={(e) => setPhone(formatarTelefoneInput(e.target.value))}
-                                />
+                    {/* Master Switches */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border dark:border-gray-700/50 flex flex-col gap-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center">
+                                        <Smartphone size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold dark:text-white leading-tight">Canal: Push App</h3>
+                                        <p className="text-[11px] text-gray-500 uppercase tracking-widest font-black mt-0.5">Alertas no Dispositivo</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={userPref.push} onChange={(e) => setUserPref(prev => ({ ...prev, push: e.target.checked }))} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                                </label>
                             </div>
-                        )}
+
+                            {userPref.push && (
+                                <div className="pl-1 space-y-3 pt-2 border-t dark:border-gray-700/50 animate-in fade-in duration-300">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.new_booking_push} onChange={() => toggleUserSetting('new_booking_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Novos Agendamentos (Apito Instantâneo)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.daily_agenda_push} onChange={() => toggleUserSetting('daily_agenda_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Alerta Matinal (Sua Agenda do Dia)</span>
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border dark:border-gray-700/50 flex flex-col gap-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+                                        <Mail size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold dark:text-white leading-tight">Canal: E-mail</h3>
+                                        <p className="text-[11px] text-gray-500 uppercase tracking-widest font-black mt-0.5">Caixa de Entrada</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" className="sr-only peer" checked={userPref.email} onChange={(e) => setUserPref(prev => ({ ...prev, email: e.target.checked }))} />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+
+                            {userPref.email && (
+                                <div className="pl-1 space-y-3 pt-2 border-t dark:border-gray-700/50 animate-in fade-in duration-300">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.new_booking_email} onChange={() => toggleUserSetting('new_booking_email')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Novos Agendamentos (Mais detalhes)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.financial_summaries_email} onChange={() => toggleUserSetting('financial_summaries_email')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Resumos Financeiros (Faturas NOHUD)</span>
+                                    </label>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
+                {/* SESSÃO 2: NOTIFICAÇÕES PARA OS CLIENTES (COMPANY SETTINGS) */}
+                {canEditCompany && (
+                    <div className="space-y-4 pt-6">
+                        <h2 className="text-xl font-bold dark:text-white flex items-center gap-2 border-b dark:border-gray-800 pb-2">
+                            <Building2 size={20} className="text-green-500" /> Notificações da Empresa para os Clientes
+                        </h2>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border dark:border-gray-700/50 flex flex-col gap-6">
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center">
+                                    <MessageCircle size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold dark:text-white leading-tight">Automações do WhatsApp Bot</h3>
+                                    <p className="text-[11px] text-gray-500 uppercase tracking-widest font-black mt-0.5">O que o Bot envia aos clientes via número</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_new_booking_whatsapp} onChange={() => toggleCompanySetting('client_new_booking_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Confirmação (Reserva)</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Dispara imediatamente após o agendamento pedindo o confere.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_reminder_whatsapp} onChange={() => toggleCompanySetting('client_reminder_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Lembretes 24h Antes</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Ajuda a diminuir o "No-Show" e esquecimento.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_waiting_list_whatsapp} onChange={() => toggleCompanySetting('client_waiting_list_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Fila de Espera Automática</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Avisa os clientes quando surge nova vaga na agenda.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_payment_whatsapp} onChange={() => toggleCompanySetting('client_payment_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Avisos Financeiros do Boleto/Pix</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Emite lembrete de cobrança e recibo de pagamento aos clientes.</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

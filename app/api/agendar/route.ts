@@ -342,7 +342,10 @@ export async function POST(req: Request) {
         }
 
         // C) WHATSAPP - EVOLUTION API (Se estiver conectado e for plano MASTER)
-        if (company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
+        const notifSettings = company?.notificationSettings as any || {};
+        const sendWhatsappToClient = notifSettings.client_new_booking_whatsapp !== false; // Padrão é true
+
+        if (sendWhatsappToClient && company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {
             try {
                 for (const booking of bookingsCreated) {
                     // CUIDs share the same prefix if created at the same time, so we take the LAST 4 characters

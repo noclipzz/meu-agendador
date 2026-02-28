@@ -58,6 +58,7 @@ model Company {
   whatsappWaitingListMessage   String?            @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
   whatsappPaymentSuccessMessage String?            @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
   corporateName                String?
+  notificationSettings         Json?              @default("{}")
   // Cora Integration
   coraClientId                 String?
   coraCertUrl                  String?
@@ -397,6 +398,7 @@ model UserNotificationPref {
   whatsapp    Boolean  @default(true)
   push        Boolean  @default(true)
   phone       String?
+  settings    Json?    @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
