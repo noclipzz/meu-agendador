@@ -19,6 +19,21 @@ export default function ServicosPage() {
 
     // --- CORREÇÃO: VALORES INICIAIS VAZIOS PARA NÃO ATRAPALHAR O USUÁRIO ---
     const [form, setForm] = useState({ id: "", name: "", price: "", duration: "", commission: "" });
+    const [displayPrice, setDisplayPrice] = useState("");
+
+    const formatCurrency = (value: string) => {
+        const rawValue = value.replace(/\D/g, "");
+        if (!rawValue) return "";
+        const numericValue = Number(rawValue) / 100;
+        return numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    };
+
+    const handlePriceChange = (value: string) => {
+        const formatted = formatCurrency(value);
+        setDisplayPrice(formatted);
+        const numericValue = value.replace(/\D/g, "");
+        setForm({ ...form, price: (Number(numericValue) / 100).toString() });
+    };
 
     const [consumo, setConsumo] = useState<{ productId: string, amount: string, name?: string, unit?: string }[]>([]);
     const [prodSelecionado, setProdSelecionado] = useState("");
@@ -62,6 +77,7 @@ export default function ServicosPage() {
                 duration: servico.duration,
                 commission: servico.commission
             });
+            setDisplayPrice(Number(servico.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
             setConsumo(servico.products.map((p: any) => ({
                 productId: p.productId,
                 amount: p.amount,
@@ -71,6 +87,7 @@ export default function ServicosPage() {
         } else {
             // --- CORREÇÃO: AO ABRIR PARA CRIAR, LIMPA TUDO ---
             setForm({ id: "", name: "", price: "", duration: "", commission: "" });
+            setDisplayPrice("");
             setConsumo([]);
         }
         setProdSelecionado("");
@@ -194,7 +211,7 @@ export default function ServicosPage() {
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Preço (R$)</label>
-                                        <input type="number" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0.00" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+                                        <input type="text" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="0,00" value={displayPrice} onChange={e => handlePriceChange(e.target.value)} />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Duração (min)</label>

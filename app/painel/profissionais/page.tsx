@@ -497,8 +497,8 @@ export default function GestaoEquipe() {
             {/* FICHA DO PROFISSIONAL (TABBED) */}
             {proSelecionado && (
                 <ModalPortal>
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-                        <div className="bg-white dark:bg-gray-900 w-full max-w-6xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[110] p-2 md:p-4">
+                        <div className="bg-white dark:bg-gray-900 w-full max-w-6xl h-full max-h-[96vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
                             {/* HEADER DA FICHA */}
                             <div className="p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-white/5">

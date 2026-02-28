@@ -33,6 +33,12 @@ export default async function VerificarDocumentoPage({ params }: { params: { id:
         );
     }
 
+    // Pegar nome da empresa e responsável legal
+    const company = await db.company.findUnique({
+        where: { id: entry.companyId },
+        select: { name: true, corporateName: true, logoUrl: true, legalRepresentative: true }
+    });
+
     // Buscar o profissional que preencheu
     let professionalName = "Não identificado";
     if (entry.filledBy) {
@@ -41,21 +47,11 @@ export default async function VerificarDocumentoPage({ params }: { params: { id:
             select: { name: true }
         });
         if (pro) professionalName = pro.name;
-        else {
-            // Se não for profissional, pode ser o dono
-            const company = await db.company.findUnique({
-                where: { ownerId: entry.filledBy },
-                select: { name: true }
-            });
-            if (company) professionalName = `Proprietário (${company.name})`;
+        else if (company) {
+            // Se não for profissional, é o dono/responsável legal
+            professionalName = company.legalRepresentative || `Proprietário (${company.name})`;
         }
     }
-
-    // Pegar nome da empresa
-    const company = await db.company.findUnique({
-        where: { id: entry.companyId },
-        select: { name: true, corporateName: true, logoUrl: true }
-    });
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">

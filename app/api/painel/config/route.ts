@@ -131,6 +131,7 @@ export async function POST(req: Request) {
       lunchEnd: body.lunchEnd || "13:00",
       logoUrl: body.logoUrl || "",
       signatureUrl: body.signatureUrl || "",
+      legalRepresentative: body.legalRepresentative || null,
       monthlyGoal: body.monthlyGoal ? Number(body.monthlyGoal) : 5000,
       workDays: body.workDays || "1,2,3,4,5",
       interval: body.interval ? Number(body.interval) : 30,

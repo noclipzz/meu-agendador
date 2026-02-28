@@ -42,6 +42,7 @@ export default function ConfigGerais() {
     const [facebookUrl, setFacebookUrl] = useState("");
     const [logoUrl, setLogoUrl] = useState("");
     const [signatureUrl, setSignatureUrl] = useState("");
+    const [legalRepresentative, setLegalRepresentative] = useState("");
     const [openTime, setOpenTime] = useState("09:00");
     const [closeTime, setCloseTime] = useState("18:00");
     const [lunchStart, setLunchStart] = useState("12:00");
@@ -87,6 +88,7 @@ export default function ConfigGerais() {
                 setFacebookUrl(dataConfig.facebookUrl || "");
                 setLogoUrl(dataConfig.logoUrl || "");
                 setSignatureUrl(dataConfig.signatureUrl || "");
+                setLegalRepresentative(dataConfig.legalRepresentative || "");
                 setOpenTime(dataConfig.openTime || "09:00");
                 setCloseTime(dataConfig.closeTime || "18:00");
                 setLunchStart(dataConfig.lunchStart || "12:00");
@@ -203,7 +205,7 @@ export default function ConfigGerais() {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl,
+                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, legalRepresentative,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state
                 })
@@ -294,6 +296,15 @@ export default function ConfigGerais() {
                                     className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
                                     value={corporateName}
                                     onChange={e => setCorporateName(e.target.value)}
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Responsável Legal</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    placeholder="Nome do responsável pela empresa..."
+                                    value={legalRepresentative}
+                                    onChange={e => setLegalRepresentative(e.target.value)}
                                 />
                             </div>
                         </div>
