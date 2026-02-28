@@ -362,28 +362,35 @@ export default function ConfigPlano() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-3 text-right">
-                                    <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 15,00/mês cada</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-1 shadow-sm">
+                                    <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">+ R$ 15,00/mês cada</span>
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-1 shadow-sm h-12">
                                             <button
                                                 onClick={() => setExtraStaffQty(Math.max(1, extraStaffQty - 1))}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                                className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors text-lg font-bold"
                                             >
                                                 -
                                             </button>
-                                            <span className="w-8 text-center text-xs font-black text-blue-600">{extraStaffQty}</span>
+                                            <span className="w-10 text-center text-sm font-black text-blue-600">{extraStaffQty}</span>
                                             <button
                                                 onClick={() => setExtraStaffQty(extraStaffQty + 1)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                                className="w-8 h-full flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors text-lg font-bold"
                                             >
                                                 +
                                             </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleAddItem('STAFF', extraStaffQty)}
-                                            className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
-                                            <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
-                                        </button>
+                                        <div className="flex flex-col items-end gap-1">
+                                            {extraStaffQty > 0 && (
+                                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md animate-in fade-in zoom-in duration-300">
+                                                    +{(extraStaffQty * 15).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
+                                                </span>
+                                            )}
+                                            <button
+                                                onClick={() => handleAddItem('STAFF', extraStaffQty)}
+                                                className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-5 h-12 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2 whitespace-nowrap">
+                                                <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
