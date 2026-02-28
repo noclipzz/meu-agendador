@@ -285,8 +285,8 @@ export default function ConfigPlano() {
                             {/* Módulo Boletos */}
                             <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasBoletoModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
-                                        <CreditCard className={config?.hasBoletoModule ? "text-emerald-600" : "text-blue-600"} size={24} />
+                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
+                                        <img src="/cora-icon.png" className="w-full h-full object-cover" alt="CORA" />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
