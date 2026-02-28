@@ -290,7 +290,7 @@ export default function ConfigPlano() {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
-                                            Emissão de Boletos / PIX
+                                            BANCO CORA
                                         </h3>
                                         <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic text-blue-600/70">
                                             Cobranças automáticas via PIX e Boleto Cora

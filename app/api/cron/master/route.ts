@@ -44,6 +44,7 @@ export async function GET(req: Request) {
         const subscricoes = await db.pushSubscription.findMany({ select: { userId: true } });
         let pushSent = 0;
 
+        /* 
         for (const sub of subscricoes) {
             try {
                 let notificationSent = false;
@@ -108,7 +109,8 @@ export async function GET(req: Request) {
                 console.error(`Erro ao processar notificação matinal para user ${sub.userId}:`, err);
             }
         }
-        logs.push(`Push: ${pushSent} notificações enviadas.`);
+        */
+        logs.push(`Push: ${pushSent} notificações enviadas (DESATIVADO PARA TESTE).`);
 
         // --------------------------------------------------------------------------------
         // 2. TAREFA: EXPIRAÇÃO DE TRIALS E AVISOS DE ASSINATURA
@@ -349,6 +351,7 @@ export async function GET(req: Request) {
 
             const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+            /*
             for (const b of bookingsAmanha) {
                 try {
                     const company = b.company;
@@ -393,7 +396,8 @@ export async function GET(req: Request) {
                     console.error(`Erro ao enviar lembrete individual (Booking ${b.id}):`, err.message);
                 }
             }
-            logs.push(`Lembretes 24h: ${remindersSent} mensagens de WhatsApp enviadas.`);
+            */
+            logs.push(`Lembretes 24h: ${remindersSent} mensagens de WhatsApp enviadas (DESATIVADO PARA TESTE).`);
         } catch (remErr: any) {
             logs.push(`Lembretes 24h: Erro na automação (${remErr.message})`);
         }
