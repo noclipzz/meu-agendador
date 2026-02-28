@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendPushNotification } from "@/lib/push-server";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format, startOfDay, endOfDay, addDays } from "date-fns";
 import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { Resend } from "resend";
 import { clerkClient } from "@clerk/nextjs/server";
 import { postImageToInstagram } from "@/lib/instagram";
+import { sendEvolutionMessage } from "@/lib/whatsapp";
+import { formatarHorario } from "@/app/utils/formatters";
 
 export const dynamic = 'force-dynamic';
 
@@ -316,7 +318,79 @@ export async function GET(req: Request) {
         }
 
         // --------------------------------------------------------------------------------
-        // 5. TAREFA: BACKUP DIÁRIO DO BANCO DE DADOS (EMAIL)
+        // 5. TAREFA: LEMBRETE 24 HORAS ANTES (WHATSAPP)
+        // --------------------------------------------------------------------------------
+        try {
+            const timezone = "America/Sao_Paulo";
+            const hojeZoned = toZonedTime(now, timezone);
+            const amanhaZoned = addDays(hojeZoned, 1);
+
+            // O intervalo de busca é O DIA DE AMANHÃ INTEIRO
+            const startOfTomorrowUTC = fromZonedTime(startOfDay(amanhaZoned), timezone);
+            const endOfTomorrowUTC = fromZonedTime(endOfDay(amanhaZoned), timezone);
+
+            const bookingsAmanha = await prisma.booking.findMany({
+                where: {
+                    date: {
+                        gte: startOfTomorrowUTC,
+                        lte: endOfTomorrowUTC
+                    },
+                    status: { in: ["PENDENTE", "CONFIRMADO"] },
+                    reminderSent: false, // Apenas se ainda não enviou
+                    customerPhone: { not: null }
+                },
+                include: {
+                    company: true,
+                    service: true
+                }
+            });
+
+            let remindersSent = 0;
+
+            for (const b of bookingsAmanha) {
+                const company = b.company;
+                const notifSettings = (company as any).notificationSettings || {};
+                const allowsReminder = notifSettings.client_reminder_whatsapp !== false;
+
+                // Só envia se empresa tem permissão e plano MASTER
+                if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && b.customerPhone) {
+
+                    const subscription = await prisma.subscription.findUnique({
+                        where: { userId: company.ownerId }
+                    });
+
+                    if (subscription?.plan === "MASTER") {
+                        const shortId = b.id.slice(-4).toUpperCase();
+                        const timeStr = formatarHorario(new Date(b.date));
+                        const nomeServico = b.service?.name || "Atendimento";
+
+                        const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, passando para lembrar do seu horário de *${nomeServico}* marcado para *AMANHÃ* (às ${timeStr}).\n\nCaso não possa comparecer, nos avise o quanto antes.\n*(Ref: #${shortId})*`;
+
+                        await sendEvolutionMessage(
+                            company.evolutionServerUrl,
+                            company.evolutionApiKey,
+                            company.whatsappInstanceId,
+                            b.customerPhone,
+                            msg
+                        );
+
+                        // Marca como enviado
+                        await prisma.booking.update({
+                            where: { id: b.id },
+                            data: { reminderSent: true }
+                        });
+
+                        remindersSent++;
+                    }
+                }
+            }
+            logs.push(`Lembretes 24h: ${remindersSent} mensagens de WhatsApp enviadas.`);
+        } catch (remErr: any) {
+            logs.push(`Lembretes 24h: Erro na automação (${remErr.message})`);
+        }
+
+        // --------------------------------------------------------------------------------
+        // 6. TAREFA: BACKUP DIÁRIO DO BANCO DE DADOS (EMAIL)
         // --------------------------------------------------------------------------------
         try {
             const dataToBackup = {
