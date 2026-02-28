@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -385,6 +385,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const configItems = [
         { key: 'gerais', name: "Gerais", path: "/painel/config/gerais", icon: <Settings size={18} /> },
         { key: 'faturamento', name: "Nota Fiscal e Banco", path: "/painel/config/faturamento", icon: <FileText size={18} /> },
+        { key: 'notificacoes', name: "Notificações", path: "/painel/config/notificacoes", icon: <Bell size={18} /> },
         { key: 'plano', name: "Meu Plano", path: "/painel/config/plano", icon: <Star size={18} className="text-yellow-500" /> },
     ];
 

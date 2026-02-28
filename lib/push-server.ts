@@ -27,6 +27,9 @@ export async function sendPushNotification(userId: string, title: string, body: 
     if (!ensureWebPushConfigured()) return;
 
     try {
+        const prefs = await db.userNotificationPref.findUnique({ where: { userId } });
+        if (prefs && prefs.push === false) return; // User opted out of push
+
         const subs = await db.pushSubscription.findUnique({
             where: { userId },
         });

@@ -390,6 +390,17 @@ model PushSubscription {
   createdAt DateTime @default(now())
 }
 
+model UserNotificationPref {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  email       Boolean  @default(true)
+  whatsapp    Boolean  @default(true)
+  push        Boolean  @default(true)
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model FormEntry {
   id         String       @id @default(cuid())
   data       Json
