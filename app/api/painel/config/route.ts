@@ -49,6 +49,7 @@ export async function GET() {
         cancelAtPeriodEnd: false,
         hasNfeModule: true,
         hasBoletoModule: true,
+        hasDigitalSignatureModule: true,
         extraUsersCount: 0,
         isOwner: true
       });
@@ -67,6 +68,7 @@ export async function GET() {
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd || false,
       hasNfeModule: subscription?.hasNfeModule || false,
       hasBoletoModule: subscription?.hasBoletoModule || false,
+      hasDigitalSignatureModule: subscription?.hasDigitalSignatureModule || false,
       extraUsersCount: subscription?.extraUsersCount || 0,
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });

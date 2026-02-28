@@ -36,6 +36,9 @@ export async function POST(req: Request) {
             case "STAFF":
                 priceId = process.env.STRIPE_PRICE_STAFF_SLOT || "price_1T5UblDVX38Ti5nK1ghzzZ54";
                 break;
+            case "SIGNATURE":
+                priceId = process.env.STRIPE_PRICE_SIGNATURE || "price_1T5UcSDVX38Ti5nKF1N3x9pL";
+                break;
             default: return NextResponse.json({ error: "Tipo de item inválido" }, { status: 400 });
         }
 
@@ -71,6 +74,7 @@ export async function POST(req: Request) {
         const updateData: any = {};
         if (itemType === "NFE") updateData.hasNfeModule = true;
         if (itemType === "BOLETO") updateData.hasBoletoModule = true;
+        if (itemType === "SIGNATURE") updateData.hasDigitalSignatureModule = true;
         if (itemType === "STAFF") updateData.extraUsersCount = { increment: quantity };
 
         await prisma.subscription.update({

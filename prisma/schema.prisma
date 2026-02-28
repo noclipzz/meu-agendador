@@ -247,6 +247,7 @@ model Subscription {
   cancelAtPeriodEnd    Boolean   @default(false)
   hasNfeModule         Boolean   @default(false)
   hasBoletoModule      Boolean   @default(false)
+  hasDigitalSignatureModule Boolean   @default(false)
   extraUsersCount      Int       @default(0)
   expiresAt            DateTime?
   createdAt            DateTime  @default(now())

@@ -131,6 +131,7 @@ export default function ConfigPlano() {
         { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER" },
         { name: "Emissão de Notas Fiscais", value: config?.hasNfeModule ? "Ativo" : "Add-on", included: !!config?.hasNfeModule },
         { name: "Emissão de Boletos", value: config?.hasBoletoModule ? "Ativo" : "Add-on", included: !!config?.hasBoletoModule },
+        { name: "Assinatura Digital Autêntica", value: config?.hasDigitalSignatureModule ? "Ativo" : "Add-on", included: !!config?.hasDigitalSignatureModule },
     ];
 
     return (
@@ -301,6 +302,39 @@ export default function ConfigPlano() {
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 24,90/mês</span>
                                             <button
                                                 onClick={() => handleAddItem('BOLETO')}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                                <Plus size={14} /> Adicionar
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                            <Check size={14} /> Ativo no Plano
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Assinatura Digital */}
+                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasDigitalSignatureModule ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-500' : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30 group hover:border-blue-500'}`}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center shadow-sm">
+                                        <ShieldCheck className={config?.hasDigitalSignatureModule ? "text-emerald-600" : "text-blue-600"} size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                            Assinatura Digital
+                                        </h3>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mt-1 italic text-blue-600/70">
+                                            Assine documentos digitalmente com validade e QR Code
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 text-right">
+                                    {!config?.hasDigitalSignatureModule ? (
+                                        <>
+                                            <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 14,90/mês</span>
+                                            <button
+                                                onClick={() => handleAddItem('SIGNATURE')}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
                                                 <Plus size={14} /> Adicionar
                                             </button>

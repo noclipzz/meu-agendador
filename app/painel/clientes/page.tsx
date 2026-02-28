@@ -66,7 +66,7 @@ export default function ClientesPage() {
     const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
     const [loadingProntuarios, setLoadingProntuarios] = useState(false);
     const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
-    const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "" });
+    const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "", hasDigitalSignatureModule: false });
     const [printConfigModal, setPrintConfigModal] = useState<{
         entry: any;
         dateVisible: boolean;
@@ -224,7 +224,8 @@ export default function ClientesPage() {
                     phone: data.phone || "",
                     cnpj: data.cnpj || "",
                     corporateName: data.corporateName || "",
-                    signatureUrl: data.signatureUrl || ""
+                    signatureUrl: data.signatureUrl || "",
+                    hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
                 });
             }
         } catch { }
@@ -639,7 +640,7 @@ export default function ClientesPage() {
             dateVisible: true,
             twoColumns: false,
             signatures: { client: true, prof: true, company: false },
-            useDigitalSignature: true,
+            useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
             includeQR: true
         };
 
@@ -1845,18 +1846,42 @@ export default function ClientesPage() {
                                     </div>
                                     {(printConfigModal.signatures.prof || printConfigModal.signatures.company) && (
                                         <div className="mt-4 animate-in slide-in-from-top-2">
-                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500'}`}>
+                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' : (printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500 cursor-pointer')}`}>
                                                 <input
                                                     type="checkbox"
                                                     className="accent-teal-600 w-4 h-4"
-                                                    checked={printConfigModal.useDigitalSignature}
-                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, useDigitalSignature: e.target.checked })}
+                                                    disabled={!empresaInfo.hasDigitalSignatureModule}
+                                                    checked={empresaInfo.hasDigitalSignatureModule && printConfigModal.useDigitalSignature}
+                                                    onChange={(e) => {
+                                                        if (!empresaInfo.hasDigitalSignatureModule) {
+                                                            toast.error("Assinatura Digital é um recurso opcional. Ative em Configurações > Plano.");
+                                                            return;
+                                                        }
+                                                        setPrintConfigModal({ ...printConfigModal, useDigitalSignature: e.target.checked });
+                                                    }}
                                                 />
                                                 <div className="flex-1">
-                                                    <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
-                                                    <p className="text-[10px] text-gray-400">Insere automaticamente a imagem da assinatura cadastrada (do Profissional ou da Empresa) nos campos marcados acima.</p>
+                                                    <div className="flex items-center justify-between">
+                                                        <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
+                                                        {!empresaInfo.hasDigitalSignatureModule && (
+                                                            <span className="text-[8px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black uppercase">Add-on</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] text-gray-400">
+                                                        {!empresaInfo.hasDigitalSignatureModule
+                                                            ? "Este recurso requer o módulo de Assinatura Digital (R$ 14,90/mês)."
+                                                            : "Insere automaticamente a imagem da assinatura cadastrada nos campos marcados acima."}
+                                                    </p>
                                                 </div>
                                             </label>
+                                            {!empresaInfo.hasDigitalSignatureModule && (
+                                                <button
+                                                    onClick={() => window.location.href = '/painel/config/plano'}
+                                                    className="mt-2 text-[10px] font-black text-blue-600 hover:underline uppercase flex items-center gap-1 mx-auto"
+                                                >
+                                                    <Plus size={10} /> Ativar Assinatura Digital (Add-on)
+                                                </button>
+                                            )}
                                         </div>
                                     )}
                                 </div>
