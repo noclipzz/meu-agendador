@@ -25,7 +25,7 @@ export default function ServicosPage() {
         const rawValue = value.replace(/\D/g, "");
         if (!rawValue) return "";
         const numericValue = Number(rawValue) / 100;
-        return numericValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        return numericValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
     const handlePriceChange = (value: string) => {
@@ -77,13 +77,14 @@ export default function ServicosPage() {
                 duration: servico.duration,
                 commission: servico.commission
             });
-            setDisplayPrice(Number(servico.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-            setConsumo(servico.products.map((p: any) => ({
+            // Fixed display price formatting here
+            setDisplayPrice(Number(servico.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+            setConsumo(servico.products?.map((p: any) => ({
                 productId: p.productId,
                 amount: p.amount,
-                name: p.product.name,
-                unit: p.product.unit
-            })));
+                name: p.product?.name,
+                unit: p.product?.unit
+            })) || []);
         } else {
             // --- CORREÇÃO: AO ABRIR PARA CRIAR, LIMPA TUDO ---
             setForm({ id: "", name: "", price: "", duration: "", commission: "" });
