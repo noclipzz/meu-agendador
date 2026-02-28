@@ -307,6 +307,42 @@ export async function GET(req: Request) {
             logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
         }
 
+        // --------------------------------------------------------------------------------
+        // 5. TAREFA: BACKUP DIÁRIO DO BANCO DE DADOS (EMAIL)
+        // --------------------------------------------------------------------------------
+        try {
+            const dataToBackup = {
+                date: new Date().toISOString(),
+                companies: await prisma.company.findMany(),
+                clients: await prisma.client.findMany(),
+                services: await prisma.service.findMany(),
+                professionals: await prisma.professional.findMany(),
+                bookings: await prisma.booking.findMany(),
+                teamMembers: await prisma.teamMember.findMany(),
+                subscriptions: await prisma.subscription.findMany()
+            };
+
+            const jsonString = JSON.stringify(dataToBackup, null, 2);
+            const buffer = Buffer.from(jsonString, 'utf-8');
+
+            await resend.emails.send({
+                from: 'NOHUD App <nao-responda@nohud.com.br>',
+                to: 'yan.kairon@gmail.com',
+                subject: `🔒 Backup Completo NOHUD - ${format(now, "dd/MM/yyyy")}`,
+                html: `<p>Olá,</p><p>Segue em anexo o backup diário completo da base de dados NOHUD (Clientes, Empresas, Serviços, Profissionais, Agendamentos, Equipe e Assinaturas).</p><p>Gerado em: <strong>${format(now, "dd/MM/yyyy HH:mm:ss")}</strong></p><p>Tamanho aproximado: ${(buffer.length / 1024 / 1024).toFixed(2)} MB</p>`,
+                attachments: [
+                    {
+                        filename: `nohud-backup-${format(now, "yyyy-MM-dd")}.json`,
+                        content: buffer,
+                    }
+                ]
+            });
+
+            logs.push(`Backup: Arquivo JSON gerado e enviado para yan.kairon@gmail.com.`);
+        } catch (backupErr: any) {
+            logs.push(`Backup: Erro ao gerar backup diário (${backupErr.message})`);
+        }
+
         return NextResponse.json({ success: true, logs });
 
     } catch (error: any) {

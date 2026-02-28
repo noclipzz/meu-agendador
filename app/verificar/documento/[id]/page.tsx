@@ -36,8 +36,7 @@ export default async function VerificarDocumentoPage({ params }: { params: { id:
     // Pegar nome da empresa e responsável legal
     const company = await db.company.findUnique({
         where: { id: entry.companyId },
-        select: { name: true, corporateName: true, logoUrl: true, legalRepresentative: true }
-    });
+    }) as any;
 
     // Buscar o profissional que preencheu
     let professionalName = "Não identificado";
