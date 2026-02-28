@@ -108,7 +108,7 @@ export default async function VerificarDocumentoPage({ params }: { params: { id:
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
                                     <ShieldCheck size={10} /> Assinado por
                                 </p>
-                                <p className="font-bold text-gray-800 text-sm truncate">{professionalName}</p>
+                                <p className="font-bold text-gray-800 text-sm leading-tight">{professionalName}</p>
                             </div>
                         </div>
 
