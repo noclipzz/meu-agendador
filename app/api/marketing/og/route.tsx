@@ -4,77 +4,71 @@ import { NextRequest } from 'next/server';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-// Paletas de cores para variação visual entre posts
 const COLOR_THEMES = [
-    { // Azul Premium (Original melhorado)
+    { // 0 - Azul Premium
         bg: '#030712',
         orb1: 'rgba(37, 99, 235, 0.3)',
         orb2: 'rgba(99, 102, 241, 0.2)',
-        orb3: 'rgba(6, 182, 212, 0.15)',
         accent: '#3b82f6',
-        accentGrad: 'linear-gradient(135deg, #2563eb, #6366f1)',
+        accentSecondary: '#6366f1',
         badgeBg: 'rgba(37, 99, 235, 0.15)',
         badgeBorder: 'rgba(99, 102, 241, 0.3)',
         badgeText: '#818cf8',
         subtitleColor: '#94a3b8',
-        lineGrad: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4)',
-        ctaBg: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+        ctaFrom: '#2563eb',
+        ctaTo: '#7c3aed',
     },
-    { // Violeta Luxo
+    { // 1 - Violeta Luxo
         bg: '#0c0015',
         orb1: 'rgba(139, 92, 246, 0.3)',
         orb2: 'rgba(236, 72, 153, 0.2)',
-        orb3: 'rgba(168, 85, 247, 0.15)',
         accent: '#a78bfa',
-        accentGrad: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+        accentSecondary: '#ec4899',
         badgeBg: 'rgba(139, 92, 246, 0.15)',
         badgeBorder: 'rgba(168, 85, 247, 0.3)',
         badgeText: '#c4b5fd',
         subtitleColor: '#a1a1aa',
-        lineGrad: 'linear-gradient(90deg, #8b5cf6, #ec4899, #f97316)',
-        ctaBg: 'linear-gradient(135deg, #7c3aed, #db2777)',
+        ctaFrom: '#7c3aed',
+        ctaTo: '#db2777',
     },
-    { // Esmeralda Tech
+    { // 2 - Esmeralda Tech
         bg: '#001a0e',
         orb1: 'rgba(16, 185, 129, 0.3)',
         orb2: 'rgba(6, 182, 212, 0.2)',
-        orb3: 'rgba(34, 197, 94, 0.15)',
         accent: '#34d399',
-        accentGrad: 'linear-gradient(135deg, #059669, #0891b2)',
+        accentSecondary: '#06b6d4',
         badgeBg: 'rgba(16, 185, 129, 0.15)',
         badgeBorder: 'rgba(52, 211, 153, 0.3)',
         badgeText: '#6ee7b7',
         subtitleColor: '#94a3b8',
-        lineGrad: 'linear-gradient(90deg, #10b981, #06b6d4, #3b82f6)',
-        ctaBg: 'linear-gradient(135deg, #059669, #0d9488)',
+        ctaFrom: '#059669',
+        ctaTo: '#0d9488',
     },
-    { // Sunset Premium
+    { // 3 - Sunset Premium
         bg: '#0f0507',
         orb1: 'rgba(249, 115, 22, 0.25)',
         orb2: 'rgba(239, 68, 68, 0.2)',
-        orb3: 'rgba(251, 191, 36, 0.15)',
         accent: '#fb923c',
-        accentGrad: 'linear-gradient(135deg, #ea580c, #dc2626)',
+        accentSecondary: '#ef4444',
         badgeBg: 'rgba(249, 115, 22, 0.15)',
         badgeBorder: 'rgba(251, 146, 60, 0.3)',
         badgeText: '#fdba74',
         subtitleColor: '#a8a29e',
-        lineGrad: 'linear-gradient(90deg, #f97316, #ef4444, #eab308)',
-        ctaBg: 'linear-gradient(135deg, #ea580c, #b91c1c)',
+        ctaFrom: '#ea580c',
+        ctaTo: '#b91c1c',
     },
-    { // Cyber Neon
+    { // 4 - Cyber Neon
         bg: '#020617',
         orb1: 'rgba(14, 165, 233, 0.3)',
         orb2: 'rgba(56, 189, 248, 0.2)',
-        orb3: 'rgba(99, 102, 241, 0.2)',
         accent: '#38bdf8',
-        accentGrad: 'linear-gradient(135deg, #0284c7, #6366f1)',
+        accentSecondary: '#818cf8',
         badgeBg: 'rgba(14, 165, 233, 0.15)',
         badgeBorder: 'rgba(56, 189, 248, 0.3)',
         badgeText: '#7dd3fc',
         subtitleColor: '#94a3b8',
-        lineGrad: 'linear-gradient(90deg, #0ea5e9, #818cf8, #c084fc)',
-        ctaBg: 'linear-gradient(135deg, #0284c7, #4f46e5)',
+        ctaFrom: '#0284c7',
+        ctaTo: '#4f46e5',
     },
 ];
 
@@ -85,23 +79,22 @@ export async function GET(req: NextRequest) {
         const title = searchParams.get('title') || 'Gestão Inteligente';
         const subtitle = searchParams.get('subtitle') || 'Organize sua agenda hoje';
         const feature = searchParams.get('feature') || 'WhatsApp Automático';
-        const emoji = searchParams.get('emoji') || '🚀';
+        const emoji = searchParams.get('emoji') || '';
         const themeIdx = parseInt(searchParams.get('theme') || '0') % COLOR_THEMES.length;
-        const style = searchParams.get('style') || 'default'; // default, minimal, bold, stats
+        const style = searchParams.get('style') || 'default';
 
         const theme = COLOR_THEMES[themeIdx];
 
-        // Busca a logo real do site
-        const logoData = await fetch(new URL('/LOGOAPP.png', 'https://www.nohud.com.br')).then(
-            (res) => res.arrayBuffer()
-        );
-        const logoBase64 = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`;
-
-        // Estatísticas falsas para o estilo "stats"
         const stat1 = searchParams.get('stat1') || '97%';
         const stat1Label = searchParams.get('stat1Label') || 'Redução de No-Show';
         const stat2 = searchParams.get('stat2') || '3x';
         const stat2Label = searchParams.get('stat2Label') || 'Mais Produtividade';
+
+        // Busca a logo
+        const logoData = await fetch(new URL('/LOGOAPP.png', 'https://www.nohud.com.br')).then(
+            (res) => res.arrayBuffer()
+        );
+        const logoBase64 = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`;
 
         return new ImageResponse(
             (
@@ -117,7 +110,7 @@ export async function GET(req: NextRequest) {
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Background Gradient Orbs - mais complexos */}
+                    {/* Background Orb 1 */}
                     <div style={{
                         position: 'absolute',
                         top: '-250px',
@@ -128,6 +121,7 @@ export async function GET(req: NextRequest) {
                         background: `radial-gradient(circle, ${theme.orb1} 0%, transparent 70%)`,
                         display: 'flex',
                     }} />
+                    {/* Background Orb 2 */}
                     <div style={{
                         position: 'absolute',
                         bottom: '-300px',
@@ -136,48 +130,6 @@ export async function GET(req: NextRequest) {
                         height: '650px',
                         borderRadius: '50%',
                         background: `radial-gradient(circle, ${theme.orb2} 0%, transparent 70%)`,
-                        display: 'flex',
-                    }} />
-                    <div style={{
-                        position: 'absolute',
-                        top: '300px',
-                        left: '400px',
-                        width: '400px',
-                        height: '400px',
-                        borderRadius: '50%',
-                        background: `radial-gradient(circle, ${theme.orb3} 0%, transparent 70%)`,
-                        display: 'flex',
-                    }} />
-
-                    {/* Decorative dots pattern (Satori-compatible) */}
-                    <div style={{
-                        position: 'absolute',
-                        top: '80px',
-                        right: '80px',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(255,255,255,0.06)',
-                        display: 'flex',
-                    }} />
-                    <div style={{
-                        position: 'absolute',
-                        top: '540px',
-                        right: '200px',
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                        display: 'flex',
-                    }} />
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '200px',
-                        left: '300px',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(255,255,255,0.05)',
                         display: 'flex',
                     }} />
 
@@ -194,8 +146,8 @@ export async function GET(req: NextRequest) {
                                 style={{ width: '58px', height: '58px', borderRadius: '14px' }}
                             />
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '30px', fontWeight: '900', color: 'white', letterSpacing: '-1px', lineHeight: '1' }}>NOHUD</span>
-                                <span style={{ fontSize: '11px', fontWeight: '700', color: theme.accent, textTransform: 'uppercase', letterSpacing: '3px', marginTop: '4px' }}>Gestão Inteligente</span>
+                                <span style={{ fontSize: '30px', fontWeight: 900, color: 'white', letterSpacing: '-1px', lineHeight: '1' }}>NOHUD</span>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase' as const, letterSpacing: '3px', marginTop: '4px' }}>Gestão Inteligente</span>
                             </div>
                         </div>
 
@@ -210,7 +162,7 @@ export async function GET(req: NextRequest) {
                             borderRadius: '100px',
                         }}>
                             <div style={{ width: '10px', height: '10px', backgroundColor: '#22c55e', borderRadius: '50%', display: 'flex' }} />
-                            <span style={{ fontSize: '16px', fontWeight: '700', color: theme.badgeText, textTransform: 'uppercase', letterSpacing: '2px' }}>{feature}</span>
+                            <span style={{ fontSize: '16px', fontWeight: 700, color: theme.badgeText, textTransform: 'uppercase' as const, letterSpacing: '2px' }}>{feature}</span>
                         </div>
                     </div>
 
@@ -224,42 +176,43 @@ export async function GET(req: NextRequest) {
                     }}>
                         {/* Emoji + Accent Line */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' }}>
-                            <span style={{ fontSize: '48px' }}>{emoji}</span>
+                            {emoji && <span style={{ fontSize: '48px' }}>{emoji}</span>}
                             <div style={{
                                 width: '80px',
                                 height: '5px',
-                                background: theme.lineGrad,
+                                background: `linear-gradient(90deg, ${theme.accent}, ${theme.accentSecondary})`,
                                 borderRadius: '10px',
                                 display: 'flex',
                             }} />
                         </div>
 
                         {/* Title */}
-                        <h1 style={{
-                            fontSize: style === 'bold' ? '88px' : '76px',
-                            fontWeight: '900',
+                        <div style={{
+                            fontSize: '76px',
+                            fontWeight: 900,
                             color: 'white',
-                            lineHeight: '1.05',
-                            margin: '0 0 28px 0',
+                            lineHeight: 1.05,
+                            marginBottom: '28px',
                             letterSpacing: '-3px',
                             maxWidth: '920px',
+                            display: 'flex',
                         }}>
                             {title}
-                        </h1>
+                        </div>
 
                         {/* Subtitle */}
-                        <p style={{
+                        <div style={{
                             fontSize: '30px',
                             color: theme.subtitleColor,
                             maxWidth: '750px',
-                            fontWeight: '400',
-                            lineHeight: '1.5',
-                            margin: '0',
+                            fontWeight: 400,
+                            lineHeight: 1.5,
+                            display: 'flex',
                         }}>
                             {subtitle}
-                        </p>
+                        </div>
 
-                        {/* Stats Row (only for stats style) */}
+                        {/* Stats Row */}
                         {style === 'stats' && (
                             <div style={{
                                 display: 'flex',
@@ -274,8 +227,8 @@ export async function GET(req: NextRequest) {
                                     padding: '24px 36px',
                                     borderRadius: '20px',
                                 }}>
-                                    <span style={{ fontSize: '44px', fontWeight: '900', color: theme.accent }}>{stat1}</span>
-                                    <span style={{ fontSize: '16px', color: theme.subtitleColor, fontWeight: '500', marginTop: '4px' }}>{stat1Label}</span>
+                                    <span style={{ fontSize: '44px', fontWeight: 900, color: theme.accent }}>{stat1}</span>
+                                    <span style={{ fontSize: '16px', color: theme.subtitleColor, fontWeight: 500, marginTop: '4px' }}>{stat1Label}</span>
                                 </div>
                                 <div style={{
                                     display: 'flex',
@@ -285,8 +238,8 @@ export async function GET(req: NextRequest) {
                                     padding: '24px 36px',
                                     borderRadius: '20px',
                                 }}>
-                                    <span style={{ fontSize: '44px', fontWeight: '900', color: theme.accent }}>{stat2}</span>
-                                    <span style={{ fontSize: '16px', color: theme.subtitleColor, fontWeight: '500', marginTop: '4px' }}>{stat2Label}</span>
+                                    <span style={{ fontSize: '44px', fontWeight: 900, color: theme.accent }}>{stat2}</span>
+                                    <span style={{ fontSize: '16px', color: theme.subtitleColor, fontWeight: 500, marginTop: '4px' }}>{stat2Label}</span>
                                 </div>
                             </div>
                         )}
@@ -308,20 +261,19 @@ export async function GET(req: NextRequest) {
                             padding: '18px 32px',
                             borderRadius: '20px',
                         }}>
-                            <span style={{ fontSize: '20px', color: '#64748b', fontWeight: '500' }}>Acesse</span>
-                            <span style={{ fontSize: '24px', color: 'white', fontWeight: '800', letterSpacing: '-0.5px' }}>nohud.com.br</span>
+                            <span style={{ fontSize: '20px', color: '#64748b', fontWeight: 500 }}>Acesse</span>
+                            <span style={{ fontSize: '24px', color: 'white', fontWeight: 800, letterSpacing: '-0.5px' }}>nohud.com.br</span>
                         </div>
 
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                            background: theme.ctaBg,
+                            background: `linear-gradient(135deg, ${theme.ctaFrom}, ${theme.ctaTo})`,
                             padding: '18px 36px',
                             borderRadius: '20px',
-                            boxShadow: `0 8px 32px ${theme.orb1}`,
                         }}>
-                            <span style={{ fontSize: '20px', color: 'white', fontWeight: '700' }}>Teste 7 Dias Grátis →</span>
+                            <span style={{ fontSize: '20px', color: 'white', fontWeight: 700 }}>Teste 7 Dias Grátis</span>
                         </div>
                     </div>
                 </div>
@@ -329,14 +281,11 @@ export async function GET(req: NextRequest) {
             {
                 width: 1080,
                 height: 1080,
-                headers: {
-                    'Cache-Control': 'public, max-age=31536000, immutable',
-                },
             }
         );
     } catch (e: any) {
         console.log(`OG Image Error: ${e.message}`);
-        return new Response(`Failed to generate the image`, {
+        return new Response(`Failed to generate the image: ${e.message}`, {
             status: 500,
         });
     }

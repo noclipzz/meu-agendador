@@ -349,10 +349,19 @@ export async function GET(req: Request) {
             console.log("📸 [INSTAGRAM] Gerando imagem de:", ogUrl);
 
             const ogRes = await fetch(ogUrl);
+            const contentType = ogRes.headers.get('content-type') || '';
             if (!ogRes.ok) {
-                throw new Error(`Falha ao gerar imagem OG: ${ogRes.status}`);
+                const errorBody = await ogRes.text();
+                throw new Error(`Falha ao gerar imagem OG: ${ogRes.status} - ${errorBody}`);
+            }
+            if (!contentType.includes('image')) {
+                const errorBody = await ogRes.text();
+                throw new Error(`OG retornou tipo errado (${contentType}): ${errorBody.substring(0, 200)}`);
             }
             const imageBuffer = Buffer.from(await ogRes.arrayBuffer());
+            if (imageBuffer.length < 1000) {
+                throw new Error(`Imagem OG muito pequena (${imageBuffer.length} bytes) - provavelmente falhou`);
+            }
             console.log("📸 [INSTAGRAM] Imagem gerada:", imageBuffer.length, "bytes");
 
             // PASSO 2: Upload para hospedagem externa
