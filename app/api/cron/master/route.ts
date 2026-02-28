@@ -305,6 +305,14 @@ export async function GET(req: Request) {
             }
         } catch (igErr: any) {
             logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
+
+            // Avisar o Yan se o Token do Instagram expirar ou a automação quebrar
+            await resend.emails.send({
+                from: 'NOHUD App <nao-responda@nohud.com.br>',
+                to: 'yan.kairon@gmail.com',
+                subject: '⚠️ Falha na Automação do Instagram (NOHUD)',
+                html: `<p>Olá,</p><p>A automação diária de postagem no Instagram falhou hoje.</p><br/><strong>Motivo do Erro:</strong><pre>${igErr.message}</pre><p><br/>Isso geralmente acontece quando o <strong>Token do Facebook expira</strong> (a Meta exige renovação a cada 60 dias para a maioria dos tokens não-permanentes) ou quando a imagem não pôde ser processada.</p>`
+            }).catch(() => { });
         }
 
         // --------------------------------------------------------------------------------
