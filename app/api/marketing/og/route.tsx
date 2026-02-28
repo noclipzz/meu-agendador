@@ -149,12 +149,35 @@ export async function GET(req: NextRequest) {
                         display: 'flex',
                     }} />
 
-                    {/* Grid pattern overlay */}
+                    {/* Decorative dots pattern (Satori-compatible) */}
                     <div style={{
                         position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-                        backgroundSize: '60px 60px',
+                        top: '80px',
+                        right: '80px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.06)',
+                        display: 'flex',
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        top: '540px',
+                        right: '200px',
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                        display: 'flex',
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '200px',
+                        left: '300px',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
                         display: 'flex',
                     }} />
 
