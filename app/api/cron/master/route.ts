@@ -347,41 +347,50 @@ export async function GET(req: Request) {
 
             let remindersSent = 0;
 
+            const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
             for (const b of bookingsAmanha) {
-                const company = b.company;
-                const notifSettings = (company as any).notificationSettings || {};
-                const allowsReminder = notifSettings.client_reminder_whatsapp !== false;
+                try {
+                    const company = b.company;
+                    const notifSettings = (company as any).notificationSettings || {};
+                    const allowsReminder = notifSettings.client_reminder_whatsapp !== false;
 
-                // Só envia se empresa tem permissão e plano MASTER
-                if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && b.customerPhone) {
+                    // Só envia se empresa tem permissão e plano MASTER
+                    if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && b.customerPhone) {
 
-                    const subscription = await prisma.subscription.findUnique({
-                        where: { userId: company.ownerId }
-                    });
-
-                    if (subscription?.plan === "MASTER") {
-                        const shortId = b.id.slice(-4).toUpperCase();
-                        const timeStr = formatarHorario(new Date(b.date));
-                        const nomeServico = b.service?.name || "Atendimento";
-
-                        const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, passando para lembrar do seu horário de *${nomeServico}* marcado para *AMANHÃ* (às ${timeStr}).\n\nCaso não possa comparecer, nos avise o quanto antes.\n*(Ref: #${shortId})*`;
-
-                        await sendEvolutionMessage(
-                            company.evolutionServerUrl,
-                            company.evolutionApiKey,
-                            company.whatsappInstanceId,
-                            b.customerPhone,
-                            msg
-                        );
-
-                        // Marca como enviado
-                        await prisma.booking.update({
-                            where: { id: b.id },
-                            data: { reminderSent: true }
+                        const subscription = await prisma.subscription.findUnique({
+                            where: { userId: company.ownerId }
                         });
 
-                        remindersSent++;
+                        if (subscription?.plan === "MASTER") {
+                            const shortId = b.id.slice(-4).toUpperCase();
+                            const timeStr = formatarHorario(new Date(b.date));
+                            const nomeServico = b.service?.name || "Atendimento";
+
+                            const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, passando para lembrar do seu horário de *${nomeServico}* marcado para *AMANHÃ* (às ${timeStr}).\n\nCaso não possa comparecer, nos avise o quanto antes.\n*(Ref: #${shortId})*`;
+
+                            await sendEvolutionMessage(
+                                company.evolutionServerUrl,
+                                company.evolutionApiKey,
+                                company.whatsappInstanceId,
+                                b.customerPhone,
+                                msg
+                            );
+
+                            // Marca como enviado
+                            await prisma.booking.update({
+                                where: { id: b.id },
+                                data: { reminderSent: true }
+                            });
+
+                            remindersSent++;
+
+                            // Pequeno intervalo entre envios para evitar flag de spam
+                            await sleep(1500);
+                        }
                     }
+                } catch (err: any) {
+                    console.error(`Erro ao enviar lembrete individual (Booking ${b.id}):`, err.message);
                 }
             }
             logs.push(`Lembretes 24h: ${remindersSent} mensagens de WhatsApp enviadas.`);
