@@ -7,17 +7,20 @@ import {
     TrendingUp, Layout, Users, Store, FileText,
     Shield, Briefcase, MousePointer2, Smartphone, Globe,
     MessageCircle, Download, ExternalLink, Printer, RotateCcw,
-    ShoppingBag, Plus, Sparkle
+    ShoppingBag, Plus, Sparkle, AlertTriangle, Loader2, Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 export default function ConfigPlano() {
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState<any>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [extraStaffQty, setExtraStaffQty] = useState(1);
+    const [showRemoveConfirm, setShowRemoveConfirm] = useState<{ type: string, name: string, quantity: number } | null>(null);
+    const [removingItem, setRemovingItem] = useState(false);
 
     useEffect(() => {
         Promise.all([carregarConfig(), carregarFaturas()]).finally(() => setLoading(false));
@@ -93,8 +96,7 @@ export default function ConfigPlano() {
     }
 
     async function handleRemoveItem(itemType: string, quantity: number = 1) {
-        if (!confirm(`Tem certeza que deseja remover este recurso? Ele será desativado imediatamente.`)) return;
-
+        setRemovingItem(true);
         try {
             toast.loading("Removendo recurso do seu plano...");
             const res = await fetch('/api/checkout/subscription/remove-item', {
@@ -107,6 +109,7 @@ export default function ConfigPlano() {
 
             if (res.ok) {
                 toast.success("Recurso removido com sucesso.");
+                setShowRemoveConfirm(null);
                 carregarConfig();
             } else {
                 toast.error(data.error || "Erro ao remover recurso.");
@@ -114,6 +117,7 @@ export default function ConfigPlano() {
         } catch (e) {
             toast.error("Erro de conexão.");
         } finally {
+            setRemovingItem(false);
             toast.dismiss();
         }
     }
@@ -306,7 +310,7 @@ export default function ConfigPlano() {
                                                 <Check size={14} /> Ativo no Plano
                                             </span>
                                             <button
-                                                onClick={() => handleRemoveItem('NFE')}
+                                                onClick={() => setShowRemoveConfirm({ type: 'NFE', name: 'Emissão de NF-e', quantity: 1 })}
                                                 className="text-[9px] font-black text-red-500 uppercase hover:underline"
                                             >
                                                 Remover do Plano
@@ -347,7 +351,7 @@ export default function ConfigPlano() {
                                                 <Check size={14} /> Ativo no Plano
                                             </span>
                                             <button
-                                                onClick={() => handleRemoveItem('BOLETO')}
+                                                onClick={() => setShowRemoveConfirm({ type: 'BOLETO', name: 'Módulo de Boletos Cora', quantity: 1 })}
                                                 className="text-[9px] font-black text-red-500 uppercase hover:underline"
                                             >
                                                 Remover do Plano
@@ -388,7 +392,7 @@ export default function ConfigPlano() {
                                                 <Check size={14} /> Ativo no Plano
                                             </span>
                                             <button
-                                                onClick={() => handleRemoveItem('SIGNATURE')}
+                                                onClick={() => setShowRemoveConfirm({ type: 'SIGNATURE', name: 'Assinatura Digital', quantity: 1 })}
                                                 className="text-[9px] font-black text-red-500 uppercase hover:underline"
                                             >
                                                 Remover do Plano
@@ -438,7 +442,7 @@ export default function ConfigPlano() {
                                             <div className="flex items-center gap-2">
                                                 {config?.extraUsersCount > 0 && (
                                                     <button
-                                                        onClick={() => handleRemoveItem('STAFF', extraStaffQty)}
+                                                        onClick={() => setShowRemoveConfirm({ type: 'STAFF', name: `${extraStaffQty} Slot(s) de Colaborador`, quantity: extraStaffQty })}
                                                         className="bg-white border border-red-200 text-red-600 px-4 h-12 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2 whitespace-nowrap hover:bg-red-50">
                                                         <X size={14} /> Remover {extraStaffQty}
                                                     </button>
@@ -543,8 +547,62 @@ export default function ConfigPlano() {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL DE CONFIRMAÇÃO DE REMOÇÃO */}
+            {showRemoveConfirm && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[9999] p-4 animate-in fade-in duration-300">
+                        <div className="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm shadow-2xl border-2 border-red-100 dark:border-red-900/20 scale-100 animate-in zoom-in-95 duration-300 relative overflow-hidden">
+                            {/* Decorativo de fundo */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 dark:bg-red-900/10 rounded-full -mr-16 -mt-16 blur-3xl opacity-50" />
+
+                            <div className="flex flex-col items-center text-center relative z-10">
+                                <div className="w-24 h-24 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6 ring-8 ring-red-50/50 dark:ring-red-900/10">
+                                    <AlertTriangle size={48} className="text-red-500 animate-pulse" />
+                                </div>
+
+                                <h3 className="text-2xl font-black text-gray-800 dark:text-white mb-3 tracking-tight leading-tight">
+                                    Remover Recurso?
+                                </h3>
+
+                                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl mb-6 w-full border dark:border-gray-800">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Recurso Selecionado</p>
+                                    <p className="text-sm font-black text-gray-700 dark:text-gray-200">{showRemoveConfirm.name}</p>
+                                </div>
+
+                                <p className="text-gray-500 dark:text-gray-400 text-xs font-semibold mb-8 px-4 leading-relaxed">
+                                    Tem certeza? Este recurso será desativado <span className="text-red-500">imediatamente</span> e o valor será ajustado em sua próxima fatura.
+                                </p>
+
+                                <div className="flex flex-col gap-3 w-full">
+                                    <button
+                                        disabled={removingItem}
+                                        onClick={() => handleRemoveItem(showRemoveConfirm.type, showRemoveConfirm.quantity)}
+                                        className="w-full py-4 rounded-2xl font-black bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-500/20 transition flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                    >
+                                        {removingItem ? (
+                                            <Loader2 className="animate-spin" size={20} />
+                                        ) : (
+                                            <>
+                                                <Trash2 size={20} className="group-hover:rotate-12 transition" />
+                                                Sim, Remover Recurso
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        disabled={removingItem}
+                                        onClick={() => setShowRemoveConfirm(null)}
+                                        className="w-full py-4 rounded-2xl font-bold bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition active:scale-95 disabled:opacity-50"
+                                    >
+                                        Manter Recurso
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
         </div>
     );
 }
-
-
