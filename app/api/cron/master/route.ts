@@ -358,28 +358,46 @@ export async function GET(req: Request) {
             // PASSO 2: Upload para hospedagem externa
             let externalImageUrl = '';
 
-            // Tentativa 1: Telegraph (Telegram) - usando File em vez de Blob para compatibilidade Node.js
+            // Tentativa 1: Vercel Blob (mais confiável, já temos o token)
             try {
-                const telegraphForm = new FormData();
-                const uint8 = new Uint8Array(imageBuffer);
-                telegraphForm.append('file', new File([uint8], 'post.png', { type: 'image/png' }));
-
-                const telegraphRes = await fetch('https://telegra.ph/upload', {
-                    method: 'POST',
-                    body: telegraphForm,
+                const { put } = await import('@vercel/blob');
+                const fileName = `instagram/post-${Date.now()}.png`;
+                const blob = await put(fileName, imageBuffer, {
+                    access: 'public',
+                    contentType: 'image/png',
                 });
-                const telegraphText = await telegraphRes.text();
-                console.log("📸 [UPLOAD] Telegraph resposta:", telegraphText);
-
-                const telegraphData = JSON.parse(telegraphText);
-                if (telegraphData?.[0]?.src) {
-                    externalImageUrl = `https://telegra.ph${telegraphData[0].src}`;
+                if (blob?.url) {
+                    externalImageUrl = blob.url;
+                    console.log("📸 [UPLOAD] Vercel Blob sucesso:", externalImageUrl);
                 }
             } catch (e: any) {
-                console.log("📸 [UPLOAD] Telegraph falhou:", e.message);
+                console.log("📸 [UPLOAD] Vercel Blob falhou:", e.message);
             }
 
-            // Tentativa 2: freeimage.host (base64) - fallback
+            // Tentativa 2: Telegraph (Telegram) - fallback
+            if (!externalImageUrl) {
+                try {
+                    const telegraphForm = new FormData();
+                    const uint8 = new Uint8Array(imageBuffer);
+                    telegraphForm.append('file', new File([uint8], 'post.png', { type: 'image/png' }));
+
+                    const telegraphRes = await fetch('https://telegra.ph/upload', {
+                        method: 'POST',
+                        body: telegraphForm,
+                    });
+                    const telegraphText = await telegraphRes.text();
+                    console.log("📸 [UPLOAD] Telegraph resposta:", telegraphText);
+
+                    const telegraphData = JSON.parse(telegraphText);
+                    if (telegraphData?.[0]?.src) {
+                        externalImageUrl = `https://telegra.ph${telegraphData[0].src}`;
+                    }
+                } catch (e: any) {
+                    console.log("📸 [UPLOAD] Telegraph falhou:", e.message);
+                }
+            }
+
+            // Tentativa 3: freeimage.host (base64) - último fallback
             if (!externalImageUrl) {
                 try {
                     const base64Image = imageBuffer.toString('base64');
