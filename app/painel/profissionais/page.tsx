@@ -501,38 +501,57 @@ export default function GestaoEquipe() {
                         <div className="bg-white dark:bg-gray-900 w-full max-w-6xl h-full max-h-[96vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
 
                             {/* HEADER DA FICHA */}
-                            <div className="p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6 bg-gray-50/50 dark:bg-white/5">
-                                <div className="flex items-center gap-6">
-                                    <div className="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl overflow-hidden shrink-0" style={{ backgroundColor: proSelecionado.photoUrl ? 'transparent' : proSelecionado.color }}>
+                            <div className="p-4 md:p-8 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-50/50 dark:bg-white/5 shrink-0 gap-4">
+                                <div className="flex items-center gap-4 md:gap-6 w-full">
+                                    <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl flex items-center justify-center text-white text-xl md:text-3xl font-black shadow-xl shrink-0 overflow-hidden" style={{ backgroundColor: proSelecionado.photoUrl ? 'transparent' : proSelecionado.color }}>
                                         {proSelecionado.photoUrl ? <img src={proSelecionado.photoUrl} alt={proSelecionado.name} className="w-full h-full object-cover" /> : proSelecionado.name.charAt(0)}
                                     </div>
-                                    <div>
-                                        <h2 className="text-3xl font-black dark:text-white">{proSelecionado.name}</h2>
-                                        <div className="flex gap-4 mt-1">
-                                            <span className="text-blue-600 font-bold flex items-center gap-1 text-sm"><Phone size={14} /> {proSelecionado.phone || "Sem telefone"}</span>
-                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${proSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
+                                    <div className="min-w-0">
+                                        <h2 className="text-xl md:text-3xl font-black dark:text-white truncate" title={proSelecionado.name}>{proSelecionado.name}</h2>
+                                        <div className="flex flex-col md:flex-row gap-1 md:gap-4 mt-1">
+                                            <span className="text-blue-600 font-bold flex items-center gap-1 text-xs md:text-sm"><Phone size={12} className="md:size-3.5" /> {proSelecionado.phone || "Sem telefone"}</span>
+                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider w-fit ${proSelecionado.status === 'ATIVO' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 text-green-600' : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800/50 text-red-600'}`}>
                                                 <div className={`w-1.5 h-1.5 rounded-full ${proSelecionado.status === 'ATIVO' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                                                 {proSelecionado.status === 'INATIVO' ? 'Inativo' : 'Ativo'}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-2xl mr-4">
-                                        <button onClick={() => setAbaAtiva("RESUMO")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "RESUMO" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><LayoutDashboard size={14} /> Resumo</button>
-                                        <button onClick={() => setAbaAtiva("DADOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DADOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><UserCircle size={14} /> Dados</button>
-                                        <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 ${abaAtiva === "DOCUMENTOS" ? "bg-white dark:bg-gray-700 shadow-sm text-blue-600" : "text-gray-400 hover:text-gray-600"}`}><FileText size={14} /> Documentos</button>
-                                    </div>
-                                    <div className="flex gap-2 relative z-10 shrink-0">
-                                        {userRole === "ADMIN" && (
-                                            <button onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm"><Pencil size={20} /></button>
-                                        )}
-                                        <button onClick={() => setProSelecionado(null)} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-red-50 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
-                                    </div>
+                                {/* BOTÕES DE AÇÃO: EDITAR, FECHAR */}
+                                <div className="flex gap-2 w-full md:w-auto justify-end">
+                                    {userRole === "ADMIN" && (
+                                        <button
+                                            onClick={(e) => { setProSelecionado(null); prepararEdicao(e, proSelecionado); }}
+                                            className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-50 transition text-blue-600 shadow-sm flex items-center justify-center"
+                                            title="Editar"
+                                        >
+                                            <Pencil size={18} className="md:size-5" />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setProSelecionado(null)}
+                                        className="flex-1 md:flex-none p-3 md:p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl md:rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm flex items-center justify-center"
+                                        title="Fechar"
+                                    >
+                                        <X size={18} className="md:size-5" />
+                                    </button>
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            {/* SELETOR DE ABAS */}
+                            <div className="flex px-4 md:px-8 pt-6 gap-6 md:gap-8 border-b dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto shrink-0 relative z-10 custom-scrollbar scrollbar-hide">
+                                <button onClick={() => setAbaAtiva("RESUMO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "RESUMO" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+                                    <LayoutDashboard size={14} className="md:hidden" /> Resumo
+                                </button>
+                                <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "DADOS" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400 hover:text-gray-600"}`}>
+                                    <UserCircle size={14} className="md:hidden" /> Dados
+                                </button>
+                                <button onClick={() => setAbaAtiva("DOCUMENTOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "DOCUMENTOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400 hover:text-gray-600"}`}>
+                                    <FileText size={14} className="md:hidden" /> Documentos
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
 
                                 {/* ABA RESUMO */}
                                 {abaAtiva === "RESUMO" && (
@@ -736,16 +755,16 @@ export default function GestaoEquipe() {
             )}
 
             {modalAberto && (
-                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] p-2 md:p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl h-full max-h-[96vh] md:max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                         {/* HEADER FIXO */}
-                        <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
-                            <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
-                            <button onClick={fecharModal} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={24} /></button>
+                        <div className="p-4 md:p-8 pb-4 shrink-0 flex justify-between items-center gap-4">
+                            <h2 className="text-2xl md:text-3xl font-black dark:text-white px-2 tracking-tighter truncate">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
+                            <button onClick={fecharModal} className="p-3 md:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl md:rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm shrink-0"><X size={20} className="md:size-6" /></button>
                         </div>
 
                         {/* CONTEÚDO SCROLLÁVEL */}
-                        <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 pt-4 custom-scrollbar">
                             <div className="space-y-8 sm:px-2">
                                 {/* 1. FOTO E IDENTIFICAÇÃO */}
                                 <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -975,8 +994,8 @@ export default function GestaoEquipe() {
                         </div>
 
                         {/* RODAPÉ FIXO */}
-                        <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
-                            <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
+                        <div className="p-4 md:p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
+                            <button onClick={salvarProfissional} disabled={salvando} className="w-full bg-blue-600 text-white p-4 md:p-5 rounded-2xl md:rounded-[1.5rem] font-black text-base md:text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50">
                                 {salvando ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Alterações</>}
                             </button>
                         </div>
