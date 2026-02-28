@@ -92,6 +92,32 @@ export default function ConfigPlano() {
         }
     }
 
+    async function handleRemoveItem(itemType: string, quantity: number = 1) {
+        if (!confirm(`Tem certeza que deseja remover este recurso? Ele será desativado imediatamente.`)) return;
+
+        try {
+            toast.loading("Removendo recurso do seu plano...");
+            const res = await fetch('/api/checkout/subscription/remove-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemType, quantity })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success("Recurso removido com sucesso.");
+                carregarConfig();
+            } else {
+                toast.error(data.error || "Erro ao remover recurso.");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão.");
+        } finally {
+            toast.dismiss();
+        }
+    }
+
     async function handleOpenPortal() {
         try {
             toast.loading("Abrindo portal de pagamentos...");
@@ -125,7 +151,7 @@ export default function ConfigPlano() {
         { name: "Agendamentos Online", value: "Ilimitados", included: true },
         { name: "Financeiro Completo", value: "", included: true },
         { name: "Gestão de Clientes", value: "", included: true },
-        { name: "Prontuários e Histórico", value: "", included: true },
+        { name: "Fichas Técnicas e Histórico", value: "", included: true },
         { name: "WhatsApp Automático", value: "", included: config?.plan === "MASTER" },
         { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
         { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
@@ -275,9 +301,17 @@ export default function ConfigPlano() {
                                             </button>
                                         </>
                                     ) : (
-                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
-                                            <Check size={14} /> Ativo no Plano
-                                        </span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                                <Check size={14} /> Ativo no Plano
+                                            </span>
+                                            <button
+                                                onClick={() => handleRemoveItem('NFE')}
+                                                className="text-[9px] font-black text-red-500 uppercase hover:underline"
+                                            >
+                                                Remover do Plano
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -308,9 +342,17 @@ export default function ConfigPlano() {
                                             </button>
                                         </>
                                     ) : (
-                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
-                                            <Check size={14} /> Ativo no Plano
-                                        </span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                                <Check size={14} /> Ativo no Plano
+                                            </span>
+                                            <button
+                                                onClick={() => handleRemoveItem('BOLETO')}
+                                                className="text-[9px] font-black text-red-500 uppercase hover:underline"
+                                            >
+                                                Remover do Plano
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -341,9 +383,17 @@ export default function ConfigPlano() {
                                             </button>
                                         </>
                                     ) : (
-                                        <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
-                                            <Check size={14} /> Ativo no Plano
-                                        </span>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
+                                                <Check size={14} /> Ativo no Plano
+                                            </span>
+                                            <button
+                                                onClick={() => handleRemoveItem('SIGNATURE')}
+                                                className="text-[9px] font-black text-red-500 uppercase hover:underline"
+                                            >
+                                                Remover do Plano
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -385,11 +435,20 @@ export default function ConfigPlano() {
                                                     +{(extraStaffQty * 15).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mês
                                                 </span>
                                             )}
-                                            <button
-                                                onClick={() => handleAddItem('STAFF', extraStaffQty)}
-                                                className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-5 h-12 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2 whitespace-nowrap">
-                                                <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                {config?.extraUsersCount > 0 && (
+                                                    <button
+                                                        onClick={() => handleRemoveItem('STAFF', extraStaffQty)}
+                                                        className="bg-white border border-red-200 text-red-600 px-4 h-12 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2 whitespace-nowrap hover:bg-red-50">
+                                                        <X size={14} /> Remover {extraStaffQty}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleAddItem('STAFF', extraStaffQty)}
+                                                    className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-5 h-12 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2 whitespace-nowrap">
+                                                    <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

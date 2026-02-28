@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         // VERIFICA PLANO VIA OWNER DA EMPRESA
         const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
-            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+            return NextResponse.json({ error: "O recurso Fichas Técnicas é exclusivo do plano MASTER." }, { status: 403 });
         }
 
         const { id } = await params;

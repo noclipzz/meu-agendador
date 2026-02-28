@@ -269,13 +269,13 @@ export async function GET(req: Request) {
                     caption: "Todo negócio começa devagar.\nMas alguns crescem mais rápido.\n\nA diferença? Ferramentas certas.\n\nQuando você compartilha seu link do NOHUD:\n\n📍 No Instagram\n📍 No Google Meu Negócio\n📍 No cartão de visitas\n📍 No grupo do bairro\n\n...o cliente agenda sozinho. A qualquer hora.\n\nEnquanto você dorme, sua agenda enche.\n\n🔗 Comece agora → link na bio\n\n#empreendedorismo #crescimento #barbearia #salão #estética #negóciolucrativo #agendaonline #dicasdeempreendedor #motivação #NOHUD"
                 },
                 {
-                    title: "Prontuário Digital",
+                    title: "Ficha Técnica Digital",
                     subtitle: "Histórico completo do cliente. Atendimentos, fotos, observações.",
-                    feature: "Prontuário",
+                    feature: "Ficha Técnica",
                     emoji: "📋",
                     theme: 3,
                     style: "default",
-                    caption: "Seu cliente volta depois de 3 meses.\n\nVocê lembra o que fez da última vez?\nQual produto usou?\nSe ele tem alergia a algo?\n\nCom o Prontuário Digital do NOHUD:\n\n📝 Histórico de atendimentos\n📸 Fotos de antes e depois\n📌 Observações personalizadas\n🔒 Sigilo total\n\nSeu cliente se sente ÚNICO.\nE cliente que se sente único, volta.\n\n🔗 Teste grátis → link na bio\n\n#prontuáriodigital #atendimentopersonalizado #fidelização #barbearia #estética #dermato #salãodebeleza #cuidadospessoais #gestãodeclientes #NOHUD"
+                    caption: "Seu cliente volta depois de 3 meses.\n\nVocê lembra o que fez da última vez?\nQual produto usou?\nSe ele tem alergia a algo?\n\nCom a Ficha Técnica Digital do NOHUD:\n\n📝 Histórico de atendimentos\n📸 Fotos de antes e depois\n📌 Observações personalizadas\n🔒 Sigilo total\n\nSeu cliente se sente ÚNICO.\nE cliente que se sente único, volta.\n\n🔗 Teste grátis → link na bio\n\n#fichatécnica #atendimentopersonalizado #fidelização #barbearia #estética #dermato #salãodebeleza #cuidadospessoais #gestãodeclientes #NOHUD"
                 },
                 {
                     title: "Agenda Que Nunca Fecha",
@@ -324,7 +324,7 @@ export async function GET(req: Request) {
                     style: "stats",
                     stat1: "1", stat1Label: "Plataforma",
                     stat2: "∞", stat2Label: "Possibilidades",
-                    caption: "Quantos apps você usa pra gerenciar seu negócio?\n\n📅 Um pra agenda\n💬 Um pra WhatsApp\n💰 Um pra financeiro\n📊 Um pra relatórios\n\nE se tudo estivesse em UM lugar só?\n\nO NOHUD unifica tudo:\n✅ Agendamento online\n✅ Gestão financeira\n✅ Controle de equipe\n✅ WhatsApp automático\n✅ Prontuário digital\n✅ Cobranças PIX/Boleto\n\nSem bagunça. Sem custo extra.\n\n🔗 Link na bio → comece grátis\n\n#gestãocompleta #allinone #empreendedorismo #barbearia #salão #estética #clínica #produtividade #organizacao #NOHUD"
+                    caption: "Quantos apps você usa pra gerenciar seu negócio?\n\n📅 Um pra agenda\n💬 Um pra WhatsApp\n💰 Um pra financeiro\n📊 Um pra relatórios\n\nE se tudo estivesse em UM lugar só?\n\nO NOHUD unifica tudo:\n✅ Agendamento online\n✅ Gestão financeira\n✅ Controle de equipe\n✅ WhatsApp automático\n✅ Ficha técnica digital\n✅ Cobranças PIX/Boleto\n\nSem bagunça. Sem custo extra.\n\n🔗 Link na bio → comece grátis\n\n#gestãocompleta #allinone #empreendedorismo #barbearia #salão #estética #clínica #produtividade #organizacao #NOHUD"
                 },
                 {
                     title: "Você Merece Descansar",

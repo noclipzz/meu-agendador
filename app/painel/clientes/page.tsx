@@ -47,7 +47,7 @@ export default function ClientesPage() {
     const [modalImportarAberto, setModalImportarAberto] = useState(false);
     const [importErros, setImportErros] = useState<string[]>([]);
     const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
-    const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "PRONTUARIO">("DADOS");
+    const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "FICHAS">("DADOS");
     const [isEditing, setIsEditing] = useState(false);
     const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' } | null>(null);
 
@@ -56,16 +56,16 @@ export default function ClientesPage() {
     const [mostrarInputObs, setMostrarInputObs] = useState(false);
     const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
 
-    // Prontuário
-    const [prontuarioTemplates, setProntuarioTemplates] = useState<any[]>([]);
-    const [prontuarioEntries, setProntuarioEntries] = useState<any[]>([]);
-    const [prontuarioTemplateSelecionado, setProntuarioTemplateSelecionado] = useState<string>("");
-    const [prontuarioFormData, setProntuarioFormData] = useState<Record<string, any>>({});
-    const [prontuarioEditId, setProntuarioEditId] = useState<string | null>(null);
-    const [prontuarioSalvando, setProntuarioSalvando] = useState(false);
-    const [prontuarioVisualizando, setProntuarioVisualizando] = useState<any>(null);
-    const [loadingProntuarios, setLoadingProntuarios] = useState(false);
-    const [modalProntuarioAberto, setModalProntuarioAberto] = useState(false);
+    // Fichas Técnicas
+    const [fichaTemplates, setFichaTemplates] = useState<any[]>([]);
+    const [fichaEntries, setFichaEntries] = useState<any[]>([]);
+    const [fichaTemplateSelecionado, setFichaTemplateSelecionado] = useState<string>("");
+    const [fichaFormData, setFichaFormData] = useState<Record<string, any>>({});
+    const [fichaEditId, setFichaEditId] = useState<string | null>(null);
+    const [fichaSalvando, setFichaSalvando] = useState(false);
+    const [fichaVisualizando, setFichaVisualizando] = useState<any>(null);
+    const [loadingFichas, setLoadingFichas] = useState(false);
+    const [modalFichaAberto, setModalFichaAberto] = useState(false);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "", hasDigitalSignatureModule: false });
     const [printConfigModal, setPrintConfigModal] = useState<{
         entry: any;
@@ -247,12 +247,12 @@ export default function ClientesPage() {
         setClienteSelecionado(clienteBasico);
         setAbaAtiva("DADOS");
         setLoadingDetalhes(true);
-        // Reset prontuário
-        setProntuarioEntries([]);
-        setProntuarioTemplateSelecionado("");
-        setProntuarioFormData({});
-        setProntuarioEditId(null);
-        setProntuarioVisualizando(null);
+        // Reset ficha técnica
+        setFichaEntries([]);
+        setFichaTemplateSelecionado("");
+        setFichaFormData({});
+        setFichaEditId(null);
+        setFichaVisualizando(null);
 
         // 2. Inicia o carregamento dos detalhes em background
 
@@ -569,72 +569,72 @@ export default function ClientesPage() {
     }
     function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
 
-    // === PRONTUÁRIO ===
-    async function carregarProntuario() {
+    // === FICHAS TÉCNICAS ===
+    async function carregarFichas() {
         if (!clienteSelecionado) return;
-        setLoadingProntuarios(true);
+        setLoadingFichas(true);
         try {
             const [resTemplates, resEntries] = await Promise.all([
-                fetch('/api/painel/prontuarios'),
-                fetch(`/api/painel/prontuarios/entries?clientId=${clienteSelecionado.id}`)
+                fetch('/api/painel/fichas-tecnicas'),
+                fetch(`/api/painel/fichas-tecnicas/entries?clientId=${clienteSelecionado.id}`)
             ]);
             const [tpls, ents] = await Promise.all([resTemplates.json(), resEntries.json()]);
-            setProntuarioTemplates(Array.isArray(tpls) ? tpls : []);
-            setProntuarioEntries(Array.isArray(ents) ? ents : []);
+            setFichaTemplates(Array.isArray(tpls) ? tpls : []);
+            setFichaEntries(Array.isArray(ents) ? ents : []);
         } catch (error) {
-            console.error("Erro ao carregar prontuários:", error);
+            console.error("Erro ao carregar fichas técnicas:", error);
         } finally {
-            setLoadingProntuarios(false);
+            setLoadingFichas(false);
         }
     }
 
-    async function salvarProntuario() {
-        if (!prontuarioTemplateSelecionado || !clienteSelecionado) return;
-        setProntuarioSalvando(true);
+    async function salvarFicha() {
+        if (!fichaTemplateSelecionado || !clienteSelecionado) return;
+        setFichaSalvando(true);
         try {
-            const res = await fetch('/api/painel/prontuarios/entries', {
+            const res = await fetch('/api/painel/fichas-tecnicas/entries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: prontuarioEditId || undefined,
-                    templateId: prontuarioTemplateSelecionado,
+                    id: fichaEditId || undefined,
+                    templateId: fichaTemplateSelecionado,
                     clientId: clienteSelecionado.id,
-                    data: prontuarioFormData
+                    data: fichaFormData
                 })
             });
             if (res.ok) {
-                toast.success(prontuarioEditId ? "Ficha atualizada!" : "Ficha salva!");
-                setProntuarioFormData({});
-                setProntuarioEditId(null);
-                setProntuarioTemplateSelecionado("");
-                setModalProntuarioAberto(false);
-                carregarProntuario();
+                toast.success(fichaEditId ? "Ficha atualizada!" : "Ficha salva!");
+                setFichaFormData({});
+                setFichaEditId(null);
+                setFichaTemplateSelecionado("");
+                setModalFichaAberto(false);
+                carregarFichas();
             } else {
                 toast.error("Erro ao salvar ficha técnica");
             }
         } finally {
-            setProntuarioSalvando(false);
+            setFichaSalvando(false);
         }
     }
 
-    async function excluirProntuario(id: string) {
+    async function excluirFicha(id: string) {
         if (!confirm("Tem certeza que deseja excluir esta ficha?")) return;
         try {
-            const res = await fetch('/api/painel/prontuarios/entries', {
+            const res = await fetch('/api/painel/fichas-tecnicas/entries', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id })
             });
             if (res.ok) {
                 toast.success("Ficha excluída!");
-                setProntuarioEntries(prontuarioEntries.filter(e => e.id !== id));
+                setFichaEntries(fichaEntries.filter(e => e.id !== id));
             } else {
                 toast.error("Erro ao excluir ficha");
             }
         } catch { toast.error("Erro ao excluir"); }
     }
 
-    function imprimirProntuario(entry: any) {
+    function imprimirFicha(entry: any) {
         const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
         let initialPrefs = {
             dateVisible: true,
@@ -743,7 +743,7 @@ export default function ClientesPage() {
 
         const logoHtml = empresaInfo.logo
             ? `<img src="${empresaInfo.logo}" class="company-logo" />`
-            : `<div class="company-logo-placeholder">🏥</div>`;
+            : `<div class="company-logo-placeholder">📋</div>`;
 
         const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
 
@@ -1001,7 +1001,7 @@ export default function ClientesPage() {
                                 <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
                                 <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
                                 {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
-                                    <button onClick={() => { setAbaAtiva("PRONTUARIO"); carregarProntuario(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "PRONTUARIO" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Fichas Técnicas </button>
+                                    <button onClick={() => { setAbaAtiva("FICHAS"); carregarFichas(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "FICHAS" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Fichas Técnicas </button>
                                 )}
                             </div>
 
@@ -1259,28 +1259,28 @@ export default function ClientesPage() {
                                     </div>
                                 )}
 
-                                {abaAtiva === "PRONTUARIO" && (
+                                {abaAtiva === "FICHAS" && (
                                     <div className="space-y-6 animate-in fade-in duration-500">
-                                        {loadingProntuarios ? (
+                                        {loadingFichas ? (
                                             <div className="flex flex-col items-center justify-center py-20">
                                                 <Loader2 className="animate-spin text-teal-600 mb-2" size={30} />
                                                 <p className="text-[10px] uppercase text-gray-400 font-bold">Carregando fichas...</p>
                                             </div>
-                                        ) : prontuarioVisualizando ? (
-                                            /* VISUALIZAÇÃO DO PRONTUÁRIO PREENCHIDO */
+                                        ) : fichaVisualizando ? (
+                                            /* VISUALIZAÇÃO DA FICHA TÉCNICA PREENCHIDA */
                                             <div>
                                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                                    <button onClick={() => setProntuarioVisualizando(null)} className="text-sm text-blue-600 font-extrabold hover:underline flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl transition-all">
+                                                    <button onClick={() => setFichaVisualizando(null)} className="text-sm text-blue-600 font-extrabold hover:underline flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl transition-all">
                                                         <ChevronDown className="rotate-90" size={16} /> Voltar para Lista
                                                     </button>
-                                                    <button onClick={() => imprimirProntuario(prontuarioVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
+                                                    <button onClick={() => imprimirFicha(fichaVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
                                                 </div>
                                                 <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-8">
-                                                    <h3 className="text-xl font-black dark:text-white mb-1">{prontuarioVisualizando.template?.name}</h3>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(prontuarioVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                    <h3 className="text-xl font-black dark:text-white mb-1">{fichaVisualizando.template?.name}</h3>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(fichaVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
                                                     <div className="space-y-4">
-                                                        {(prontuarioVisualizando.template?.fields as any[])?.map((field: any) => {
-                                                            const valor = (prontuarioVisualizando.data as any)?.[field.id];
+                                                        {(fichaVisualizando.template?.fields as any[])?.map((field: any) => {
+                                                            const valor = (fichaVisualizando.data as any)?.[field.id];
                                                             if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
                                                             return (
                                                                 <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b dark:border-gray-800/50">
@@ -1315,9 +1315,9 @@ export default function ClientesPage() {
                                                                                 {field.type === 'checkbox' ? (
                                                                                     <span>
                                                                                         {valor ? '✅ Sim' : '❌ Não'}
-                                                                                        {valor && (prontuarioVisualizando.data as any)?.[field.id + "_details"] && (
+                                                                                        {valor && (fichaVisualizando.data as any)?.[field.id + "_details"] && (
                                                                                             <span className="text-gray-400 font-normal ml-2 italic">
-                                                                                                ({field.detailsLabel || 'Justificativa'}: {(prontuarioVisualizando.data as any)[field.id + "_details"]})
+                                                                                                ({field.detailsLabel || 'Justificativa'}: {(fichaVisualizando.data as any)[field.id + "_details"]})
                                                                                             </span>
                                                                                         )}
                                                                                     </span>
@@ -1336,7 +1336,7 @@ export default function ClientesPage() {
                                         ) : (
                                             /* LISTA + BOTÃO NOVO */
                                             <>
-                                                {prontuarioTemplates.length === 0 ? (
+                                                {fichaTemplates.length === 0 ? (
                                                     <div className="text-center py-16">
                                                         <ClipboardList size={40} className="text-gray-300 mx-auto mb-4" />
                                                         <p className="text-sm text-gray-500 font-bold">Nenhum modelo de ficha técnica criado.</p>
@@ -1344,55 +1344,60 @@ export default function ClientesPage() {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        {/* BOTÃO NOVO PRONTUÁRIO */}
+                                                        {/* BOTÃO NOVA FICHA TÉCNICA */}
                                                         <button
-                                                            onClick={() => { setProntuarioTemplateSelecionado(""); setProntuarioFormData({}); setProntuarioEditId(null); setModalProntuarioAberto(true); }}
+                                                            onClick={() => { setFichaTemplateSelecionado(""); setFichaFormData({}); setFichaEditId(null); setModalFichaAberto(true); }}
                                                             className="w-full border-2 border-dashed border-teal-300 dark:border-teal-800 p-5 rounded-2xl text-teal-600 font-bold text-sm hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/10 transition flex items-center justify-center gap-2"
                                                         >
                                                             <Plus size={18} /> Nova Ficha Técnica
                                                         </button>
-
-                                                        {/* LISTA DE PRONTUÁRIOS PREENCHIDOS */}
-                                                        {prontuarioEntries.length > 0 && (
-                                                            <div>
-                                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Fichas Preenchidas ({prontuarioEntries.length})</h4>
-                                                                <div className="space-y-2">
-                                                                    {prontuarioEntries.map((entry: any) => (
-                                                                        <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center shrink-0"><FileText size={18} /></div>
-                                                                                <div>
-                                                                                    <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
-                                                                                    <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                                                                                <button onClick={() => setProntuarioVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
-                                                                                <button onClick={() => { setProntuarioTemplateSelecionado(entry.templateId); setProntuarioFormData(entry.data as any); setProntuarioEditId(entry.id); setModalProntuarioAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
-                                                                                <button onClick={() => imprimirProntuario(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
-                                                                                {userRole === "ADMIN" && (
-                                                                                    <button onClick={() => excluirProntuario(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {prontuarioEntries.length === 0 && (
-                                                            <div className="text-center py-10 opacity-40">
-                                                                <ClipboardList size={30} className="mx-auto mb-2" />
-                                                                <p className="text-xs font-bold">Nenhuma ficha preenchida para este cliente.</p>
-                                                            </div>
-                                                        )}
                                                     </>
                                                 )}
                                             </>
                                         )}
+
+
+
+                                        {/* LISTA DE FICHAS PREENCHIDAS */}
+                                        {fichaEntries.length > 0 && (
+                                            <div>
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Fichas Preenchidas ({fichaEntries.length})</h4>
+                                                <div className="space-y-2">
+                                                    {fichaEntries.map((entry: any) => (
+                                                        <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-600 flex items-center justify-center shrink-0"><FileText size={18} /></div>
+                                                                <div>
+                                                                    <p className="font-bold text-sm dark:text-white">{entry.template?.name}</p>
+                                                                    <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                                                                <button onClick={() => setFichaVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar"><Eye size={14} /></button>
+                                                                <button onClick={() => { setFichaTemplateSelecionado(entry.templateId); setFichaFormData(entry.data as any); setFichaEditId(entry.id); setModalFichaAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar"><Pencil size={14} /></button>
+                                                                <button onClick={() => imprimirFicha(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-green-600 transition" title="Imprimir"><Printer size={14} /></button>
+                                                                {userRole === "ADMIN" && (
+                                                                    <button onClick={() => excluirFicha(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {fichaEntries.length === 0 && (
+                                            <div className="text-center py-10 opacity-40">
+                                                <ClipboardList size={30} className="mx-auto mb-2" />
+                                                <p className="text-xs font-bold">Nenhuma ficha preenchida para este cliente.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
+
+
+
 
                             {/* RODAPÉ ESTILIZADO */}
                             <div className="p-4 md:p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4">
@@ -1407,13 +1412,14 @@ export default function ClientesPage() {
                 </ModalPortal>
             )}
 
+
             {modalAberto && (
                 <ModalPortal>
                     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
                         <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                             {/* HEADER FIXO */}
                             <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
-                                <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{isEditing ? "Editar Ficha Técnica" : "Novo Cliente"}</h2>
+                                <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{isEditing ? "Editar Cliente" : "Novo Cliente"}</h2>
                                 <button onClick={fecharModal} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={24} /></button>
                             </div>
 
@@ -1597,460 +1603,469 @@ export default function ClientesPage() {
                         </div>
                     </div>
                 </ModalPortal>
-            )}
+            )
+            }
 
             {/* MODAL DE CONFIRMAÇÃO ESTILIZADO */}
-            {confirmarExclusao && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
-                    <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-sm text-center shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
-                        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
-                        <h2 className="text-2xl font-black mb-2 dark:text-white tracking-tighter uppercase">Excluir?</h2>
-                        <p className="text-gray-500 text-sm mb-8 font-medium">Os dados serão removidos permanentemente. Confirmar?</p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmarExclusao(null)} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-2xl font-black text-[10px] uppercase text-gray-600 dark:text-gray-300">Não</button>
-                            <button onClick={executarExclusao} className="p-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Sim, excluir</button>
+            {
+                confirmarExclusao && (
+                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
+                        <div className="bg-white dark:bg-gray-900 p-10 rounded-[3rem] w-full max-w-sm text-center shadow-2xl border dark:border-gray-800 animate-in zoom-in-95">
+                            <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
+                            <h2 className="text-2xl font-black mb-2 dark:text-white tracking-tighter uppercase">Excluir?</h2>
+                            <p className="text-gray-500 text-sm mb-8 font-medium">Os dados serão removidos permanentemente. Confirmar?</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => setConfirmarExclusao(null)} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-2xl font-black text-[10px] uppercase text-gray-600 dark:text-gray-300">Não</button>
+                                <button onClick={executarExclusao} className="p-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase shadow-lg shadow-red-500/20">Sim, excluir</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {/* MODAL FLUTUANTE DO PRONTUÁRIO */}
-            {modalProntuarioAberto && clienteSelecionado && (
-                <ModalPortal>
-                    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
-                        <div className="bg-white dark:bg-gray-950 w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
-                            {/* HEADER DO MODAL */}
-                            <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shrink-0">
-                                <div>
-                                    <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
-                                        {prontuarioEditId ? "Editar Ficha Técnica" : "Nova Ficha Técnica"}
-                                    </h2>
-                                    <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
-                                </div>
-                                <button onClick={() => { setModalProntuarioAberto(false); setProntuarioFormData({}); setProntuarioEditId(null); setProntuarioTemplateSelecionado(""); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            {/* CONTEÚDO SCROLLÁVEL */}
-                            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                                {/* SELETOR DE TEMPLATE */}
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo da Ficha</label>
-                                    <select
-                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
-                                        value={prontuarioTemplateSelecionado}
-                                        onChange={e => { setProntuarioTemplateSelecionado(e.target.value); if (!prontuarioEditId) setProntuarioFormData({}); }}
-                                    >
-                                        <option value="">Selecione um modelo...</option>
-                                        {prontuarioTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                    </select>
-                                </div>
-
-                                {/* CAMPOS DINÂMICOS */}
-                                {prontuarioTemplateSelecionado && (() => {
-                                    const template = prontuarioTemplates.find((t: any) => t.id === prontuarioTemplateSelecionado);
-                                    if (!template) return null;
-                                    return (
-                                        <div className="space-y-5">
-                                            {(template.fields as any[]).map((field: any) => (
-                                                <div key={field.id}>
-                                                    {field.type === 'header' && (
-                                                        <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
-                                                    )}
-                                                    {field.type === 'text' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'textarea' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'number' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'date' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })} />
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'select' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={prontuarioFormData[field.id] || ''} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.value })}>
-                                                                <option value="">Selecione...</option>
-                                                                {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
-                                                            </select>
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'checkbox' && (
-                                                        <div className="space-y-3">
-                                                            <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
-                                                                <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={prontuarioFormData[field.id] || false} onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked })} />
-                                                                <span className="text-sm font-bold dark:text-white">{field.label}</span>
-                                                                {field.required && <span className="text-red-500 text-xs">*</span>}
-                                                            </label>
-
-                                                            {field.allowsDetails && prontuarioFormData[field.id] && (
-                                                                <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
-                                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
-                                                                    <input
-                                                                        className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
-                                                                        placeholder="Descreva aqui..."
-                                                                        value={prontuarioFormData[field.id + "_details"] || ''}
-                                                                        onChange={e => setProntuarioFormData({ ...prontuarioFormData, [field.id + "_details"]: e.target.value })}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'checkboxGroup' && (
-                                                        <div>
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                {field.options?.map((opt: string, i: number) => (
-                                                                    <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
-                                                                        <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(prontuarioFormData[field.id] || []).includes(opt)} onChange={e => {
-                                                                            const arr = prontuarioFormData[field.id] || [];
-                                                                            setProntuarioFormData({ ...prontuarioFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
-                                                                        }} />
-                                                                        <span className="font-bold dark:text-white">{opt}</span>
-                                                                    </label>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    {field.type === 'table' && (
-                                                        <div className="space-y-2">
-                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                            <div className="overflow-x-auto border-2 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
-                                                                <table className="w-full text-left border-collapse text-sm">
-                                                                    <thead>
-                                                                        <tr className="bg-gray-50 dark:bg-gray-800/50">
-                                                                            {field.options?.map((col: string, i: number) => <th key={i} className="p-3 font-black text-xs text-gray-500 uppercase tracking-widest border-b dark:border-gray-700">{col}</th>)}
-                                                                            <th className="p-3 border-b dark:border-gray-700 w-10"></th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {(prontuarioFormData[field.id] as string[][] || []).map((row: string[], ri: number) => (
-                                                                            <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
-                                                                                {field.options?.map((_: string, ci: number) => (
-                                                                                    <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0">
-                                                                                        <textarea
-                                                                                            rows={2}
-                                                                                            className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition resize-y min-h-[40px]"
-                                                                                            value={row[ci] || ''}
-                                                                                            onChange={e => {
-                                                                                                const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
-                                                                                                if (!arr[ri]) arr[ri] = [];
-                                                                                                arr[ri][ci] = e.target.value;
-                                                                                                setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
-                                                                                            }}
-                                                                                            placeholder={`---`}
-                                                                                        />
-                                                                                    </td>
-                                                                                ))}
-                                                                                <td className="p-2 text-center">
-                                                                                    <button onClick={() => {
-                                                                                        const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
-                                                                                        arr.splice(ri, 1);
-                                                                                        setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
-                                                                                    }} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
-                                                                                </td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
-                                                                <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border-t dark:border-gray-700">
-                                                                    <button onClick={() => {
-                                                                        const arr = [...(prontuarioFormData[field.id] as string[][] || [])];
-                                                                        arr.push(new Array(field.options?.length || 0).fill(''));
-                                                                        setProntuarioFormData({ ...prontuarioFormData, [field.id]: arr });
-                                                                    }} className="text-xs font-bold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-3 py-2 rounded-xl transition flex items-center gap-2 inline-flex"><Plus size={14} /> Adicionar Linha</button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-
-                            {/* BOTÃO SALVAR FIXO NO RODAPÉ */}
-                            {prontuarioTemplateSelecionado && (
-                                <div className="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 shrink-0">
-                                    <button
-                                        onClick={salvarProntuario}
-                                        disabled={prontuarioSalvando}
-                                        className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
-                                    >
-                                        {prontuarioSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
-                                        {prontuarioSalvando ? 'Salvando...' : (prontuarioEditId ? 'Atualizar Ficha' : 'Salvar Ficha')}
+            {/* MODAL FLUTUANTE DA FICHA TÉCNICA */}
+            {
+                modalFichaAberto && clienteSelecionado && (
+                    <ModalPortal>
+                        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-[120] p-4">
+                            <div className="bg-white dark:bg-gray-950 w-full max-w-3xl max-h-[90vh] rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+                                {/* HEADER DO MODAL */}
+                                <div className="p-8 border-b dark:border-gray-800 flex justify-between items-center bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 shrink-0">
+                                    <div>
+                                        <h2 className="text-2xl font-black dark:text-white flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white"><ClipboardList size={20} /></div>
+                                            {fichaEditId ? "Editar Ficha Técnica" : "Nova Ficha Técnica"}
+                                        </h2>
+                                        <p className="text-sm text-gray-500 mt-1 ml-[52px]">Paciente: <b className="text-gray-700 dark:text-gray-300">{clienteSelecionado.name}</b></p>
+                                    </div>
+                                    <button onClick={() => { setModalFichaAberto(false); setFichaFormData({}); setFichaEditId(null); setFichaTemplateSelecionado(""); }} className="p-4 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-red-500 transition text-gray-400 shadow-sm">
+                                        <X size={20} />
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </ModalPortal>
-            )}
 
-            {/* MODAL DE IMPRESSÃO - OPÇÕES PERSONALIZADAS OBRIGATORIAS */}
-            {printConfigModal && (
-                <ModalPortal>
-                    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md max-h-[90vh] border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                            <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20 shrink-0">
-                                <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                                    <Printer size={22} className="text-teal-600" /> Imprimir Ficha
-                                </h2>
-                                <button onClick={() => setPrintConfigModal(null)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/40 hover:text-red-500 transition text-gray-400">
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
-                                {/* Assinatura */}
-                                <div className="space-y-3">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <FileIcon size={14} /> Bloco de Assinaturas
-                                    </label>
-                                    <div className="space-y-2">
-                                        {[
-                                            { id: 'client', label: 'Assinatura do Cliente' },
-                                            { id: 'prof', label: 'Assinatura do Profissional' },
-                                            { id: 'company', label: 'Assinatura da Empresa' },
-                                        ].map(opt => {
-                                            const isChecked = printConfigModal.signatures[opt.id as keyof typeof printConfigModal.signatures];
-                                            return (
-                                                <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${isChecked ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
-                                                    <input
-                                                        type="checkbox"
-                                                        className="accent-teal-600 w-4 h-4"
-                                                        checked={isChecked}
-                                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, [opt.id]: e.target.checked } })}
-                                                    />
-                                                    <span className={`font-bold text-sm ${isChecked ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
-                                                </label>
-                                            );
-                                        })}
+                                {/* CONTEÚDO SCROLLÁVEL */}
+                                <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                                    {/* SELETOR DE TEMPLATE */}
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Modelo da Ficha</label>
+                                        <select
+                                            className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white outline-none focus:border-teal-500"
+                                            value={fichaTemplateSelecionado}
+                                            onChange={e => { setFichaTemplateSelecionado(e.target.value); if (!fichaEditId) setFichaFormData({}); }}
+                                        >
+                                            <option value="">Selecione um modelo...</option>
+                                            {fichaTemplates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                        </select>
                                     </div>
-                                    {(printConfigModal.signatures.prof || printConfigModal.signatures.company) && (
-                                        <div className="mt-4 animate-in slide-in-from-top-2">
-                                            <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' : (printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500 cursor-pointer')}`}>
-                                                <input
-                                                    type="checkbox"
-                                                    className="accent-teal-600 w-4 h-4"
-                                                    disabled={!empresaInfo.hasDigitalSignatureModule}
-                                                    checked={empresaInfo.hasDigitalSignatureModule && printConfigModal.useDigitalSignature}
-                                                    onChange={(e) => {
-                                                        if (!empresaInfo.hasDigitalSignatureModule) {
-                                                            toast.error("Assinatura Digital é um recurso opcional. Ative em Configurações > Plano.");
-                                                            return;
-                                                        }
-                                                        setPrintConfigModal({ ...printConfigModal, useDigitalSignature: e.target.checked });
-                                                    }}
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between">
-                                                        <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
-                                                        {!empresaInfo.hasDigitalSignatureModule && (
-                                                            <span className="text-[8px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black uppercase">Add-on</span>
+
+                                    {/* CAMPOS DINÂMICOS */}
+                                    {fichaTemplateSelecionado && (() => {
+                                        const template = fichaTemplates.find((t: any) => t.id === fichaTemplateSelecionado);
+                                        if (!template) return null;
+                                        return (
+                                            <div className="space-y-5">
+                                                {(template.fields as any[]).map((field: any) => (
+                                                    <div key={field.id}>
+                                                        {field.type === 'header' && (
+                                                            <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
+                                                        )}
+                                                        {field.type === 'text' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'textarea' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'number' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'date' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'select' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })}>
+                                                                    <option value="">Selecione...</option>
+                                                                    {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
+                                                                </select>
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'checkbox' && (
+                                                            <div className="space-y-3">
+                                                                <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
+                                                                    <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={fichaFormData[field.id] || false} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked })} />
+                                                                    <span className="text-sm font-bold dark:text-white">{field.label}</span>
+                                                                    {field.required && <span className="text-red-500 text-xs">*</span>}
+                                                                </label>
+
+                                                                {field.allowsDetails && fichaFormData[field.id] && (
+                                                                    <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
+                                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
+                                                                        <input
+                                                                            className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
+                                                                            placeholder="Descreva aqui..."
+                                                                            value={fichaFormData[field.id + "_details"] || ''}
+                                                                            onChange={e => setFichaFormData({ ...fichaFormData, [field.id + "_details"]: e.target.value })}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'checkboxGroup' && (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    {field.options?.map((opt: string, i: number) => (
+                                                                        <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
+                                                                            <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(fichaFormData[field.id] || []).includes(opt)} onChange={e => {
+                                                                                const arr = fichaFormData[field.id] || [];
+                                                                                setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
+                                                                            }} />
+                                                                            <span className="font-bold dark:text-white">{opt}</span>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {field.type === 'table' && (
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                <div className="overflow-x-auto border-2 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                                                                    <table className="w-full text-left border-collapse text-sm">
+                                                                        <thead>
+                                                                            <tr className="bg-gray-50 dark:bg-gray-800/50">
+                                                                                {field.options?.map((col: string, i: number) => <th key={i} className="p-3 font-black text-xs text-gray-500 uppercase tracking-widest border-b dark:border-gray-700">{col}</th>)}
+                                                                                <th className="p-3 border-b dark:border-gray-700 w-10"></th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {(fichaFormData[field.id] as string[][] || []).map((row: string[], ri: number) => (
+                                                                                <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
+                                                                                    {field.options?.map((_: string, ci: number) => (
+                                                                                        <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0">
+                                                                                            <textarea
+                                                                                                rows={2}
+                                                                                                className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition resize-y min-h-[40px]"
+                                                                                                value={row[ci] || ''}
+                                                                                                onChange={e => {
+                                                                                                    const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                                                    if (!arr[ri]) arr[ri] = [];
+                                                                                                    arr[ri][ci] = e.target.value;
+                                                                                                    setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                                                }}
+                                                                                                placeholder={`---`}
+                                                                                            />
+                                                                                        </td>
+                                                                                    ))}
+                                                                                    <td className="p-2 text-center">
+                                                                                        <button onClick={() => {
+                                                                                            const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                                            arr.splice(ri, 1);
+                                                                                            setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                                        }} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border-t dark:border-gray-700">
+                                                                        <button onClick={() => {
+                                                                            const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                            arr.push(new Array(field.options?.length || 0).fill(''));
+                                                                            setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                        }} className="text-xs font-bold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-3 py-2 rounded-xl transition flex items-center gap-2 inline-flex"><Plus size={14} /> Adicionar Linha</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    <p className="text-[10px] text-gray-400">
-                                                        {!empresaInfo.hasDigitalSignatureModule
-                                                            ? "Este recurso requer o módulo de Assinatura Digital (R$ 14,90/mês)."
-                                                            : "Insere automaticamente a imagem da assinatura cadastrada nos campos marcados acima."}
-                                                    </p>
-                                                </div>
-                                            </label>
-                                            {!empresaInfo.hasDigitalSignatureModule && (
-                                                <button
-                                                    onClick={() => window.location.href = '/painel/config/plano'}
-                                                    className="mt-2 text-[10px] font-black text-blue-600 hover:underline uppercase flex items-center gap-1 mx-auto"
-                                                >
-                                                    <Plus size={10} /> Ativar Assinatura Digital (Add-on)
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
+                                                ))}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
-                                {/* Data */}
-                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Calendar size={14} /> Exibição da Data
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
-                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={printConfigModal.dateVisible}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, dateVisible: e.target.checked })}
-                                            />
-                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
-                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
-                                        </div>
-                                        <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
-                                    </label>
-                                </div>
-
-                                {/* Autenticação */}
-                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <ShieldCheck size={14} /> Autenticação Digital
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
-                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={printConfigModal.includeQR}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, includeQR: e.target.checked })}
-                                            />
-                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
-                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-sm text-gray-600 dark:text-gray-300">Incluir QR Code e Hash</p>
-                                            <p className="text-[10px] text-gray-400">Permite validar a veracidade do documento online.</p>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                {/* Layout */}
-                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <FileText size={14} /> Layout da Ficha
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
-                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
-                                            <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={printConfigModal.twoColumns}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, twoColumns: e.target.checked })}
-                                            />
-                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
-                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Dividir campos em Duas Colunas</span>
-                                            <span className="text-[10px] text-gray-400 font-bold">Ideal para conter mais informações por página</span>
-                                        </div>
-                                    </label>
-                                </div>
-
-                                {/* Número do Documento */}
-                                <div className="space-y-3 pt-4 border-t dark:border-gray-800">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <FileText size={14} /> Número do Documento (O.S.)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase"
-                                        placeholder={`Ex: ${printConfigModal.entry?.id.slice(-6).toUpperCase()}`}
-                                        value={printConfigModal.docNumber}
-                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, docNumber: e.target.value.toUpperCase() })}
-                                    />
-                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
-                                        Se em branco, um número aleatório será gerado.
-                                    </p>
-                                </div>
-
-                                {/* Rodapé Personalizado */}
-                                <div className="space-y-3 pt-4 border-t dark:border-gray-800">
-                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Plus size={14} /> Informações Adicionais no Rodapé
-                                    </label>
-                                    <textarea
-                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
-                                        rows={3}
-                                        placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
-                                        value={printConfigModal.customFooter}
-                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
-                                    />
-                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
-                                        Este texto aparecerá acima da assinatura e da data automática.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
-                                <button
-                                    onClick={executarImpressaoDaFicha}
-                                    className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
-                                >
-                                    <Printer size={18} /> Gerar PDF (Imprimir)
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </ModalPortal>
-            )}
-
-            {/* MODAL IMPORTAR PLANILHA */}
-            {modalImportarAberto && (
-                <ModalPortal>
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
-                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
-                            <div className="p-8 pb-6 shrink-0 flex justify-between items-center border-b dark:border-gray-800">
-                                <div>
-                                    <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
-                                        <Download className="text-blue-500" size={24} /> Importar Clientes
-                                    </h2>
-                                    <p className="text-sm text-gray-500 mt-1 font-medium">Adicione clientes em massa usando uma planilha Excel.</p>
-                                </div>
-                                <button onClick={() => { setModalImportarAberto(false); setImportErros([]); }} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
-                            </div>
-
-                            <div className="p-8 space-y-6 overflow-y-auto">
-                                <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl border dark:border-blue-800/30">
-                                    <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2"><FileText size={18} /> 1. Baixe o Modelo</h3>
-                                    <p className="text-sm text-blue-600/80 dark:text-blue-300/70 mb-4 leading-relaxed">Faça o download da nossa planilha modelo. Ela contém as colunas formatadas corretamente para que o sistema consiga ler as informações dos seus clientes.</p>
-                                    <button onClick={baixarModeloExcel} className="w-full bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-2xl font-bold flex justify-center items-center gap-2 hover:bg-blue-50 dark:hover:bg-gray-700 transition shadow-sm shadow-blue-100 dark:shadow-none">
-                                        <Download size={18} /> Baixar Planilha Modelo
-                                    </button>
-                                </div>
-
-                                <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-3xl border dark:border-gray-700">
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-300 mb-2 flex items-center gap-2"><UploadCloud size={18} /> 2. Faça o Upload</h3>
-                                    <p className="text-sm text-gray-500 mb-4 leading-relaxed">Preencha a planilha modelo e, quando estiver com tudo pronto, faça o upload aqui para processar a importação.</p>
-                                    <label className="w-full bg-blue-600 border-2 border-blue-600 text-white p-3 rounded-2xl font-black flex justify-center items-center gap-2 hover:bg-blue-700 hover:border-blue-700 transition shadow-lg cursor-pointer">
-                                        <UploadCloud size={18} /> Escolher Arquivo Preenchido
-                                        <input type="file" className="hidden" accept=".xlsx, .xls" onClick={(e: any) => e.target.value = null} onChange={(e) => {
-                                            if (e.target.files && e.target.files[0]) {
-                                                processarImportacao(e.target.files[0]);
-                                            }
-                                        }} />
-                                    </label>
-                                </div>
-                                {importErros.length > 0 && (
-                                    <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-3xl border border-red-100 dark:border-red-800/30 animate-in fade-in slide-in-from-top-2">
-                                        <h3 className="font-bold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2"><AlertTriangle size={18} /> Erros de Importação ({importErros.length})</h3>
-                                        <div className="max-h-32 overflow-y-auto space-y-1 custom-scrollbar pr-2">
-                                            {importErros.map((erro, i) => (
-                                                <div key={i} className="text-[11px] font-bold text-red-600/80 dark:text-red-300 bg-red-100/50 dark:bg-red-900/40 p-2 rounded-lg px-3 mb-1">{erro}</div>
-                                            ))}
-                                        </div>
+                                {/* BOTÃO SALVAR FIXO NO RODAPÉ */}
+                                {fichaTemplateSelecionado && (
+                                    <div className="p-6 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900 shrink-0">
+                                        <button
+                                            onClick={salvarFicha}
+                                            disabled={fichaSalvando}
+                                            className="w-full bg-teal-600 text-white p-5 rounded-2xl font-black text-base hover:bg-teal-700 transition flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-teal-600/20"
+                                        >
+                                            {fichaSalvando ? <Loader2 className="animate-spin" size={22} /> : <Save size={22} />}
+                                            {fichaSalvando ? 'Salvando...' : (fichaEditId ? 'Atualizar Ficha' : 'Salvar Ficha')}
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
-                </ModalPortal>
-            )}
+                    </ModalPortal>
+                )
+            }
+
+            {/* MODAL DE IMPRESSÃO - OPÇÕES PERSONALIZADAS OBRIGATORIAS */}
+            {
+                printConfigModal && (
+                    <ModalPortal>
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl w-full max-w-md max-h-[90vh] border border-gray-100 dark:border-gray-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                                <div className="px-6 py-5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/20 shrink-0">
+                                    <h2 className="text-xl font-black text-gray-800 dark:text-white flex items-center gap-2">
+                                        <Printer size={22} className="text-teal-600" /> Imprimir Ficha
+                                    </h2>
+                                    <button onClick={() => setPrintConfigModal(null)} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/40 hover:text-red-500 transition text-gray-400">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                                    {/* Assinatura */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <FileIcon size={14} /> Bloco de Assinaturas
+                                        </label>
+                                        <div className="space-y-2">
+                                            {[
+                                                { id: 'client', label: 'Assinatura do Cliente' },
+                                                { id: 'prof', label: 'Assinatura do Profissional' },
+                                                { id: 'company', label: 'Assinatura da Empresa' },
+                                            ].map(opt => {
+                                                const isChecked = printConfigModal.signatures[opt.id as keyof typeof printConfigModal.signatures];
+                                                return (
+                                                    <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${isChecked ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            className="accent-teal-600 w-4 h-4"
+                                                            checked={isChecked}
+                                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, [opt.id]: e.target.checked } })}
+                                                        />
+                                                        <span className={`font-bold text-sm ${isChecked ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                        {(printConfigModal.signatures.prof || printConfigModal.signatures.company) && (
+                                            <div className="mt-4 animate-in slide-in-from-top-2">
+                                                <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' : (printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500 cursor-pointer')}`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="accent-teal-600 w-4 h-4"
+                                                        disabled={!empresaInfo.hasDigitalSignatureModule}
+                                                        checked={empresaInfo.hasDigitalSignatureModule && printConfigModal.useDigitalSignature}
+                                                        onChange={(e) => {
+                                                            if (!empresaInfo.hasDigitalSignatureModule) {
+                                                                toast.error("Assinatura Digital é um recurso opcional. Ative em Configurações > Plano.");
+                                                                return;
+                                                            }
+                                                            setPrintConfigModal({ ...printConfigModal, useDigitalSignature: e.target.checked });
+                                                        }}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <p className={`font-bold text-sm ${printConfigModal.useDigitalSignature ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>Aplicar Assinatura Digital</p>
+                                                            {!empresaInfo.hasDigitalSignatureModule && (
+                                                                <span className="text-[8px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black uppercase">Add-on</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400">
+                                                            {!empresaInfo.hasDigitalSignatureModule
+                                                                ? "Este recurso requer o módulo de Assinatura Digital (R$ 14,90/mês)."
+                                                                : "Insere automaticamente a imagem da assinatura cadastrada nos campos marcados acima."}
+                                                        </p>
+                                                    </div>
+                                                </label>
+                                                {!empresaInfo.hasDigitalSignatureModule && (
+                                                    <button
+                                                        onClick={() => window.location.href = '/painel/config/plano'}
+                                                        className="mt-2 text-[10px] font-black text-blue-600 hover:underline uppercase flex items-center gap-1 mx-auto"
+                                                    >
+                                                        <Plus size={10} /> Ativar Assinatura Digital (Add-on)
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Data */}
+                                    <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Calendar size={14} /> Exibição da Data
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                            <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={printConfigModal.dateVisible}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, dateVisible: e.target.checked })}
+                                                />
+                                                <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
+                                        </label>
+                                    </div>
+
+                                    {/* Autenticação */}
+                                    <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <ShieldCheck size={14} /> Autenticação Digital
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                            <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={printConfigModal.includeQR}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, includeQR: e.target.checked })}
+                                                />
+                                                <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-sm text-gray-600 dark:text-gray-300">Incluir QR Code e Hash</p>
+                                                <p className="text-[10px] text-gray-400">Permite validar a veracidade do documento online.</p>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {/* Layout */}
+                                    <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <FileText size={14} /> Layout da Ficha
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                            <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={printConfigModal.twoColumns}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, twoColumns: e.target.checked })}
+                                                />
+                                                <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Dividir campos em Duas Colunas</span>
+                                                <span className="text-[10px] text-gray-400 font-bold">Ideal para conter mais informações por página</span>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {/* Número do Documento */}
+                                    <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <FileText size={14} /> Número do Documento (O.S.)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase"
+                                            placeholder={`Ex: ${printConfigModal.entry?.id.slice(-6).toUpperCase()}`}
+                                            value={printConfigModal.docNumber}
+                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, docNumber: e.target.value.toUpperCase() })}
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                            Se em branco, um número aleatório será gerado.
+                                        </p>
+                                    </div>
+
+                                    {/* Rodapé Personalizado */}
+                                    <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Plus size={14} /> Informações Adicionais no Rodapé
+                                        </label>
+                                        <textarea
+                                            className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
+                                            rows={3}
+                                            placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
+                                            value={printConfigModal.customFooter}
+                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
+                                        />
+                                        <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                            Este texto aparecerá acima da assinatura e da data automática.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+                                    <button
+                                        onClick={executarImpressaoDaFicha}
+                                        className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
+                                    >
+                                        <Printer size={18} /> Gerar PDF (Imprimir)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </ModalPortal>
+                )
+            }
+
+            {/* MODAL IMPORTAR PLANILHA */}
+            {
+                modalImportarAberto && (
+                    <ModalPortal>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
+                            <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                                <div className="p-8 pb-6 shrink-0 flex justify-between items-center border-b dark:border-gray-800">
+                                    <div>
+                                        <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
+                                            <Download className="text-blue-500" size={24} /> Importar Clientes
+                                        </h2>
+                                        <p className="text-sm text-gray-500 mt-1 font-medium">Adicione clientes em massa usando uma planilha Excel.</p>
+                                    </div>
+                                    <button onClick={() => { setModalImportarAberto(false); setImportErros([]); }} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                                </div>
+
+                                <div className="p-8 space-y-6 overflow-y-auto">
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl border dark:border-blue-800/30">
+                                        <h3 className="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2"><FileText size={18} /> 1. Baixe o Modelo</h3>
+                                        <p className="text-sm text-blue-600/80 dark:text-blue-300/70 mb-4 leading-relaxed">Faça o download da nossa planilha modelo. Ela contém as colunas formatadas corretamente para que o sistema consiga ler as informações dos seus clientes.</p>
+                                        <button onClick={baixarModeloExcel} className="w-full bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-2xl font-bold flex justify-center items-center gap-2 hover:bg-blue-50 dark:hover:bg-gray-700 transition shadow-sm shadow-blue-100 dark:shadow-none">
+                                            <Download size={18} /> Baixar Planilha Modelo
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-3xl border dark:border-gray-700">
+                                        <h3 className="font-bold text-gray-800 dark:text-gray-300 mb-2 flex items-center gap-2"><UploadCloud size={18} /> 2. Faça o Upload</h3>
+                                        <p className="text-sm text-gray-500 mb-4 leading-relaxed">Preencha a planilha modelo e, quando estiver com tudo pronto, faça o upload aqui para processar a importação.</p>
+                                        <label className="w-full bg-blue-600 border-2 border-blue-600 text-white p-3 rounded-2xl font-black flex justify-center items-center gap-2 hover:bg-blue-700 hover:border-blue-700 transition shadow-lg cursor-pointer">
+                                            <UploadCloud size={18} /> Escolher Arquivo Preenchido
+                                            <input type="file" className="hidden" accept=".xlsx, .xls" onClick={(e: any) => e.target.value = null} onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    processarImportacao(e.target.files[0]);
+                                                }
+                                            }} />
+                                        </label>
+                                    </div>
+                                    {importErros.length > 0 && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-3xl border border-red-100 dark:border-red-800/30 animate-in fade-in slide-in-from-top-2">
+                                            <h3 className="font-bold text-red-800 dark:text-red-400 mb-2 flex items-center gap-2"><AlertTriangle size={18} /> Erros de Importação ({importErros.length})</h3>
+                                            <div className="max-h-32 overflow-y-auto space-y-1 custom-scrollbar pr-2">
+                                                {importErros.map((erro, i) => (
+                                                    <div key={i} className="text-[11px] font-bold text-red-600/80 dark:text-red-300 bg-red-100/50 dark:bg-red-900/40 p-2 rounded-lg px-3 mb-1">{erro}</div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </ModalPortal>
+                )
+            }
         </div >
     );
 }

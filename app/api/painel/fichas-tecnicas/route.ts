@@ -21,7 +21,7 @@ export async function GET() {
         // VERIFICA PLANO VIA OWNER DA EMPRESA
         const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
-            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+            return NextResponse.json({ error: "O recurso Fichas Técnicas é exclusivo do plano MASTER." }, { status: 403 });
         }
 
         const templates = await db.formTemplate.findMany({
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         // VERIFICA PLANO VIA OWNER DA EMPRESA
         const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
-            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+            return NextResponse.json({ error: "O recurso Fichas Técnicas é exclusivo do plano MASTER." }, { status: 403 });
         }
 
         const body = await req.json();

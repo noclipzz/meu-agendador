@@ -367,7 +367,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={18} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={18} /> },
-        { key: 'prontuarios', name: "Fichas Técnicas", path: "/painel/prontuarios", icon: <ClipboardList size={18} /> },
+        { key: 'fichas-tecnicas', name: "Fichas Técnicas", path: "/painel/fichas-tecnicas", icon: <ClipboardList size={18} /> },
     ];
 
     const financeiroItems = [
@@ -391,10 +391,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "prontuarios", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key)) return false;
         }
         if (userPlan === "PREMIUM") {
-            if (["prontuarios", "estoque", "whatsapp"].includes(item.key)) return false;
+            if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
         }
         if (item.key === 'whatsapp' && !isOwner) return false;
         if (item.key === 'mural') return true;

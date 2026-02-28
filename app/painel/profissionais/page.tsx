@@ -69,7 +69,7 @@ export default function GestaoEquipe() {
             clientes: true,
             financeiro: false,
             estoque: false,
-            prontuarios: false,
+            'fichas-tecnicas': false,
             servicos: false,
             profissionais: false,
             config: false,
@@ -377,7 +377,7 @@ export default function GestaoEquipe() {
                 clientes: true,
                 financeiro: false,
                 estoque: false,
-                prontuarios: false,
+                'fichas-tecnicas': false,
                 servicos: false,
                 profissionais: false,
                 config: false,
@@ -401,7 +401,7 @@ export default function GestaoEquipe() {
                 clientes: true,
                 financeiro: false,
                 estoque: false,
-                prontuarios: false,
+                'fichas-tecnicas': false,
                 servicos: false,
                 profissionais: false,
                 config: false,
@@ -759,7 +759,7 @@ export default function GestaoEquipe() {
                     <div className="bg-white dark:bg-gray-900 rounded-[2rem] md:rounded-[3rem] w-full max-w-5xl h-full max-h-[96vh] md:max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
                         {/* HEADER FIXO */}
                         <div className="p-4 md:p-8 pb-4 shrink-0 flex justify-between items-center gap-4">
-                            <h2 className="text-2xl md:text-3xl font-black dark:text-white px-2 tracking-tighter truncate">{form.id ? "Editar Ficha Técnica" : "Novo Profissional"}</h2>
+                            <h2 className="text-2xl md:text-3xl font-black dark:text-white px-2 tracking-tighter truncate">{form.id ? "Editar Profissional" : "Novo Profissional"}</h2>
                             <button onClick={fecharModal} className="p-3 md:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl md:rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm shrink-0"><X size={20} className="md:size-6" /></button>
                         </div>
 
@@ -917,7 +917,7 @@ export default function GestaoEquipe() {
                                                         { key: 'clientes', label: 'Clientes', icon: <Users size={14} /> },
                                                         { key: 'financeiro', label: 'Financeiro', icon: <BarChart3 size={14} /> },
                                                         { key: 'estoque', label: 'Estoque', icon: <Package size={14} /> },
-                                                        { key: 'prontuarios', label: 'Fichas Técnicas', icon: <ClipboardList size={14} /> },
+                                                        { key: 'fichas-tecnicas', label: 'Fichas Técnicas', icon: <ClipboardList size={14} /> },
                                                         { key: 'servicos', label: 'Serviços', icon: <Briefcase size={14} /> },
                                                         { key: 'profissionais', label: 'Equipe', icon: <UserIcon size={14} /> },
                                                         { key: 'config', label: 'Configurações', icon: <Settings size={14} /> },

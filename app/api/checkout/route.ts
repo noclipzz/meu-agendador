@@ -215,7 +215,7 @@ export async function GET() {
                 role: "ADMIN",
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
-                    financeiro: true, estoque: true, prontuarios: true,
+                    financeiro: true, estoque: true, "fichas-tecnicas": true,
                     servicos: true, profissionais: true, config: true
                 },
                 companyId: myCompany?.id, // ID da sua empresa
@@ -281,7 +281,7 @@ export async function GET() {
                 role: "ADMIN",
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
-                    financeiro: true, estoque: true, prontuarios: true,
+                    financeiro: true, estoque: true, "fichas-tecnicas": true,
                     servicos: true, profissionais: true, config: true
                 },
                 companyId: company.id,

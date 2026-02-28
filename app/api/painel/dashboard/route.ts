@@ -23,7 +23,7 @@ export async function GET() {
             companyId = ownerCompany.id;
             userRole = "ADMIN";
             // Admin tem todas as permissões
-            permissions = { dashboard: true, agenda: true, clientes: true, financeiro: true, estoque: true, prontuarios: true, servicos: true, profissionais: true, config: true };
+            permissions = { dashboard: true, agenda: true, clientes: true, financeiro: true, estoque: true, "fichas-tecnicas": true, servicos: true, profissionais: true, config: true };
         } else {
             const member = await prisma.teamMember.findUnique({
                 where: { clerkUserId: userId },

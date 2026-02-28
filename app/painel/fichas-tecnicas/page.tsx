@@ -44,7 +44,7 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
     { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas definidas" },
 ];
 
-export default function ProntuariosPage() {
+export default function FichasTecnicasPage() {
     const { userRole } = useAgenda();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function ProntuariosPage() {
 
     async function carregarTemplates() {
         try {
-            const res = await fetch('/api/painel/prontuarios');
+            const res = await fetch('/api/painel/fichas-tecnicas');
             const data = await res.json();
             setTemplates(data);
         } finally { setLoading(false); }
@@ -132,7 +132,7 @@ export default function ProntuariosPage() {
     }
 
     async function salvarTemplate() {
-        if (!nome.trim()) return toast.error("Nome do prontuário é obrigatório");
+        if (!nome.trim()) return toast.error("Nome da ficha técnica é obrigatório");
         if (campos.length === 0) return toast.error("Adicione pelo menos um campo");
 
         const camposInvalidos = campos.filter(c => !c.label.trim() && c.type !== "header");
@@ -141,7 +141,7 @@ export default function ProntuariosPage() {
         setSalvando(true);
         try {
             const method = templateAtual?.id ? 'PUT' : 'POST';
-            const url = templateAtual?.id ? `/api/painel/prontuarios/${templateAtual.id}` : '/api/painel/prontuarios';
+            const url = templateAtual?.id ? `/api/painel/fichas-tecnicas/${templateAtual.id}` : '/api/painel/fichas-tecnicas';
 
             const res = await fetch(url, {
                 method,
@@ -160,7 +160,7 @@ export default function ProntuariosPage() {
     }
 
     async function excluirTemplate(id: string) {
-        const res = await fetch(`/api/painel/prontuarios/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/painel/fichas-tecnicas/${id}`, { method: 'DELETE' });
         if (res.ok) {
             toast.success("Ficha Técnica excluída!");
             setTemplates(templates.filter(t => t.id !== id));

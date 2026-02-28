@@ -65,7 +65,7 @@ export async function GET() {
           clientes: true,
           financeiro: false,
           estoque: false,
-          prontuarios: false,
+          'fichas-tecnicas': false,
           servicos: false,
           profissionais: false,
           config: false,

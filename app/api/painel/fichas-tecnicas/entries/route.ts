@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-// GET: Lista prontuários preenchidos de um cliente (query: ?clientId=xxx)
+// GET: Lista fichas técnicas preenchidas de um cliente (query: ?clientId=xxx)
 export async function GET(req: Request) {
     try {
         const { userId } = await auth();
@@ -21,7 +21,7 @@ export async function GET(req: Request) {
         // VERIFICA PLANO VIA OWNER DA EMPRESA
         const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
-            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+            return NextResponse.json({ error: "O recurso Fichas Técnicas é exclusivo do plano MASTER." }, { status: 403 });
         }
 
         const { searchParams } = new URL(req.url);
@@ -53,12 +53,12 @@ export async function GET(req: Request) {
 
         return NextResponse.json(entriesWithProf);
     } catch (error) {
-        console.error("Erro ao buscar prontuários:", error);
+        console.error("Erro ao buscar fichas técnicas:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
     }
 }
 
-// POST: Cria ou Atualiza um prontuário preenchido
+// POST: Cria ou Atualiza uma ficha técnica preenchida
 export async function POST(req: Request) {
     try {
         const { userId } = await auth();
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
         // VERIFICA PLANO VIA OWNER DA EMPRESA
         const sub = await db.subscription.findUnique({ where: { userId: company.ownerId } });
         if (!sub || sub.plan !== "MASTER") {
-            return NextResponse.json({ error: "O recurso Prontuários é exclusivo do plano MASTER." }, { status: 403 });
+            return NextResponse.json({ error: "O recurso Fichas Técnicas é exclusivo do plano MASTER." }, { status: 403 });
         }
 
         const body = await req.json();
@@ -110,12 +110,12 @@ export async function POST(req: Request) {
 
         return NextResponse.json(entry);
     } catch (error) {
-        console.error("Erro ao salvar prontuário:", error);
+        console.error("Erro ao salvar ficha técnica:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
     }
 }
 
-// DELETE: Remove um prontuário preenchido
+// DELETE: Remove uma ficha técnica preenchida
 export async function DELETE(req: Request) {
     try {
         const { userId } = await auth();
@@ -128,7 +128,7 @@ export async function DELETE(req: Request) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error("Erro ao excluir prontuário:", error);
+        console.error("Erro ao excluir ficha técnica:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
     }
 }
