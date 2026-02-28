@@ -17,6 +17,7 @@ export default function ConfigPlano() {
     const [loading, setLoading] = useState(true);
     const [config, setConfig] = useState<any>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
+    const [extraStaffQty, setExtraStaffQty] = useState(1);
 
     useEffect(() => {
         Promise.all([carregarConfig(), carregarFaturas()]).finally(() => setLoading(false));
@@ -67,13 +68,13 @@ export default function ConfigPlano() {
         }
     }
 
-    async function handleAddItem(itemType: string) {
+    async function handleAddItem(itemType: string, quantity: number = 1) {
         try {
             toast.loading("Adicionando recurso ao seu plano...");
             const res = await fetch('/api/checkout/subscription/add-item', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itemType })
+                body: JSON.stringify({ itemType, quantity })
             });
 
             const data = await res.json();
@@ -360,13 +361,30 @@ export default function ConfigPlano() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end gap-2 text-right">
+                                <div className="flex flex-col items-end gap-3 text-right">
                                     <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 15,00/mês cada</span>
-                                    <button
-                                        onClick={() => handleAddItem('STAFF')}
-                                        className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
-                                        <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-1 shadow-sm">
+                                            <button
+                                                onClick={() => setExtraStaffQty(Math.max(1, extraStaffQty - 1))}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="w-8 text-center text-xs font-black text-blue-600">{extraStaffQty}</span>
+                                            <button
+                                                onClick={() => setExtraStaffQty(extraStaffQty + 1)}
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => handleAddItem('STAFF', extraStaffQty)}
+                                            className="bg-gray-900 dark:bg-gray-800 hover:bg-black text-white px-4 py-3 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                            <Plus size={14} /> Adicionar {config?.extraUsersCount > 0 ? "Mais" : ""}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
