@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import {
     Plus, Trash2, Save, GripVertical, X, FileText, ChevronDown,
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
-    Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid
+    Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid,
+    Search, Clock, Filter, ArrowRight, History as HistoryIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -49,6 +50,21 @@ export default function FichasTecnicasPage() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Tab State
+    const [tab, setTab] = useState<"templates" | "history">("templates");
+
+    // History State
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [historyFilters, setHistoryFilters] = useState({
+        search: "",
+        startDate: "",
+        endDate: ""
+    });
+
+    // Entry View State
+    const [entryVisualizando, setEntryVisualizando] = useState<any>(null);
+
     // Editor State
     const [editando, setEditando] = useState(false);
     const [templateAtual, setTemplateAtual] = useState<Template | null>(null);
@@ -58,7 +74,26 @@ export default function FichasTecnicasPage() {
     const [salvando, setSalvando] = useState(false);
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
 
-    useEffect(() => { carregarTemplates(); }, []);
+    useEffect(() => {
+        if (tab === "templates") carregarTemplates();
+        if (tab === "history") carregarHistorico();
+    }, [tab]);
+
+    async function carregarHistorico() {
+        setLoadingHistory(true);
+        try {
+            const params = new URLSearchParams();
+            if (historyFilters.search) params.append('search', historyFilters.search);
+            if (historyFilters.startDate) params.append('startDate', historyFilters.startDate);
+            if (historyFilters.endDate) params.append('endDate', historyFilters.endDate);
+
+            const res = await fetch(`/api/painel/fichas-tecnicas/entries?${params.toString()}`);
+            const data = await res.json();
+            setHistory(data);
+        } finally {
+            setLoadingHistory(false);
+        }
+    }
 
     async function carregarTemplates() {
         try {
@@ -459,74 +494,306 @@ export default function FichasTecnicasPage() {
         );
     }
 
-    // --- LISTA DE TEMPLATES ---
+    // --- LISTAGEM E HISTÓRICO ---
     return (
-        <div className="space-y-6 pb-20 p-2 font-sans">
-            <div className="flex justify-between items-center">
+        <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-800 dark:text-white">Fichas Técnicas</h1>
-                    <p className="text-sm text-gray-500">Crie formulários personalizados para seus acompanhamentos.</p>
+                    <p className="text-sm text-gray-500">
+                        {tab === "templates"
+                            ? "Crie formulários personalizados para seus acompanhamentos."
+                            : "Veja o registro cronológico de todas as fichas preenchidas."}
+                    </p>
                 </div>
-                {userRole === "ADMIN" && (
-                    <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                {userRole === "ADMIN" && tab === "templates" && (
+                    <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg w-full sm:w-auto justify-center">
                         <Plus size={20} /> Nova Ficha Técnica
                     </button>
                 )}
             </div>
 
-            {templates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
-                        <ClipboardList size={40} className="text-blue-500" />
-                    </div>
-                    <h3 className="text-xl font-black dark:text-white mb-2">Nenhuma ficha técnica criada</h3>
-                    <p className="text-gray-500 text-sm max-w-md mb-6">
-                        Crie um formulário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
-                        preencher durante o acompanhamento do cliente.
-                    </p>
-                    {userRole === "ADMIN" && (
-                        <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
-                            <Plus size={20} /> Criar Primeiro Formulário
-                        </button>
-                    )}
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {templates.map(t => (
-                        <div key={t.id} className="bg-white dark:bg-gray-900 p-6 rounded-[2rem] border-2 dark:border-gray-800 hover:border-blue-500 transition-all cursor-pointer group shadow-sm">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white">
-                                    <FileText size={22} />
-                                </div>
-                                {userRole === "ADMIN" && (
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                        <button onClick={() => editarTemplate(t)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition">
-                                            <Pencil size={14} />
-                                        </button>
-                                        <button onClick={() => setTemplateParaExcluir(t.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:text-red-500 transition">
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                )}
+            {/* TAB SELECTOR */}
+            <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl w-fit border dark:border-gray-700">
+                <button
+                    onClick={() => setTab("templates")}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center gap-2 ${tab === "templates" ? "bg-white dark:bg-gray-900 shadow-xl text-blue-600 border dark:border-gray-700" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"}`}
+                >
+                    <LayoutGrid size={14} /> Modelos
+                </button>
+                <button
+                    onClick={() => setTab("history")}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center gap-2 ${tab === "history" ? "bg-white dark:bg-gray-900 shadow-xl text-blue-600 border dark:border-gray-700" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"}`}
+                >
+                    <HistoryIcon size={14} /> Histórico
+                </button>
+            </div>
+
+            {tab === "templates" ? (
+                <>
+                    {templates.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                            <div className="w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-6">
+                                <ClipboardList size={40} className="text-blue-500" />
                             </div>
-                            <h3 className="font-black text-lg dark:text-white mb-1">{t.name}</h3>
-                            {t.description && <p className="text-xs text-gray-500 mb-3">{t.description}</p>}
-                            <div className="flex gap-3 text-[10px] font-bold text-gray-400 uppercase">
-                                <span>{(t.fields as any[])?.length || 0} campos</span>
-                                <span>•</span>
-                                <span>{t._count?.entries || 0} preenchidos</span>
+                            <h3 className="text-xl font-black dark:text-white mb-2">Nenhuma ficha técnica criada</h3>
+                            <p className="text-gray-500 text-sm max-w-md mb-6 px-4">
+                                Crie um formulário personalizado para seu negócio. Defina as perguntas que seus profissionais vão
+                                preencher durante o acompanhamento do cliente.
+                            </p>
+                            {userRole === "ADMIN" && (
+                                <button onClick={novoTemplate} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition shadow-lg">
+                                    <Plus size={20} /> Criar Primeiro Formulário
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {templates.map(t => (
+                                <div key={t.id} onClick={() => userRole === "ADMIN" && editarTemplate(t)} className="bg-white dark:bg-gray-900 p-7 rounded-[2.5rem] border-2 border-gray-50 dark:border-gray-800 hover:border-blue-500 transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[180px]">
+                                    <div>
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+                                                <FileText size={22} />
+                                            </div>
+                                            {userRole === "ADMIN" && (
+                                                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition translate-y-2 group-hover:translate-y-0 duration-300">
+                                                    <button onClick={(e) => { e.stopPropagation(); editarTemplate(t); }} className="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition border dark:border-gray-700">
+                                                        <Pencil size={15} />
+                                                    </button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setTemplateParaExcluir(t.id); }} className="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition border dark:border-gray-700">
+                                                        <Trash2 size={15} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <h3 className="font-black text-lg dark:text-white mb-1 group-hover:text-blue-600 transition-colors">{t.name}</h3>
+                                        {t.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{t.description}</p>}
+                                    </div>
+                                    <div className="flex gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">
+                                        <span className="flex items-center gap-1.5"><LayoutGrid size={12} /> {(t.fields as any[])?.length || 0} campos</span>
+                                        <span className="flex items-center gap-1.5"><FileText size={12} /> {t._count?.entries || 0} preenchidos</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {/* FILTROS DE HISTÓRICO */}
+                    <div className="bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] border-2 border-gray-50 dark:border-gray-800 shadow-sm transition-all">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                            <div className="md:col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-2 block tracking-widest">Buscar por Cliente</label>
+                                <div className="relative group">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Nome do cliente..."
+                                        className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent focus:border-blue-500 outline-none transition-all font-bold dark:text-white"
+                                        value={historyFilters.search}
+                                        onChange={e => setHistoryFilters({ ...historyFilters, search: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-2 block tracking-widest">Data Inicial</label>
+                                <input
+                                    type="date"
+                                    className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent focus:border-blue-500 outline-none transition-all font-bold dark:text-white"
+                                    value={historyFilters.startDate}
+                                    onChange={e => setHistoryFilters({ ...historyFilters, startDate: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-2 block tracking-widest">Data Final</label>
+                                    <input
+                                        type="date"
+                                        className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border-2 border-transparent focus:border-blue-500 outline-none transition-all font-bold dark:text-white"
+                                        value={historyFilters.endDate}
+                                        onChange={e => setHistoryFilters({ ...historyFilters, endDate: e.target.value })}
+                                    />
+                                </div>
+                                <button
+                                    onClick={carregarHistorico}
+                                    className="bg-gray-900 text-white p-4 rounded-2xl hover:bg-black transition-all shadow-lg active:scale-95"
+                                >
+                                    <Filter size={20} />
+                                </button>
                             </div>
                         </div>
-                    ))}
+                    </div>
+
+                    {/* LISTA DE HISTÓRICO */}
+                    {loadingHistory ? (
+                        <div className="p-20 text-center">
+                            <Loader2 className="animate-spin text-blue-500 mx-auto mb-4" size={32} />
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Consultando registros...</p>
+                        </div>
+                    ) : history.length === 0 ? (
+                        <div className="p-20 text-center bg-gray-50 dark:bg-gray-900 rounded-[3rem] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Search size={32} className="text-gray-300" />
+                            </div>
+                            <h3 className="text-lg font-black dark:text-white mb-2">Nenhum registro encontrado</h3>
+                            <p className="text-gray-500 text-sm max-w-sm mx-auto">Tente ajustar seus filtros ou verifique se há fichas preenchidas no período.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {history.map((entry) => (
+                                <div
+                                    key={entry.id}
+                                    onClick={() => setEntryVisualizando(entry)}
+                                    className="group bg-white dark:bg-gray-900 p-6 rounded-[2.5rem] border-2 border-gray-50 dark:border-gray-800 hover:border-blue-500 transition-all cursor-pointer shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+                                >
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/10 rounded-2xl flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-300">
+                                            <ClipboardList className="text-blue-600 group-hover:text-white transition-colors" size={24} />
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{entry.template?.name}</span>
+                                            <h4 className="text-lg font-black text-gray-800 dark:text-white group-hover:text-blue-600 transition-colors">{entry.client?.name}</h4>
+                                            <div className="flex flex-wrap items-center gap-4 mt-1.5 text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                                                <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(entry.createdAt).toLocaleDateString('pt-BR')}</span>
+                                                <span className="flex items-center gap-1.5"><Clock size={12} /> {new Date(entry.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <span className="flex items-center gap-1.5"><Pencil size={12} /> {entry.professional?.name || "Sistema"}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-0 pt-4 sm:pt-0">
+                                        <button className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 hover:bg-blue-600 hover:text-white px-5 py-3 rounded-xl transition-all font-black text-[10px] uppercase tracking-wider group/btn">
+                                            Ver Detalhes <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
+
+            {/* MODAL DETALHES DA FICHA PREENCHIDA */}
+            {entryVisualizando && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-gray-950 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-[3rem] shadow-2xl flex flex-col border dark:border-gray-800 relative scale-100 animate-in zoom-in-95 duration-300">
+                        {/* Header Modal */}
+                        <div className="p-8 border-b dark:border-gray-900 bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-start">
+                            <div>
+                                <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-2 block">Visualizando Registro</span>
+                                <h2 className="text-3xl font-black text-gray-800 dark:text-white leading-tight">
+                                    {entryVisualizando.template?.name}
+                                </h2>
+                                <div className="flex flex-wrap items-center gap-4 mt-3 text-sm font-bold text-gray-500 dark:text-gray-400">
+                                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 px-3 py-1 rounded-full">{entryVisualizando.client?.name}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1.5"><Calendar size={14} /> {new Date(entryVisualizando.createdAt).toLocaleDateString('pt-BR')}</span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1.5"><Pencil size={14} /> Atendido por: {entryVisualizando.professional?.name || "Sistema"}</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setEntryVisualizando(null)}
+                                className="p-4 bg-white dark:bg-gray-800 rounded-2xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-all shadow-sm border dark:border-gray-700"
+                            >
+                                <X size={20} className="text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Corpo Modal */}
+                        <div className="flex-1 overflow-y-auto p-8 sm:p-12 custom-scrollbar space-y-8">
+                            {entryVisualizando.template?.fields.map((campo: any, idx: number) => {
+                                const value = entryVisualizando.data[campo.id];
+
+                                if (campo.type === 'header') {
+                                    return (
+                                        <div key={idx} className="border-b-2 border-gray-100 dark:border-gray-900 pt-8 pb-3 first:pt-0">
+                                            <h3 className="font-black text-xl text-gray-800 dark:text-gray-200 uppercase tracking-tight">
+                                                {campo.label}
+                                            </h3>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div key={idx} className="animate-in fade-in slide-in-from-left-2 duration-500" style={{ animationDelay: `${idx * 50}ms` }}>
+                                        <label className="text-[11px] font-black text-gray-400 uppercase mb-2.5 block tracking-widest">{campo.label}</label>
+
+                                        <div className="bg-gray-50 dark:bg-gray-900/30 p-5 rounded-2xl border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors">
+                                            {campo.type === 'table' ? (
+                                                <div className="overflow-x-auto rounded-xl border dark:border-gray-800">
+                                                    <table className="w-full text-left text-sm">
+                                                        <thead>
+                                                            <tr className="bg-gray-100/50 dark:bg-gray-800/50">
+                                                                {campo.options.map((col: string, ci: number) => (
+                                                                    <th key={ci} className="p-4 font-black text-[10px] text-gray-400 uppercase">{col}</th>
+                                                                ))}
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {(value || [[]]).map((row: any[], ri: number) => (
+                                                                <tr key={ri} className="border-t dark:border-gray-800">
+                                                                    {row.map((cell: any, ci: number) => (
+                                                                        <td key={ci} className="p-4 font-bold text-gray-700 dark:text-gray-300">{cell || "-"}</td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            ) : campo.type === 'checkboxGroup' ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {Array.isArray(value) && value.length > 0 ? value.map((v: string, i: number) => (
+                                                        <span key={i} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase ring-4 ring-blue-500/10">
+                                                            {v}
+                                                        </span>
+                                                    )) : <span className="text-gray-400 italic font-medium">Nenhum item selecionado</span>}
+                                                </div>
+                                            ) : campo.type === 'checkbox' ? (
+                                                <div className="space-y-3">
+                                                    <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase inline-block ${value?.checked ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600'}`}>
+                                                        {value?.checked ? "Sim" : "Não"}
+                                                    </span>
+                                                    {value?.checked && value.details && (
+                                                        <div className="pl-4 border-l-4 border-blue-500 py-1">
+                                                            <p className="text-[10px] font-black text-blue-500 uppercase mb-1">{campo.detailsLabel || 'Detalhes'}</p>
+                                                            <p className="text-sm font-bold text-gray-600 dark:text-gray-300">{value.details}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <p className="font-black text-gray-700 dark:text-gray-200 text-lg whitespace-pre-wrap leading-relaxed">
+                                                    {value || "-"}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer Modal */}
+                        <div className="p-8 border-t dark:border-gray-900 bg-gray-50/50 dark:bg-gray-900/50 flex justify-end">
+                            <button
+                                onClick={() => setEntryVisualizando(null)}
+                                className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-xl active:scale-95"
+                            >
+                                Fechar Visualização
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* MODAL DE CONFIRMAÇÃO */}
             <ConfirmationModal
                 isOpen={!!templateParaExcluir}
                 onClose={() => setTemplateParaExcluir(null)}
                 onConfirm={() => templateParaExcluir && excluirTemplate(templateParaExcluir)}
-                title="Excluir Ficha Técnica?"
-                message="Tem certeza que deseja excluir este modelo? Esta ação não pode ser desfeita."
+                title="Excluir Modelo de Ficha?"
+                message="Tem certeza? Todos os preenchimentos baseados neste modelo continuarão salvos, mas você não poderá mais usar este formulário para novos atendimentos."
+                confirmText="Sim, Excluir Modelo"
                 isDeleting={true}
             />
         </div >

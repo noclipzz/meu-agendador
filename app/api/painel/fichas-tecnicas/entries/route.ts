@@ -26,32 +26,52 @@ export async function GET(req: Request) {
 
         const { searchParams } = new URL(req.url);
         const clientId = searchParams.get('clientId');
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+        const search = searchParams.get('search'); // Nome do cliente
 
-        if (!clientId) return NextResponse.json({ error: "clientId obrigatório" }, { status: 400 });
+        const where: any = { companyId: company.id };
+
+        if (clientId) where.clientId = clientId;
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.createdAt.lte = end;
+            }
+        }
+        if (search) {
+            where.client = {
+                name: { contains: search, mode: 'insensitive' }
+            };
+        }
 
         const entries = await db.formEntry.findMany({
-            where: { clientId },
+            where,
             include: {
-                template: { select: { name: true, fields: true } }
+                template: { select: { name: true, fields: true } },
+                client: { select: { name: true, phone: true } }
             },
             orderBy: { createdAt: 'desc' }
         });
 
-        // Buscar profissionais dos preenchedores em uma única query
+        // Buscar profissionais dos preenchedores
         const userIds = entries.map(e => e.filledBy).filter(Boolean) as string[];
         const uniqueUserIds = Array.from(new Set(userIds));
 
         const professionals = await db.professional.findMany({
             where: { userId: { in: uniqueUserIds } },
-            select: { userId: true, name: true, signatureUrl: true }
+            select: { userId: true, name: true }
         });
 
-        const entriesWithProf = entries.map(e => ({
+        const entriesWithInfo = entries.map(e => ({
             ...e,
             professional: professionals.find(p => p.userId === e.filledBy) || null
         }));
 
-        return NextResponse.json(entriesWithProf);
+        return NextResponse.json(entriesWithInfo);
     } catch (error) {
         console.error("Erro ao buscar fichas técnicas:", error);
         return NextResponse.json({ error: "Erro interno" }, { status: 500 });
