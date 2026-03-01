@@ -1460,32 +1460,36 @@ export default function ClientesPage() {
                                                     {fichaEntries.map((entry: any) => (
                                                         <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
                                                             <div className="flex items-center gap-3">
-                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${entry.status === 'ASSINADO' ? 'bg-green-50 text-green-600' : 'bg-teal-50 dark:bg-teal-900/20 text-teal-600'}`}>
-                                                                    {entry.status === 'ASSINADO' ? <CheckCircle size={18} /> : <FileText size={18} />}
+                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${entry.template?.requireSignature && entry.status === 'ASSINADO' ? 'bg-green-50 text-green-600' : 'bg-teal-50 dark:bg-teal-900/20 text-teal-600'}`}>
+                                                                    {entry.template?.requireSignature && entry.status === 'ASSINADO' ? <CheckCircle size={18} /> : <FileText size={18} />}
                                                                 </div>
                                                                 <div>
                                                                     <div className="flex items-center gap-2">
                                                                         <p className="font-bold text-sm dark:text-white truncate" title={entry.template?.name}>{entry.template?.name}</p>
-                                                                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider ${entry.status === 'ASSINADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                                            {entry.status || "PENDENTE"}
-                                                                        </span>
+                                                                        {entry.template?.requireSignature && (
+                                                                            <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-md tracking-wider ${entry.status === 'ASSINADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                                                {entry.status || "PENDENTE"}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                     <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
                                                                 </div>
                                                             </div>
                                                             <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                                                                <button
-                                                                    onClick={() => {
-                                                                        const url = `${window.location.origin}/fichas/${entry.id}`;
-                                                                        navigator.clipboard.writeText(url);
-                                                                        toast.success("Link de assinatura copiado com sucesso!");
-                                                                    }}
-                                                                    className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition"
-                                                                    title="Copiar Link para Cliente Assinar"
-                                                                ><Link2 size={14} /></button>
+                                                                {entry.template?.requireSignature && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const url = `${window.location.origin}/fichas/${entry.id}`;
+                                                                            navigator.clipboard.writeText(url);
+                                                                            toast.success("Link de assinatura copiado com sucesso!");
+                                                                        }}
+                                                                        className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition"
+                                                                        title="Copiar Link para Cliente Assinar"
+                                                                    ><Link2 size={14} /></button>
+                                                                )}
                                                                 <button onClick={() => setFichaVisualizando(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-teal-600 transition" title="Visualizar / Preencher"><Eye size={14} /></button>
 
-                                                                {entry.status === 'ASSINADO' && (
+                                                                {entry.template?.requireSignature && entry.status === 'ASSINADO' && (
                                                                     <a
                                                                         href={`/fichas/${entry.id}`}
                                                                         target="_blank"

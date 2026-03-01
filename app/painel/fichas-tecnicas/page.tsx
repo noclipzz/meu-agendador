@@ -42,6 +42,7 @@ interface Template {
     name: string;
     description: string | null;
     fields: FormField[];
+    requireSignature?: boolean;
     _count?: { entries: number };
     createdAt: string;
 }
@@ -84,6 +85,7 @@ export default function FichasTecnicasPage() {
     const [templateAtual, setTemplateAtual] = useState<Template | null>(null);
     const [nome, setNome] = useState("");
     const [descricao, setDescricao] = useState("");
+    const [requireSignature, setRequireSignature] = useState(false);
     const [campos, setCampos] = useState<FormField[]>([]);
     const [salvando, setSalvando] = useState(false);
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
@@ -453,6 +455,7 @@ export default function FichasTecnicasPage() {
         setTemplateAtual(null);
         setNome("");
         setDescricao("");
+        setRequireSignature(false);
         setCampos([]);
         setEditando(true);
     }
@@ -461,6 +464,7 @@ export default function FichasTecnicasPage() {
         setTemplateAtual(t);
         setNome(t.name);
         setDescricao(t.description || "");
+        setRequireSignature(!!t.requireSignature);
         setCampos(t.fields || []);
         setEditando(true);
     }
@@ -527,7 +531,7 @@ export default function FichasTecnicasPage() {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: nome, description: descricao, fields: campos })
+                body: JSON.stringify({ name: nome, description: descricao, fields: campos, requireSignature })
             });
 
             if (res.ok) {
@@ -587,6 +591,27 @@ export default function FichasTecnicasPage() {
                             onChange={e => setDescricao(e.target.value)}
                         />
                     </div>
+                </div>
+
+                {/* OPÇÕES ADICIONAIS DO TEMPLATE */}
+                <div className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-5 mb-4 border-dashed border-gray-200">
+                    <label className="flex items-start sm:items-center gap-3 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            checked={requireSignature}
+                            onChange={e => setRequireSignature(e.target.checked)}
+                            className="w-5 h-5 accent-blue-600 mt-0.5 sm:mt-0"
+                            disabled={!empresaInfo.hasDigitalSignatureModule}
+                        />
+                        <div>
+                            <p className={`font-black text-sm uppercase ${empresaInfo.hasDigitalSignatureModule ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'}`}>Exigir Assinatura Eletrônica do Cliente</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                                {empresaInfo.hasDigitalSignatureModule
+                                    ? "Sempre que esta ficha for preenchida, o sistema vai gerar um link para o cliente ler e assinar pelo celular."
+                                    : "Para usar a assinatura eletrônica, você precisa ter o Módulo Ativo na sua assinatura."}
+                            </p>
+                        </div>
+                    </label>
                 </div>
 
                 {/* FORMULÁRIO E LIVE PREVIEW EM DUAS COLUNAS */}

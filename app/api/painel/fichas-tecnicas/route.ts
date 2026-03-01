@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { name, description, fields } = body;
+        const { name, description, fields, requireSignature } = body;
 
         if (!name || !fields || !Array.isArray(fields)) {
             return NextResponse.json({ error: "Nome e campos são obrigatórios" }, { status: 400 });
@@ -69,6 +69,7 @@ export async function POST(req: Request) {
                 name,
                 description: description || null,
                 fields,
+                requireSignature: !!requireSignature,
                 companyId: company.id
             }
         });
