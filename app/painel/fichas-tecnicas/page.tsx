@@ -5,11 +5,24 @@ import {
     Plus, Trash2, Save, GripVertical, X, FileText, ChevronDown,
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
     Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid,
-    Search, Clock, Filter, ArrowRight, History as HistoryIcon, Printer, Trash
+    Search, Clock, Filter, ArrowRight, History as HistoryIcon, Printer, Trash,
+    ShieldCheck, Eye
 } from "lucide-react";
+import QRCode from "qrcode";
+import { createPortal } from "react-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { useAgenda } from "../../../contexts/AgendaContext";
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+    if (!mounted || typeof document === 'undefined') return null;
+    const target = document.getElementById('modal-root') || document.body;
+    return createPortal(children, target);
+}
 
 type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number" | "table";
 
@@ -75,6 +88,55 @@ export default function FichasTecnicasPage() {
     const [salvando, setSalvando] = useState(false);
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
 
+    const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "", hasDigitalSignatureModule: false });
+    const [printConfigModal, setPrintConfigModal] = useState<{
+        entry: any;
+        dateVisible: boolean;
+        twoColumns: boolean;
+        signatures: { client: boolean; prof: boolean; company: boolean };
+        useDigitalSignature: boolean;
+        includeQR: boolean;
+        docNumber: string;
+        customFooter: string;
+    } | null>(null);
+
+    useEffect(() => {
+        carregarEmpresa();
+    }, []);
+
+    // Salvar preferências sempre que mudarem
+    useEffect(() => {
+        if (printConfigModal) {
+            const prefs = {
+                dateVisible: printConfigModal.dateVisible,
+                twoColumns: printConfigModal.twoColumns,
+                signatures: printConfigModal.signatures
+            };
+            localStorage.setItem('nohud_print_prefs', JSON.stringify(prefs));
+        }
+    }, [printConfigModal?.dateVisible, printConfigModal?.twoColumns, printConfigModal?.signatures]);
+
+    async function carregarEmpresa() {
+        try {
+            const res = await fetch('/api/painel/config');
+            const data = await res.json();
+            if (data) {
+                setEmpresaInfo({
+                    name: data.name || "",
+                    logo: data.logoUrl || "",
+                    plan: data.plan || "",
+                    city: data.city || "",
+                    address: data.address || "",
+                    phone: data.phone || "",
+                    cnpj: data.cnpj || "",
+                    corporateName: data.corporateName || "",
+                    signatureUrl: data.signatureUrl || "",
+                    hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
+                });
+            }
+        } catch { }
+    }
+
     useEffect(() => {
         if (tab === "templates") carregarTemplates();
         if (tab === "history") carregarHistorico();
@@ -116,7 +178,260 @@ export default function FichasTecnicasPage() {
 
     function imprimirFicha() {
         if (!entryVisualizando) return;
-        window.print();
+        const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
+        let initialPrefs = {
+            dateVisible: true,
+            twoColumns: false,
+            signatures: { client: true, prof: true, company: false },
+            useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
+            includeQR: true
+        };
+
+        if (savedPrintPrefs) {
+            try {
+                initialPrefs = { ...initialPrefs, ...JSON.parse(savedPrintPrefs) };
+            } catch (e) { }
+        }
+
+        setPrintConfigModal({
+            entry: entryVisualizando,
+            docNumber: entryVisualizando.id.slice(-6).toUpperCase(),
+            customFooter: "",
+            ...initialPrefs
+        });
+    }
+
+    async function executarImpressaoDaFicha() {
+        if (!printConfigModal?.entry) return;
+        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
+        const clienteSelecionado = entry.client;
+
+        const fields = entry.template?.fields as any[] || [];
+        const data = entry.data as Record<string, any> || {};
+
+        // Separar headers e campos normais
+        const sections: { header: string; items: { label: string; value: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
+
+        fields.forEach((field: any) => {
+            if (field.type === 'header') {
+                if (currentSection.items.length > 0 || currentSection.header) {
+                    sections.push(currentSection);
+                }
+                currentSection = { header: field.label, items: [] };
+                return;
+            }
+            let valor = '';
+            if (field.type === 'table') {
+                const rows = data[field.id] as string[][] || [];
+                const cols = field.options as string[] || [];
+                if (rows.length === 0) {
+                    valor = '—';
+                } else {
+                    let tableHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; table-layout: fixed; word-wrap: break-word;"><thead><tr>';
+                    cols.forEach(col => {
+                        tableHtml += `<th style="border-bottom: 1px solid #f3f4f6; padding: 4px 6px; background: #f9fafb; text-align: left; color:#6b7280;">${col}</th>`;
+                    });
+                    tableHtml += '</tr></thead><tbody>';
+                    rows.forEach(row => {
+                        tableHtml += '<tr>';
+                        cols.forEach((_, i) => {
+                            tableHtml += `<td style="border-bottom: 1px solid #f3f4f6; padding: 4px 6px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap;">${row[i] || ''}</td>`;
+                        });
+                        tableHtml += '</tr>';
+                    });
+                    tableHtml += '</tbody></table>';
+                    valor = tableHtml;
+                }
+            } else {
+                valor = field.type === 'checkbox' ? (data[field.id]?.checked ? '✅ Sim' : '✗ Não') :
+                    field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
+                        data[field.id] || '—';
+
+                if (field.type === 'checkbox' && data[field.id]?.checked && data[field.id]?.details) {
+                    valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id].details})`;
+                }
+            }
+
+            currentSection.items.push({ label: field.label, value: String(valor) });
+        });
+        if (currentSection.items.length > 0 || currentSection.header) {
+            sections.push(currentSection);
+        }
+
+        // --- GERAR QR CODE ---
+        let qrCodeDataUrl = "";
+        if (includeQR) {
+            try {
+                const verifyUrl = `${window.location.origin}/verificar/documento/${entry.id}`;
+                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200, color: { dark: '#0d9488', light: '#ffffff' } });
+            } catch (err) { console.error("Erro QR Code:", err); }
+        }
+
+        // Gerar HTML dos campos em duas colunas
+        let camposHtml = '';
+        sections.forEach(section => {
+            if (section.header) {
+                camposHtml += `<div class="section-header">${section.header}</div>`;
+            }
+            camposHtml += '<div class="fields-grid">';
+            section.items.forEach(item => {
+                const isLong = item.value.length > 60;
+                camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
+                    <div class="field-label">${item.label}</div>
+                    <div class="field-value">${item.value}</div>
+                </div>`;
+            });
+            camposHtml += '</div>';
+        });
+
+        const logoHtml = empresaInfo.logo
+            ? `<img src="${empresaInfo.logo}" class="company-logo" />`
+            : `<div class="company-logo-placeholder">📋</div>`;
+
+        const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
+
+        const html = `<!DOCTYPE html><html><head><title>Ficha - ${clienteSelecionado?.name}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; }
+            .page { max-width:800px; margin:0 auto; padding:20px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+            .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
+            @media screen and (max-width: 600px) { .back-button { display: flex; } .page { padding: 15px; } }
+            .header { display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:3px solid #0d9488; margin-bottom:28px; }
+            .header-left { display:flex; align-items:center; gap:14px; }
+            .company-logo { width:52px; height:52px; border-radius:14px; object-fit:cover; border:2px solid #e5e7eb; }
+            .company-logo-placeholder { width:52px; height:52px; border-radius:14px; background:#f0fdfa; display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid #ccfbf1; }
+            .company-name { font-size:20px; font-weight:900; color:#0f172a; letter-spacing:-0.5px; }
+            .header-right { text-align:right; }
+            .header-date { font-size:11px; color:#6b7280; font-weight:600; }
+            .header-doc { font-size:9px; color:#9ca3af; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+            .doc-title { font-size:22px; font-weight:900; color:#0f172a; margin-bottom:4px; letter-spacing:-0.5px; }
+            .client-box { background:linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%); padding:12px 18px; border-radius:14px; margin-bottom:16px; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; border:1px solid #e0f2fe; }
+            .client-item label { font-size:9px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:2px; }
+            .client-item span { font-size:12px; color:#0f172a; font-weight:800; }
+            .client-item.full { grid-column: 1 / -1; }
+            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:1px; padding:10px 0 6px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:8px; }
+            .fields-grid { ${twoColumns ? 'display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border:none;' : 'display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb;'} }
+            .field-item { padding:${twoColumns ? '10px 14px' : '8px 14px'}; ${twoColumns ? 'border:1px solid #e5e7eb; border-radius: 8px;' : 'border-bottom:1px solid #e5e7eb;'} }
+            .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+            .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
+            .signature { margin-top:60px; display:flex; justify-content:space-around; padding-top:20px; }
+            .signature-block { text-align:center; }
+            .signature-line { width:220px; border-top:1px solid #374151; margin-bottom:6px; }
+            .signature-label { font-size:10px; color:#6b7280; font-weight:600; }
+            .signature-footer-container { margin-top: auto; padding-top: 40px; }
+            .footer { text-align:center; font-size:9px; color:#9ca3af; padding-top:16px; border-top:1px solid #e5e7eb; }
+            .footer strong { color:#6b7280; }
+            @media print {
+                body { padding:0; }
+                .page { padding:20px; max-width:100%; }
+                .back-button { display:none !important; }
+                .section-header { break-after:avoid; }
+                .fields-grid { break-inside:auto; }
+                .field-item { break-inside:avoid; }
+            }
+        </style></head><body>
+        <div class="page">
+            <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
+            <div class="header">
+                <div class="header-left">
+                    ${logoHtml}
+                    <div>
+                        <div class="company-name">${nomeEmpresa}</div>
+                    </div>
+                </div>
+                <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
+                    ${includeQR ? `
+                    <div style="text-align: right; display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #f0fdfa; border-radius: 12px; border: 1px solid #ccfbf1;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px;">Autenticidade</div>
+                            <div style="font-size: 7px; font-family: monospace; color: #9ca3af;">${entry.id.slice(0, 10).toUpperCase()}</div>
+                        </div>
+                        <img src="${qrCodeDataUrl}" style="width: 40px; height: 40px; border-radius: 4px;" />
+                    </div>
+                    ` : ''}
+                    <div style="text-align: right;">
+                        <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
+                        <div class="header-doc">Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
+                    </div>
+                </div>
+            </div>
+
+            <h1 class="doc-title">${entry.template?.name}</h1>
+
+            <div class="client-box">
+                <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
+                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
+                <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
+                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
+                <div class="client-item"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
+                <div class="client-item full"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+            </div>
+
+            ${camposHtml}
+
+            ${dateVisible ? `
+            <div style="margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1f2937; padding-right: 20px;">
+                ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </div>` : '<div style="margin-top: 40px;"></div>'}
+
+            <div class="signature-footer-container">
+                ${signatures.client || signatures.prof || signatures.company ? `
+                <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
+                    ${signatures.client ? `
+                        <div class="signature-block">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; display: flex; align-items: flex-end; justify-content: center;">
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
+                            </div>
+                        </div>` : ''}
+                    ${signatures.prof ? `
+                        <div class="signature-block">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
+                                    ${(useDigitalSignature && entry.professional?.signatureUrl)
+                        ? `<img src="${entry.professional.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
+                        : ''}
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                            </div>
+                        </div>` : ''}
+                    ${signatures.company ? `
+                        <div class="signature-block">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
+                                    ${(useDigitalSignature && empresaInfo.signatureUrl)
+                        ? `<img src="${empresaInfo.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
+                        : ''}
+                                    <div class="signature-line" style="margin-bottom: 0;"></div>
+                                </div>
+                                <div class="signature-label" style="margin-top: 8px;">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                            </div>
+                        </div>` : ''}
+                </div>` : ''}
+
+                <div class="footer" style="${customFooter ? 'font-size: 11px; color: #4b5563; font-weight: 500;' : ''}">
+                    ${customFooter ? customFooter : `<strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`}
+                </div>
+            </div>
+        </div>
+        </body></html>`;
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                setPrintConfigModal(null);
+            }, 600);
+        }
     }
 
     async function carregarTemplates() {
@@ -883,6 +1198,181 @@ export default function FichasTecnicasPage() {
                 confirmText="Sim, Excluir Registro"
                 isDeleting={true}
             />
+
+            {/* MODAL DE PREFERÊNCIAS DE IMPRESSÃO */}
+            {printConfigModal && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-lg max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                            <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
+                                        <Printer className="text-teal-500" size={24} /> Imprimir Registro
+                                    </h2>
+                                    <p className="text-xs text-gray-500 mt-1 font-bold uppercase tracking-widest">Ajuste as preferências antes de gerar o PDF</p>
+                                </div>
+                                <button onClick={() => setPrintConfigModal(null)} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar space-y-6">
+                                {/* Assinaturas */}
+                                <div className="space-y-3">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Pencil size={14} /> Campos de Assinatura
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.signatures.client ? 'border-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={printConfigModal.signatures.client}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, client: e.target.checked } })}
+                                            />
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.client ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                {printConfigModal.signatures.client && <X size={12} className="text-white" />}
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura do Cliente</span>
+                                        </label>
+                                        <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.signatures.prof ? 'border-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={printConfigModal.signatures.prof}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, prof: e.target.checked } })}
+                                            />
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.prof ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                {printConfigModal.signatures.prof && <X size={12} className="text-white" />}
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura do Profissional</span>
+                                        </label>
+                                        <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.signatures.company ? 'border-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={printConfigModal.signatures.company}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, company: e.target.checked } })}
+                                            />
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.company ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                {printConfigModal.signatures.company && <X size={12} className="text-white" />}
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura da Empresa</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Data */}
+                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Calendar size={14} /> Exibição da Data
+                                    </label>
+                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={printConfigModal.dateVisible}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, dateVisible: e.target.checked })}
+                                            />
+                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Mostrar a data atual no rodapé</span>
+                                    </label>
+                                </div>
+
+                                {/* Autenticação */}
+                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck size={14} /> Autenticação Digital
+                                    </label>
+                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={printConfigModal.includeQR}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, includeQR: e.target.checked })}
+                                            />
+                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm text-gray-600 dark:text-gray-300">Incluir QR Code e Hash</p>
+                                            <p className="text-[10px] text-gray-400">Permite validar a veracidade do documento online.</p>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {/* Layout */}
+                                <div className="space-y-3 pt-2 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <FileText size={14} /> Layout da Ficha
+                                    </label>
+                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                        <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                className="sr-only peer"
+                                                checked={printConfigModal.twoColumns}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, twoColumns: e.target.checked })}
+                                            />
+                                            <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-teal-500 transition-all"></div>
+                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all peer-checked:translate-x-6"></div>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-sm text-gray-600 dark:text-gray-300">Dividir campos em Duas Colunas</span>
+                                            <span className="text-[10px] text-gray-400 font-bold">Ideal para conter mais informações por página</span>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {/* Número do Documento */}
+                                <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <FileText size={14} /> Número do Documento (O.S.)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase"
+                                        placeholder={`Ex: ${printConfigModal.entry?.id.slice(-6).toUpperCase()}`}
+                                        value={printConfigModal.docNumber}
+                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, docNumber: e.target.value.toUpperCase() })}
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                        Se em branco, um número aleatório será gerado.
+                                    </p>
+                                </div>
+
+                                {/* Rodapé Personalizado */}
+                                <div className="space-y-3 pt-4 border-t dark:border-gray-800">
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Plus size={14} /> Informações Adicionais no Rodapé
+                                    </label>
+                                    <textarea
+                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
+                                        rows={3}
+                                        placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
+                                        value={printConfigModal.customFooter}
+                                        onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1 ml-1 cursor-default">
+                                        Este texto aparecerá acima da assinatura e da data automática.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+                                <button
+                                    onClick={executarImpressaoDaFicha}
+                                    className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
+                                >
+                                    <Printer size={18} /> Gerar PDF (Imprimir)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
         </div >
     );
 }
