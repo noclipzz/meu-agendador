@@ -1,8 +1,0 @@
-﻿.next/types/app/api/painel/prontuarios/[id]/route.ts(2,24): error TS2307: Cannot find module '../../../../../../../app/api/painel/prontuarios/[id]/route.js' or its corresponding type declarations.
-.next/types/app/api/painel/prontuarios/[id]/route.ts(5,29): error TS2307: Cannot find module '../../../../../../../app/api/painel/prontuarios/[id]/route.js' or its corresponding type declarations.
-.next/types/app/api/painel/prontuarios/entries/route.ts(2,24): error TS2307: Cannot find module '../../../../../../../app/api/painel/prontuarios/entries/route.js' or its corresponding type declarations.
-.next/types/app/api/painel/prontuarios/entries/route.ts(5,29): error TS2307: Cannot find module '../../../../../../../app/api/painel/prontuarios/entries/route.js' or its corresponding type declarations.
-.next/types/app/api/painel/prontuarios/route.ts(2,24): error TS2307: Cannot find module '../../../../../../app/api/painel/prontuarios/route.js' or its corresponding type declarations.
-.next/types/app/api/painel/prontuarios/route.ts(5,29): error TS2307: Cannot find module '../../../../../../app/api/painel/prontuarios/route.js' or its corresponding type declarations.
-.next/types/app/painel/prontuarios/page.ts(2,24): error TS2307: Cannot find module '../../../../../app/painel/prontuarios/page.js' or its corresponding type declarations.
-.next/types/app/painel/prontuarios/page.ts(5,29): error TS2307: Cannot find module '../../../../../app/painel/prontuarios/page.js' or its corresponding type declarations.

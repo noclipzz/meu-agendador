@@ -142,6 +142,8 @@ export default function AssinarTermoPage() {
 
             if (!res.ok) throw new Error("Falha ao salvar assinatura");
 
+            const updatedTermo = await res.json();
+            setTermo(updatedTermo);
             setSigned(true);
         } catch (err: any) {
             alert(err.message);
@@ -169,18 +171,6 @@ export default function AssinarTermoPage() {
         );
     }
 
-    if (signed) {
-        return (
-            <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4">
-                <CheckCircle2 className="text-green-500 mb-4 animate-in zoom-in" size={80} />
-                <h1 className="text-2xl font-black text-green-700 uppercase tracking-tight mb-2 text-center">Assinado com Sucesso!</h1>
-                <p className="text-green-600 font-medium text-center opacity-80 mb-6">O termo foi assinado, você pode fechar esta página.</p>
-                <p className="text-xs uppercase font-black text-green-500 tracking-widest opacity-70">
-                    Data: {format(new Date(termo.signedAt || new Date()), "dd/MM/yyyy HH:mm")}
-                </p>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col py-8 px-4 font-sans">
@@ -203,7 +193,17 @@ export default function AssinarTermoPage() {
                 </div>
 
                 {/* Área de Signatário */}
-                <div className="p-6 md:p-10 bg-blue-50/50">
+                <div className={`p-6 md:p-10 ${signed ? 'bg-green-50/50' : 'bg-blue-50/50'}`}>
+                    {signed && (
+                        <div className="mb-8 flex items-center gap-3 bg-green-100/50 text-green-800 p-4 rounded-2xl border border-green-200/50">
+                            <CheckCircle2 size={24} className="text-green-600 shrink-0" />
+                            <div>
+                                <p className="text-sm font-black uppercase tracking-wide">Assinado com Sucesso</p>
+                                <p className="text-xs font-bold opacity-80 mt-0.5">Este termo eletrônico possui validade jurídica e IP registrado.</p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mb-6">
                         <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest mb-1">Signatário(a)</h3>
                         <p className="font-bold text-lg text-gray-800 truncate">{termo.client?.name}</p>
@@ -212,45 +212,78 @@ export default function AssinarTermoPage() {
                         )}
                     </div>
 
-                    <div className="mb-4">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Sua Assinatura</label>
-                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl overflow-hidden w-full max-w-[500px] h-[200px] touch-none shadow-inner mx-auto relative group">
-                            <canvas
-                                ref={canvasRef}
-                                width={500}
-                                height={200}
-                                className="w-full h-full cursor-crosshair"
-                                onMouseDown={startDrawing}
-                                onMouseMove={draw}
-                                onMouseUp={stopDrawing}
-                                onMouseLeave={stopDrawing}
-                                onTouchStart={startDrawing}
-                                onTouchMove={draw}
-                                onTouchEnd={stopDrawing}
-                            />
-                            <button
-                                onClick={clearCanvas}
-                                className="absolute top-2 right-2 text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition"
-                            >
-                                Limpar
-                            </button>
+                    {signed ? (
+                        <div className="mb-4 animate-in fade-in duration-500">
+                            <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest mb-4">Assinatura Eletrônica Registrada</h3>
+                            <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden w-full max-w-[500px] h-[200px] flex items-center justify-center p-4">
+                                {termo.signatureUrl ? (
+                                    <img src={termo.signatureUrl} alt="Assinatura" className="max-w-full max-h-full object-contain pointer-events-none mix-blend-multiply" />
+                                ) : (
+                                    <span className="text-gray-400 italic font-medium">Assinatura não disponível.</span>
+                                )}
+                            </div>
+
+                            <div className="mt-6 flex flex-col gap-2 bg-white/50 p-4 shrink-0 overflow-hidden rounded-2xl border border-gray-200/50">
+                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Registros de Auditoria</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Data e Hora</p>
+                                        <p className="text-xs font-bold text-gray-700">{format(new Date(termo.signedAt || new Date()), "dd/MM/yyyy HH:mm:ss")}</p>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Endereço IP</p>
+                                        <p className="text-xs font-bold text-gray-700">{termo.clientIp || "Não registrado"}</p>
+                                    </div>
+                                    <div className="md:col-span-2 min-w-0">
+                                        <p className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mb-0.5">Dispositivo (User Agent)</p>
+                                        <p className="text-xs font-bold text-gray-700 truncate" title={termo.clientUserAgent}>{termo.clientUserAgent || "Não registrado"}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div className="mb-4 animate-in fade-in duration-500">
+                                <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2">Sua Assinatura</label>
+                                <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl overflow-hidden w-full max-w-[500px] h-[200px] touch-none shadow-inner mx-auto relative group">
+                                    <canvas
+                                        ref={canvasRef}
+                                        width={500}
+                                        height={200}
+                                        className="w-full h-full cursor-crosshair"
+                                        onMouseDown={startDrawing}
+                                        onMouseMove={draw}
+                                        onMouseUp={stopDrawing}
+                                        onMouseLeave={stopDrawing}
+                                        onTouchStart={startDrawing}
+                                        onTouchMove={draw}
+                                        onTouchEnd={stopDrawing}
+                                    />
+                                    <button
+                                        onClick={clearCanvas}
+                                        className="absolute top-2 right-2 text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition"
+                                    >
+                                        Limpar
+                                    </button>
+                                </div>
+                            </div>
 
-                    <div className="text-center">
-                        <p className="text-[10px] text-gray-400 font-bold mb-6 max-w-md mx-auto leading-relaxed">
-                            Ao assinar e confirmar, você reconhece que leu e concorda integralmente com os termos descritos acima. O seu IP e informações de acesso serão registrados para fins de segurança jurídica.
-                        </p>
+                            <div className="text-center animate-in fade-in duration-500 delay-100">
+                                <p className="text-[10px] text-gray-400 font-bold mb-6 max-w-md mx-auto leading-relaxed">
+                                    Ao assinar e confirmar, você reconhece que leu e concorda integralmente com os termos descritos acima. O seu IP e informações de acesso serão registrados para fins de segurança jurídica.
+                                </p>
 
-                        <button
-                            onClick={handleAssinar}
-                            disabled={signing}
-                            className="w-full sm:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-sm shadow-xl shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mx-auto"
-                        >
-                            {signing ? <Loader2 className="animate-spin" size={18} /> : null}
-                            {signing ? "Confirmando..." : "Assinar e Confirmar Termos"}
-                        </button>
-                    </div>
+                                <button
+                                    onClick={handleAssinar}
+                                    disabled={signing}
+                                    className="w-full sm:w-auto px-10 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-sm shadow-xl shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mx-auto"
+                                >
+                                    {signing ? <Loader2 className="animate-spin" size={18} /> : null}
+                                    {signing ? "Confirmando..." : "Assinar e Confirmar Termos"}
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
