@@ -82,6 +82,7 @@ model Company {
   teamMembers                  TeamMember[]
   waitingList                  WaitingList[]
   bankAccounts                 BankAccount[]
+  consentTerms                 ConsentTerm[]
 }
 
 model OrganizationPost {
@@ -285,6 +286,7 @@ model Client {
   company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   formEntries       FormEntry[]
   invoices          Invoice[]
+  consentTerms      ConsentTerm[]
 }
 
 model Attachment {
@@ -467,4 +469,22 @@ model BankAccount {
   company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   expenses  Expense[]
   invoices  Invoice[]
+}
+
+model ConsentTerm {
+  id              String    @id @default(cuid())
+  title           String
+  content         String    @db.Text
+  status          String    @default("PENDENTE") // PENDENTE, ASSINADO
+  signatureUrl    String?
+  clientIp        String?
+  clientUserAgent String?
+  signedAt        DateTime?
+  clientId        String
+  companyId       String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }

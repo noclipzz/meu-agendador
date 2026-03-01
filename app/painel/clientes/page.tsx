@@ -9,7 +9,7 @@ import {
     Calendar, Clock, MapPin, FileText, CheckCircle2, UserCircle,
     DollarSign, Receipt, Trash2, Download, Image as ImageIcon,
     FileIcon, Loader2, UploadCloud, CreditCard, QrCode, Banknote, AlertTriangle,
-    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck
+    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck, Link2, PenTool, CheckCircle
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,7 +49,12 @@ export default function ClientesPage() {
     const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
     const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "FICHAS">("DADOS");
     const [isEditing, setIsEditing] = useState(false);
-    const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' } | null>(null);
+    const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' | 'TERMO' } | null>(null);
+
+    // Termos de Consentimento
+    const [modalTermoAberto, setModalTermoAberto] = useState(false);
+    const [termoFormData, setTermoFormData] = useState({ title: "", content: "" });
+    const [gerandoTermo, setGerandoTermo] = useState(false);
 
     // Estado para nova observação rápida
     const [novaObs, setNovaObs] = useState("");
@@ -529,15 +534,46 @@ export default function ClientesPage() {
         finally { setSalvandoAnexo(false); }
     }
 
+    async function gerarTermo() {
+        if (!termoFormData.title || !termoFormData.content) return toast.error("Preencha título e conteúdo do termo.");
+        try {
+            setGerandoTermo(true);
+            const res = await fetch("/api/clientes/termos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    clientId: clienteSelecionado.id,
+                    title: termoFormData.title,
+                    content: termoFormData.content
+                }),
+            });
+            if (res.ok) {
+                const novoTermo = await res.json();
+                setClienteSelecionado({ ...clienteSelecionado, consentTerms: [novoTermo, ...(clienteSelecionado.consentTerms || [])] });
+                toast.success("Termo de consentimento gerado com sucesso.");
+                setTermoFormData({ title: "", content: "" });
+                setModalTermoAberto(false);
+            } else {
+                toast.error("Erro ao gerar termo.");
+            }
+        } catch {
+            toast.error("Erro interno.");
+        } finally {
+            setGerandoTermo(false);
+        }
+    }
+
     async function executarExclusao() {
         if (!confirmarExclusao) return;
         const { id, tipo } = confirmarExclusao;
-        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : '/api/clientes/anexos';
-        const res = await fetch(url, { method: 'DELETE', body: JSON.stringify({ id }) });
+        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : tipo === 'TERMO' ? `/api/clientes/termos/${id}` : '/api/clientes/anexos';
+        const res = await fetch(url, { method: 'DELETE', body: tipo === 'CLIENTE' || tipo === 'TERMO' ? undefined : JSON.stringify({ id }) });
         if (res.ok) {
             if (tipo === 'CLIENTE') {
                 setClientes(prev => prev.filter(c => c.id !== id));
                 setClienteSelecionado(null);
+            } else if (tipo === 'TERMO') {
+                setClienteSelecionado({ ...clienteSelecionado, consentTerms: clienteSelecionado.consentTerms.filter((t: any) => t.id !== id) });
             } else {
                 setClienteSelecionado({ ...clienteSelecionado, attachments: clienteSelecionado.attachments.filter((a: any) => a.id !== id) });
             }
@@ -1238,6 +1274,80 @@ export default function ClientesPage() {
                                                         </div>
                                                     )) || <div className="col-span-full py-20 text-center opacity-30 italic">Sem anexos.</div>}
                                                 </div>
+
+                                                {/* TERMOS DE CONSENTIMENTO */}
+                                                <div className="mt-12">
+                                                    <div className="flex justify-between items-center mb-6 pl-2">
+                                                        <div>
+                                                            <h4 className="text-sm font-black uppercase text-gray-400 flex items-center gap-2"><ShieldCheck size={18} /> Termos de Consentimento / Assinatura</h4>
+                                                            <p className="text-[10px] text-gray-500 font-bold mt-1">Gere links para o cliente assinar eletronicamente pelo celular.</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => setModalTermoAberto(true)}
+                                                            className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
+                                                        >
+                                                            <PenTool size={16} /> Gerar Termo
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        {clienteSelecionado.consentTerms?.map((termo: any) => (
+                                                            <div key={termo.id} className="p-5 bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-blue-500 transition-all group">
+                                                                <div className="flex items-start md:items-center gap-4 min-w-0">
+                                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${termo.status === 'ASSINADO' ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                                                                        {termo.status === 'ASSINADO' ? <CheckCircle size={24} /> : <Clock size={24} />}
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="font-black text-sm uppercase dark:text-white truncate" title={termo.title}>{termo.title}</p>
+                                                                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md tracking-wider ${termo.status === 'ASSINADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                                                {termo.status}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">Gerado em: {format(new Date(termo.createdAt), "dd/MM/yyyy")}</p>
+                                                                        {termo.status === 'ASSINADO' && termo.signedAt && (
+                                                                            <p className="text-[10px] font-bold text-green-600 uppercase mt-0.5">Assinado em: {format(new Date(termo.signedAt), "dd/MM/yyyy HH:mm")}</p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2 shrink-0 w-full md:w-auto">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const url = `${window.location.origin}/termos/${termo.id}`;
+                                                                            navigator.clipboard.writeText(url);
+                                                                            toast.success("Link copiado para a área de transferência!");
+                                                                        }}
+                                                                        className="flex-1 md:flex-none p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-blue-600 transition flex items-center justify-center gap-2 text-xs font-black uppercase text-gray-500"
+                                                                        title="Copiar Link para o Cliente"
+                                                                    >
+                                                                        <Link2 size={16} /> Link
+                                                                    </button>
+                                                                    {termo.status === 'ASSINADO' && (
+                                                                        <a
+                                                                            href={`/termos/${termo.id}`}
+                                                                            target="_blank"
+                                                                            className="flex-1 md:flex-none p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-green-600 transition flex items-center justify-center text-gray-500"
+                                                                            title="Ver Termo Assinado"
+                                                                        >
+                                                                            <Eye size={16} />
+                                                                        </a>
+                                                                    )}
+                                                                    {userRole === "ADMIN" && (
+                                                                        <button onClick={() => setConfirmarExclusao({ id: termo.id, tipo: 'TERMO' })} className="flex-1 md:flex-none p-2 md:p-3 bg-gray-50 dark:bg-gray-800 rounded-xl hover:text-red-500 transition flex items-center justify-center text-gray-500" title="Excluir">
+                                                                            <Trash2 size={16} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {(!clienteSelecionado.consentTerms || clienteSelecionado.consentTerms.length === 0) && (
+                                                            <div className="py-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-3xl border border-dashed dark:border-gray-800">
+                                                                <ShieldCheck size={32} className="mx-auto text-gray-300 mb-2" />
+                                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Nenhum termo gerado</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </>
                                         )}
                                     </div>
@@ -1394,200 +1504,202 @@ export default function ClientesPage() {
                         </div>
                     </div>
                 </ModalPortal>
-            )}
+            )
+            }
 
 
-            {modalAberto && (
-                <ModalPortal>
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
-                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
-                            {/* HEADER FIXO */}
-                            <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
-                                <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{isEditing ? "Editar Cliente" : "Novo Cliente"}</h2>
-                                <button onClick={fecharModal} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={24} /></button>
-                            </div>
+            {
+                modalAberto && (
+                    <ModalPortal>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
+                            <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-5xl max-h-[90vh] relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                                {/* HEADER FIXO */}
+                                <div className="p-8 pb-4 shrink-0 flex justify-between items-center">
+                                    <h2 className="text-3xl font-black dark:text-white px-2 tracking-tighter">{isEditing ? "Editar Cliente" : "Novo Cliente"}</h2>
+                                    <button onClick={fecharModal} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={24} /></button>
+                                </div>
 
-                            {/* CONTEÚDO SCROLLÁVEL */}
-                            <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar">
-                                <div className="space-y-8 px-2">
-                                    {/* SEÇÃO 0: FOTO E IDENTIFICAÇÃO */}
-                                    <div className="flex flex-col md:flex-row gap-6 items-start px-2">
-                                        <div className="shrink-0 flex flex-col items-center gap-2">
-                                            <div className="w-24 h-24 rounded-[2rem] bg-gray-100 flex items-center justify-center overflow-hidden border-2 dark:border-gray-700 relative group">
-                                                {form.photoUrl ? (
-                                                    <img src={form.photoUrl} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <UserCircle size={48} className="text-gray-300" />
-                                                )}
-                                                <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white font-bold text-xs uppercase">
-                                                    <UploadCloud size={24} />
-                                                    <input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" />
-                                                </label>
+                                {/* CONTEÚDO SCROLLÁVEL */}
+                                <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar">
+                                    <div className="space-y-8 px-2">
+                                        {/* SEÇÃO 0: FOTO E IDENTIFICAÇÃO */}
+                                        <div className="flex flex-col md:flex-row gap-6 items-start px-2">
+                                            <div className="shrink-0 flex flex-col items-center gap-2">
+                                                <div className="w-24 h-24 rounded-[2rem] bg-gray-100 flex items-center justify-center overflow-hidden border-2 dark:border-gray-700 relative group">
+                                                    {form.photoUrl ? (
+                                                        <img src={form.photoUrl} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <UserCircle size={48} className="text-gray-300" />
+                                                    )}
+                                                    <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer text-white font-bold text-xs uppercase">
+                                                        <UploadCloud size={24} />
+                                                        <input type="file" className="hidden" onChange={handleUploadFoto} accept="image/*" />
+                                                    </label>
+                                                </div>
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Foto do<br />Cliente</p>
                                             </div>
-                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Foto do<br />Cliente</p>
-                                        </div>
-                                        <div className="flex-1 w-full space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">{form.clientType === 'JURIDICA' ? 'Razão Social / Nome Fantasia' : 'Nome Completo'}</label>
-                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={form.clientType === 'JURIDICA' ? "Nome da empresa" : "Nome do cliente"} />
+                                            <div className="flex-1 w-full space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">{form.clientType === 'JURIDICA' ? 'Razão Social / Nome Fantasia' : 'Nome Completo'}</label>
+                                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={form.clientType === 'JURIDICA' ? "Nome da empresa" : "Nome do cliente"} />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
+                                                        <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                                    </div>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Telefone / WhatsApp</label>
-                                                    <input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} placeholder="(00) 00000-0000" />
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">URL da Foto (Opcional)</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition text-xs" value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} placeholder="Cole um link de imagem..." />
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">URL da Foto (Opcional)</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition text-xs" value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} placeholder="Cole um link de imagem..." />
-                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* SEÇÃO 1: DADOS PESSOAIS */}
-                                    <section>
-                                        <div className="flex justify-between items-center mb-4 px-2">
-                                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
-                                                <UserCircle size={16} /> Documentação {form.clientType === 'JURIDICA' ? 'Empresarial' : 'Pessoal'}
-                                            </h3>
-                                            <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex gap-1">
-                                                <button
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'FISICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                                                    onClick={() => setForm({ ...form, clientType: 'FISICA', cnpj: '', inscricaoEstadual: '' })}
-                                                >
-                                                    Física
-                                                </button>
-                                                <button
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'JURIDICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
-                                                    onClick={() => setForm({ ...form, clientType: 'JURIDICA', cpf: '', rg: '', birthDate: '', maritalStatus: '' })}
-                                                >
-                                                    Jurídica
-                                                </button>
+                                        {/* SEÇÃO 1: DADOS PESSOAIS */}
+                                        <section>
+                                            <div className="flex justify-between items-center mb-4 px-2">
+                                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                                    <UserCircle size={16} /> Documentação {form.clientType === 'JURIDICA' ? 'Empresarial' : 'Pessoal'}
+                                                </h3>
+                                                <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex gap-1">
+                                                    <button
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'FISICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        onClick={() => setForm({ ...form, clientType: 'FISICA', cnpj: '', inscricaoEstadual: '' })}
+                                                    >
+                                                        Física
+                                                    </button>
+                                                    <button
+                                                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition shadow-sm ${form.clientType === 'JURIDICA' ? 'bg-white dark:bg-gray-700 text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        onClick={() => setForm({ ...form, clientType: 'JURIDICA', cpf: '', rg: '', birthDate: '', maritalStatus: '' })}
+                                                    >
+                                                        Jurídica
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                            {form.clientType === 'JURIDICA' ? (
-                                                <>
-                                                    <div className="md:col-span-6 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CNPJ</label>
-                                                        <div className="relative">
-                                                            <input maxLength={18} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnpj} onChange={e => handleCNPJChange(e.target.value)} placeholder="00.000.000/0000-00" />
-                                                            <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                                {form.clientType === 'JURIDICA' ? (
+                                                    <>
+                                                        <div className="md:col-span-6 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CNPJ</label>
+                                                            <div className="relative">
+                                                                <input maxLength={18} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnpj} onChange={e => handleCNPJChange(e.target.value)} placeholder="00.000.000/0000-00" />
+                                                                <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="md:col-span-6 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Inscrição Estadual</label>
-                                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.inscricaoEstadual} onChange={e => setForm({ ...form, inscricaoEstadual: e.target.value })} placeholder="Isento, ou nº IE" />
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="md:col-span-4 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
-                                                        <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
-                                                    </div>
-                                                    <div className="md:col-span-4 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
-                                                        <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
-                                                    </div>
-                                                    <div className="md:col-span-4 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
-                                                        <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
-                                                    </div>
-                                                    <div className="md:col-span-12 lg:col-span-12 space-y-1">
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
-                                                        <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
-                                                            <option value="">Selecione...</option>
-                                                            <option value="Solteiro(a)">Solteiro(a)</option>
-                                                            <option value="Casado(a)">Casado(a)</option>
-                                                            <option value="Divorciado(a)">Divorciado(a)</option>
-                                                            <option value="Viúvo(a)">Viúvo(a)</option>
-                                                            <option value="União Estável">União Estável</option>
-                                                        </select>
-                                                    </div>
-                                                </>
-                                            )}
-                                            <div className="md:col-span-12 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
-                                                <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* SEÇÃO 2: ENDEREÇO */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                            <MapPin size={16} /> Endereço Residencial
-                                        </h3>
-                                        <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                            <div className="md:col-span-3 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label>
-                                                <div className="relative">
-                                                    <input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
-                                                    <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                                        <div className="md:col-span-6 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Inscrição Estadual</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.inscricaoEstadual} onChange={e => setForm({ ...form, inscricaoEstadual: e.target.value })} placeholder="Isento, ou nº IE" />
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="md:col-span-4 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CPF</label>
+                                                            <input maxLength={14} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cpf} onChange={e => setForm({ ...form, cpf: formatarCPF(e.target.value) })} placeholder="000.000.000-00" />
+                                                        </div>
+                                                        <div className="md:col-span-4 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">RG</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.rg} onChange={e => setForm({ ...form, rg: e.target.value })} placeholder="Registro Geral" />
+                                                        </div>
+                                                        <div className="md:col-span-4 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Nascimento</label>
+                                                            <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.birthDate} onChange={e => setForm({ ...form, birthDate: e.target.value })} />
+                                                        </div>
+                                                        <div className="md:col-span-12 lg:col-span-12 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Estado Civil</label>
+                                                            <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.maritalStatus} onChange={e => setForm({ ...form, maritalStatus: e.target.value })}>
+                                                                <option value="">Selecione...</option>
+                                                                <option value="Solteiro(a)">Solteiro(a)</option>
+                                                                <option value="Casado(a)">Casado(a)</option>
+                                                                <option value="Divorciado(a)">Divorciado(a)</option>
+                                                                <option value="Viúvo(a)">Viúvo(a)</option>
+                                                                <option value="União Estável">União Estável</option>
+                                                            </select>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="md:col-span-12 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">E-mail para Contato</label>
+                                                    <input type="email" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="exemplo@email.com" />
                                                 </div>
                                             </div>
-                                            <div className="md:col-span-7 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Logradouro" />
-                                            </div>
-                                            <div className="md:col-span-2 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="Nº" />
-                                            </div>
+                                        </section>
 
-                                            <div className="md:col-span-4 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} placeholder="Bairro" />
-                                            </div>
-                                            <div className="md:col-span-4 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} placeholder="Apto, Bloco..." />
-                                            </div>
-                                            <div className="md:col-span-3 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade</label>
-                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" />
-                                            </div>
-                                            <div className="md:col-span-1 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">UF</label>
-                                                <input maxLength={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition uppercase text-center" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" />
-                                            </div>
-                                        </div>
-                                    </section>
+                                        {/* SEÇÃO 2: ENDEREÇO */}
+                                        <section>
+                                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                                <MapPin size={16} /> Endereço Residencial
+                                            </h3>
+                                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                                <div className="md:col-span-3 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CEP</label>
+                                                    <div className="relative">
+                                                        <input maxLength={9} className="w-full border-2 dark:border-gray-700 p-4 pr-10 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cep} onChange={e => handleCEPChange(e.target.value)} placeholder="00000-000" />
+                                                        <Search className="absolute right-4 top-4 text-gray-400 pointer-events-none" size={18} />
+                                                    </div>
+                                                </div>
+                                                <div className="md:col-span-7 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Rua / Avenida</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Logradouro" />
+                                                </div>
+                                                <div className="md:col-span-2 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Número</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.number} onChange={e => setForm({ ...form, number: e.target.value })} placeholder="Nº" />
+                                                </div>
 
-                                    {/* SEÇÃO 3: OUTROS */}
-                                    <section>
-                                        <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
-                                            <ClipboardList size={16} /> Outras Informações
-                                        </h3>
-                                        <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
-                                            <div className="md:col-span-4 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Status do Cliente</label>
-                                                <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                                                    <option value="ATIVO">ATIVO</option>
-                                                    <option value="INATIVO">INATIVO</option>
-                                                </select>
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Bairro</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} placeholder="Bairro" />
+                                                </div>
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Complemento</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.complement} onChange={e => setForm({ ...form, complement: e.target.value })} placeholder="Apto, Bloco..." />
+                                                </div>
+                                                <div className="md:col-span-3 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Cidade</label>
+                                                    <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="Cidade" />
+                                                </div>
+                                                <div className="md:col-span-1 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">UF</label>
+                                                    <input maxLength={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition uppercase text-center" value={form.state} onChange={e => setForm({ ...form, state: e.target.value.toUpperCase() })} placeholder="UF" />
+                                                </div>
                                             </div>
-                                            <div className="md:col-span-8 space-y-1">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
-                                                <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
-                                                <p className="text-[9px] text-gray-400 font-bold ml-4">* As notas podem ser editadas/excluídas individualmente diretamente na ficha do cliente.</p>
+                                        </section>
+
+                                        {/* SEÇÃO 3: OUTROS */}
+                                        <section>
+                                            <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2 px-2">
+                                                <ClipboardList size={16} /> Outras Informações
+                                            </h3>
+                                            <div className="bg-gray-50 dark:bg-gray-800/40 p-6 rounded-[2.5rem] border dark:border-gray-800 grid grid-cols-1 md:grid-cols-12 gap-6">
+                                                <div className="md:col-span-4 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Status do Cliente</label>
+                                                    <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                                                        <option value="ATIVO">ATIVO</option>
+                                                        <option value="INATIVO">INATIVO</option>
+                                                    </select>
+                                                </div>
+                                                <div className="md:col-span-8 space-y-1">
+                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Observações Internas (Resumo)</label>
+                                                    <textarea rows={2} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition resize-none" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Notas gerais sobre o cliente..." />
+                                                    <p className="text-[9px] text-gray-400 font-bold ml-4">* As notas podem ser editadas/excluídas individualmente diretamente na ficha do cliente.</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </section>
+                                        </section>
+                                    </div>
+                                </div>
+
+                                {/* RODAPÉ FIXO */}
+                                <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
+                                    <button onClick={salvarCliente} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-3 active:scale-[0.98]">
+                                        <Save size={20} /> Salvar Alterações
+                                    </button>
                                 </div>
                             </div>
-
-                            {/* RODAPÉ FIXO */}
-                            <div className="p-8 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 shrink-0">
-                                <button onClick={salvarCliente} className="w-full bg-blue-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition flex items-center justify-center gap-3 active:scale-[0.98]">
-                                    <Save size={20} /> Salvar Alterações
-                                </button>
-                            </div>
                         </div>
-                    </div>
-                </ModalPortal>
-            )
+                    </ModalPortal>
+                )
             }
 
             {/* MODAL DE CONFIRMAÇÃO ESTILIZADO */}
@@ -2050,6 +2162,60 @@ export default function ClientesPage() {
                     </ModalPortal>
                 )
             }
+
+            {/* MODAL GERAR TERMO DE CONSENTIMENTO */}
+            {modalTermoAberto && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[200] p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-[3rem] w-full max-w-2xl relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border dark:border-gray-800">
+                            <div className="p-8 pb-6 shrink-0 flex justify-between items-center border-b dark:border-gray-800">
+                                <div>
+                                    <h2 className="text-2xl font-black dark:text-white flex items-center gap-2">
+                                        <ShieldCheck className="text-blue-500" size={24} /> Novo Termo
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mt-1 font-medium">Gere um link para o cliente <b>{clienteSelecionado?.name}</b> assinar.</p>
+                                </div>
+                                <button onClick={() => setModalTermoAberto(false)} disabled={gerandoTermo} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl text-gray-400 hover:text-red-500 transition shadow-sm"><X size={20} /></button>
+                            </div>
+
+                            <div className="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1 max-h-[60vh]">
+                                <div>
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Título do Termo</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Termo de Consentimento para Toxina Botulínica"
+                                        className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 rounded-2xl p-4 text-sm font-bold dark:text-white focus:border-blue-500 outline-none transition"
+                                        value={termoFormData.title}
+                                        onChange={(e) => setTermoFormData({ ...termoFormData, title: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Conteúdo Legal</label>
+                                    <textarea
+                                        placeholder="Insira todo o texto do termo, os riscos do procedimento, responsabilidades..."
+                                        className="w-full min-h-[250px] bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 rounded-2xl p-4 text-sm text-gray-600 dark:text-gray-300 focus:border-blue-500 outline-none transition resize-none custom-scrollbar"
+                                        value={termoFormData.content}
+                                        onChange={(e) => setTermoFormData({ ...termoFormData, content: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 px-2">A assinatura eletrônica possui validade jurídica. Certifique-se de ser claro no texto.</p>
+                                </div>
+                            </div>
+
+                            <div className="p-6 md:p-8 bg-gray-50 dark:bg-gray-950 border-t dark:border-gray-800 shrink-0">
+                                <button
+                                    onClick={gerarTermo}
+                                    disabled={gerandoTermo}
+                                    className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black text-sm uppercase flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 transition shadow-lg shadow-blue-500/20 active:scale-[0.98]"
+                                >
+                                    {gerandoTermo ? <Loader2 className="animate-spin" size={18} /> : <PenTool size={18} />}
+                                    {gerandoTermo ? "Gerando link seguro..." : "Gerar Link de Assinatura"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
+
         </div >
     );
 }

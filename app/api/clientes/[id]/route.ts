@@ -51,6 +51,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         // Traz anexos (se houver)
         attachments: {
           orderBy: { createdAt: 'desc' }
+        },
+        // Traz termos de consentimento
+        consentTerms: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
