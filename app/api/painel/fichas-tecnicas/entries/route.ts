@@ -51,7 +51,7 @@ export async function GET(req: Request) {
         const entries = await db.formEntry.findMany({
             where,
             include: {
-                template: { select: { name: true, fields: true } },
+                template: { select: { name: true, fields: true, requireSignature: true } },
                 client: true
             },
             orderBy: { createdAt: 'desc' }
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
             entry = await db.formEntry.update({
                 where: { id },
                 data: { data, filledBy: userId },
-                include: { template: { select: { name: true, fields: true } } }
+                include: { template: { select: { name: true, fields: true, requireSignature: true } } }
             });
         } else {
             // Cria novo
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
                     data,
                     filledBy: userId
                 },
-                include: { template: { select: { name: true, fields: true } } }
+                include: { template: { select: { name: true, fields: true, requireSignature: true } } }
             });
         }
 
