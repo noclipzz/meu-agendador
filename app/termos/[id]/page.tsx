@@ -34,25 +34,34 @@ export default function AssinarTermoPage() {
     }, [id]);
 
     // Funções do Canvas para assinatura
+    const getCoordinates = (e: any, canvas: HTMLCanvasElement) => {
+        const bcr = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / bcr.width;
+        const scaleY = canvas.height / bcr.height;
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX || e.nativeEvent.clientX;
+            clientY = e.clientY || e.nativeEvent.clientY;
+        }
+        return {
+            x: (clientX - bcr.left) * scaleX,
+            y: (clientY - bcr.top) * scaleY
+        };
+    };
+
     const startDrawing = (e: any) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // Suporte a mouse e touch
-        let offsetX, offsetY;
-        if (e.touches && e.touches.length > 0) {
-            const bcr = canvas.getBoundingClientRect();
-            offsetX = e.touches[0].clientX - bcr.left;
-            offsetY = e.touches[0].clientY - bcr.top;
-        } else {
-            offsetX = e.nativeEvent.offsetX;
-            offsetY = e.nativeEvent.offsetY;
-        }
+        const { x, y } = getCoordinates(e, canvas);
 
         ctx.beginPath();
-        ctx.moveTo(offsetX, offsetY);
+        ctx.moveTo(x, y);
         setIsDrawing(true);
     };
 
@@ -66,17 +75,9 @@ export default function AssinarTermoPage() {
         // Evitar scroll nativo ao assinar no touch
         if (e.cancelable) e.preventDefault();
 
-        let offsetX, offsetY;
-        if (e.touches && e.touches.length > 0) {
-            const bcr = canvas.getBoundingClientRect();
-            offsetX = e.touches[0].clientX - bcr.left;
-            offsetY = e.touches[0].clientY - bcr.top;
-        } else {
-            offsetX = e.nativeEvent.offsetX;
-            offsetY = e.nativeEvent.offsetY;
-        }
+        const { x, y } = getCoordinates(e, canvas);
 
-        ctx.lineTo(offsetX, offsetY);
+        ctx.lineTo(x, y);
         ctx.stroke();
     };
 
