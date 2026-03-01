@@ -793,11 +793,11 @@ export default function ClientesPage() {
             
             .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
             
-            .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; gap: 40px; }
-            .signature-block { flex: 1; text-align: center; max-width: 250px; }
-            .signature-image { height: 70px; object-fit: contain; margin-bottom: -20px; mix-blend-mode: multiply; }
-            .signature-line { border-top: 1.5px solid #0f172a; margin-top: 40px; }
-            .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; }
+            .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
+            .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
+            .signature-image { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 220px; height: 80px; object-fit: cover; object-position: center bottom; mix-blend-mode: multiply; z-index: 0; pointer-events: none; }
+            .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
+            .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
