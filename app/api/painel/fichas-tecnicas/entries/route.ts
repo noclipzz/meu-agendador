@@ -52,7 +52,7 @@ export async function GET(req: Request) {
             where,
             include: {
                 template: { select: { name: true, fields: true } },
-                client: { select: { name: true, phone: true } }
+                client: true
             },
             orderBy: { createdAt: 'desc' }
         });
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 
         const professionals = await db.professional.findMany({
             where: { userId: { in: uniqueUserIds } },
-            select: { userId: true, name: true }
+            select: { userId: true, name: true, signatureUrl: true }
         });
 
         const entriesWithInfo = entries.map(e => ({

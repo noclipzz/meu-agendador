@@ -727,7 +727,7 @@ export default function ClientesPage() {
         // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
         let camposHtml = '';
         sections.forEach(section => {
-            if (section.header) {
+            if (section.header && section.header !== entry.template?.name) {
                 camposHtml += `<div class="section-header">${section.header}</div>`;
             }
             camposHtml += '<div class="fields-grid">';
@@ -782,13 +782,14 @@ export default function ClientesPage() {
             .client-item.full { grid-column: span 2; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
+            .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
             
             .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; }
-            .field-item { border-bottom: 1.5px solid #e2e8f0; padding: 10px 15px; display: flex; flex-direction: column; gap: 4px; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; }
             .field-item:last-child { border-bottom: none; }
             .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
             .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
-            .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 10px 15px; }
+            .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; }
             
             .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
             
