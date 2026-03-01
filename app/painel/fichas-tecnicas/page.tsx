@@ -244,12 +244,12 @@ export default function FichasTecnicasPage() {
                     valor = tableHtml;
                 }
             } else {
-                valor = field.type === 'checkbox' ? (data[field.id]?.checked ? '✅ Sim' : '✗ Não') :
+                valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
                     field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
                         data[field.id] || '—';
 
-                if (field.type === 'checkbox' && data[field.id]?.checked && data[field.id]?.details) {
-                    valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id].details})`;
+                if (field.type === 'checkbox' && data[field.id] && data[field.id + "_details"]) {
+                    valor = `${valor} (${field.detailsLabel || 'Justificativa'}: ${data[field.id + "_details"]})`;
                 }
             }
 
@@ -268,7 +268,7 @@ export default function FichasTecnicasPage() {
             } catch (err) { console.error("Erro QR Code:", err); }
         }
 
-        // Gerar HTML dos campos em duas colunas
+        // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
         let camposHtml = '';
         sections.forEach(section => {
             if (section.header) {
@@ -332,6 +332,7 @@ export default function FichasTecnicasPage() {
             .field-item:last-child { border-bottom: none; }
             .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
             .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+            .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 10px 15px; }
             
             .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
             
@@ -386,7 +387,8 @@ export default function FichasTecnicasPage() {
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
                 <div class="client-item"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
-                <div class="client-item full"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                ${clienteSelecionado?.clientType !== 'JURIDICA' ? `<div class="client-item"><label>Estado Civil</label><span>${clienteSelecionado?.maritalStatus || '—'}</span></div>` : ''}
+                <div class="client-item ${clienteSelecionado?.clientType !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
             </div>
 
             <div class="section-title">${entry.template?.name}</div>

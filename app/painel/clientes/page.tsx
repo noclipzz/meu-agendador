@@ -732,7 +732,8 @@ export default function ClientesPage() {
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
-                const isLong = item.value.length > 60;
+                const containsTable = item.value.includes('<table');
+                const isLong = item.value.length > 80 || containsTable;
                 camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
@@ -752,87 +753,85 @@ export default function ClientesPage() {
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
             * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; }
-            .page { max-width:800px; margin:0 auto; padding:20px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-            
-            /* BOTÃO VOLTAR (APENAS PARA MOBILE/SCREEN) */
+            body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page { width: 100%; max-width: 800px; margin: 0 auto; padding: 40px 30px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
             .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
             @media screen and (max-width: 600px) { .back-button { display: flex; } .page { padding: 15px; } }
+            
+            .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 15px; }
+            .header-left { display: flex; align-items: center; gap: 15px; }
+            .company-logo { width: 45px; height: 45px; object-fit: contain; }
+            .company-name { font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+            
+            .auth-badge { display: flex; align-items: center; gap: 8px; border: 1px solid #ccfbf1; background: #f0fdfa; padding: 6px 12px; border-radius: 8px; }
+            .auth-text { text-align: left; }
+            .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; }
+            .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; }
+            .qr-code { width: 35px; height: 35px; }
+            
+            .header-right { text-align: right; }
+            .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
+            .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
 
-            /* HEADER */
-            .header { display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:3px solid #0d9488; margin-bottom:28px; }
-            .header-left { display:flex; align-items:center; gap:14px; }
-            .company-logo { width:52px; height:52px; border-radius:14px; object-fit:cover; border:2px solid #e5e7eb; }
-            .company-logo-placeholder { width:52px; height:52px; border-radius:14px; background:#f0fdfa; display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid #ccfbf1; }
-            .company-name { font-size:20px; font-weight:900; color:#0f172a; letter-spacing:-0.5px; }
-            .company-subtitle { font-size:10px; color:#0d9488; font-weight:700; text-transform:uppercase; letter-spacing:2px; }
-            .header-right { text-align:right; }
-            .header-date { font-size:11px; color:#6b7280; font-weight:600; }
-            .header-doc { font-size:9px; color:#9ca3af; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+            .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
+            
+            .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+            .client-item { display: flex; flex-direction: column; }
+            .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
+            .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+            .client-item.full { grid-column: span 2; }
 
-            /* TÍTULO */
-            .doc-title { font-size:22px; font-weight:900; color:#0f172a; margin-bottom:4px; letter-spacing:-0.5px; }
-            .doc-subtitle { font-size:11px; color:#9ca3af; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-bottom:20px; }
+            .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
+            
+            .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; padding: 10px 15px; display: flex; flex-direction: column; gap: 4px; }
+            .field-item:last-child { border-bottom: none; }
+            .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
+            .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+            .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 10px 15px; }
+            
+            .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
+            
+            .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; gap: 40px; }
+            .signature-block { flex: 1; text-align: center; max-width: 250px; }
+            .signature-image { height: 70px; object-fit: contain; margin-bottom: -20px; mix-blend-mode: multiply; }
+            .signature-line { border-top: 1.5px solid #0f172a; margin-top: 40px; }
+            .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; }
 
-            /* PACIENTE */
-            .client-box { background:linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%); padding:12px 18px; border-radius:14px; margin-bottom:16px; display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; border:1px solid #e0f2fe; }
-            .client-item label { font-size:9px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:2px; }
-            .client-item span { font-size:12px; color:#0f172a; font-weight:800; }
-            .client-item.full { grid-column: 1 / -1; }
-
-            /* SEÇÕES */
-            .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:1px; padding:10px 0 6px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:8px; }
-
-            /* GRID DE CAMPOS - UMA OU DUAS COLUNAS */
-            .fields-grid { ${twoColumns ? 'display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border:none;' : 'display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb;'} }
-            .field-item { padding:${twoColumns ? '10px 14px' : '8px 14px'}; ${twoColumns ? 'border:1px solid #e5e7eb; border-radius: 8px;' : 'border-bottom:1px solid #e5e7eb;'} }
-            .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
-            .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
-
-            /* ASSINATURA */
-            .signature { margin-top:60px; display:flex; justify-content:space-around; padding-top:20px; }
-            .signature-block { text-align:center; }
-            .signature-line { width:220px; border-top:1px solid #374151; margin-bottom:6px; }
-            .signature-label { font-size:10px; color:#6b7280; font-weight:600; }
-
-            /* RODAPÉ */
-            .signature-footer-container { margin-top: auto; padding-top: 40px; }
-            .custom-footer-text { margin-bottom: 20px; font-size: 11px; color: #4b5563; font-weight: 500; text-align: center; white-space: pre-wrap; line-height: 1.5; }
-            .footer { text-align:center; font-size:9px; color:#9ca3af; padding-top:16px; border-top:1px solid #e5e7eb; }
-            .footer strong { color:#6b7280; }
+            .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
+            .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
+            .footer-text strong { color: #1e293b; }
 
             @media print {
                 body { padding:0; }
-                .page { padding:20px; max-width:100%; }
+                .page { padding: 40px; max-width: 100%; border: none; }
                 .back-button { display:none !important; }
-                .section-header { break-after:avoid; }
-                .fields-grid { break-inside:auto; }
-                .field-item { break-inside:avoid; }
+                .fields-grid { break-inside: auto; }
+                .field-item { break-inside: avoid; }
             }
         </style></head><body>
         <div class="page">
             <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
+            
             <div class="header">
                 <div class="header-left">
                     ${logoHtml}
-                    <div>
-                        <div class="company-name">${nomeEmpresa}</div>
-                    </div>
+                    <div class="company-name">${nomeEmpresa}</div>
                 </div>
-                <div class="header-right" style="display: flex; align-items: center; gap: 15px;">
-                    ${includeQR ? `
-                    <div style="text-align: right; display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #f0fdfa; border-radius: 12px; border: 1px solid #ccfbf1;">
-                        <div style="text-align: right;">
-                            <div style="font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px;">Autenticidade</div>
-                            <div style="font-size: 7px; font-family: monospace; color: #9ca3af;">${entry.id.slice(0, 10).toUpperCase()}</div>
-                        </div>
-                        <img src="${qrCodeDataUrl}" style="width: 40px; height: 40px; border-radius: 4px;" />
+                
+                ${includeQR ? `
+                <div class="auth-badge">
+                    <div class="auth-text">
+                        <div class="auth-label">Autenticidade</div>
+                        <div class="auth-hash">${entry.id.slice(0, 10).toUpperCase()}</div>
                     </div>
-                    ` : ''}
-                    <div style="text-align: right;">
-                        <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
-                        <div class="header-doc">Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
-                    </div>
+                    <img src="${qrCodeDataUrl}" class="qr-code" />
+                </div>
+                ` : ''}
+                
+                <div class="header-right">
+                    <div class="header-date">${format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</div>
+                    <div class="header-doc">Nº ${docNumber || entry.id.slice(-6).toUpperCase()}</div>
                 </div>
             </div>
 
@@ -848,56 +847,40 @@ export default function ClientesPage() {
                 <div class="client-item ${clienteSelecionado?.clientType !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
             </div>
 
-            ${camposHtml}
+            <div class="section-title">${entry.template?.name}</div>
+            <div class="fields-grid">${camposHtml}</div>
 
             ${dateVisible ? `
-            <div style="margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1f2937; padding-right: 20px;">
+            <div class="date-row">
                 ${empresaInfo?.city || '___________________'}, ${format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </div>` : '<div style="margin-top: 40px;"></div>'}
+            </div>` : ''}
 
-            <div class="signature-footer-container">
-                ${signatures.client || signatures.prof || signatures.company ? `
-                <div class="signature" style="margin-top: 20px; margin-bottom: 40px;">
-                    ${signatures.client ? `
-                        <div class="signature-block">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <div style="height: 60px; width: 220px; display: flex; align-items: flex-end; justify-content: center;">
-                                    <div class="signature-line" style="margin-bottom: 0;"></div>
-                                </div>
-                                <div class="signature-label" style="margin-top: 8px;">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
-                            </div>
-                        </div>` : ''}
-                    ${signatures.prof ? `
-                        <div class="signature-block">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
-                                    ${(useDigitalSignature && entry.professional?.signatureUrl)
-                        ? `<img src="${entry.professional.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
-                        : ''}
-                                    <div class="signature-line" style="margin-bottom: 0;"></div>
-                                </div>
-                                <div class="signature-label" style="margin-top: 8px;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
-                            </div>
-                        </div>` : ''}
-                    ${signatures.company ? `
-                        <div class="signature-block">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <div style="height: 60px; width: 220px; position: relative; display: flex; align-items: flex-end; justify-content: center;">
-                                    ${(useDigitalSignature && empresaInfo.signatureUrl)
-                        ? `<img src="${empresaInfo.signatureUrl}" style="height: 90px; width: 220px; object-fit: contain; position: absolute; bottom: -15px; mix-blend-mode: multiply;" />`
-                        : ''}
-                                    <div class="signature-line" style="margin-bottom: 0;"></div>
-                                </div>
-                                <div class="signature-label" style="margin-top: 8px;">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
-                            </div>
-                        </div>` : ''}
-                </div>` : ''}
+            <div class="signatures-container">
+                ${signatures.client ? `
+                    <div class="signature-block">
+                        <div class="signature-line"></div>
+                        <div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
+                    </div>` : ''}
+                
+                ${signatures.prof ? `
+                    <div class="signature-block">
+                        ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
+                        <div class="signature-line"></div>
+                        <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                    </div>` : ''}
 
-                <div class="footer" style="${customFooter ? 'font-size: 11px; color: #4b5563; font-weight: 500;' : ''}">
+                ${signatures.company && !signatures.prof ? `
+                    <div class="signature-block">
+                        ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                        <div class="signature-line"></div>
+                        <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                    </div>` : ''}
+            </div>
+
+            <div class="footer-line">
+                <div class="footer-text">
                     ${customFooter ? customFooter : `<strong>${nomeEmpresa}</strong> — Documento gerado automaticamente pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}`}
                 </div>
-
-
             </div>
         </div>
         </body></html>`;
