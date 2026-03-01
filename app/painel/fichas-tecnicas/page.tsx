@@ -276,7 +276,8 @@ export default function FichasTecnicasPage() {
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
-                const isLong = item.value.length > 60;
+                const containsTable = item.value.includes('<table');
+                const isLong = item.value.length > 80 || containsTable;
                 camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
@@ -314,10 +315,31 @@ export default function FichasTecnicasPage() {
             .client-item span { font-size:12px; color:#0f172a; font-weight:800; }
             .client-item.full { grid-column: 1 / -1; }
             .section-header { font-size:12px; font-weight:900; color:#0d9488; text-transform:uppercase; letter-spacing:1px; padding:10px 0 6px; border-bottom:1px solid #0d9488; margin-bottom:0; margin-top:8px; }
-            .fields-grid { ${twoColumns ? 'display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border:none;' : 'display:flex; flex-direction: column; border-left:1px solid #e5e7eb; border-right:1px solid #e5e7eb; border-top:1px solid #e5e7eb;'} }
-            .field-item { padding:${twoColumns ? '10px 14px' : '8px 14px'}; ${twoColumns ? 'border:1px solid #e5e7eb; border-radius: 8px;' : 'border-bottom:1px solid #e5e7eb;'} }
-            .field-label { font-size:10px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
-            .field-value { font-size:14px; font-weight:700; color:#111827; word-break:break-word; }
+            .fields-grid { 
+                ${twoColumns ? 'display:grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border:none;' : 'display:flex; flex-direction: column; border-top:1px solid #e5e7eb;'} 
+                margin-top: 10px;
+            }
+            .field-item { 
+                padding: 10px 14px; 
+                ${twoColumns ? 'border:1px solid #e5e7eb; border-radius: 8px;' : 'border-bottom:1px solid #e5e7eb; display:flex; gap: 20px; align-items: flex-start;'} 
+            }
+            .field-item.full-width { flex-direction: column; }
+            .field-label { 
+                font-size: 10px; 
+                font-weight: 800; 
+                color: #6b7280; 
+                text-transform: uppercase; 
+                letter-spacing: 0.5px; 
+                ${twoColumns ? 'margin-bottom: 4px;' : 'width: 200px; flex-shrink: 0; padding-top: 2px;'} 
+            }
+            .field-item.full-width .field-label { width: 100%; margin-bottom: 4px; }
+            .field-value { 
+                font-size: 13px; 
+                font-weight: 700; 
+                color: #111827; 
+                word-break: break-word; 
+                ${twoColumns ? '' : 'flex: 1;'}
+            }
             .signature { margin-top:60px; display:flex; justify-content:space-around; padding-top:20px; }
             .signature-block { text-align:center; }
             .signature-line { width:220px; border-top:1px solid #374151; margin-bottom:6px; }
