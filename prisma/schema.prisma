@@ -411,9 +411,14 @@ model FormEntry {
   templateId String
   clientId   String
   companyId  String
-  filledBy   String?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  status          String     @default("PENDENTE")
+  signatureUrl    String?
+  clientIp        String?
+  clientUserAgent String?
+  signedAt        DateTime?
+  filledBy        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   template   FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }

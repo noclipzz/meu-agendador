@@ -1,0 +1,1 @@
+﻿app/api/fichas/[id]/route.ts(13,17): error TS2353: Object literal may only specify known properties, and 'company' does not exist in type 'FormEntryInclude<DefaultArgs>'.
