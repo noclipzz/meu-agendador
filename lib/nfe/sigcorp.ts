@@ -89,8 +89,14 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     if (!company.certificadoA1Url || !company.certificadoSenha) {
         throw new Error("Sua empresa precisa ter um Certificado A1 (.pfx) com a respectiva Senha para emitir/assinar Notas Fiscais.");
     }
-    if (!company.cnpj || !company.inscricaoMunicipal || !company.codigoServico) {
-        throw new Error("Preencha o CNPJ, Inscrição Municipal e o Código do Serviço (NFS-e) nas Configurações Fiscais.");
+
+    const camposFiscaisFaltando = [];
+    if (!company.cnpj) camposFiscaisFaltando.push("CNPJ da Empresa");
+    if (!company.inscricaoMunicipal) camposFiscaisFaltando.push("Inscrição Municipal");
+    if (!company.codigoServico) camposFiscaisFaltando.push("Código do Serviço Padrão");
+
+    if (camposFiscaisFaltando.length > 0) {
+        throw new Error(`Preencha os seguintes campos nas Configurações da Empresa/Fiscais: ${camposFiscaisFaltando.join(", ")}`);
     }
 
     // 2. Faz o download do PFX salvo na nuvem
