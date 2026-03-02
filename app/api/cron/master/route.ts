@@ -340,7 +340,8 @@ export async function GET(req: Request) {
             const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
 
             // PASSO 1: Gerar a imagem com o novo sistema de temas
-            let ogUrl = `https://www.nohud.com.br/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&emoji=${encodeURIComponent(post.emoji)}&theme=${post.theme}&style=${post.style}`;
+            const baseUrl = req.headers.get("x-forwarded-proto") === "http" ? `http://${req.headers.get("host")}` : `https://${req.headers.get("host") || 'www.nohud.com.br'}`;
+            let ogUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&emoji=${encodeURIComponent(post.emoji)}&theme=${post.theme}&style=${post.style}`;
             if (post.style === 'stats' && 'stat1' in post) {
                 ogUrl += `&stat1=${encodeURIComponent((post as any).stat1)}&stat1Label=${encodeURIComponent((post as any).stat1Label)}&stat2=${encodeURIComponent((post as any).stat2)}&stat2Label=${encodeURIComponent((post as any).stat2Label)}`;
             }

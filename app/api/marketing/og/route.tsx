@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
         const stat2Label = searchParams.get('stat2Label') || 'Mais Produtividade';
 
         // Busca a logo
-        const logoData = await fetch(new URL('/LOGOAPP.png', 'https://www.nohud.com.br')).then(
+        const logoData = await fetch(new URL('/LOGOAPP.png', req.url)).then(
             (res) => res.arrayBuffer()
         );
         const logoBase64 = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`;

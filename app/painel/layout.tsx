@@ -441,11 +441,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </button>
                 <div className="flex items-center gap-4">
                     <UserButton />
-                    {(isOwner || userPermissions?.config) && (
-                        <Link href="/painel/config" className="p-2 text-gray-500 hover:text-blue-600 transition">
-                            <Settings size={22} />
-                        </Link>
-                    )}
+                    {/* The mobile settings gear icon was removed from here. Keep only the UserButton and Logo. */}
                     <Link href="/" className="flex items-center gap-2">
                         <LogoNohud />
                     </Link>

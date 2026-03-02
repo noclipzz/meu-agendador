@@ -1601,7 +1601,7 @@ export default function ClientesPage() {
                                                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 mb-3 flex items-center gap-2"><History size={14} /> Fichas Preenchidas ({fichaEntries.length})</h4>
                                                 <div className="space-y-2">
                                                     {fichaEntries.map((entry: any) => (
-                                                        <div key={entry.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group">
+                                                        <div key={entry.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl hover:border-teal-500 transition group gap-4">
                                                             <div className="flex items-center gap-3">
                                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${entry.template?.requireSignature && entry.status === 'ASSINADO' ? 'bg-green-50 text-green-600' : 'bg-teal-50 dark:bg-teal-900/20 text-teal-600'}`}>
                                                                     {entry.template?.requireSignature && entry.status === 'ASSINADO' ? <CheckCircle size={18} /> : <FileText size={18} />}
@@ -1618,7 +1618,7 @@ export default function ClientesPage() {
                                                                     <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                                                            <div className="flex flex-wrap gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition justify-end">
                                                                 {entry.template?.requireSignature && (
                                                                     <button
                                                                         onClick={() => {
