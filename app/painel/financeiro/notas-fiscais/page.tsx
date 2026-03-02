@@ -189,8 +189,8 @@ export default function NotasFiscaisPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    // Adicione aqui se quer forçar prod ou dev, pro teste do cliente manteremos o padrão
-                    ...form
+                    ...form,
+                    environment: 'HOMOLOGATION' // Forçar ambiente de testes ("Sem Valor Fiscal")
                 })
             });
 
