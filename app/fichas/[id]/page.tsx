@@ -183,57 +183,101 @@ export default function AssinarFichaPage() {
 
                 {/* Corpo (Campos da Ficha Preenchidos) */}
                 <div className="p-6 md:p-10 border-b border-gray-200">
-                    <div className="space-y-4">
+                    <div className="flex flex-wrap w-full -mx-2 items-start">
                         {(ficha.template?.fields as any[])?.map((field: any) => {
+                            // Verifica lógica condicional
+                            if (field.conditional) {
+                                const dependOnId = field.conditional.dependsOnId;
+                                const requiredValue = field.conditional.dependsOnValue;
+                                const actualValue = (ficha.data as any)?.[dependOnId];
+
+                                let shouldShow = false;
+                                if (typeof requiredValue === 'boolean') {
+                                    shouldShow = requiredValue === true ? !!actualValue : !actualValue;
+                                } else {
+                                    if (Array.isArray(actualValue)) {
+                                        shouldShow = actualValue.includes(requiredValue);
+                                    } else {
+                                        shouldShow = actualValue === requiredValue;
+                                    }
+                                }
+                                if (!shouldShow) return null;
+                            }
+
                             const valor = (ficha.data as any)?.[field.id];
-                            if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-gray-500 uppercase tracking-widest pt-4 border-t border-gray-100 mt-4">{field.label}</h4>;
+
+                            const w = field.width || "100%";
+                            // in mobile always full width for readability, sm+ uses template layout
+                            const widthClass = w === "100%" ? "w-full" : w === "50%" ? "w-full sm:w-1/2" : w === "33%" ? "w-full sm:w-1/3" : w === "25%" ? "w-full sm:w-1/4" : w === "66%" ? "w-full sm:w-2/3" : "w-full sm:w-3/4";
+
+                            if (field.type === 'header') return (
+                                <div key={field.id} className="w-full px-2 pt-4 mt-4 border-t border-gray-100">
+                                    <h4 className="text-sm font-black text-gray-500 uppercase tracking-widest leading-tight">{field.label}</h4>
+                                    {field.helpText && <p className="text-xs text-gray-500 mt-1 font-medium">{field.helpText}</p>}
+                                </div>
+                            );
+
                             return (
-                                <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b border-gray-100">
-                                    {field.type === 'table' ? (
-                                        <div className="col-span-1 sm:col-span-3">
-                                            <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case mb-2">{field.label}</p>
-                                            <div className="overflow-x-auto w-full border border-gray-200 rounded-xl">
-                                                <table className="w-full text-left border-collapse text-xs table-fixed">
-                                                    <thead>
-                                                        <tr className="bg-gray-50">
-                                                            {(field.options as string[] || []).map((col: string, i: number) => (
-                                                                <th key={i} className="border-b border-gray-200 p-2 px-3 font-bold text-gray-500 uppercase">{col}</th>
-                                                            ))}
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {Array.isArray(valor) && valor.map((row: string[], ri: number) => (
-                                                            <tr key={ri} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                                                                {(field.options as string[] || []).map((_, ci: number) => (
-                                                                    <td key={ci} className="border-r border-gray-100 last:border-0 p-2 px-3 text-gray-700 font-medium break-words overflow-hidden break-all">{row[ci] || ''}</td>
+                                <div key={field.id} className={`p-2 ${widthClass}`}>
+                                    <div className="h-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex flex-col justify-center">
+                                        {field.type === 'table' ? (
+                                            <div className="w-full">
+                                                <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case mb-2 leading-tight">{field.label}</p>
+                                                {field.helpText && <p className="text-[9px] text-gray-500 font-medium mb-2 leading-tight italic -mt-1">{field.helpText}</p>}
+                                                <div className="overflow-x-auto w-full border border-gray-200 rounded-xl bg-white">
+                                                    <table className="w-full text-left border-collapse text-xs table-fixed">
+                                                        <thead>
+                                                            <tr className="bg-gray-50 border-b border-gray-200">
+                                                                {(field.options as string[] || []).map((col: string, i: number) => (
+                                                                    <th key={i} className="p-2 px-3 font-bold text-gray-500 uppercase">{col}</th>
                                                                 ))}
                                                             </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                        </thead>
+                                                        <tbody>
+                                                            {Array.isArray(valor) && valor.map((row: string[], ri: number) => (
+                                                                <tr key={ri} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                                                                    {(field.options as string[] || []).map((_, ci: number) => (
+                                                                        <td key={ci} className="border-r border-gray-100 last:border-0 p-2 px-3 text-gray-700 font-medium break-words overflow-hidden break-all">{row[ci] || ''}</td>
+                                                                    ))}
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case">{field.label}</p>
-                                            <p className="text-sm font-bold text-gray-800 sm:col-span-2">
-                                                {field.type === 'checkbox' ? (
-                                                    <span>
-                                                        {valor ? '✅ Sim' : '❌ Não'}
-                                                        {valor && (ficha.data as any)?.[field.id + "_details"] && (
-                                                            <span className="text-gray-500 font-normal ml-2 italic">
-                                                                ({field.detailsLabel || 'Justificativa'}: {(ficha.data as any)[field.id + "_details"]})
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                ) : field.type === 'checkboxGroup' ? (
-                                                    Array.isArray(valor) ? valor.join(', ') : '---'
-                                                ) : (
-                                                    valor || '---'
-                                                )}
-                                            </p>
-                                        </>
-                                    )}
+                                        ) : field.type === 'image' ? (
+                                            <div className="w-full">
+                                                <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case mb-1 leading-tight">{field.label}</p>
+                                                {field.helpText && <p className="text-[9px] text-gray-500 font-medium mb-2 leading-tight italic">{field.helpText}</p>}
+                                                {valor ? <img src={valor} alt={field.label} className="w-full max-w-sm rounded-xl border border-gray-200 mt-2 object-contain bg-white p-2 max-h-64" /> : <p className="text-sm font-bold text-gray-400">---</p>}
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p className="text-[10px] sm:text-xs font-black sm:font-bold text-gray-400 sm:text-gray-500 uppercase sm:normal-case leading-tight mb-1">{field.label}</p>
+                                                {field.helpText && <p className="text-[9px] text-gray-500 font-medium leading-tight italic mb-2">{field.helpText}</p>}
+                                                <p className="text-sm font-bold text-gray-800 break-words flex items-center">
+                                                    {field.type === 'checkbox' ? (
+                                                        <span>
+                                                            {valor ? '✅ Sim' : '❌ Não'}
+                                                            {valor && (ficha.data as any)?.[field.id + "_details"] && (
+                                                                <span className="text-gray-500 font-normal ml-2 italic text-xs">
+                                                                    ({field.detailsLabel || 'Justificativa'}: {(ficha.data as any)[field.id + "_details"]})
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                    ) : field.type === 'checkboxGroup' ? (
+                                                        Array.isArray(valor) ? valor.join(', ') : '---'
+                                                    ) : field.type === 'slider' ? (
+                                                        <span className="bg-teal-100/50 text-teal-700 px-3 py-1 rounded-lg border border-teal-200/50 inline-block shadow-sm">{valor !== undefined ? valor : '---'}</span>
+                                                    ) : field.type === 'currency' ? (
+                                                        valor ? `R$ ${Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '---'
+                                                    ) : (
+                                                        valor || '---'
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}

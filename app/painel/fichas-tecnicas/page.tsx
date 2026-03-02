@@ -6,7 +6,7 @@ import {
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
     Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid,
     Search, Clock, Filter, ArrowRight, History as HistoryIcon, Printer, Trash,
-    ShieldCheck, Eye
+    ShieldCheck, Eye, Image as ImageIcon, SlidersHorizontal, DollarSign
 } from "lucide-react";
 import QRCode from "qrcode";
 import { createPortal } from "react-dom";
@@ -24,7 +24,9 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
     return createPortal(children, target);
 }
 
-type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "number" | "table";
+type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table";
+
+type FieldWidth = "100%" | "50%" | "33%" | "25%" | "66%" | "75%";
 
 interface FormField {
     id: string;
@@ -35,6 +37,17 @@ interface FormField {
     placeholder?: string;
     allowsDetails?: boolean;
     detailsLabel?: string;
+    helpText?: string;
+    width?: FieldWidth;
+    conditional?: {
+        dependsOnId: string;
+        dependsOnValue: string | boolean;
+    } | null;
+    sliderConfig?: {
+        min: number;
+        max: number;
+        step: number;
+    };
 }
 
 interface Template {
@@ -55,8 +68,12 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
     { type: "checkbox", label: "Sim / Não", icon: CheckSquare, desc: "Checkbox" },
     { type: "checkboxGroup", label: "Múltipla Escolha", icon: CheckSquare, desc: "Vários itens" },
     { type: "date", label: "Data", icon: Calendar, desc: "Calendário" },
+    { type: "time", label: "Hora", icon: Clock, desc: "Relógio" },
     { type: "number", label: "Número", icon: Hash, desc: "Valor numérico" },
-    { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas definidas" },
+    { type: "currency", label: "Moeda (R$)", icon: DollarSign, desc: "Valores financeiros" },
+    { type: "slider", label: "Escala", icon: SlidersHorizontal, desc: "Arrastar de X a Y" },
+    { type: "image", label: "Foto/Upload", icon: ImageIcon, desc: "Anexar imagem" },
+    { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas" },
 ];
 
 export default function FichasTecnicasPage() {
@@ -474,8 +491,10 @@ export default function FichasTecnicasPage() {
             id: crypto.randomUUID(),
             type,
             label: "",
+            width: "100%",
             required: false,
-            ...(type === "select" || type === "checkboxGroup" || type === "table" ? { options: [""] } : {})
+            ...(type === "select" || type === "checkboxGroup" || type === "table" ? { options: [""] } : {}),
+            ...(type === "slider" ? { sliderConfig: { min: 0, max: 10, step: 1 } } : {})
         };
         setCampos([...campos, novoCampo]);
     }
@@ -659,6 +678,95 @@ export default function FichasTecnicasPage() {
                                         )}
                                     </div>
 
+                                    {campo.type !== "header" && (
+                                        <div className="flex flex-col gap-3 mt-3 sm:ml-2 border-l-2 border-blue-50 dark:border-gray-800 pl-4 py-2 opacity-90 transition-opacity">
+                                            {/* Subtítulo / Ajuda */}
+                                            <div>
+                                                <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Texto de Ajuda / Subtítulo</label>
+                                                <input
+                                                    className="w-full border dark:border-gray-700 p-2 rounded-lg bg-white dark:bg-gray-950 outline-none text-xs dark:text-gray-300 focus:border-blue-500 transition-colors"
+                                                    placeholder="Instruções para a equipe (opcional)"
+                                                    value={campo.helpText || ""}
+                                                    onChange={e => atualizarCampo(campo.id, { helpText: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {/* Tamanho (Colunas) */}
+                                                <div>
+                                                    <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Largura (Desktop)</label>
+                                                    <select
+                                                        className="w-full border dark:border-gray-700 p-2 rounded-lg bg-white dark:bg-gray-950 outline-none text-xs font-bold text-gray-600 dark:text-gray-300 focus:border-blue-500 transition-colors cursor-pointer"
+                                                        value={campo.width || "100%"}
+                                                        onChange={e => atualizarCampo(campo.id, { width: e.target.value as FieldWidth })}
+                                                    >
+                                                        <option value="100%">1 Linha Inteira (100%)</option>
+                                                        <option value="50%">Meia Linha (50%)</option>
+                                                        <option value="33%">Um Terço (33%)</option>
+                                                        <option value="25%">Um Quarto (25%)</option>
+                                                        <option value="66%">Dois Terços (66%)</option>
+                                                        <option value="75%">Três Quartos (75%)</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Lógica Condicional Básica */}
+                                                {index > 0 && (
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Só exibir se a anterior for:</label>
+                                                        <div className="flex bg-white dark:bg-gray-950 rounded-lg p-0.5 border dark:border-gray-700 items-center justify-between">
+                                                            <select
+                                                                className="flex-1 bg-transparent px-2 text-xs font-bold outline-none text-gray-500 dark:text-gray-400 w-full cursor-pointer"
+                                                                value={campo.conditional?.dependsOnValue !== undefined ? String(campo.conditional.dependsOnValue) : ""}
+                                                                onChange={e => {
+                                                                    const val = e.target.value;
+                                                                    if (!val) {
+                                                                        atualizarCampo(campo.id, { conditional: null });
+                                                                    } else {
+                                                                        atualizarCampo(campo.id, {
+                                                                            conditional: {
+                                                                                dependsOnId: campos[index - 1].id,
+                                                                                dependsOnValue: val === 'true' ? true : val === 'false' ? false : val
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value="">(Sempre exibir)</option>
+                                                                {campos[index - 1]?.type === 'checkbox' ? (
+                                                                    <>
+                                                                        <option value="true">Marcada (Sim)</option>
+                                                                        <option value="false">Desmarcada (Não)</option>
+                                                                    </>
+                                                                ) : campos[index - 1]?.type === 'select' || campos[index - 1]?.type === 'checkboxGroup' ? (
+                                                                    campos[index - 1]?.options?.map(opt => opt.trim() && <option key={opt} value={opt}>{opt}</option>)
+                                                                ) : null}
+                                                            </select>
+                                                            {campo.conditional && <button onClick={() => atualizarCampo(campo.id, { conditional: null })} className="p-1 px-2 text-red-500 hover:bg-red-50 rounded transition"><X size={12} /></button>}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Configurações do Slider */}
+                                            {campo.type === "slider" && campo.sliderConfig && (
+                                                <div className="grid grid-cols-3 gap-2 mt-2 bg-blue-50/50 dark:bg-gray-900 p-3 rounded-xl border border-blue-100 dark:border-gray-800">
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-blue-400 dark:text-gray-400 uppercase block mb-1">Mínimo</label>
+                                                        <input type="number" className="w-full border dark:border-gray-700 px-2 py-1.5 rounded-lg bg-white dark:bg-gray-950 outline-none text-xs font-bold text-gray-600 focus:border-blue-500" value={campo.sliderConfig.min} onChange={e => atualizarCampo(campo.id, { sliderConfig: { ...campo.sliderConfig!, min: Number(e.target.value) } })} />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-blue-400 dark:text-gray-400 uppercase block mb-1">Máximo</label>
+                                                        <input type="number" className="w-full border dark:border-gray-700 px-2 py-1.5 rounded-lg bg-white dark:bg-gray-950 outline-none text-xs font-bold text-gray-600 focus:border-blue-500" value={campo.sliderConfig.max} onChange={e => atualizarCampo(campo.id, { sliderConfig: { ...campo.sliderConfig!, max: Number(e.target.value) } })} />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[9px] font-black text-blue-400 dark:text-gray-400 uppercase block mb-1">Pulo (Step)</label>
+                                                        <input type="number" min="0.1" step="any" className="w-full border dark:border-gray-700 px-2 py-1.5 rounded-lg bg-white dark:bg-gray-950 outline-none text-xs font-bold text-gray-600 focus:border-blue-500" value={campo.sliderConfig.step} onChange={e => atualizarCampo(campo.id, { sliderConfig: { ...campo.sliderConfig!, step: Number(e.target.value) } })} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* OPÇÕES PARA SELECT, CHECKBOX GROUP E TABELA (COLUNAS) */}
                                     {(campo.type === "select" || campo.type === "checkboxGroup" || campo.type === "table") && (
                                         <div className="pl-4 space-y-2 border-l-2 border-blue-100 dark:border-gray-800 ml-1 py-1">
@@ -759,92 +867,133 @@ export default function FichasTecnicasPage() {
                                         <p className="text-[10px] uppercase font-black tracking-widest text-center text-gray-400 pointer-events-none">O formulário está vazio</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-6 pointer-events-none">
-                                        {campos.map((campo, i) => (
-                                            <div key={i} className="animate-in fade-in duration-300">
-                                                {campo.type === 'header' ? (
-                                                    <h3 className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-8 mb-4">
-                                                        {campo.label || "Título de seção..."}
-                                                    </h3>
-                                                ) : (
-                                                    <div>
-                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-2 leading-tight">
-                                                            {campo.label || "Escreva a sua pergunta..."} {campo.required && <span className="text-red-500">*</span>}
-                                                        </label>
+                                    <div className="flex flex-wrap flex-row pointer-events-none -mx-2 items-start">
+                                        {campos.map((campo, i) => {
+                                            const w = campo.width || "100%";
+                                            const widthClass = w === "100%" ? "w-full" : w === "50%" ? "w-1/2" : w === "33%" ? "w-1/3" : w === "25%" ? "w-1/4" : w === "66%" ? "w-2/3" : "w-3/4";
 
-                                                        {campo.type === 'text' && (
-                                                            <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">Resposta curta...</div>
-                                                        )}
-                                                        {campo.type === 'textarea' && (
-                                                            <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium h-24">Resposta longa descritiva...</div>
-                                                        )}
-                                                        {campo.type === 'number' && (
-                                                            <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">123...</div>
-                                                        )}
-                                                        {campo.type === 'date' && (
-                                                            <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                                                                <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">dd/mm/aaaa</span>
-                                                                <Calendar size={16} className="text-gray-300 dark:text-gray-600" />
-                                                            </div>
-                                                        )}
-                                                        {campo.type === 'select' && (
-                                                            <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                                                                <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">Selecione uma opção...</span>
-                                                                <ChevronDown size={16} className="text-gray-300 dark:text-gray-600" />
-                                                            </div>
-                                                        )}
-                                                        {campo.type === 'checkbox' && (
-                                                            <div className="flex flex-col gap-2.5 mt-2">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-5 h-5 rounded border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"></div>
-                                                                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Sim, confirmo</span>
-                                                                </div>
-                                                                {campo.allowsDetails && (
-                                                                    <div className="pl-6 mt-1 border-l-2 border-gray-100 dark:border-gray-800 ml-2.5">
-                                                                        <label className="text-[9px] font-bold text-gray-400 uppercase mb-1.5 block">↳ {campo.detailsLabel || 'Justificativa...'}</label>
-                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-lg bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-xs font-medium">Detalhes aqui...</div>
+                                            return (
+                                                <div key={i} className={`p-2 animate-in fade-in duration-300 ${widthClass} relative`}>
+                                                    {campo.conditional && (
+                                                        <div className="absolute top-1 right-2 bg-yellow-100 text-yellow-700 text-[8px] font-black uppercase px-2 py-0.5 rounded-md z-10 border border-yellow-200">
+                                                            👁️ Oculto por lógica
+                                                        </div>
+                                                    )}
+                                                    <div className={`${campo.conditional ? 'opacity-40' : ''}`}>
+                                                        {campo.type === 'header' ? (
+                                                            <h3 className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-4 mb-2">
+                                                                {campo.label || "Título de seção..."}
+                                                                {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case mt-1">{campo.helpText}</p>}
+                                                            </h3>
+                                                        ) : (
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-1.5 leading-tight">
+                                                                    {campo.label || "Escreva a sua pergunta..."} {campo.required && <span className="text-red-500">*</span>}
+                                                                </label>
+                                                                {campo.helpText && <p className="text-[9px] text-gray-400 font-medium ml-1 mb-2 leading-tight italic">{campo.helpText}</p>}
+
+                                                                {campo.type === 'text' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">Resposta curta...</div>
+                                                                )}
+                                                                {campo.type === 'textarea' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium h-24">Resposta longa descritiva...</div>
+                                                                )}
+                                                                {campo.type === 'number' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">123...</div>
+                                                                )}
+                                                                {campo.type === 'currency' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium flex items-center gap-2">
+                                                                        <DollarSign size={16} /> R$ 0,00
                                                                     </div>
                                                                 )}
-                                                            </div>
-                                                        )}
-                                                        {campo.type === 'checkboxGroup' && (
-                                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                                {campo.options?.length ? campo.options.map((opt, v) => (
-                                                                    <div key={v} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 rounded-lg border-2 border-gray-100 dark:border-gray-800">
-                                                                        <div className="w-4 h-4 rounded border-2 border-gray-200 dark:border-gray-700"></div>
-                                                                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{opt || `Item ${v + 1}`}</span>
+                                                                {campo.type === 'date' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">dd/mm/aaaa</span>
+                                                                        <Calendar size={16} className="text-gray-300 dark:text-gray-600" />
                                                                     </div>
-                                                                )) : (
-                                                                    <span className="text-xs text-gray-300 dark:text-gray-600 italic">Nenhuma opção adicionada</span>
                                                                 )}
-                                                            </div>
-                                                        )}
-                                                        {campo.type === 'table' && (
-                                                            <div className="overflow-x-auto border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-900/50 mt-1">
-                                                                <table className="w-full text-left text-xs">
-                                                                    <thead>
-                                                                        <tr className="border-b-2 border-gray-100 dark:border-gray-800">
-                                                                            {campo.options?.length ? campo.options.map((col, c) => (
-                                                                                <th key={c} className="p-2.5 font-bold text-gray-400 uppercase">{col || `Coluna ${c + 1}`}</th>
-                                                                            )) : <th className="p-2.5 text-gray-300">Sem colunas</th>}
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        <tr>
-                                                                            {campo.options?.length ? campo.options.map((_, c) => (
-                                                                                <td key={c} className="p-2.5 border-r border-gray-100 dark:border-gray-800 last:border-0">
-                                                                                    <div className="h-6 w-full bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"></div>
-                                                                                </td>
-                                                                            )) : <td></td>}
-                                                                        </tr>
-                                                                    </tbody>
-                                                                </table>
+                                                                {campo.type === 'time' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">00:00</span>
+                                                                        <Clock size={16} className="text-gray-300 dark:text-gray-600" />
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'image' && (
+                                                                    <div className="w-full border-2 border-dashed border-gray-200 dark:border-gray-800 p-6 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col justify-center items-center gap-2">
+                                                                        <ImageIcon size={24} className="text-gray-300 dark:text-gray-600" />
+                                                                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Clique para Anexar</span>
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'slider' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col items-center">
+                                                                        <div className="w-full h-2 bg-gray-200 rounded-full mb-3 flex items-center relative"><div className="w-1/2 h-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-full rounded-r-none" /><div className="w-4 h-4 bg-white border-2 border-blue-600 rounded-full absolute left-1/2 -ml-2 shadow-md" /></div>
+                                                                        <div className="flex justify-between w-full text-[10px] font-black text-gray-400">
+                                                                            <span>{campo.sliderConfig?.min ?? 0}</span>
+                                                                            <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">={(campo.sliderConfig?.min ?? 0) + (((campo.sliderConfig?.max ?? 10) - (campo.sliderConfig?.min ?? 0)) / 2)}</span>
+                                                                            <span>{campo.sliderConfig?.max ?? 10}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'select' && (
+                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">Selecione uma opção...</span>
+                                                                        <ChevronDown size={16} className="text-gray-300 dark:text-gray-600" />
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'checkbox' && (
+                                                                    <div className="flex flex-col gap-2.5 mt-2">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="w-5 h-5 rounded border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"></div>
+                                                                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Sim, confirmo</span>
+                                                                        </div>
+                                                                        {campo.allowsDetails && (
+                                                                            <div className="pl-6 mt-1 border-l-2 border-gray-100 dark:border-gray-800 ml-2.5">
+                                                                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1.5 block">↳ {campo.detailsLabel || 'Justificativa...'}</label>
+                                                                                <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2 rounded-lg bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-xs font-medium">Detalhes aqui...</div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'checkboxGroup' && (
+                                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                                        {campo.options?.filter(o => o.trim()).length ? campo.options.filter(o => o.trim()).map((opt, v) => (
+                                                                            <div key={v} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 rounded-lg border-2 border-gray-100 dark:border-gray-800">
+                                                                                <div className="w-4 h-4 rounded border-2 border-gray-200 dark:border-gray-700"></div>
+                                                                                <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{opt || `Item ${v + 1}`}</span>
+                                                                            </div>
+                                                                        )) : (
+                                                                            <span className="text-xs text-gray-300 dark:text-gray-600 italic">Nenhuma opção adicionada</span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                {campo.type === 'table' && (
+                                                                    <div className="overflow-x-auto border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-900/50 mt-1">
+                                                                        <table className="w-full text-left text-xs">
+                                                                            <thead>
+                                                                                <tr className="border-b-2 border-gray-100 dark:border-gray-800">
+                                                                                    {campo.options?.length ? campo.options.map((col, c) => (
+                                                                                        <th key={c} className="p-2.5 font-bold text-gray-400 uppercase whitespace-nowrap">{col || `Coluna ${c + 1}`}</th>
+                                                                                    )) : <th className="p-2.5 text-gray-300">Sem colunas</th>}
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                <tr>
+                                                                                    {campo.options?.length ? campo.options.map((_, c) => (
+                                                                                        <td key={c} className="p-2.5 border-r border-gray-100 dark:border-gray-800 last:border-0 min-w-[80px]">
+                                                                                            <div className="h-6 w-full bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"></div>
+                                                                                        </td>
+                                                                                    )) : <td></td>}
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

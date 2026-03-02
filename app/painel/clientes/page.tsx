@@ -9,7 +9,7 @@ import {
     Calendar, Clock, MapPin, FileText, CheckCircle2, UserCircle,
     DollarSign, Receipt, Trash2, Download, Image as ImageIcon,
     FileIcon, Loader2, UploadCloud, CreditCard, QrCode, Banknote, AlertTriangle,
-    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck, Link2, PenTool, CheckCircle
+    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck, Link2, PenTool, CheckCircle, SlidersHorizontal
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -706,6 +706,24 @@ export default function ClientesPage() {
         let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
+            if (field.conditional) {
+                const dependOnId = field.conditional.dependsOnId;
+                const requiredValue = field.conditional.dependsOnValue;
+                const actualValue = data[dependOnId];
+
+                let shouldShow = false;
+                if (typeof requiredValue === 'boolean') {
+                    shouldShow = requiredValue === true ? !!actualValue : !actualValue;
+                } else {
+                    if (Array.isArray(actualValue)) {
+                        shouldShow = actualValue.includes(requiredValue);
+                    } else {
+                        shouldShow = actualValue === requiredValue;
+                    }
+                }
+                if (!shouldShow) return;
+            }
+
             if (field.type === 'header') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
@@ -735,6 +753,13 @@ export default function ClientesPage() {
                     tableHtml += '</tbody></table>';
                     valor = tableHtml;
                 }
+            } else if (field.type === 'image') {
+                const imgData = data[field.id];
+                valor = imgData ? `<img src="${imgData}" style="max-height: 200px; max-width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 5px;" />` : '—';
+            } else if (field.type === 'slider') {
+                valor = data[field.id] !== undefined ? String(data[field.id]) : '—';
+            } else if (field.type === 'currency') {
+                valor = data[field.id] ? `R$ ${Number(data[field.id]).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—';
             } else {
                 valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
                     field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
@@ -769,7 +794,8 @@ export default function ClientesPage() {
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
                 const containsTable = item.value.includes('<table');
-                const isLong = item.value.length > 80 || containsTable;
+                const containsImg = item.value.includes('<img');
+                const isLong = item.value.length > 80 || containsTable || containsImg;
                 camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
@@ -1791,135 +1817,214 @@ export default function ClientesPage() {
                                         const template = fichaTemplates.find((t: any) => t.id === fichaTemplateSelecionado);
                                         if (!template) return null;
                                         return (
-                                            <div className="space-y-5">
-                                                {(template.fields as any[]).map((field: any) => (
-                                                    <div key={field.id}>
-                                                        {field.type === 'header' && (
-                                                            <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">{field.label}</h5>
-                                                        )}
-                                                        {field.type === 'text' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'textarea' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'number' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'date' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'select' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })}>
-                                                                    <option value="">Selecione...</option>
-                                                                    {field.options?.map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
-                                                                </select>
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'checkbox' && (
-                                                            <div className="space-y-3">
-                                                                <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
-                                                                    <input type="checkbox" className="w-6 h-6 accent-teal-600 rounded" checked={fichaFormData[field.id] || false} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked })} />
-                                                                    <span className="text-sm font-bold dark:text-white">{field.label}</span>
-                                                                    {field.required && <span className="text-red-500 text-xs">*</span>}
-                                                                </label>
+                                            <div className="flex flex-wrap flex-row w-full items-start -mx-2">
+                                                {(template.fields as any[]).map((field: any) => {
+                                                    // Lógica Condicional
+                                                    if (field.conditional) {
+                                                        const dependOnId = field.conditional.dependsOnId;
+                                                        const requiredValue = field.conditional.dependsOnValue;
+                                                        const actualValue = fichaFormData[dependOnId];
 
-                                                                {field.allowsDetails && fichaFormData[field.id] && (
-                                                                    <div className="ml-10 animate-in slide-in-from-top-2 duration-200">
-                                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">{field.detailsLabel || 'Justificativa'}</label>
+                                                        let shouldShow = false;
+                                                        if (typeof requiredValue === 'boolean') {
+                                                            shouldShow = requiredValue === true ? !!actualValue : !actualValue;
+                                                        } else {
+                                                            if (Array.isArray(actualValue)) {
+                                                                shouldShow = actualValue.includes(requiredValue);
+                                                            } else {
+                                                                shouldShow = actualValue === requiredValue;
+                                                            }
+                                                        }
+                                                        if (!shouldShow) return null;
+                                                    }
+
+                                                    const w = field.width || "100%";
+                                                    const widthClass = w === "100%" ? "w-full" : w === "50%" ? "w-1/2" : w === "33%" ? "w-1/3" : w === "25%" ? "w-1/4" : w === "66%" ? "w-2/3" : "w-3/4";
+
+                                                    return (
+                                                        <div key={field.id} className={`p-2 ${widthClass} animate-in fade-in duration-300`}>
+                                                            {field.type === 'header' && (
+                                                                <div className="pt-6 pb-2 border-t-2 border-teal-200 dark:border-teal-800 mt-2">
+                                                                    <h5 className="text-sm font-black text-teal-600 uppercase tracking-widest leading-tight">{field.label}</h5>
+                                                                    {field.helpText && <p className="text-xs text-gray-500 mt-1 font-medium">{field.helpText}</p>}
+                                                                </div>
+                                                            )}
+                                                            {field.type !== 'header' && (
+                                                                <div className="mb-1">
+                                                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block leading-tight">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
+                                                                    {field.helpText && <p className="text-[9px] text-gray-500 font-medium ml-1 leading-tight italic">{field.helpText}</p>}
+                                                                </div>
+                                                            )}
+
+                                                            {field.type === 'text' && (
+                                                                <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            )}
+                                                            {field.type === 'textarea' && (
+                                                                <textarea rows={4} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            )}
+                                                            {field.type === 'number' && (
+                                                                <input type="number" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            )}
+                                                            {field.type === 'currency' && (
+                                                                <div className="relative flex items-center">
+                                                                    <span className="absolute left-4 font-black text-gray-400">R$</span>
+                                                                    <input type="number" step="0.01" className="w-full border-2 dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                                </div>
+                                                            )}
+                                                            {field.type === 'date' && (
+                                                                <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                            )}
+                                                            {field.type === 'time' && (
+                                                                <div className="relative flex items-center">
+                                                                    <Clock className="absolute left-4 text-gray-400" size={18} />
+                                                                    <input type="time" className="w-full border-2 dark:border-gray-700 p-4 pl-12 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition" value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })} />
+                                                                </div>
+                                                            )}
+                                                            {field.type === 'image' && (
+                                                                <label className="w-full border-2 border-dashed dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white hover:border-teal-500 transition cursor-pointer flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                                                                    {fichaFormData[field.id] ? (
+                                                                        <>
+                                                                            <img src={fichaFormData[field.id]} alt="Anexo" className="w-full h-40 object-contain rounded-xl" />
+                                                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                                <span className="text-white text-xs font-bold bg-black/40 px-3 py-1 rounded">Trocar Imagem</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <ImageIcon className="text-gray-400" size={24} />
+                                                                            <span className="text-gray-500 text-xs text-center uppercase tracking-widest">Clique para Anexar<br />(PNG, JPG)</span>
+                                                                        </>
+                                                                    )}
+                                                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => {
+                                                                                setFichaFormData({ ...fichaFormData, [field.id]: reader.result });
+                                                                            };
+                                                                            reader.readAsDataURL(file);
+                                                                        }
+                                                                    }} />
+                                                                </label>
+                                                            )}
+                                                            {field.type === 'slider' && (
+                                                                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border-2 dark:border-gray-700 pt-6 mt-1">
+                                                                    <div className="relative px-2">
                                                                         <input
-                                                                            className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
-                                                                            placeholder="Descreva aqui..."
-                                                                            value={fichaFormData[field.id + "_details"] || ''}
-                                                                            onChange={e => setFichaFormData({ ...fichaFormData, [field.id + "_details"]: e.target.value })}
+                                                                            type="range"
+                                                                            min={field.sliderConfig?.min ?? 0}
+                                                                            max={field.sliderConfig?.max ?? 10}
+                                                                            step={field.sliderConfig?.step ?? 1}
+                                                                            className="w-full accent-teal-600 cursor-pointer h-2 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none"
+                                                                            value={fichaFormData[field.id] !== undefined ? fichaFormData[field.id] : (field.sliderConfig?.min ?? 0)}
+                                                                            onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: Number(e.target.value) })}
                                                                         />
+                                                                        <div className="flex justify-between w-full text-[10px] font-black text-gray-400 mt-3 relative -mx-2 px-2">
+                                                                            <span>{field.sliderConfig?.min ?? 0}</span>
+                                                                            <div className="absolute left-1/2 -translate-x-1/2 top-0 -mt-8">
+                                                                                <span className="bg-teal-600 text-white px-2 py-1 rounded shadow-lg text-xs font-black">
+                                                                                    {fichaFormData[field.id] !== undefined ? fichaFormData[field.id] : (field.sliderConfig?.min ?? 0)}
+                                                                                </span>
+                                                                            </div>
+                                                                            <span>{field.sliderConfig?.max ?? 10}</span>
+                                                                        </div>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'checkboxGroup' && (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                    {field.options?.map((opt: string, i: number) => (
-                                                                        <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
-                                                                            <input type="checkbox" className="accent-teal-600 w-5 h-5" checked={(fichaFormData[field.id] || []).includes(opt)} onChange={e => {
-                                                                                const arr = fichaFormData[field.id] || [];
-                                                                                setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
-                                                                            }} />
-                                                                            <span className="font-bold dark:text-white">{opt}</span>
-                                                                        </label>
-                                                                    ))}
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                        {field.type === 'table' && (
-                                                            <div className="space-y-2">
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
-                                                                <div className="overflow-x-auto border-2 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
-                                                                    <table className="w-full text-left border-collapse text-sm">
-                                                                        <thead>
-                                                                            <tr className="bg-gray-50 dark:bg-gray-800/50">
-                                                                                {field.options?.map((col: string, i: number) => <th key={i} className="p-3 font-black text-xs text-gray-500 uppercase tracking-widest border-b dark:border-gray-700">{col}</th>)}
-                                                                                <th className="p-3 border-b dark:border-gray-700 w-10"></th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {(fichaFormData[field.id] as string[][] || []).map((row: string[], ri: number) => (
-                                                                                <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
-                                                                                    {field.options?.map((_: string, ci: number) => (
-                                                                                        <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0">
-                                                                                            <textarea
-                                                                                                rows={2}
-                                                                                                className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition resize-y min-h-[40px]"
-                                                                                                value={row[ci] || ''}
-                                                                                                onChange={e => {
-                                                                                                    const arr = [...(fichaFormData[field.id] as string[][] || [])];
-                                                                                                    if (!arr[ri]) arr[ri] = [];
-                                                                                                    arr[ri][ci] = e.target.value;
-                                                                                                    setFichaFormData({ ...fichaFormData, [field.id]: arr });
-                                                                                                }}
-                                                                                                placeholder={`---`}
-                                                                                            />
-                                                                                        </td>
-                                                                                    ))}
-                                                                                    <td className="p-2 text-center">
-                                                                                        <button onClick={() => {
-                                                                                            const arr = [...(fichaFormData[field.id] as string[][] || [])];
-                                                                                            arr.splice(ri, 1);
-                                                                                            setFichaFormData({ ...fichaFormData, [field.id]: arr });
-                                                                                        }} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
-                                                                                    </td>
+                                                            )}
+                                                            {field.type === 'select' && (
+                                                                <select className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition appearance-none" style={{ backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 1rem center", backgroundSize: "1em" }} value={fichaFormData[field.id] || ''} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.value })}>
+                                                                    <option value="">Selecione...</option>
+                                                                    {field.options?.filter((o: string) => o.trim()).map((opt: string, i: number) => <option key={i} value={opt}>{opt}</option>)}
+                                                                </select>
+                                                            )}
+                                                            {field.type === 'checkbox' && (
+                                                                <div className="space-y-3">
+                                                                    <label className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 border-2 dark:border-gray-700 rounded-2xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition">
+                                                                        <input type="checkbox" className="w-5 h-5 accent-teal-600 rounded" checked={fichaFormData[field.id] || false} onChange={e => setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked })} />
+                                                                        <span className="text-sm font-bold dark:text-white">{field.label}</span>
+                                                                    </label>
+
+                                                                    {field.allowsDetails && fichaFormData[field.id] && (
+                                                                        <div className="sm:ml-8 animate-in slide-in-from-top-2 duration-200">
+                                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-1 mb-1 block">↳ {field.detailsLabel || 'Justificativa'}</label>
+                                                                            <input
+                                                                                className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-950 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition"
+                                                                                placeholder="Descreva aqui..."
+                                                                                value={fichaFormData[field.id + "_details"] || ''}
+                                                                                onChange={e => setFichaFormData({ ...fichaFormData, [field.id + "_details"]: e.target.value })}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {field.type === 'checkboxGroup' && (
+                                                                <div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 relative">
+                                                                        {field.options?.filter((o: string) => o.trim()).map((opt: string, i: number) => (
+                                                                            <label key={i} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 border dark:border-gray-700 rounded-xl cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/10 hover:border-teal-500 transition text-sm">
+                                                                                <input type="checkbox" className="accent-teal-600 w-4 h-4" checked={(fichaFormData[field.id] || []).includes(opt)} onChange={e => {
+                                                                                    const arr = fichaFormData[field.id] || [];
+                                                                                    setFichaFormData({ ...fichaFormData, [field.id]: e.target.checked ? [...arr, opt] : arr.filter((v: string) => v !== opt) });
+                                                                                }} />
+                                                                                <span className="font-bold dark:text-gray-300 leading-tight">{opt}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            {field.type === 'table' && (
+                                                                <div className="space-y-2">
+                                                                    <div className="overflow-x-auto border-2 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                                                                        <table className="w-full text-left border-collapse text-sm">
+                                                                            <thead>
+                                                                                <tr className="bg-gray-50 dark:bg-gray-800/50">
+                                                                                    {field.options?.filter((o: string) => o.trim()).map((col: string, i: number) => <th key={i} className="p-3 font-black text-[10px] text-gray-500 uppercase tracking-widest border-b dark:border-gray-700 whitespace-nowrap">{col}</th>)}
+                                                                                    <th className="p-3 border-b dark:border-gray-700 w-10"></th>
                                                                                 </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                    <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border-t dark:border-gray-700">
-                                                                        <button onClick={() => {
-                                                                            const arr = [...(fichaFormData[field.id] as string[][] || [])];
-                                                                            arr.push(new Array(field.options?.length || 0).fill(''));
-                                                                            setFichaFormData({ ...fichaFormData, [field.id]: arr });
-                                                                        }} className="text-xs font-bold text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-3 py-2 rounded-xl transition flex items-center gap-2 inline-flex"><Plus size={14} /> Adicionar Linha</button>
+                                                                            </thead>
+                                                                            <tbody>
+                                                                                {(fichaFormData[field.id] as string[][] || []).map((row: string[], ri: number) => (
+                                                                                    <tr key={ri} className="border-b dark:border-gray-700/50 last:border-0 group hover:bg-gray-50 dark:hover:bg-gray-800/20 transition">
+                                                                                        {field.options?.filter((o: string) => o.trim()).map((_: string, ci: number) => (
+                                                                                            <td key={ci} className="p-2 border-r dark:border-gray-700/50 last:border-0 min-w-[120px]">
+                                                                                                <textarea
+                                                                                                    rows={1}
+                                                                                                    className="w-full bg-transparent outline-none font-bold dark:text-white px-2 py-1 focus:bg-gray-100 dark:focus:bg-gray-800 rounded transition resize-y min-h-[40px]"
+                                                                                                    value={row[ci] || ''}
+                                                                                                    onChange={e => {
+                                                                                                        const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                                                        if (!arr[ri]) arr[ri] = [];
+                                                                                                        arr[ri][ci] = e.target.value;
+                                                                                                        setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                                                    }}
+                                                                                                    placeholder={`---`}
+                                                                                                />
+                                                                                            </td>
+                                                                                        ))}
+                                                                                        <td className="p-2 text-center">
+                                                                                            <button onClick={() => {
+                                                                                                const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                                                arr.splice(ri, 1);
+                                                                                                setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                                            }} className="p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                        <div className="p-3 bg-gray-50 dark:bg-gray-800/30 border-t dark:border-gray-700">
+                                                                            <button onClick={() => {
+                                                                                const arr = [...(fichaFormData[field.id] as string[][] || [])];
+                                                                                arr.push(new Array(field.options?.filter((o: string) => o.trim()).length || 0).fill(''));
+                                                                                setFichaFormData({ ...fichaFormData, [field.id]: arr });
+                                                                            }} className="text-[11px] font-black uppercase text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/30 px-3 py-2 rounded-xl transition flex items-center gap-2 inline-flex"><Plus size={14} /> Adicionar Linha</button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         );
                                     })()}
