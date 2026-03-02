@@ -185,15 +185,27 @@ export default function NotasFiscaisPage() {
         try {
             toast.loading("Enviando NFS-e Manual...", { id: "nfe_manual" });
 
-            // Aqui conectariamos com a sua rota /api/painel/financeiro/nfe mas adaptada para notas avulsas
-            // Por enquanto, simularemos o sucesso, já que depende de salvar uma fatura e passar pela Sigcorp
+            const res = await fetch("/api/painel/financeiro/nfe/avulsa", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    // Adicione aqui se quer forçar prod ou dev, pro teste do cliente manteremos o padrão
+                    ...form
+                })
+            });
 
-            await new Promise(r => setTimeout(r, 2000));
-            toast.success("AMB. SIMULAÇÃO: Nota enviada para a fila de testes!", { id: "nfe_manual" });
+            const data = await res.json();
+
+            if (!res.ok) {
+                console.error("ERRO NFE:", data);
+                throw new Error(data.error || "Erro desconhecido ao emitir NF.");
+            }
+
+            toast.success("Nota enviada para processamento com sucesso!", { id: "nfe_manual" });
             setIsNovaNotaOpen(false);
             carregarTudo();
-        } catch (error) {
-            toast.error("Erro ao emitir nota.", { id: "nfe_manual" });
+        } catch (error: any) {
+            toast.error(error.message || "Erro ao emitir nota.", { id: "nfe_manual" });
         } finally {
             setFormLoading(false);
         }
