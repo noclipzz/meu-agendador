@@ -42,8 +42,22 @@ export async function POST(req: Request) {
 
         // 3. Atualiza Fatura com retorno (mesmo se for erro SOAP pra o usuári ler)
         if (!nsfeResult.success) {
+            let detalhesErro = nsfeResult.error;
+            let mensagemAmigavel = "Falha na comunicação com a prefeitura.";
+
+            if (typeof detalhesErro === 'string') {
+                const matchMsg = /<Mensagem>(.*?)<\/Mensagem>/i.exec(detalhesErro);
+                const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(detalhesErro);
+
+                if (matchMsg && matchMsg[1]) {
+                    mensagemAmigavel = matchMsg[1];
+                } else if (matchFault && matchFault[1]) {
+                    mensagemAmigavel = matchFault[1];
+                }
+            }
+
             return NextResponse.json({
-                error: "Falha na comunicação com a prefeitura.",
+                error: mensagemAmigavel,
                 details: nsfeResult.error,
                 xmlSoap: nsfeResult.requestXml // Para visualizarmos no frontend o erro q a prefeitura cuspiu
             }, { status: 422 });
