@@ -86,101 +86,85 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    // 1. Validação do Nome
-    if (!body.name) {
-      return NextResponse.json({ error: "O nome da empresa é obrigatório." }, { status: 400 });
-    }
-
-    // VALIDAÇÕES EXTRAS
-    if (body.notificationEmail && !validateEmail(body.notificationEmail)) {
-      return NextResponse.json({ error: "E-mail de notificação inválido." }, { status: 400 });
-    }
-    if (body.cnpj && !validateCNPJ(body.cnpj)) {
-      return NextResponse.json({ error: "CNPJ inválido." }, { status: 400 });
-    }
-
-    const slugDesejado = gerarSlug(body.name);
-
-    // 2. Validação de Link Único (Slug)
-    const empresaComMesmoSlug = await prisma.company.findUnique({
-      where: { slug: slugDesejado }
-    });
-
-    if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
-      return NextResponse.json(
-        { error: "Este nome de empresa já está em uso. Escolha outro para o seu link." },
-        { status: 400 }
-      );
-    }
-
     // 3. Busca se o usuário já tem uma empresa cadastrada
     const existingConfig = await prisma.company.findFirst({
       where: { ownerId: userId }
     });
 
-    // 4. Organiza os dados garantindo valores padrão (evita erro de 'undefined')
-    const dataToSave = {
-      name: body.name,
-      slug: slugDesejado,
-      notificationEmail: body.notificationEmail || null,
-      instagramUrl: body.instagramUrl || "",
-      facebookUrl: body.facebookUrl || "",
-      openTime: body.openTime || "09:00",
-      closeTime: body.closeTime || "18:00",
-      lunchStart: body.lunchStart || "12:00",
-      lunchEnd: body.lunchEnd || "13:00",
-      logoUrl: body.logoUrl || "",
-      signatureUrl: body.signatureUrl || "",
-      legalRepresentative: body.legalRepresentative || null,
-      monthlyGoal: body.monthlyGoal ? Number(body.monthlyGoal) : 5000,
-      workDays: body.workDays || "1,2,3,4,5",
-      interval: body.interval ? Number(body.interval) : 30,
-      // Novos Campos
-      corporateName: body.corporateName || null,
-      cnpj: body.cnpj || null,
-      phone: body.phone || null,
-      cep: body.cep || null,
-      address: body.address || null,
-      number: body.number || null,
-      complement: body.complement || null,
-      neighborhood: body.neighborhood || null,
-      city: body.city || null,
-      state: body.state || null,
-      // Focus NFe
-      inscricaoMunicipal: body.inscricaoMunicipal || null,
-      regimeTributario: body.regimeTributario ? Number(body.regimeTributario) : 1,
-      naturezaOperacao: body.naturezaOperacao ? Number(body.naturezaOperacao) : 1,
-      codigoServico: body.codigoServico || null,
-      aliquotaServico: body.aliquotaServico ? Number(body.aliquotaServico) : 0,
-      inssTax: body.inssTax ? Number(body.inssTax) : 0,
-      certificadoA1Url: body.certificadoA1Url || null,
-      certificadoSenha: body.certificadoSenha || null,
-      // Taxas
-      creditCardTax: body.creditCardTax ? Number(body.creditCardTax) : 0,
-      debitCardTax: body.debitCardTax ? Number(body.debitCardTax) : 0,
-      // Cora Integration
-      coraClientId: body.coraClientId || null,
-      coraCertUrl: body.coraCertUrl || null,
-      coraKeyUrl: body.coraKeyUrl || null,
-      coraFineRate: body.coraFineRate ? Number(body.coraFineRate) : 2.0,
-      coraInterestRate: body.coraInterestRate ? Number(body.coraInterestRate) : 1.0,
-      coraDiscountRate: body.coraDiscountRate ? Number(body.coraDiscountRate) : 0
-    };
+    if (!existingConfig && !body.name) {
+      return NextResponse.json({ error: "O nome da empresa é obrigatório na primeira configuração." }, { status: 400 });
+    }
+
+    // VALIDAÇÕES EXTRAS SOMENTE SE ENVIADAS
+    if (body.notificationEmail !== undefined && body.notificationEmail !== null && body.notificationEmail !== "" && !validateEmail(body.notificationEmail)) {
+      return NextResponse.json({ error: "E-mail de notificação inválido." }, { status: 400 });
+    }
+    if (body.cnpj !== undefined && body.cnpj !== null && body.cnpj !== "" && !validateCNPJ(body.cnpj)) {
+      return NextResponse.json({ error: "CNPJ inválido." }, { status: 400 });
+    }
+
+    const dataToSave: any = {};
+
+    // Processar campos tipo String
+    const stringFields = [
+      "name", "notificationEmail", "instagramUrl", "facebookUrl",
+      "openTime", "closeTime", "lunchStart", "lunchEnd", "logoUrl",
+      "signatureUrl", "legalRepresentative", "workDays", "corporateName",
+      "cnpj", "phone", "cep", "address", "number", "complement", "neighborhood",
+      "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
+      "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
+      "cnae", "fiscalPadraoDesc" // Novos campos NFS-e
+    ];
+
+    for (const field of stringFields) {
+      if (body[field] !== undefined) {
+        dataToSave[field] = body[field] || null; // Se vazio, vira null
+      }
+    }
+
+    // Processar campos tipo Number
+    const numberFields = [
+      "monthlyGoal", "interval", "regimeTributario", "naturezaOperacao",
+      "aliquotaServico", "inssTax", "creditCardTax", "debitCardTax",
+      "coraFineRate", "coraInterestRate", "coraDiscountRate"
+    ];
+
+    for (const field of numberFields) {
+      if (body[field] !== undefined) {
+        dataToSave[field] = Number(body[field]);
+      }
+    }
+
+    // Processar campos tipo Boolean
+    if (body.issRetidoTomador !== undefined) {
+      dataToSave.issRetidoTomador = Boolean(body.issRetidoTomador);
+    }
+
+    // Consertando campos nulos que deviam ser string
+    if (dataToSave.name === null) delete dataToSave.name; // name nunca pode ser nulo
+    if (dataToSave.interval === null || isNaN(dataToSave.interval)) delete dataToSave.interval;
+
+    if (body.name) {
+      const slugDesejado = gerarSlug(body.name);
+      const empresaComMesmoSlug = await prisma.company.findUnique({
+        where: { slug: slugDesejado }
+      });
+      if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
+        return NextResponse.json({ error: "Este nome de empresa já está em uso. Escolha outro para o seu link." }, { status: 400 });
+      }
+      dataToSave.slug = slugDesejado;
+    }
 
     if (existingConfig) {
-      // Atualiza a empresa existente
       const updated = await prisma.company.update({
         where: { id: existingConfig.id },
         data: dataToSave,
       });
       return NextResponse.json(updated);
     } else {
-      // --- CORREÇÃO: Criar empresa incluindo o ownerId obrigatório ---
+      dataToSave.ownerId = userId;
       const created = await prisma.company.create({
-        data: {
-          ...dataToSave,
-          ownerId: userId // VINCULA AO SEU USUÁRIO DO CLERK
-        }
+        data: dataToSave
       });
       return NextResponse.json(created);
     }

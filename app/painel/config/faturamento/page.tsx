@@ -14,8 +14,12 @@ export default function ConfigFaturamento() {
     const [regimeTributario, setRegimeTributario] = useState("1");
     const [naturezaOperacao, setNaturezaOperacao] = useState("1");
     const [codigoServico, setCodigoServico] = useState("");
+    const [cnae, setCnae] = useState("");
     const [aliquotaServico, setAliquotaServico] = useState("");
     const [inssTax, setInssTax] = useState("");
+    const [issRetidoTomador, setIssRetidoTomador] = useState(false);
+    const [fiscalPadraoDesc, setFiscalPadraoDesc] = useState("");
+
     const [certificadoA1Url, setCertificadoA1Url] = useState("");
     const [certificadoSenha, setCertificadoSenha] = useState("");
     const [creditCardTax, setCreditCardTax] = useState("");
@@ -52,8 +56,12 @@ export default function ConfigFaturamento() {
                 setRegimeTributario(String(dataConfig.regimeTributario || "1"));
                 setNaturezaOperacao(String(dataConfig.naturezaOperacao || "1"));
                 setCodigoServico(dataConfig.codigoServico || "");
+                setCnae(dataConfig.cnae || "");
                 setAliquotaServico(String(dataConfig.aliquotaServico || ""));
                 setInssTax(String(dataConfig.inssTax || ""));
+                setIssRetidoTomador(dataConfig.issRetidoTomador || false);
+                setFiscalPadraoDesc(dataConfig.fiscalPadraoDesc || "");
+
                 setCertificadoA1Url(dataConfig.certificadoA1Url || "");
                 setCertificadoSenha(dataConfig.certificadoSenha || "");
                 setCreditCardTax(String(dataConfig.creditCardTax || "0"));
@@ -109,7 +117,9 @@ export default function ConfigFaturamento() {
                 method: 'POST',
                 body: JSON.stringify({
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
-                    codigoServico, aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"), certificadoA1Url, certificadoSenha,
+                    codigoServico, cnae, fiscalPadraoDesc, issRetidoTomador,
+                    aliquotaServico: parseFloat(aliquotaServico || "0"), inssTax: parseFloat(inssTax || "0"),
+                    certificadoA1Url, certificadoSenha,
                     creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
                     coraClientId, coraCertUrl, coraKeyUrl,
                     coraFineRate: parseFloat(coraFineRate || "0"),
@@ -151,17 +161,13 @@ export default function ConfigFaturamento() {
                         <FileText className="text-emerald-500" size={20} /> Emissão Fiscal (NFS-e)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-emerald-50/50 dark:bg-gray-800/30 rounded-3xl border border-emerald-100 dark:border-gray-800">
+                        <div className="md:col-span-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Discriminação Padrão dos Serviços</label>
+                            <textarea rows={2} placeholder="Ex: Referente a prestação de serviços de Consultoria..." className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white resize-none" value={fiscalPadraoDesc} onChange={e => setFiscalPadraoDesc(e.target.value)} />
+                        </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Inscrição Municipal</label>
                             <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Código de Serviço</label>
-                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Alíquota ISS (%)</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Natureza da Operação</label>
@@ -171,6 +177,28 @@ export default function ConfigFaturamento() {
                                 <option value="3">Isenção</option>
                                 <option value="4">Imune</option>
                             </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Código Tributação Municipal (ISS)</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">CNAE</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={cnae} onChange={e => setCnae(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Alíquota ISS (%)</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Alíquota INSS (%)</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={inssTax} onChange={e => setInssTax(e.target.value)} />
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-3 bg-white dark:bg-gray-900 border dark:border-gray-800 p-4 rounded-2xl cursor-pointer">
+                            <input id="checkRetidoConfig" type="checkbox" checked={issRetidoTomador} onChange={e => setIssRetidoTomador(e.target.checked)} className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                            <label htmlFor="checkRetidoConfig" className="font-bold text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                ISS Retido pelo Tomador?
+                            </label>
                         </div>
                         <div className="md:col-span-2 p-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-3xl flex items-center justify-between gap-4">
                             <div>
