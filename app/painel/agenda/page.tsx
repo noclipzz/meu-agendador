@@ -673,6 +673,13 @@ export default function PainelDashboard() {
                                         </p>
                                     )}
                                 </div>
+
+                                {!isEditing && agendamentoSelecionado.description && (
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700">
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-widest">Observação</p>
+                                        <p className="font-bold text-sm dark:text-gray-200 whitespace-pre-wrap">{agendamentoSelecionado.description}</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-8 flex flex-col gap-2">
