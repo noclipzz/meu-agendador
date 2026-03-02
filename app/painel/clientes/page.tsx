@@ -1271,7 +1271,7 @@ export default function ClientesPage() {
                                                                             <p className="font-black text-sm md:text-base dark:text-white uppercase leading-none mb-2 truncate">{b.service?.name || "Serviço não especificado"}</p>
                                                                             <div className="flex flex-wrap items-center gap-3 md:gap-5">
                                                                                 <p className="text-[10px] md:text-xs font-bold text-gray-500 flex items-center gap-1.5 whitespace-nowrap">
-                                                                                    <Clock size={12} className="text-gray-400" /> {format(new Date(b.date), "dd de MMM, yyyy 'às' HH:mm")}
+                                                                                    <Clock size={12} className="text-gray-400" /> {format(new Date(b.date), "dd 'de' MMM, yyyy 'às' HH:mm")}
                                                                                 </p>
                                                                                 <p className="text-[10px] md:text-xs font-bold text-orange-600 flex items-center gap-1.5 whitespace-nowrap bg-orange-50 dark:bg-orange-900/10 px-2 py-0.5 rounded-lg border border-orange-100 dark:border-orange-900/30">
                                                                                     <UserCircle size={12} /> {b.professional?.name || 'Profissional não informado'}
@@ -1281,7 +1281,7 @@ export default function ClientesPage() {
                                                                     </div>
                                                                     <div className="text-right shrink-0 self-end md:self-auto w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-gray-100 dark:border-gray-800">
                                                                         <span className="font-black text-green-600 text-lg md:text-xl relative top-[-2px]">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                                                        {b.status === "FINALIZADO" ? (
+                                                                        {(b.status === "FINALIZADO" || b.status === "CONCLUÍDO" || b.status === "CONCLUIDO") ? (
                                                                             <p className="text-[9px] font-black text-green-500 uppercase flex items-center justify-end gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</p>
                                                                         ) : b.status === "CANCELADO" ? (
                                                                             <p className="text-[9px] font-black text-red-500 uppercase flex items-center justify-end gap-1 mt-0.5"><X size={10} /> Cancelado</p>
