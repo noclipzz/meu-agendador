@@ -206,29 +206,34 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     // 4. Assina o RPS (<InfDeclaracaoPrestacaoServico>)
     const signedXml = signXML(baseXml, "InfDeclaracaoPrestacaoServico", pfxBuffer, company.certificadoSenha);
 
-    // 5. Monta o Envelope SOAP a ser enviado via POST para WebService
-    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
-    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:nfse="http://nfse.abrasf.org.br">
-    <soapenv:Header/>
-    <soapenv:Body>
-        <nfse:GerarNfseRequest>
-            <nfse:nfseCabecMsg><![CDATA[<cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfse:nfseCabecMsg>
-            <nfse:nfseDadosMsg><![CDATA[${signedXml}]]></nfse:nfseDadosMsg>
-        </nfse:GerarNfseRequest>
-    </soapenv:Body>
-    </soapenv:Envelope>`;
-
-    // 6. Define URL
-    const wsUrl = environment === 'HOMOLOGATION'
+    // 6. Define URL e Namespace baseado no Ambiente
+    const isHomologation = environment === 'HOMOLOGATION';
+    const wsUrl = isHomologation
         ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
         : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    const soapNamespace = isHomologation
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    // 5. Monta o Envelope SOAP a ser enviado via POST para WebService
+    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:proc="${soapNamespace}">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <proc:GerarNfseRequest>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseDadosMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?>${signedXml}]]></nfseDadosMsg>
+        </proc:GerarNfseRequest>
+    </soapenv:Body>
+    </soapenv:Envelope>`;
 
     // 7. Envia pro Sigcorp!
     try {
         const response = await axios.post(wsUrl, soapEnvelope, {
             headers: {
                 "Content-Type": "text/xml;charset=UTF-8",
-                "SOAPAction": "http://nfse.abrasf.org.br/GerarNfse"
+                "SOAPAction": "nfs#GerarNfse"
             },
             timeout: 15000 // 15 secs
         });
