@@ -72,7 +72,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         time: "",
         serviceId: "",
         professionalIds: [] as string[], // Alterado para array
-        notificarGeral: true
+        notificarGeral: true,
+        description: "" // Add this line
     });
 
     // --- TRAVA SCROLL DO FUNDO AO ABRIR MODAL ---
@@ -98,7 +99,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             time: "",
             serviceId: "",
             professionalIds: [],
-            notificarGeral: true
+            notificarGeral: true,
+            description: ""
         });
     }, [tipoAgendamento]);
 
@@ -320,7 +322,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     category: tipoAgendamento === "EVENTO" ? novo.categoria : null,
                     notificarGeral: tipoAgendamento === "EVENTO" ? novo.notificarGeral : false,
                     companyId: companyId,
-                    autoCreateClient: false
+                    autoCreateClient: false,
+                    description: novo.description || null
                 })
             });
 
@@ -337,7 +340,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 }
 
                 setIsModalOpen(false);
-                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toLocaleDateString('en-CA'), time: "", serviceId: "", professionalIds: [], notificarGeral: true });
+                setNovo({ clientId: "", nome: "", phone: "", local: "", categoria: "REUNIAO", date: new Date().toLocaleDateString('en-CA'), time: "", serviceId: "", professionalIds: [], notificarGeral: true, description: "" });
                 if (refreshAgenda) refreshAgenda();
             } else {
                 toast.error(data.error || "Erro ao salvar agendamento.");
@@ -751,6 +754,15 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                                                 placeholder="(00) 00000-0000"
                                                 value={novo.phone}
                                                 onChange={e => setNovo({ ...novo, phone: formatarTelefoneInput(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <textarea
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold transition-all text-sm resize-none custom-scrollbar"
+                                                placeholder="Descrição ou observação do agendamento (opcional)..."
+                                                rows={2}
+                                                value={novo.description}
+                                                onChange={e => setNovo({ ...novo, description: e.target.value })}
                                             />
                                         </div>
                                         <select className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-white dark:bg-gray-800 dark:text-white outline-none font-bold text-sm" value={novo.professionalIds[0] || ""} onChange={e => setNovo({ ...novo, professionalIds: [e.target.value] })}>

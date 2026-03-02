@@ -1261,33 +1261,42 @@ export default function ClientesPage() {
                                                             return valid;
                                                         })
                                                         .map((b: any) => (
-                                                            <div key={b.id} className="bg-white dark:bg-gray-900 p-5 md:p-6 rounded-3xl shadow-sm border dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:border-orange-500 transition-all">
-                                                                <div className="flex items-center gap-4 md:gap-6 min-w-0 w-full md:w-auto">
-                                                                    <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
-                                                                        <Calendar size={20} />
-                                                                    </div>
-                                                                    <div className="min-w-0">
-                                                                        <p className="font-black text-sm md:text-base dark:text-white uppercase leading-none mb-2 truncate">{b.service?.name || "Serviço não especificado"}</p>
-                                                                        <div className="flex flex-wrap items-center gap-3 md:gap-5">
-                                                                            <p className="text-[10px] md:text-xs font-bold text-gray-500 flex items-center gap-1.5 whitespace-nowrap">
-                                                                                <Clock size={12} className="text-gray-400" /> {format(new Date(b.date), "dd de MMM, yyyy 'às' HH:mm")}
-                                                                            </p>
-                                                                            <p className="text-[10px] md:text-xs font-bold text-orange-600 flex items-center gap-1.5 whitespace-nowrap bg-orange-50 dark:bg-orange-900/10 px-2 py-0.5 rounded-lg border border-orange-100 dark:border-orange-900/30">
-                                                                                <UserCircle size={12} /> {b.professional?.name || 'Profissional não informado'}
-                                                                            </p>
+                                                            <div key={b.id} className="bg-white dark:bg-gray-900 p-5 md:p-6 rounded-3xl shadow-sm border dark:border-gray-800 flex flex-col group hover:border-orange-500 transition-all gap-4">
+                                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full">
+                                                                    <div className="flex items-center gap-4 md:gap-6 min-w-0 w-full md:w-auto">
+                                                                        <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
+                                                                            <Calendar size={20} />
+                                                                        </div>
+                                                                        <div className="min-w-0">
+                                                                            <p className="font-black text-sm md:text-base dark:text-white uppercase leading-none mb-2 truncate">{b.service?.name || "Serviço não especificado"}</p>
+                                                                            <div className="flex flex-wrap items-center gap-3 md:gap-5">
+                                                                                <p className="text-[10px] md:text-xs font-bold text-gray-500 flex items-center gap-1.5 whitespace-nowrap">
+                                                                                    <Clock size={12} className="text-gray-400" /> {format(new Date(b.date), "dd de MMM, yyyy 'às' HH:mm")}
+                                                                                </p>
+                                                                                <p className="text-[10px] md:text-xs font-bold text-orange-600 flex items-center gap-1.5 whitespace-nowrap bg-orange-50 dark:bg-orange-900/10 px-2 py-0.5 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                                                                                    <UserCircle size={12} /> {b.professional?.name || 'Profissional não informado'}
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                                <div className="text-right shrink-0 self-end md:self-auto w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-gray-100 dark:border-gray-800">
-                                                                    <span className="font-black text-green-600 text-lg md:text-xl relative top-[-2px]">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                                                    {b.status === "FINALIZADO" ? (
-                                                                        <p className="text-[9px] font-black text-green-500 uppercase flex items-center justify-end gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</p>
-                                                                    ) : b.status === "CANCELADO" ? (
-                                                                        <p className="text-[9px] font-black text-red-500 uppercase flex items-center justify-end gap-1 mt-0.5"><X size={10} /> Cancelado</p>
-                                                                    ) : (
-                                                                        <p className="text-[9px] font-black text-blue-500 uppercase flex items-center justify-end gap-1 mt-0.5"><Clock size={10} /> {b.status}</p>
-                                                                    )}
-                                                                </div>
+                                                                    <div className="text-right shrink-0 self-end md:self-auto w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-gray-100 dark:border-gray-800">
+                                                                        <span className="font-black text-green-600 text-lg md:text-xl relative top-[-2px]">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                        {b.status === "FINALIZADO" ? (
+                                                                            <p className="text-[9px] font-black text-green-500 uppercase flex items-center justify-end gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</p>
+                                                                        ) : b.status === "CANCELADO" ? (
+                                                                            <p className="text-[9px] font-black text-red-500 uppercase flex items-center justify-end gap-1 mt-0.5"><X size={10} /> Cancelado</p>
+                                                                        ) : (
+                                                                            <p className="text-[9px] font-black text-blue-500 uppercase flex items-center justify-end gap-1 mt-0.5"><Clock size={10} /> {b.status}</p>
+                                                                        )}
+                                                                    </div>
+                                                                </div> {/* Close flex-row inner wrapper */}
+
+                                                                {/* EXIBIÇÃO DA DESCRIÇÃO SE EXISTIR */}
+                                                                {b.description && (
+                                                                    <div className="w-full mt-3 pt-3 border-t border-dashed border-gray-100 dark:border-gray-800 flex-shrink-0">
+                                                                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium italic"><span className="font-bold text-gray-400 not-italic uppercase text-[10px] mr-1">Observação:</span> {b.description}</p>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ))}
                                                     {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (

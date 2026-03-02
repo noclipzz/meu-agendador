@@ -226,6 +226,7 @@ model Booking {
   userId         String?
   type           String        @default("CLIENTE")
   location       String?
+  description    String?
   status         String        @default("PENDENTE")
   reminderSent   Boolean       @default(false)
   clientId       String?

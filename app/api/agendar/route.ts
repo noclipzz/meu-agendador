@@ -52,7 +52,8 @@ export async function POST(req: Request) {
             type,
             location,
             clientId,
-            category
+            category,
+            description
         } = body;
 
         // 1. Validações Básicas
@@ -210,6 +211,7 @@ export async function POST(req: Request) {
                     customerPhone: phone,
                     type: type || "CLIENTE",
                     location: location || null,
+                    description: description || null,
                     status: "PENDENTE"
                 }
             });
