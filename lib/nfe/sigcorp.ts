@@ -63,6 +63,8 @@ function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, passwor
         // @ts-ignore
         sig.signingKey = pemKey;
         sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+        // @ts-ignore
+        sig.hashAlgorithm = "http://www.w3.org/2000/09/xmldsig#sha1";
 
         // Inclui o Certificado Publico no XML Envelopado (<KeyInfo>)
         // @ts-ignore
