@@ -596,7 +596,7 @@ export default function FichasTecnicasPage() {
                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome da Ficha Técnica</label>
                         <input
                             className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white"
-                            placeholder="Ex: Ficha de Avaliação ou Anamnese"
+                            placeholder="Ex: Ficha de Avaliação do Cliente"
                             value={nome}
                             onChange={e => setNome(e.target.value)}
                         />
@@ -605,7 +605,7 @@ export default function FichasTecnicasPage() {
                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Descrição (opcional)</label>
                         <input
                             className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white"
-                            placeholder="Ex: Formulário de primeira consulta"
+                            placeholder="Ex: Utilizada para registrar o primeiro contato"
                             value={descricao}
                             onChange={e => setDescricao(e.target.value)}
                         />
@@ -1561,7 +1561,7 @@ export default function FichasTecnicasPage() {
                                     <textarea
                                         className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
                                         rows={3}
-                                        placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
+                                        placeholder="Insira observações gerais, termos de garantia, dados adicionais..."
                                         value={printConfigModal.customFooter}
                                         onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
                                     />

@@ -1229,7 +1229,7 @@ export default function ClientesPage() {
                                                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-1">Buscar Serviço</label>
                                                 <div className="relative">
                                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                                                    <input type="text" placeholder="Ex: Corte, Manutenção..." value={filtroHistorico.servico} onChange={e => setFiltroHistorico(p => ({ ...p, servico: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
+                                                    <input type="text" placeholder="Nome do serviço" value={filtroHistorico.servico} onChange={e => setFiltroHistorico(p => ({ ...p, servico: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
                                                 </div>
                                             </div>
                                             <div className="flex-[1.5]">
@@ -2339,7 +2339,7 @@ export default function ClientesPage() {
                                         <textarea
                                             className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
                                             rows={3}
-                                            placeholder="Ex: Observações gerais, termos de garantia, dados adicionais..."
+                                            placeholder="Insira observações gerais, termos de garantia, dados adicionais..."
                                             value={printConfigModal.customFooter}
                                             onChange={(e) => setPrintConfigModal({ ...printConfigModal, customFooter: e.target.value })}
                                         />
@@ -2437,7 +2437,7 @@ export default function ClientesPage() {
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-2 px-1">Título do Termo</label>
                                     <input
                                         type="text"
-                                        placeholder="Ex: Termo de Consentimento para Toxina Botulínica"
+                                        placeholder="Ex: Termo de Consentimento Livre e Esclarecido"
                                         className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 rounded-2xl p-4 text-sm font-bold dark:text-white focus:border-blue-500 outline-none transition"
                                         value={termoFormData.title}
                                         onChange={(e) => setTermoFormData({ ...termoFormData, title: e.target.value })}

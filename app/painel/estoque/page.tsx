@@ -243,7 +243,7 @@ export default function EstoquePage() {
                                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                                     <div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Nome do Produto</label>
-                                        <input autoFocus className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white focus:border-blue-500" placeholder="Ex: Shampoo Especial" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} />
+                                        <input autoFocus className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white focus:border-blue-500" placeholder="Nome do produto" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">

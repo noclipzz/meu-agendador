@@ -207,7 +207,7 @@ export default function ServicosPage() {
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Nome do Serviço</label>
-                                    <input className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="Ex: Corte de Cabelo" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                    <input className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" placeholder="Nome do serviço" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="space-y-1">
