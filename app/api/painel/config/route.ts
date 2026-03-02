@@ -113,7 +113,7 @@ export async function POST(req: Request) {
       "cnpj", "phone", "cep", "address", "number", "complement", "neighborhood",
       "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
       "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
-      "cnae", "fiscalPadraoDesc" // Novos campos NFS-e
+      "cnae", "fiscalPadraoDesc", "itemListaServico" // Novos campos NFS-e
     ];
 
     for (const field of stringFields) {

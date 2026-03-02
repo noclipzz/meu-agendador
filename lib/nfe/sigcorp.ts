@@ -103,7 +103,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     const camposFiscaisFaltando = [];
     if (!company.cnpj) camposFiscaisFaltando.push("CNPJ da Empresa");
     if (!company.inscricaoMunicipal) camposFiscaisFaltando.push("Inscrição Municipal");
-    if (!company.codigoServico) camposFiscaisFaltando.push("Código do Serviço Padrão");
+    if (!company.codigoServico) camposFiscaisFaltando.push("Código Tributação Municipal (ISS)");
+    if (!company.itemListaServico) camposFiscaisFaltando.push("ID do Serviço (Item LC 116)");
 
     if (camposFiscaisFaltando.length > 0) {
         throw new Error(`Preencha os seguintes campos nas Configurações da Empresa/Fiscais: ${camposFiscaisFaltando.join(", ")}`);
@@ -158,7 +159,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                     <ValorServicos>${Number(invoice.value).toFixed(2)}</ValorServicos>
                 </Valores>
                 <IssRetido>2</IssRetido>
-                <ItemListaServico>${company.codigoServico.replace(/[^0-9]/g, '')}</ItemListaServico>
+                <ItemListaServico>${company.itemListaServico.replace(/[^0-9]/g, '')}</ItemListaServico>
                 <CodigoTributacaoMunicipio>${company.codigoServico}</CodigoTributacaoMunicipio>
                 <Discriminacao>${textoDiscriminacao.substring(0, 200)}</Discriminacao>
                 <CodigoMunicipio>3131307</CodigoMunicipio> <!-- IBGE IPATINGA-MG (Ajustar dinamicamente se mult-cidade) -->

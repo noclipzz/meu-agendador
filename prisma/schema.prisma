@@ -41,6 +41,7 @@ model Company {
   certificadoA1Url             String?
   certificadoSenha             String?
   codigoServico                String?
+  itemListaServico             String?
   cnae                         String?
   issRetidoTomador             Boolean?           @default(false)
   fiscalPadraoDesc             String?
