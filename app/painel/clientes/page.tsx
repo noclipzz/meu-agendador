@@ -47,7 +47,8 @@ export default function ClientesPage() {
     const [modalImportarAberto, setModalImportarAberto] = useState(false);
     const [importErros, setImportErros] = useState<string[]>([]);
     const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
-    const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "FINANCEIRO" | "ANEXOS" | "FICHAS">("DADOS");
+    const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "HISTORICO" | "FINANCEIRO" | "ANEXOS" | "FICHAS">("DADOS");
+    const [filtroHistorico, setFiltroHistorico] = useState({ dataInicial: "", dataFinal: "", servico: "", profissional: "" });
     const [isEditing, setIsEditing] = useState(false);
     const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' | 'TERMO' } | null>(null);
 
@@ -702,8 +703,8 @@ export default function ClientesPage() {
         const data = entry.data as Record<string, any> || {};
 
         // Separar headers e campos normais
-        const sections: { header: string; items: { label: string; value: string }[] }[] = [];
-        let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
+        const sections: { header: string; items: { label: string; value: string; width: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string; width: string }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
             if (field.conditional) {
@@ -770,7 +771,7 @@ export default function ClientesPage() {
                 }
             }
 
-            currentSection.items.push({ label: field.label, value: String(valor) });
+            currentSection.items.push({ label: field.label, value: String(valor), width: field.width || "100%" });
         });
         if (currentSection.items.length > 0 || currentSection.header) {
             sections.push(currentSection);
@@ -785,7 +786,7 @@ export default function ClientesPage() {
             } catch (err) { console.error("Erro QR Code:", err); }
         }
 
-        // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
+        // Gerar HTML dos campos com suporte a larguras (%)
         let camposHtml = '';
         sections.forEach(section => {
             if (section.header && section.header !== entry.template?.name) {
@@ -796,7 +797,19 @@ export default function ClientesPage() {
                 const containsTable = item.value.includes('<table');
                 const containsImg = item.value.includes('<img');
                 const isLong = item.value.length > 80 || containsTable || containsImg;
-                camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
+
+                let widthClass = 'w-100';
+                if (!isLong && !twoColumns) {
+                    if (item.width === '50%') widthClass = 'w-50';
+                    else if (item.width === '33%') widthClass = 'w-33';
+                    else if (item.width === '25%') widthClass = 'w-25';
+                    else if (item.width === '66%') widthClass = 'w-66';
+                    else if (item.width === '75%') widthClass = 'w-75';
+                }
+                if (twoColumns && !isLong) widthClass = 'w-50';
+                if (isLong) widthClass = 'w-100'; // Override if too long
+
+                camposHtml += `<div class="field-item ${widthClass}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
@@ -846,12 +859,18 @@ export default function ClientesPage() {
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
             .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
             
-            .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; }
-            .field-item { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; }
-            .field-item:last-child { border-bottom: none; }
+            .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
             .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
             .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
-            .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; }
+            
+            /* Class helpers for flexible width */
+            .w-100 { width: 100%; }
+            .w-50 { width: 50%; }
+            .w-33 { width: 33.3333%; }
+            .w-25 { width: 25%; }
+            .w-66 { width: 66.6666%; }
+            .w-75 { width: 75%; }
             
             .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
             
@@ -1042,10 +1061,11 @@ export default function ClientesPage() {
                             </div>
 
                             {/* SELETOR DE ABAS */}
-                            <div className="flex px-8 pt-6 gap-8 border-b dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto shrink-0 relative z-10">
-                                <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400"}`}>Geral</button>
-                                <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400"}`}>Financeiro</button>
-                                <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400"}`}>Documentos</button>
+                            <div className="flex px-8 pt-6 gap-8 border-b dark:border-gray-800 bg-white dark:bg-gray-950 overflow-x-auto shrink-0 relative z-10 w-full custom-scrollbar">
+                                <button onClick={() => setAbaAtiva("DADOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "DADOS" ? "border-b-4 border-blue-600 text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>Geral</button>
+                                <button onClick={() => setAbaAtiva("HISTORICO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "HISTORICO" ? "border-b-4 border-orange-600 text-orange-600" : "text-gray-400 hover:text-gray-600"}`}>Histórico</button>
+                                <button onClick={() => setAbaAtiva("FINANCEIRO")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "FINANCEIRO" ? "border-b-4 border-green-600 text-green-600" : "text-gray-400 hover:text-gray-600"}`}>Financeiro</button>
+                                <button onClick={() => setAbaAtiva("ANEXOS")} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${abaAtiva === "ANEXOS" ? "border-b-4 border-purple-600 text-purple-600" : "text-gray-400 hover:text-gray-600"}`}>Documentos</button>
                                 {empresaInfo.plan && empresaInfo.plan.toUpperCase() !== "INDIVIDUAL" && empresaInfo.plan.toUpperCase() !== "PREMIUM" && (
                                     <button onClick={() => { setAbaAtiva("FICHAS"); carregarFichas(); }} className={`pb-4 px-2 text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-1.5 ${abaAtiva === "FICHAS" ? "border-b-4 border-teal-600 text-teal-600" : "text-gray-400"}`}><ClipboardList size={14} /> Fichas Técnicas </button>
                                 )}
@@ -1190,6 +1210,94 @@ export default function ClientesPage() {
                                                     </>
                                                 )}
                                             </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {abaAtiva === "HISTORICO" && (
+                                    <div className="space-y-6 animate-in fade-in duration-500">
+                                        <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-3xl shadow-sm">
+                                            <div className="flex-1">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-1">Data Inicial</label>
+                                                <input type="date" value={filtroHistorico.dataInicial} onChange={e => setFiltroHistorico(p => ({ ...p, dataInicial: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl px-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-1">Data Final</label>
+                                                <input type="date" value={filtroHistorico.dataFinal} onChange={e => setFiltroHistorico(p => ({ ...p, dataFinal: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl px-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
+                                            </div>
+                                            <div className="flex-[1.5]">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-1">Buscar Serviço</label>
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                    <input type="text" placeholder="Ex: Corte, Manutenção..." value={filtroHistorico.servico} onChange={e => setFiltroHistorico(p => ({ ...p, servico: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-[1.5]">
+                                                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-2 block mb-1">Técnico / Profissional</label>
+                                                <div className="relative">
+                                                    <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                                    <input type="text" placeholder="Nome do profissional" value={filtroHistorico.profissional} onChange={e => setFiltroHistorico(p => ({ ...p, profissional: e.target.value }))} className="w-full bg-gray-50 dark:bg-gray-950 border dark:border-gray-800 text-xs font-bold rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-orange-500 transition-colors" />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-end shrink-0">
+                                                <button onClick={() => setFiltroHistorico({ dataInicial: "", dataFinal: "", servico: "", profissional: "" })} className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs font-black uppercase rounded-xl transition-colors">Limpar</button>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gray-50 dark:bg-white/5 rounded-[2.5rem] p-6 border dark:border-gray-800">
+                                            <h4 className="text-sm font-black mb-6 uppercase text-orange-600 flex items-center gap-2"><History size={18} /> Histórico Completo de Visitas</h4>
+
+                                            {loadingDetalhes && !clienteSelecionado.bookings ? (
+                                                <div className="text-center py-20"><Loader2 className="animate-spin mx-auto text-orange-600 mb-2" size={24} /> <p className="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Buscando histórico...</p></div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {(clienteSelecionado.bookings || [])
+                                                        .filter((b: any) => {
+                                                            let valid = true;
+                                                            if (filtroHistorico.dataInicial && new Date(b.date) < new Date(filtroHistorico.dataInicial + "T00:00:00")) valid = false;
+                                                            if (filtroHistorico.dataFinal && new Date(b.date) > new Date(filtroHistorico.dataFinal + "T23:59:59")) valid = false;
+                                                            if (filtroHistorico.servico && !(b.service?.name || "").toLowerCase().includes(filtroHistorico.servico.toLowerCase())) valid = false;
+                                                            if (filtroHistorico.profissional && !(b.professional?.name || "").toLowerCase().includes(filtroHistorico.profissional.toLowerCase())) valid = false;
+                                                            return valid;
+                                                        })
+                                                        .map((b: any) => (
+                                                            <div key={b.id} className="bg-white dark:bg-gray-900 p-5 md:p-6 rounded-3xl shadow-sm border dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 group hover:border-orange-500 transition-all">
+                                                                <div className="flex items-center gap-4 md:gap-6 min-w-0 w-full md:w-auto">
+                                                                    <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
+                                                                        <Calendar size={20} />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-black text-sm md:text-base dark:text-white uppercase leading-none mb-2 truncate">{b.service?.name || "Serviço não especificado"}</p>
+                                                                        <div className="flex flex-wrap items-center gap-3 md:gap-5">
+                                                                            <p className="text-[10px] md:text-xs font-bold text-gray-500 flex items-center gap-1.5 whitespace-nowrap">
+                                                                                <Clock size={12} className="text-gray-400" /> {format(new Date(b.date), "dd de MMM, yyyy 'às' HH:mm")}
+                                                                            </p>
+                                                                            <p className="text-[10px] md:text-xs font-bold text-orange-600 flex items-center gap-1.5 whitespace-nowrap bg-orange-50 dark:bg-orange-900/10 px-2 py-0.5 rounded-lg border border-orange-100 dark:border-orange-900/30">
+                                                                                <UserCircle size={12} /> {b.professional?.name || 'Profissional não informado'}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right shrink-0 self-end md:self-auto w-full md:w-auto mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-0 border-gray-100 dark:border-gray-800">
+                                                                    <span className="font-black text-green-600 text-lg md:text-xl relative top-[-2px]">R$ {Number(b.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                    {b.status === "FINALIZADO" ? (
+                                                                        <p className="text-[9px] font-black text-green-500 uppercase flex items-center justify-end gap-1 mt-0.5"><CheckCircle size={10} /> Concluído</p>
+                                                                    ) : b.status === "CANCELADO" ? (
+                                                                        <p className="text-[9px] font-black text-red-500 uppercase flex items-center justify-end gap-1 mt-0.5"><X size={10} /> Cancelado</p>
+                                                                    ) : (
+                                                                        <p className="text-[9px] font-black text-blue-500 uppercase flex items-center justify-end gap-1 mt-0.5"><Clock size={10} /> {b.status}</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    {(!clienteSelecionado.bookings || clienteSelecionado.bookings.length === 0) && (
+                                                        <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl">
+                                                            <History size={32} className="text-gray-300 mb-3" />
+                                                            <p className="text-center text-xs text-gray-500 font-bold uppercase tracking-widest">Nenhuma visita registrada.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

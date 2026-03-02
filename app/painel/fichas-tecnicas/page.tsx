@@ -712,11 +712,11 @@ export default function FichasTecnicasPage() {
                                                 {/* Lógica Condicional Básica */}
                                                 {index > 0 && (
                                                     <div>
-                                                        <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Só exibir se a anterior for:</label>
-                                                        <div className="flex bg-white dark:bg-gray-950 rounded-lg p-0.5 border dark:border-gray-700 items-center justify-between">
+                                                        <label className="text-[9px] font-black text-gray-400 uppercase block mb-1">Depende de outro campo?</label>
+                                                        <div className="flex bg-white dark:bg-gray-950 rounded-lg p-0.5 border dark:border-gray-700 items-center justify-between gap-1">
                                                             <select
-                                                                className="flex-1 bg-transparent px-2 text-xs font-bold outline-none text-gray-500 dark:text-gray-400 w-full cursor-pointer"
-                                                                value={campo.conditional?.dependsOnValue !== undefined ? String(campo.conditional.dependsOnValue) : ""}
+                                                                className="flex-1 bg-transparent px-2 py-1 text-[10px] sm:text-xs font-bold outline-none text-gray-500 dark:text-gray-400 max-w-[50%] cursor-pointer truncate"
+                                                                value={campo.conditional?.dependsOnId || ""}
                                                                 onChange={e => {
                                                                     const val = e.target.value;
                                                                     if (!val) {
@@ -724,24 +724,53 @@ export default function FichasTecnicasPage() {
                                                                     } else {
                                                                         atualizarCampo(campo.id, {
                                                                             conditional: {
-                                                                                dependsOnId: campos[index - 1].id,
-                                                                                dependsOnValue: val === 'true' ? true : val === 'false' ? false : val
+                                                                                dependsOnId: val,
+                                                                                dependsOnValue: ""
                                                                             }
                                                                         });
                                                                     }
                                                                 }}
                                                             >
-                                                                <option value="">(Sempre exibir)</option>
-                                                                {campos[index - 1]?.type === 'checkbox' ? (
-                                                                    <>
-                                                                        <option value="true">Marcada (Sim)</option>
-                                                                        <option value="false">Desmarcada (Não)</option>
-                                                                    </>
-                                                                ) : campos[index - 1]?.type === 'select' || campos[index - 1]?.type === 'checkboxGroup' ? (
-                                                                    campos[index - 1]?.options?.map(opt => opt.trim() && <option key={opt} value={opt}>{opt}</option>)
-                                                                ) : null}
+                                                                <option value="">Nenhum (Sempre exibir)</option>
+                                                                {campos.slice(0, index).filter(c => ['checkbox', 'select', 'checkboxGroup'].includes(c.type)).map(c => (
+                                                                    <option key={c.id} value={c.id}>{c.label || 'Sem Nome'}</option>
+                                                                ))}
                                                             </select>
-                                                            {campo.conditional && <button onClick={() => atualizarCampo(campo.id, { conditional: null })} className="p-1 px-2 text-red-500 hover:bg-red-50 rounded transition"><X size={12} /></button>}
+
+                                                            {campo.conditional?.dependsOnId && (
+                                                                <select
+                                                                    className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-md px-2 py-1 text-[10px] sm:text-xs font-bold outline-none text-gray-600 dark:text-gray-300 w-full cursor-pointer border dark:border-gray-800"
+                                                                    value={String(campo.conditional.dependsOnValue)}
+                                                                    onChange={e => {
+                                                                        const val = e.target.value;
+                                                                        atualizarCampo(campo.id, {
+                                                                            conditional: {
+                                                                                ...campo.conditional!,
+                                                                                dependsOnValue: val === 'true' ? true : val === 'false' ? false : val
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <option value="">(Selecione uma opção)</option>
+                                                                    {(() => {
+                                                                        const depCampo = campos.find(c => c.id === campo.conditional?.dependsOnId);
+                                                                        if (depCampo?.type === 'checkbox') {
+                                                                            return (
+                                                                                <>
+                                                                                    <option value="true">Marcada (Sim)</option>
+                                                                                    <option value="false">Desmarcada (Não)</option>
+                                                                                </>
+                                                                            );
+                                                                        }
+                                                                        if (depCampo?.type === 'select' || depCampo?.type === 'checkboxGroup') {
+                                                                            return depCampo.options?.map(opt => opt.trim() && <option key={opt} value={opt}>{opt}</option>);
+                                                                        }
+                                                                        return null;
+                                                                    })()}
+                                                                </select>
+                                                            )}
+
+                                                            {campo.conditional && <button onClick={() => atualizarCampo(campo.id, { conditional: null })} className="p-1.5 px-2 text-red-500 hover:bg-red-50 rounded-md transition ml-1 shrink-0"><X size={12} /></button>}
                                                         </div>
                                                     </div>
                                                 )}
