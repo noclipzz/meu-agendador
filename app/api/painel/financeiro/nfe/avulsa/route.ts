@@ -142,7 +142,8 @@ export async function POST(req: Request) {
             where: { id: invoice.id },
             data: {
                 nfeStatus: (nfeProtocol || isSuccessMessage) ? "PROCESSANDO" : "ERRO_LOTE",
-                nfeProtocol: nfeProtocol || null
+                nfeProtocol: nfeProtocol || null,
+                nfeNumber: nsfeResult.rpsNumero || null
             }
         });
 

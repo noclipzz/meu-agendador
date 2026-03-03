@@ -204,27 +204,30 @@ export default function NotasFiscaisPage() {
             toast.success("Nota enviada para processamento com sucesso!", { id: "nfe_manual" });
             setIsNovaNotaOpen(false);
 
-            // Abre impressão automaticamente com os dados da nota recém-emitida
-            const notaParaImprimir = {
-                id: data.invoiceId || "",
-                description: form.descricaoServico,
-                value: desformatarMoeda(String(form.valorServicos)),
-                nfeStatus: "PROCESSANDO",
-                nfeProtocol: data.protocol || "",
-                nfeNumber: null,
-                createdAt: new Date().toISOString(),
-                client: {
-                    name: form.nomeRazao,
-                    cpf: form.cpfCnpj,
-                    address: form.logradouro,
-                    number: form.numero,
-                    neighborhood: form.bairro,
-                    city: form.cidade,
-                    state: form.uf,
-                    cep: form.cep
-                }
-            };
-            imprimirNfse(notaParaImprimir);
+            // Aguarda alguns segundos e tenta abrir a NFS-e oficial da prefeitura
+            const invoiceId = data.invoiceId;
+            if (invoiceId) {
+                toast.loading("Aguardando processamento da NFS-e pela prefeitura...", { id: "consulta_nfse_auto" });
+                setTimeout(async () => {
+                    try {
+                        const res = await fetch("/api/painel/financeiro/nfe/consultar", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ invoiceId })
+                        });
+                        const result = await res.json();
+                        if (result.success && result.linkImpressao) {
+                            toast.success(`NFS-e nº ${result.numeroNfse} emitida!`, { id: "consulta_nfse_auto" });
+                            window.open(result.linkImpressao, '_blank');
+                        } else {
+                            toast.info("A NFS-e está sendo processada. Clique no ícone de impressão quando disponível.", { id: "consulta_nfse_auto" });
+                        }
+                        carregarTudo();
+                    } catch {
+                        toast.dismiss("consulta_nfse_auto");
+                    }
+                }, 5000);
+            }
 
             carregarTudo();
         } catch (error: any) {
@@ -238,108 +241,35 @@ export default function NotasFiscaisPage() {
         return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
-    function imprimirNfse(inv: any) {
-        const tomador = inv.client || {};
-        const dataFormatada = inv.createdAt ? format(new Date(inv.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-";
-        const html = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>NFS-e - ${inv.description || "Nota Fiscal"}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; color: #1a1a2e; padding: 40px; background: #fff; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 24px; }
-  .header-left h1 { font-size: 22px; font-weight: 900; color: #2563eb; }
-  .header-left p { font-size: 11px; color: #666; margin-top: 4px; }
-  .header-right { text-align: right; }
-  .header-right .status { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
-  .status-processando { background: #dbeafe; color: #2563eb; }
-  .status-emitida { background: #d1fae5; color: #059669; }
-  .status-erro { background: #fee2e2; color: #dc2626; }
-  .section { margin-bottom: 20px; }
-  .section-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  .field { }
-  .field-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
-  .field-value { font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 2px; }
-  .total-box { background: #1e293b; color: #fff; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-  .total-box .label { font-size: 12px; font-weight: 700; color: #94a3b8; }
-  .total-box .value { font-size: 28px; font-weight: 900; color: #34d399; }
-  .discriminacao { background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 12px; line-height: 1.6; color: #334155; white-space: pre-wrap; }
-  .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
-  .badge-homolog { background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 900; text-align: center; margin-bottom: 20px; }
-  @media print { body { padding: 20px; } }
-</style>
-</head>
-<body>
-<div class="badge-homolog">⚠ AMBIENTE DE HOMOLOGAÇÃO - NOTA SEM VALOR FISCAL</div>
-<div class="header">
-  <div class="header-left">
-    <h1>📄 NFS-e - Nota Fiscal de Serviço Eletrônica</h1>
-    <p>${configPadrao?.name || "Empresa"} | CNPJ: ${configPadrao?.cnpj || "-"}</p>
-  </div>
-  <div class="header-right">
-    <span class="status ${inv.nfeStatus === 'EMITIDA' ? 'status-emitida' : inv.nfeStatus === 'PROCESSANDO' ? 'status-processando' : 'status-erro'}">${inv.nfeStatus || "PENDENTE"}</span>
-    <p style="font-size:11px;color:#666;margin-top:6px;">Emissão: ${dataFormatada}</p>
-    ${inv.nfeProtocol ? '<p style="font-size:10px;color:#999;margin-top:2px;">Protocolo: ' + inv.nfeProtocol + '</p>' : ''}
-  </div>
-</div>
+    async function imprimirNfse(inv: any) {
+        // Se já tem o link direto da prefeitura salvo, abre direto
+        if (inv.nfeUrl) {
+            window.open(inv.nfeUrl, '_blank');
+            return;
+        }
 
-<div class="section">
-  <div class="section-title">Prestador de Serviços</div>
-  <div class="grid">
-    <div class="field"><span class="field-label">Razão Social</span><div class="field-value">${configPadrao?.name || "-"}</div></div>
-    <div class="field"><span class="field-label">CNPJ</span><div class="field-value">${configPadrao?.cnpj || "-"}</div></div>
-    <div class="field"><span class="field-label">Inscrição Municipal</span><div class="field-value">${configPadrao?.inscricaoMunicipal || "-"}</div></div>
-  </div>
-</div>
+        // Consulta a API para obter o link de impressão da prefeitura
+        toast.loading("Consultando NFS-e na prefeitura...", { id: "consulta_nfse" });
 
-<div class="section">
-  <div class="section-title">Tomador de Serviços</div>
-  <div class="grid">
-    <div class="field"><span class="field-label">Nome / Razão Social</span><div class="field-value">${tomador.name || "Consumidor Final"}</div></div>
-    <div class="field"><span class="field-label">CPF/CNPJ</span><div class="field-value">${tomador.cpf || tomador.cnpj || "-"}</div></div>
-    <div class="field"><span class="field-label">Endereço</span><div class="field-value">${tomador.address || "-"}, ${tomador.number || ""} - ${tomador.neighborhood || ""}</div></div>
-    <div class="field"><span class="field-label">Cidade/UF</span><div class="field-value">${tomador.city || "-"} / ${tomador.state || "-"} - CEP: ${tomador.cep || "-"}</div></div>
-  </div>
-</div>
+        try {
+            const res = await fetch("/api/painel/financeiro/nfe/consultar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ invoiceId: inv.id })
+            });
 
-<div class="section">
-  <div class="section-title">Discriminação dos Serviços</div>
-  <div class="discriminacao">${inv.description || "Serviço prestado"}</div>
-</div>
+            const result = await res.json();
 
-<div class="section">
-  <div class="section-title">Valores</div>
-  <div class="grid-3">
-    <div class="field"><span class="field-label">Valor dos Serviços</span><div class="field-value">${formatCurrency(inv.value)}</div></div>
-    <div class="field"><span class="field-label">Referência</span><div class="field-value">FAT: ${inv.id?.slice(-8) || "-"}</div></div>
-    <div class="field"><span class="field-label">Nº RPS</span><div class="field-value">${inv.nfeNumber || "-"}</div></div>
-  </div>
-</div>
-
-<div class="total-box">
-  <div class="label">VALOR TOTAL DA NOTA</div>
-  <div class="value">${formatCurrency(inv.value)}</div>
-</div>
-
-<div class="footer">
-  Documento gerado pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} • NFS-e Padrão ABRASF 2.04
-</div>
-</body>
-</html>`;
-
-        const printWindow = window.open('', '_blank', 'width=900,height=700');
-        if (printWindow) {
-            printWindow.document.write(html);
-            printWindow.document.close();
-            printWindow.onload = () => {
-                printWindow.print();
-            };
+            if (result.success && result.linkImpressao) {
+                toast.success(`NFS-e nº ${result.numeroNfse} encontrada!`, { id: "consulta_nfse" });
+                window.open(result.linkImpressao, '_blank');
+                // Recarrega os dados para atualizar o status na tabela
+                carregarTudo();
+            } else {
+                toast.error(result.message || "NFS-e ainda não foi processada pela prefeitura. Tente novamente em alguns segundos.", { id: "consulta_nfse" });
+            }
+        } catch (error: any) {
+            toast.error("Erro ao consultar NFS-e.", { id: "consulta_nfse" });
         }
     }
 

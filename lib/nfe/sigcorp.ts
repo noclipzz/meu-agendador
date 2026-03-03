@@ -219,7 +219,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
         return {
             success: true,
             soapResponse: response.data,
-            requestXml: soapEnvelope
+            requestXml: soapEnvelope,
+            rpsNumero: rpsIdNumerico
         };
 
     } catch (error: any) {
@@ -229,6 +230,91 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
             success: false,
             error: errorData,
             requestXml: soapEnvelope
+        };
+    }
+}
+
+/**
+ * Consulta uma NFS-e pelo RPS no SigCorp (Abrasf 2.04)
+ * Retorna o número da nota, código de verificação e link de impressão da prefeitura
+ */
+export async function consultarNfsePorRps({ rpsNumero, company, environment = 'HOMOLOGATION' }: { rpsNumero: string, company: any, environment?: 'HOMOLOGATION' | 'PRODUCTION' }) {
+    const isHomologation = environment === 'HOMOLOGATION';
+    const wsUrl = isHomologation
+        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
+        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    const soapNamespace = isHomologation
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    const portalBase = isHomologation
+        ? "https://testeipatinga.meumunicipio.online"
+        : "https://ipatinga.meumunicipio.online";
+
+    const cnpj = (company.cnpj || "").replace(/\D/g, "");
+    const im = (company.inscricaoMunicipal || "").replace(/\D/g, "");
+
+    const consultaXml = `<ConsultarNfseRpsEnvio xmlns="http://www.abrasf.org.br/nfse.xsd"><IdentificacaoRps><Numero>${rpsNumero}</Numero><Serie>1</Serie><Tipo>1</Tipo></IdentificacaoRps><Prestador><CpfCnpj><Cnpj>${cnpj}</Cnpj></CpfCnpj><InscricaoMunicipal>${im}</InscricaoMunicipal></Prestador></ConsultarNfseRpsEnvio>`;
+
+    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:proc="${soapNamespace}">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <proc:ConsultarNfseRpsRequest>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseDadosMsg><![CDATA[${consultaXml}]]></nfseDadosMsg>
+        </proc:ConsultarNfseRpsRequest>
+    </soapenv:Body>
+    </soapenv:Envelope>`;
+
+    try {
+        const response = await axios.post(wsUrl, soapEnvelope, {
+            headers: {
+                "Content-Type": "text/xml;charset=UTF-8",
+                "SOAPAction": "nfs#ConsultarNfseRps"
+            },
+            timeout: 15000
+        });
+
+        const xml = response.data;
+
+        // Extrai dados da NFS-e
+        const matchNumero = /Numero>(.*?)<\/Numero/i.exec(xml);
+        const matchCodVerif = /CodigoVerificacao>(.*?)<\/CodigoVerificacao/i.exec(xml);
+        const matchDataEmissao = /DataEmissao>(.*?)<\/DataEmissao/i.exec(xml);
+
+        if (matchNumero && matchCodVerif) {
+            const numeroNfse = matchNumero[1];
+            const codigoVerificacao = matchCodVerif[1];
+
+            // Link de impressão da prefeitura
+            const linkImpressao = `${portalBase}/contribuinte/nfse/impressao?inscricaoMunicipal=${im}&numero=${numeroNfse}&codigoVerificacao=${codigoVerificacao}`;
+
+            return {
+                success: true,
+                numeroNfse,
+                codigoVerificacao,
+                dataEmissao: matchDataEmissao?.[1] || null,
+                linkImpressao,
+                soapResponse: xml
+            };
+        }
+
+        // Se não encontrou os dados, pode ser que ainda esteja processando
+        const matchMsg = /Mensagem>(.*?)<\/Mensagem/i.exec(xml);
+        return {
+            success: false,
+            message: matchMsg?.[1] || "NFS-e ainda não processada pela prefeitura.",
+            soapResponse: xml
+        };
+
+    } catch (error: any) {
+        const errorData = error.response ? error.response.data : error.message;
+        return {
+            success: false,
+            message: "Erro ao consultar NFS-e na prefeitura.",
+            error: errorData
         };
     }
 }
