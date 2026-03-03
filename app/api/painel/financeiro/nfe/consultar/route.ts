@@ -37,8 +37,14 @@ export async function POST(req: Request) {
         }
 
         // Precisa do número do RPS para consultar
-        // O número do RPS é gerado no momento da emissão, vamos usar o nfeNumber ou tentar pelo timestamp
-        const rpsNumero = invoice.nfeNumber || String(new Date(invoice.createdAt).getTime()).slice(-8);
+        if (!invoice.nfeNumber) {
+            return NextResponse.json({
+                success: false,
+                message: "Esta nota não possui número de RPS registrado. Ela foi emitida antes da atualização do sistema."
+            }, { status: 202 });
+        }
+
+        const rpsNumero = invoice.nfeNumber;
 
         const result = await consultarNfsePorRps({
             rpsNumero,

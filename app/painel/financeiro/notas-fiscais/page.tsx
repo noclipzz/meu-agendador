@@ -263,13 +263,12 @@ export default function NotasFiscaisPage() {
             if (result.success && result.linkImpressao) {
                 toast.success(`NFS-e nº ${result.numeroNfse} encontrada!`, { id: "consulta_nfse" });
                 window.open(result.linkImpressao, '_blank');
-                // Recarrega os dados para atualizar o status na tabela
                 carregarTudo();
             } else {
-                toast.error(result.message || "NFS-e ainda não foi processada pela prefeitura. Tente novamente em alguns segundos.", { id: "consulta_nfse" });
+                toast.warning(result.message || result.error || "NFS-e ainda não processada. Tente novamente em alguns segundos.", { id: "consulta_nfse" });
             }
         } catch (error: any) {
-            toast.error("Erro ao consultar NFS-e.", { id: "consulta_nfse" });
+            toast.error("Erro de conexão ao consultar NFS-e.", { id: "consulta_nfse" });
         }
     }
 
