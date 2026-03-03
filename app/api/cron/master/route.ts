@@ -32,11 +32,9 @@ export async function GET(req: Request) {
     const logs: string[] = [];
     const now = new Date();
     const timezone = "America/Sao_Paulo";
+    const isTestIg = searchParams.get('test_ig') === 'true';
 
     try {
-        // --------------------------------------------------------------------------------
-        const isTestIg = searchParams.get('test_ig') === 'true';
-
         // --------------------------------------------------------------------------------
         // 1. TAREFA: NOTIFICAÇÕES DE AGENDA MATINAL (PROFISSIONAIS)
         // --------------------------------------------------------------------------------
@@ -113,8 +111,6 @@ export async function GET(req: Request) {
                 }
             }
             logs.push(`Push: ${pushSent} notificações enviadas.`);
-
-            // --------------------------------------------------------------------------------
         }
 
         // --------------------------------------------------------------------------------
@@ -173,8 +169,6 @@ export async function GET(req: Request) {
                 }
             }
             logs.push(`Avisos: ${warningTrials.length} e-mails de aviso enviados.`);
-
-            // --------------------------------------------------------------------------------
         }
 
         // --------------------------------------------------------------------------------
@@ -198,10 +192,14 @@ export async function GET(req: Request) {
                 }
             }
             logs.push(`Limpeza: ${cleanedSlugs} slugs liberados.`);
+        }
 
-            // --------------------------------------------------------------------------------
-            // 4. TAREFA: POSTAGEM AUTOMÁTICA NO INSTAGRAM
-            // --------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------
+        // 4. TAREFA: POSTAGEM AUTOMÁTICA NO INSTAGRAM
+        // --------------------------------------------------------------------------------
+        // Roda sempre se isTestIg for true, ou se não houver skip_ig
+        const skipIg = searchParams.get('skip_ig') === 'true';
+        if (!skipIg || isTestIg) {
             try {
                 const POSTS_DATABASE = [
                     {
@@ -351,7 +349,7 @@ export async function GET(req: Request) {
 
                 const post = POSTS_DATABASE[Math.floor(Math.random() * POSTS_DATABASE.length)];
 
-                // PASSO 1: Gerar a imagem com o novo sistema de temas
+                // PASSO 1: Gerar a imagem
                 const baseUrl = req.headers.get("x-forwarded-proto") === "http" ? `http://${req.headers.get("host")}` : `https://${req.headers.get("host") || 'www.nohud.com.br'}`;
                 let ogUrl = `${baseUrl}/api/marketing/og?title=${encodeURIComponent(post.title)}&subtitle=${encodeURIComponent(post.subtitle)}&feature=${encodeURIComponent(post.feature)}&emoji=${encodeURIComponent(post.emoji)}&theme=${post.theme}&style=${post.style}`;
                 if (post.style === 'stats' && 'stat1' in post) {
@@ -360,97 +358,34 @@ export async function GET(req: Request) {
                 console.log("📸 [INSTAGRAM] Gerando imagem de:", ogUrl);
 
                 const ogRes = await fetch(ogUrl);
-                const contentType = ogRes.headers.get('content-type') || '';
-                if (!ogRes.ok) {
-                    const errorBody = await ogRes.text();
-                    throw new Error(`Falha ao gerar imagem OG: ${ogRes.status} - ${errorBody}`);
-                }
-                if (!contentType.includes('image')) {
-                    const errorBody = await ogRes.text();
-                    throw new Error(`OG retornou tipo errado (${contentType}): ${errorBody.substring(0, 200)}`);
-                }
+                if (!ogRes.ok) throw new Error(`Falha ao gerar imagem OG: ${ogRes.status}`);
                 const imageBuffer = Buffer.from(await ogRes.arrayBuffer());
-                if (imageBuffer.length < 1000) {
-                    throw new Error(`Imagem OG muito pequena (${imageBuffer.length} bytes) - provavelmente falhou`);
-                }
-                console.log("📸 [INSTAGRAM] Imagem gerada:", imageBuffer.length, "bytes");
 
-                // PASSO 2: Upload para hospedagem externa
+                // PASSO 2: Upload
                 let externalImageUrl = '';
-
-                // Tentativa 1: Vercel Blob (mais confiável, já temos o token)
                 try {
                     const { put } = await import('@vercel/blob');
-                    const fileName = `instagram/post-${Date.now()}.png`;
-                    const blob = await put(fileName, imageBuffer, {
-                        access: 'public',
-                        contentType: 'image/png',
-                    });
-                    if (blob?.url) {
-                        externalImageUrl = blob.url;
-                        console.log("📸 [UPLOAD] Vercel Blob sucesso:", externalImageUrl);
-                    }
+                    const blob = await put(`instagram/post-${Date.now()}.png`, imageBuffer, { access: 'public', contentType: 'image/png' });
+                    externalImageUrl = blob.url;
                 } catch (e: any) {
-                    console.log("📸 [UPLOAD] Vercel Blob falhou:", e.message);
+                    console.error("Upload Vercel Blob falhou:", e.message);
                 }
 
-                // Tentativa 2: Telegraph (Telegram) - fallback
                 if (!externalImageUrl) {
+                    // Fallback Telegraph
                     try {
                         const telegraphForm = new FormData();
                         const uint8 = new Uint8Array(imageBuffer);
                         telegraphForm.append('file', new File([uint8], 'post.png', { type: 'image/png' }));
-
-                        const telegraphRes = await fetch('https://telegra.ph/upload', {
-                            method: 'POST',
-                            body: telegraphForm,
-                        });
-                        const telegraphText = await telegraphRes.text();
-                        console.log("📸 [UPLOAD] Telegraph resposta:", telegraphText);
-
-                        const telegraphData = JSON.parse(telegraphText);
-                        if (telegraphData?.[0]?.src) {
-                            externalImageUrl = `https://telegra.ph${telegraphData[0].src}`;
-                        }
-                    } catch (e: any) {
-                        console.log("📸 [UPLOAD] Telegraph falhou:", e.message);
-                    }
+                        const telegraphRes = await fetch('https://telegra.ph/upload', { method: 'POST', body: telegraphForm });
+                        const telegraphData = await telegraphRes.json();
+                        if (telegraphData?.[0]?.src) externalImageUrl = `https://telegra.ph${telegraphData[0].src}`;
+                    } catch (e) { }
                 }
 
-                // Tentativa 3: freeimage.host (base64) - último fallback
-                if (!externalImageUrl) {
-                    try {
-                        const base64Image = imageBuffer.toString('base64');
-                        const fiParams = new URLSearchParams();
-                        fiParams.append('source', base64Image);
-                        fiParams.append('type', 'base64');
-                        fiParams.append('action', 'upload');
-                        fiParams.append('format', 'json');
+                if (!externalImageUrl) throw new Error("Todos os serviços de upload falharam");
 
-                        const fiRes = await fetch('https://freeimage.host/api/1/upload?key=6d207e02198a847aa98d0a2a901485a5', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: fiParams.toString(),
-                        });
-                        const fiText = await fiRes.text();
-                        console.log("📸 [UPLOAD] FreeImage resposta:", fiText.substring(0, 200));
-
-                        const fiData = JSON.parse(fiText);
-                        if (fiData?.image?.url) {
-                            externalImageUrl = fiData.image.url;
-                        }
-                    } catch (e: any) {
-                        console.log("📸 [UPLOAD] FreeImage falhou:", e.message);
-                    }
-                }
-
-                if (!externalImageUrl) {
-                    throw new Error("Todos os serviços de upload falharam");
-                }
-
-                console.log("📸 [INSTAGRAM] Imagem hospedada em:", externalImageUrl);
-
-                // PASSO 3: Enviar para o Instagram usando a URL externa (que o Facebook consegue acessar)
+                // PASSO 3: Enviar para Instagram
                 const igResult = await postImageToInstagram({
                     imageUrl: externalImageUrl,
                     caption: post.caption
@@ -463,17 +398,13 @@ export async function GET(req: Request) {
                 }
             } catch (igErr: any) {
                 logs.push(`Instagram: Erro crítico na automação (${igErr.message})`);
-
-                // Avisar o Yan se o Token do Instagram expirar ou a automação quebrar
                 await resend.emails.send({
                     from: 'NOHUD App <nao-responda@nohud.com.br>',
                     to: 'yan.kairon@gmail.com',
                     subject: '⚠️ Falha na Automação do Instagram (NOHUD)',
-                    html: `<p>Olá,</p><p>A automação diária de postagem no Instagram falhou hoje.</p><br/><strong>Motivo do Erro:</strong><pre>${igErr.message}</pre><p><br/>Isso geralmente acontece quando o <strong>Token do Facebook expira</strong> (a Meta exige renovação a cada 60 dias para a maioria dos tokens não-permanentes) ou quando a imagem não pôde ser processada.</p>`
+                    html: `<p>A automação diária do Instagram falhou: <strong>${igErr.message}</strong></p>`
                 }).catch(() => { });
             }
-
-            // --------------------------------------------------------------------------------
         }
 
         // --------------------------------------------------------------------------------
@@ -481,84 +412,46 @@ export async function GET(req: Request) {
         // --------------------------------------------------------------------------------
         if (!isTestIg) {
             try {
-                const timezone = "America/Sao_Paulo";
                 const hojeZoned = toZonedTime(now, timezone);
                 const amanhaZoned = addDays(hojeZoned, 1);
-
-                // O intervalo de busca é O DIA DE AMANHÃ INTEIRO
                 const startOfTomorrowUTC = fromZonedTime(startOfDay(amanhaZoned), timezone);
                 const endOfTomorrowUTC = fromZonedTime(endOfDay(amanhaZoned), timezone);
 
                 const bookingsAmanha = await prisma.booking.findMany({
                     where: {
-                        date: {
-                            gte: startOfTomorrowUTC,
-                            lte: endOfTomorrowUTC
-                        },
+                        date: { gte: startOfTomorrowUTC, lte: endOfTomorrowUTC },
                         status: { in: ["PENDENTE", "CONFIRMADO"] },
-                        reminderSent: false, // Apenas se ainda não enviou
+                        reminderSent: false,
                         customerPhone: { not: null }
                     },
-                    include: {
-                        company: true,
-                        service: true
-                    }
+                    include: { company: true, service: true }
                 });
 
                 let remindersSent = 0;
-
-                const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
                 for (const b of bookingsAmanha) {
                     try {
                         const company = b.company;
                         const notifSettings = (company as any).notificationSettings || {};
                         const allowsReminder = notifSettings.client_reminder_whatsapp !== false;
 
-                        // Só envia se empresa tem permissão e plano MASTER
-                        if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && b.customerPhone) {
-
-                            const subscription = await prisma.subscription.findUnique({
-                                where: { userId: company.ownerId }
-                            });
-
-                            if (subscription?.plan === "MASTER") {
+                        if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && b.customerPhone) {
+                            const sub = await prisma.subscription.findUnique({ where: { userId: company.ownerId } });
+                            if (sub?.plan === "MASTER") {
                                 const shortId = b.id.slice(-4).toUpperCase();
                                 const timeStr = formatarHorario(new Date(b.date));
-                                const nomeServico = b.service?.name || "Atendimento";
-
-                                const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, passando para lembrar do seu horário de *${nomeServico}* marcado para *AMANHÃ* (às ${timeStr}).\n\nCaso não possa comparecer, nos avise o quanto antes.\n*(Ref: #${shortId})*`;
-
-                                await sendEvolutionMessage(
-                                    company.evolutionServerUrl,
-                                    company.evolutionApiKey,
-                                    company.whatsappInstanceId,
-                                    b.customerPhone,
-                                    msg
-                                );
-
-                                // Marca como enviado
-                                await prisma.booking.update({
-                                    where: { id: b.id },
-                                    data: { reminderSent: true }
-                                });
-
+                                const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, seu horário de *${b.service?.name || "Atendimento"}* é *AMANHÃ* às ${timeStr}.\n*(Ref: #${shortId})*`;
+                                await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, b.customerPhone, msg);
+                                await prisma.booking.update({ where: { id: b.id }, data: { reminderSent: true } });
                                 remindersSent++;
-
-                                // Pequeno intervalo entre envios para evitar flag de spam
-                                await sleep(1500);
+                                await new Promise(r => setTimeout(r, 1500));
                             }
                         }
-                    } catch (err: any) {
-                        console.error(`Erro ao enviar lembrete individual (Booking ${b.id}):`, err.message);
-                    }
+                    } catch (err) { }
                 }
-                logs.push(`Lembretes 24h: ${remindersSent} mensagens de WhatsApp enviadas.`);
+                logs.push(`Lembretes 24h: ${remindersSent} mensagens enviadas.`);
             } catch (remErr: any) {
                 logs.push(`Lembretes 24h: Erro na automação (${remErr.message})`);
             }
-
-            // --------------------------------------------------------------------------------
         }
 
         // --------------------------------------------------------------------------------
@@ -576,26 +469,17 @@ export async function GET(req: Request) {
                     teamMembers: await prisma.teamMember.findMany(),
                     subscriptions: await prisma.subscription.findMany()
                 };
-
-                const jsonString = JSON.stringify(dataToBackup, null, 2);
-                const buffer = Buffer.from(jsonString, 'utf-8');
-
+                const buffer = Buffer.from(JSON.stringify(dataToBackup, null, 2), 'utf-8');
                 await resend.emails.send({
                     from: 'NOHUD App <nao-responda@nohud.com.br>',
                     to: 'yan.kairon@gmail.com',
                     subject: `🔒 Backup Completo NOHUD - ${format(now, "dd/MM/yyyy")}`,
-                    html: `<p>Olá,</p><p>Segue em anexo o backup diário completo da base de dados NOHUD (Clientes, Empresas, Serviços, Profissionais, Agendamentos, Equipe e Assinaturas).</p><p>Gerado em: <strong>${format(now, "dd/MM/yyyy HH:mm:ss")}</strong></p><p>Tamanho aproximado: ${(buffer.length / 1024 / 1024).toFixed(2)} MB</p>`,
-                    attachments: [
-                        {
-                            filename: `nohud-backup-${format(now, "yyyy-MM-dd")}.json`,
-                            content: buffer,
-                        }
-                    ]
+                    html: `<p>Backup gerado em: ${format(now, "dd/MM/yyyy HH:mm:ss")}</p>`,
+                    attachments: [{ filename: `nohud-backup-${format(now, "yyyy-MM-dd")}.json`, content: buffer }]
                 });
-
-                logs.push(`Backup: Arquivo JSON gerado e enviado para yan.kairon@gmail.com.`);
+                logs.push(`Backup: Enviado com sucesso.`);
             } catch (backupErr: any) {
-                logs.push(`Backup: Erro ao gerar backup diário (${backupErr.message})`);
+                logs.push(`Backup: Erro (${backupErr.message})`);
             }
         }
 
