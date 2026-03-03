@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check } from "lucide-react";
+import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -203,6 +203,29 @@ export default function NotasFiscaisPage() {
 
             toast.success("Nota enviada para processamento com sucesso!", { id: "nfe_manual" });
             setIsNovaNotaOpen(false);
+
+            // Abre impressão automaticamente com os dados da nota recém-emitida
+            const notaParaImprimir = {
+                id: data.invoiceId || "",
+                description: form.descricaoServico,
+                value: desformatarMoeda(String(form.valorServicos)),
+                nfeStatus: "PROCESSANDO",
+                nfeProtocol: data.protocol || "",
+                nfeNumber: null,
+                createdAt: new Date().toISOString(),
+                client: {
+                    name: form.nomeRazao,
+                    cpf: form.cpfCnpj,
+                    address: form.logradouro,
+                    number: form.numero,
+                    neighborhood: form.bairro,
+                    city: form.cidade,
+                    state: form.uf,
+                    cep: form.cep
+                }
+            };
+            imprimirNfse(notaParaImprimir);
+
             carregarTudo();
         } catch (error: any) {
             toast.error(error.message || "Erro ao emitir nota.", { id: "nfe_manual" });
@@ -214,6 +237,111 @@ export default function NotasFiscaisPage() {
     const formatCurrency = (val: number) => {
         return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
+
+    function imprimirNfse(inv: any) {
+        const tomador = inv.client || {};
+        const dataFormatada = inv.createdAt ? format(new Date(inv.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-";
+        const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>NFS-e - ${inv.description || "Nota Fiscal"}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1a1a2e; padding: 40px; background: #fff; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 24px; }
+  .header-left h1 { font-size: 22px; font-weight: 900; color: #2563eb; }
+  .header-left p { font-size: 11px; color: #666; margin-top: 4px; }
+  .header-right { text-align: right; }
+  .header-right .status { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+  .status-processando { background: #dbeafe; color: #2563eb; }
+  .status-emitida { background: #d1fae5; color: #059669; }
+  .status-erro { background: #fee2e2; color: #dc2626; }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .field { }
+  .field-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+  .field-value { font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 2px; }
+  .total-box { background: #1e293b; color: #fff; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+  .total-box .label { font-size: 12px; font-weight: 700; color: #94a3b8; }
+  .total-box .value { font-size: 28px; font-weight: 900; color: #34d399; }
+  .discriminacao { background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 12px; line-height: 1.6; color: #334155; white-space: pre-wrap; }
+  .footer { margin-top: 40px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+  .badge-homolog { background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 900; text-align: center; margin-bottom: 20px; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+<div class="badge-homolog">⚠ AMBIENTE DE HOMOLOGAÇÃO - NOTA SEM VALOR FISCAL</div>
+<div class="header">
+  <div class="header-left">
+    <h1>📄 NFS-e - Nota Fiscal de Serviço Eletrônica</h1>
+    <p>${configPadrao?.name || "Empresa"} | CNPJ: ${configPadrao?.cnpj || "-"}</p>
+  </div>
+  <div class="header-right">
+    <span class="status ${inv.nfeStatus === 'EMITIDA' ? 'status-emitida' : inv.nfeStatus === 'PROCESSANDO' ? 'status-processando' : 'status-erro'}">${inv.nfeStatus || "PENDENTE"}</span>
+    <p style="font-size:11px;color:#666;margin-top:6px;">Emissão: ${dataFormatada}</p>
+    ${inv.nfeProtocol ? '<p style="font-size:10px;color:#999;margin-top:2px;">Protocolo: ' + inv.nfeProtocol + '</p>' : ''}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Prestador de Serviços</div>
+  <div class="grid">
+    <div class="field"><span class="field-label">Razão Social</span><div class="field-value">${configPadrao?.name || "-"}</div></div>
+    <div class="field"><span class="field-label">CNPJ</span><div class="field-value">${configPadrao?.cnpj || "-"}</div></div>
+    <div class="field"><span class="field-label">Inscrição Municipal</span><div class="field-value">${configPadrao?.inscricaoMunicipal || "-"}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Tomador de Serviços</div>
+  <div class="grid">
+    <div class="field"><span class="field-label">Nome / Razão Social</span><div class="field-value">${tomador.name || "Consumidor Final"}</div></div>
+    <div class="field"><span class="field-label">CPF/CNPJ</span><div class="field-value">${tomador.cpf || tomador.cnpj || "-"}</div></div>
+    <div class="field"><span class="field-label">Endereço</span><div class="field-value">${tomador.address || "-"}, ${tomador.number || ""} - ${tomador.neighborhood || ""}</div></div>
+    <div class="field"><span class="field-label">Cidade/UF</span><div class="field-value">${tomador.city || "-"} / ${tomador.state || "-"} - CEP: ${tomador.cep || "-"}</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Discriminação dos Serviços</div>
+  <div class="discriminacao">${inv.description || "Serviço prestado"}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Valores</div>
+  <div class="grid-3">
+    <div class="field"><span class="field-label">Valor dos Serviços</span><div class="field-value">${formatCurrency(inv.value)}</div></div>
+    <div class="field"><span class="field-label">Referência</span><div class="field-value">FAT: ${inv.id?.slice(-8) || "-"}</div></div>
+    <div class="field"><span class="field-label">Nº RPS</span><div class="field-value">${inv.nfeNumber || "-"}</div></div>
+  </div>
+</div>
+
+<div class="total-box">
+  <div class="label">VALOR TOTAL DA NOTA</div>
+  <div class="value">${formatCurrency(inv.value)}</div>
+</div>
+
+<div class="footer">
+  Documento gerado pelo sistema em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} • NFS-e Padrão ABRASF 2.04
+</div>
+</body>
+</html>`;
+
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.onload = () => {
+                printWindow.print();
+            };
+        }
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
@@ -267,19 +395,20 @@ export default function NotasFiscaisPage() {
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status NFE</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Valor</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Protocolo</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y dark:divide-gray-700">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center">
+                                    <td colSpan={7} className="px-6 py-20 text-center">
                                         <Loader2 size={32} className="animate-spin text-blue-500 mx-auto mb-2" />
                                         <p className="text-gray-400 font-bold">Carregando...</p>
                                     </td>
                                 </tr>
                             ) : data && data.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center">
+                                    <td colSpan={7} className="px-6 py-20 text-center">
                                         <FileText size={40} className="text-gray-200 dark:text-gray-700 mx-auto mb-4" />
                                         <p className="text-gray-400 font-bold">Nenhuma Nota Fiscal emitida ainda.</p>
                                     </td>
@@ -316,6 +445,15 @@ export default function NotasFiscaisPage() {
                                             ) : (
                                                 <span className="text-gray-400">-</span>
                                             )}
+                                        </td>
+                                        <td className="px-6 py-5 text-center">
+                                            <button
+                                                onClick={() => imprimirNfse(inv)}
+                                                className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition active:scale-95"
+                                                title="Imprimir NFS-e"
+                                            >
+                                                <Printer size={16} />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
