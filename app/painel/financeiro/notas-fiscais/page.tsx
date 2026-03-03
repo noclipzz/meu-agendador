@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer } from "lucide-react";
+import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ export default function NotasFiscaisPage() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [formLoading, setFormLoading] = useState(false);
     const [searchClient, setSearchClient] = useState("");
+    const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
     // Configuração Padrão Puxada da Empresa
     const [configPadrao, setConfigPadrao] = useState<any>(null);
@@ -272,6 +273,32 @@ export default function NotasFiscaisPage() {
         }
     }
 
+    async function atualizarStatus(inv: any) {
+        setRefreshingId(inv.id);
+        toast.loading("Consultando status na prefeitura...", { id: `refresh_${inv.id}` });
+
+        try {
+            const res = await fetch("/api/painel/financeiro/nfe/consultar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ invoiceId: inv.id })
+            });
+
+            const result = await res.json();
+
+            if (result.success && result.linkImpressao) {
+                toast.success(`NFS-e nº ${result.numeroNfse} emitida! Status atualizado.`, { id: `refresh_${inv.id}` });
+                carregarTudo();
+            } else {
+                toast.info(result.message || "A prefeitura ainda está processando esta nota. Tente novamente em alguns instantes.", { id: `refresh_${inv.id}` });
+            }
+        } catch (error: any) {
+            toast.error("Erro de conexão ao consultar status.", { id: `refresh_${inv.id}` });
+        } finally {
+            setRefreshingId(null);
+        }
+    }
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
             {/* CABEÇALHO DA PÁGINA */}
@@ -376,13 +403,28 @@ export default function NotasFiscaisPage() {
                                             )}
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <button
-                                                onClick={() => imprimirNfse(inv)}
-                                                className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition active:scale-95"
-                                                title="Imprimir NFS-e"
-                                            >
-                                                <Printer size={16} />
-                                            </button>
+                                            <div className="flex items-center justify-center gap-1">
+                                                {(inv.nfeStatus === 'PROCESSANDO' || inv.nfeStatus === 'ERRO_LOTE') && inv.nfeNumber && (
+                                                    <button
+                                                        onClick={() => atualizarStatus(inv)}
+                                                        disabled={refreshingId === inv.id}
+                                                        className={`p-2 rounded-xl transition active:scale-95 ${refreshingId === inv.id
+                                                                ? 'bg-gray-100 text-gray-400 cursor-wait'
+                                                                : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                                                            }`}
+                                                        title="Atualizar Status na Prefeitura"
+                                                    >
+                                                        <RefreshCw size={16} className={refreshingId === inv.id ? 'animate-spin' : ''} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => imprimirNfse(inv)}
+                                                    className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition active:scale-95"
+                                                    title="Imprimir NFS-e"
+                                                >
+                                                    <Printer size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
