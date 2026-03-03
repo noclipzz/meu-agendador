@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw, Lock, Share2, FileCode, Mail, Copy, Ban, DollarSign, ChevronDown, Edit2, Trash2 } from "lucide-react";
 import { AddonPaywall } from "@/components/AddonPaywall";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ptBR } from "date-fns/locale";
@@ -31,6 +32,8 @@ export default function NotasFiscaisPage() {
     const [searchClient, setSearchClient] = useState("");
     const [refreshingId, setRefreshingId] = useState<string | null>(null);
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const [cancelingId, setCancelingId] = useState<string | null>(null);
+    const router = useRouter();
 
     // Configuração Padrão Puxada da Empresa
     const [configPadrao, setConfigPadrao] = useState<any>(null);
@@ -302,6 +305,47 @@ export default function NotasFiscaisPage() {
         }
     }
 
+    async function cancelarNota(inv: any) {
+        if (!inv.nfeProtocol) {
+            toast.error("Esta nota ainda não foi processada pela prefeitura. Não é possível cancelar.");
+            return;
+        }
+        if (inv.nfeStatus === 'CANCELADA') {
+            toast.warning("Esta NFS-e já foi cancelada.");
+            return;
+        }
+
+        const confirmar = window.confirm(`Deseja realmente CANCELAR a NFS-e nº ${inv.nfeProtocol}?\n\nEsta ação é irreversível e será comunicada à prefeitura.`);
+        if (!confirmar) return;
+
+        setCancelingId(inv.id);
+        toast.loading("Solicitando cancelamento na prefeitura...", { id: `cancel_${inv.id}` });
+
+        try {
+            const res = await fetch("/api/painel/financeiro/nfe/cancelar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    invoiceId: inv.id,
+                    motivo: "Cancelamento solicitado pelo emitente."
+                })
+            });
+
+            const result = await res.json();
+
+            if (result.success) {
+                toast.success(`NFS-e nº ${inv.nfeProtocol} cancelada com sucesso!`, { id: `cancel_${inv.id}` });
+                carregarTudo();
+            } else {
+                toast.error(result.message || result.error || "Falha ao cancelar.", { id: `cancel_${inv.id}` });
+            }
+        } catch (error: any) {
+            toast.error("Erro de conexão ao cancelar NFS-e.", { id: `cancel_${inv.id}` });
+        } finally {
+            setCancelingId(null);
+        }
+    }
+
     if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Carregando...</div>;
 
     if (hasModule === false) {
@@ -429,27 +473,31 @@ export default function NotasFiscaisPage() {
                                             <div className="flex items-center justify-center gap-1.5">
                                                 {/* Detalhes */}
                                                 <button
-                                                    onClick={() => toast.info("Visualizando detalhes...")}
+                                                    onClick={() => imprimirNfse(inv)}
                                                     className="p-1.5 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition shadow-sm"
-                                                    title="Ver Detalhes"
+                                                    title="Imprimir / Ver NFS-e"
                                                 >
                                                     <Search size={14} />
                                                 </button>
 
-                                                {/* Editar */}
-                                                <button
-                                                    onClick={() => toast.info("Edição em manutenção")}
-                                                    className="p-1.5 bg-orange-400 text-white rounded-md hover:bg-orange-500 transition shadow-sm"
-                                                    title="Editar"
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
+                                                {/* Atualizar Status */}
+                                                {(inv.nfeStatus === 'PROCESSANDO' || inv.nfeStatus === 'ERRO_LOTE') && inv.nfeNumber && (
+                                                    <button
+                                                        onClick={() => atualizarStatus(inv)}
+                                                        disabled={refreshingId === inv.id}
+                                                        className={`p-1.5 rounded-md transition shadow-sm ${refreshingId === inv.id ? 'bg-gray-200 text-gray-400 cursor-wait' : 'bg-orange-400 text-white hover:bg-orange-500'}`}
+                                                        title="Atualizar Status"
+                                                    >
+                                                        <RefreshCw size={14} className={refreshingId === inv.id ? 'animate-spin' : ''} />
+                                                    </button>
+                                                )}
 
-                                                {/* Excluir/Cancelar Rápido */}
+                                                {/* Cancelar Rápido */}
                                                 <button
-                                                    onClick={() => toast.warning("Deseja cancelar esta nota?")}
-                                                    className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded-md hover:border-red-200 hover:text-red-500 transition shadow-sm"
-                                                    title="Cancelar/Excluir"
+                                                    onClick={() => cancelarNota(inv)}
+                                                    disabled={cancelingId === inv.id || inv.nfeStatus === 'CANCELADA'}
+                                                    className={`p-1.5 bg-white border rounded-md transition shadow-sm ${inv.nfeStatus === 'CANCELADA' ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 text-gray-400 hover:border-red-200 hover:text-red-500'}`}
+                                                    title={inv.nfeStatus === 'CANCELADA' ? 'Já cancelada' : 'Cancelar NFS-e'}
                                                 >
                                                     <X size={14} />
                                                 </button>
@@ -478,10 +526,18 @@ export default function NotasFiscaisPage() {
                                                                     <Printer size={16} className="text-gray-400" /> Imprimir NFS-e
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActiveMenuId(null); toast.info("Função de compartilhamento em breve"); }}
+                                                                    onClick={() => {
+                                                                        setActiveMenuId(null);
+                                                                        if (inv.nfeUrl) {
+                                                                            navigator.clipboard.writeText(inv.nfeUrl);
+                                                                            toast.success("Link da NFS-e copiado!");
+                                                                        } else {
+                                                                            toast.info("Link ainda não disponível. Atualize o status primeiro.");
+                                                                        }
+                                                                    }}
                                                                     className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                                                 >
-                                                                    <Share2 size={16} className="text-gray-400" /> Compartilhar
+                                                                    <Share2 size={16} className="text-gray-400" /> Compartilhar Link
                                                                 </button>
                                                                 <button
                                                                     onClick={() => { setActiveMenuId(null); toast.info("Download de XML em breve"); }}
@@ -502,13 +558,14 @@ export default function NotasFiscaisPage() {
                                                                     <Copy size={16} className="text-gray-400" /> Duplicar NFS-e
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActiveMenuId(null); toast.warning("Solicitação de cancelamento enviada"); }}
-                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
+                                                                    onClick={() => { setActiveMenuId(null); cancelarNota(inv); }}
+                                                                    disabled={inv.nfeStatus === 'CANCELADA'}
+                                                                    className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-2 ${inv.nfeStatus === 'CANCELADA' ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10'}`}
                                                                 >
-                                                                    <Ban size={16} /> Cancelar NFS-e
+                                                                    <Ban size={16} /> {inv.nfeStatus === 'CANCELADA' ? 'Já Cancelada' : 'Cancelar NFS-e'}
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActiveMenuId(null); toast.info("Abrindo faturamento..."); }}
+                                                                    onClick={() => { setActiveMenuId(null); router.push('/painel/financeiro'); }}
                                                                     className="w-full text-left px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 flex items-center gap-2 border-t dark:border-gray-700"
                                                                 >
                                                                     <DollarSign size={16} /> Ver no financeiro

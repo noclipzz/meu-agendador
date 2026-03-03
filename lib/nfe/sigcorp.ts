@@ -429,3 +429,131 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
         };
     }
 }
+
+/**
+ * Cancela uma NFS-e emitida no SigCorp (Abrasf 2.04)
+ * Requer o número da NFS-e (não o RPS) e o código de verificação
+ */
+export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, motivo, environment = 'HOMOLOGATION' }: {
+    numeroNfse: string,
+    codigoVerificacao?: string,
+    company: any,
+    motivo?: string,
+    environment?: 'HOMOLOGATION' | 'PRODUCTION'
+}) {
+    if (!company.certificadoA1Url || !company.certificadoSenha) {
+        throw new Error("Certificado A1 necessário para cancelar NFS-e.");
+    }
+
+    // 1. Faz o download do PFX
+    let pfxBuffer: Buffer;
+    try {
+        const certResponse = await axios.get(company.certificadoA1Url, { responseType: 'arraybuffer' });
+        pfxBuffer = Buffer.from(certResponse.data);
+    } catch {
+        throw new Error("Erro ao baixar o certificado digital.");
+    }
+
+    const isHomologation = environment === 'HOMOLOGATION';
+    const wsUrl = isHomologation
+        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
+        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    const soapNamespace = isHomologation
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+
+    const cnpj = (company.cnpj || "").replace(/\D/g, "");
+    const im = (company.inscricaoMunicipal || "").replace(/\D/g, "");
+
+    // 2. Monta o XML de Cancelamento (ABRASF 2.04)
+    const cancelXmlInner = `<Pedido>
+        <InfPedidoCancelamento Id="cancel_${numeroNfse}">
+            <IdentificacaoNfse>
+                <Numero>${numeroNfse}</Numero>
+                <CpfCnpj>
+                    <Cnpj>${cnpj}</Cnpj>
+                </CpfCnpj>
+                <InscricaoMunicipal>${im}</InscricaoMunicipal>
+                <CodigoMunicipio>3131307</CodigoMunicipio>
+            </IdentificacaoNfse>
+            <CodigoCancelamento>1</CodigoCancelamento>
+        </InfPedidoCancelamento>
+    </Pedido>`;
+
+    const cancelXml = `<CancelarNfseEnvio xmlns="http://www.abrasf.org.br/nfse.xsd">${cancelXmlInner}</CancelarNfseEnvio>`;
+
+    // 3. Assina o XML
+    let signedXml: string;
+    try {
+        signedXml = signXML(cancelXml, "InfPedidoCancelamento", pfxBuffer, company.certificadoSenha);
+    } catch (e: any) {
+        throw new Error(`Erro ao assinar XML de cancelamento: ${e.message}`);
+    }
+
+    // 4. Monta o Envelope SOAP
+    const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:proc="${soapNamespace}">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <proc:CancelarNfseRequest>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseDadosMsg><![CDATA[${signedXml}]]></nfseDadosMsg>
+        </proc:CancelarNfseRequest>
+    </soapenv:Body>
+    </soapenv:Envelope>`;
+
+    // 5. Envia para a prefeitura
+    try {
+        const response = await axios.post(wsUrl, soapEnvelope, {
+            headers: {
+                "Content-Type": "text/xml;charset=UTF-8",
+                "SOAPAction": "nfs#CancelarNfse"
+            },
+            timeout: 15000
+        });
+
+        const xml = response.data;
+        console.log("[SIGCORP] cancelarNfse RESPOSTA:", xml);
+
+        // Verifica se o cancelamento foi aceito
+        const hasCancelamento = /<Cancelamento>/i.test(xml) || /<ConfirmacaoCancelamento>/i.test(xml) || /<RetCancelamento>/i.test(xml);
+        const hasSuccess = /<Sucesso>/i.test(xml) || hasCancelamento;
+
+        // Verifica erros
+        const matchMsg = /<Mensagem>(.*?)<\/Mensagem>/i.exec(xml);
+        const matchCod = /<Codigo>(.*?)<\/Codigo>/i.exec(xml);
+
+        if (hasSuccess || hasCancelamento) {
+            return {
+                success: true,
+                message: "NFS-e cancelada com sucesso.",
+                soapResponse: xml
+            };
+        }
+
+        return {
+            success: false,
+            message: matchMsg?.[1] || "A prefeitura não confirmou o cancelamento. Verifique o portal.",
+            codigo: matchCod?.[1] || "",
+            soapResponse: xml
+        };
+
+    } catch (error: any) {
+        const errorData = error.response ? error.response.data : error.message;
+        console.error("NFSE_CANCEL_SOAP_ERROR", errorData);
+
+        let msg = "Erro ao cancelar NFS-e na prefeitura.";
+        if (error.response?.status === 500) {
+            msg = "🏦 O servidor da Prefeitura retornou erro interno (500). Tente novamente.";
+        } else if (error.code === 'ECONNABORTED') {
+            msg = "⚡ Timeout ao conectar com a prefeitura.";
+        }
+
+        return {
+            success: false,
+            message: msg,
+            error: errorData
+        };
+    }
+}
