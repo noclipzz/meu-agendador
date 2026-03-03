@@ -10,40 +10,39 @@ function cleanXMLWhitespace(xml: string) {
 /**
  * Assina um elemento XML usando Padrão ABRASF (RSA-SHA1 com certificado A1)
  */
-function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, password: string) {
+export function signXML(xml: string, tagToSign: string, pfxBuffer: Buffer, password: string): string {
     try {
         const trimmedPassword = (password || "").trim();
 
-        // Diagnóstico: Se estiver falhando com "Invalid password", vamos tentar sem trim se falhar?
-        // Mas por ora, vamos apenas garantir a decodificação correta do PFX.
-
-        // Se vier como Buffer, converte para binary string do forge.
-        // Se vier como string (base64 direta), decodifica.
         let p12Der;
-        if (Buffer.isBuffer(pfxBase64OrBuffer)) {
-            p12Der = pfxBase64OrBuffer.toString('binary');
-        } else {
-            // Se for string, assume base64
-            p12Der = forge.util.decode64(pfxBase64OrBuffer);
-        }
+        p12Der = pfxBuffer.toString('binary');
 
         const p12Asn1 = forge.asn1.fromDer(p12Der);
-        // Tenta carregar o P12. Se falhar o MAC, o forge estoura o erro que o usuário vê.
         const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, trimmedPassword);
 
         let privateKeyForge: any = null;
         let certForge: any = null;
+        const allCerts: any[] = [];
 
-        // Pega as bags
         for (const safeContents of p12.safeContents) {
             for (const safeBags of safeContents.safeBags) {
                 if (safeBags.type === forge.pki.oids.keyBag || safeBags.type === forge.pki.oids.pkcs8ShroudedKeyBag) {
                     privateKeyForge = safeBags.key;
-                } else if (safeBags.type === forge.pki.oids.certBag) {
-                    certForge = safeBags.cert;
+                } else if (safeBags.type === forge.pki.oids.certBag && safeBags.cert) {
+                    allCerts.push(safeBags.cert);
                 }
             }
         }
+
+        // Seleciona o certificado do emitente (end-entity, não-CA)
+        for (const cert of allCerts) {
+            const bc = cert.getExtension('basicConstraints');
+            if (!bc || !bc.cA) {
+                certForge = cert;
+                break;
+            }
+        }
+        if (!certForge && allCerts.length > 0) certForge = allCerts[0];
 
         if (!privateKeyForge || !certForge) {
             throw new Error("Certificado PFX inválido ou senha incorreta. Não foi possível extrair a chave privada.");
@@ -51,13 +50,15 @@ function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, passwor
 
         const pemKey = forge.pki.privateKeyToPem(privateKeyForge);
         const pemCert = forge.pki.certificateToPem(certForge);
-        const certB64 = pemCert.split('\n').filter((line: string) => !line.includes('CERTIFICATE') && line.trim() !== '').join('');
 
-        // 📝 Prepara a assinatura usando xml-crypto
-        const sig = new SignedXml();
+        // xml-crypto v6 API — com publicCert para incluir KeyInfo/X509Certificate
+        const sig = new SignedXml({
+            privateKey: pemKey,
+            publicCert: pemCert,
+            signatureAlgorithm: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+            canonicalizationAlgorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        });
 
-        // No RPS Padrão ABRASF, geralmente assinamos a Tag do <InfDeclaracaoPrestacaoServico> ou <Rps> se for RPS simples
-        // @ts-ignore
         sig.addReference({
             xpath: `//*[local-name(.)='${tagToSign}']`,
             transforms: ["http://www.w3.org/2000/09/xmldsig#enveloped-signature", "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"],
@@ -66,23 +67,10 @@ function signXML(xml: string, tagToSign: string, pfxBase64OrBuffer: any, passwor
             isEmptyUri: true
         });
 
-        // @ts-ignore
-        sig.privateKey = pemKey;
-        sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
-        // @ts-ignore
-        sig.hashAlgorithm = "http://www.w3.org/2000/09/xmldsig#sha1";
-        // @ts-ignore
-        sig.canonicalizationAlgorithm = "http://www.w3.org/TR/2001/REC-xml-c14n-20010315";
-
-        // Inclui o Certificado Publico no XML Envelopado (<KeyInfo>)
-        // @ts-ignore
-        sig.keyInfoProvider = {
-            getKeyInfo: () => `<X509Data><X509Certificate>${certB64}</X509Certificate></X509Data>`,
-            getKey: () => pemCert
-        };
-
         const cleanedXml = cleanXMLWhitespace(xml);
-        sig.computeSignature(cleanedXml);
+        sig.computeSignature(cleanedXml, {
+            location: { reference: `//*[local-name(.)='${tagToSign}']`, action: "after" }
+        });
 
         return sig.getSignedXml();
     } catch (e: any) {
@@ -120,18 +108,16 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     }
 
     // 3. Monta o XML do RPS padrão Abrasf v2.04
-    // Identificador único do RPS
-    const rpsIdNumerico = invoice.nfeNumber || String(new Date().getTime()).slice(-8); // Gera um numero auto se n tiver
+    const rpsIdNumerico = invoice.nfeNumber || String(new Date().getTime()).slice(-8);
     const rpsIdName = `rps${rpsIdNumerico}`;
 
-    const dataEmissao = new Date().toISOString().split(".")[0];
+    const dataEmissao = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T');
 
-    // Validação Basico do Cliente / Tomador
+    // Validação do Cliente / Tomador
     const tomadorClient = invoice.client || {};
     const cpfCnpjTomador = (tomadorClient.cpf || tomadorClient.cnpj || "").replace(/\D/g, "");
     const cepTomador = (tomadorClient.cep || "").replace(/\D/g, "");
 
-    // TRAVA DE SEGURANÇA
     if (cpfCnpjTomador.length !== 11 && cpfCnpjTomador.length !== 14) {
         throw new Error("⚠️ BLOQUEIO: O Cliente associado a esta fatura não possui um CPF ou CNPJ válido salvo em sua Ficha.");
     }
@@ -139,7 +125,6 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
         throw new Error("⚠️ BLOQUEIO: O Cliente associado a esta fatura não possui um CEP válido salvo em sua Ficha.");
     }
 
-    // DISCRIMINAÇÃO DOS SERVIÇOS
     const textoDiscriminacao = discriminacao || invoice.description;
 
     let xmlInfDeclaracao = `
@@ -150,7 +135,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                     <Serie>1</Serie>
                     <Tipo>1</Tipo>
                 </IdentificacaoRps>
-                <DataEmissao>${dataEmissao}</DataEmissao>
+                <DataEmissao>${dataEmissao.substring(0, 10)}</DataEmissao>
                 <Status>1</Status>
             </Rps>
             <Competencia>${dataEmissao.substring(0, 10)}</Competencia>
@@ -162,8 +147,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                 <ItemListaServico>${company.itemListaServico.replace(/[^0-9]/g, '')}</ItemListaServico>
                 <CodigoTributacaoMunicipio>${company.codigoServico}</CodigoTributacaoMunicipio>
                 <Discriminacao>${textoDiscriminacao.substring(0, 200)}</Discriminacao>
-                <CodigoMunicipio>3131307</CodigoMunicipio> <!-- IBGE IPATINGA-MG (Ajustar dinamicamente se mult-cidade) -->
-                <ExigibilidadeIss>1</ExigibilidadeIss>
+                <CodigoMunicipio>3131307</CodigoMunicipio>
+                <ExigibilidadeISS>1</ExigibilidadeISS>
                 <MunicipioIncidencia>3131307</MunicipioIncidencia>
             </Servico>
             <Prestador>
@@ -172,7 +157,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                 </CpfCnpj>
                 <InscricaoMunicipal>${company.inscricaoMunicipal.replace(/\D/g, "")}</InscricaoMunicipal>
             </Prestador>
-            <Tomador>
+            <TomadorServico>
                 <IdentificacaoTomador>
                     <CpfCnpj>
                         ${cpfCnpjTomador.length === 14 ? `<Cnpj>${cpfCnpjTomador}</Cnpj>` : `<Cpf>${cpfCnpjTomador}</Cpf>`}
@@ -180,32 +165,24 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                 </IdentificacaoTomador>
                 <RazaoSocial>${tomadorClient.name || "CLIENTE CONSUMIDOR FINAL"}</RazaoSocial>
                 <Endereco>
-                    <Endereco>${tomadorClient.address || "Não informado"}</Endereco>
-                    <Numero>${tomadorClient.number || "0"}</Numero>
-                    <Bairro>${tomadorClient.neighborhood || "Centro"}</Bairro>
-                    <CodigoMunicipio>3131307</CodigoMunicipio> 
+                    <Endereco>${tomadorClient.address || "RUA EXEMPLO"}</Endereco>
+                    <Numero>${tomadorClient.number || "00"}</Numero>
+                    <Bairro>${tomadorClient.neighborhood || "BAIRRO"}</Bairro>
+                    <CodigoMunicipio>3131307</CodigoMunicipio>
                     <Uf>${tomadorClient.state || "MG"}</Uf>
-                    <Cep>${(tomadorClient.cep || "00000000").replace(/\D/g, "")}</Cep>
+                    <Cep>${cepTomador || "35160000"}</Cep>
                 </Endereco>
-            </Tomador>
+            </TomadorServico>
             <OptanteSimplesNacional>${company.regimeTributario === 1 ? '1' : '2'}</OptanteSimplesNacional>
             <IncentivoFiscal>2</IncentivoFiscal>
-        </InfDeclaracaoDeclaracaoPrestacaoServico>
+        </InfDeclaracaoPrestacaoServico>
     `;
 
-    // Fechamento da tag no xmlBase 
-    // CORRIGIDO erro na tag InfDeclaracaoPrestacaoServico q escrevei dupla
-    xmlInfDeclaracao = xmlInfDeclaracao.replace('</InfDeclaracaoDeclaracaoPrestacaoServico>', '</InfDeclaracaoPrestacaoServico>');
-
-    // Como o padrão Abrasf normalmente envia EnviarLoteRpsEnvio (Envio assíncrono ou síncrono). Vamos usar o metodo GerarNfse (que é sincrono e direto) da versão 2.04.
-    const baseXml = `<?xml version="1.0" encoding="utf-8"?>
-    <GerarNfseEnvio xmlns="http://www.abrasf.org.br/nfse.xsd">
-        ${xmlInfDeclaracao}
-    </GerarNfseEnvio>
-    `;
+    // NÃO inclui <?xml?> pois o conteúdo vai direto no CDATA
+    const baseXml = `<GerarNfseEnvio xmlns="http://www.abrasf.org.br/nfse.xsd"><Rps>${xmlInfDeclaracao}</Rps></GerarNfseEnvio>`;
 
     // 4. Assina o RPS (<InfDeclaracaoPrestacaoServico>)
-    const signedXml = signXML(baseXml, "InfDeclaracaoPrestacaoServico", pfxBuffer, company.certificadoSenha);
+    let signedXml = signXML(baseXml, "InfDeclaracaoPrestacaoServico", pfxBuffer, company.certificadoSenha);
 
     // 6. Define URL e Namespace baseado no Ambiente
     const isHomologation = environment === 'HOMOLOGATION';
@@ -217,14 +194,14 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
         ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
         : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
 
-    // 5. Monta o Envelope SOAP a ser enviado via POST para WebService
+    // 5. Monta o Envelope SOAP
     const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
     <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:proc="${soapNamespace}">
     <soapenv:Header/>
     <soapenv:Body>
         <proc:GerarNfseRequest>
             <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
-            <nfseDadosMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?>${signedXml}]]></nfseDadosMsg>
+            <nfseDadosMsg><![CDATA[${signedXml}]]></nfseDadosMsg>
         </proc:GerarNfseRequest>
     </soapenv:Body>
     </soapenv:Envelope>`;
@@ -236,17 +213,16 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                 "Content-Type": "text/xml;charset=UTF-8",
                 "SOAPAction": "nfs#GerarNfse"
             },
-            timeout: 15000 // 15 secs
+            timeout: 15000
         });
 
         return {
             success: true,
             soapResponse: response.data,
-            requestXml: soapEnvelope // Retornamos para depuração
+            requestXml: soapEnvelope
         };
 
     } catch (error: any) {
-        // Sigcorp tbm retorna erro dentro do proprio corpo XML mesmo se SOAP Falhar (Status 500 etc)
         const errorData = error.response ? error.response.data : error.message;
         console.error("NFSE_SOAP_ERROR", errorData);
         return {
