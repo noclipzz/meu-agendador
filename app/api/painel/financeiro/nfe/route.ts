@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { emitirNfeSigcorp } from "@/lib/nfe/sigcorp";
+import { emitirNfeSigcorp, parseGerarNfseResponse } from "@/lib/nfe/sigcorp";
 
 const prisma = db;
 
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
             discriminacao
         });
 
-        // 3. Atualiza Fatura com retorno (mesmo se for erro SOAP pra o usuári ler)
+        // 3. Trata erro de conexão HTTP (a chamada SOAP em si falhou)
         if (!nsfeResult.success) {
             let detalhesErro = nsfeResult.error;
             let mensagemAmigavel = "Falha na comunicação com a prefeitura.";
@@ -59,47 +59,58 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 error: mensagemAmigavel,
                 details: nsfeResult.error,
-                xmlSoap: nsfeResult.requestXml // Para visualizarmos no frontend o erro q a prefeitura cuspiu
+                xmlSoap: nsfeResult.requestXml
             }, { status: 422 });
         }
 
-        // Sucesso de Chamada SOAP... agora extraimos o Protocolo
+        // 4. Analisa a resposta SOAP com o parser robusto
         const soapXmlResponse = nsfeResult.soapResponse;
+        console.log("[NFE_FATURA] Resposta SOAP completa:", soapXmlResponse);
 
-        let msgRetorno = "Ação recebida com sucesso pela prefeitura.";
-        let nfeProtocol = "";
+        const parsed = parseGerarNfseResponse(soapXmlResponse);
 
-        // Vamos extrair o protocolo ou codigo do XML se houver, na forca da expressao regular pra facilitar (pq XML To JSON NodeJS varia)
-        const matchProtocol = /<Protocolo>(.*?)<\/Protocolo>/i.exec(soapXmlResponse);
-        if (matchProtocol && matchProtocol[1]) {
-            nfeProtocol = matchProtocol[1];
+        // CASO 1: NFS-e gerada com sucesso (síncrono)
+        if (parsed.isSuccess && parsed.nfseGerada) {
+            await prisma.invoice.update({
+                where: { id: invoice.id },
+                data: {
+                    nfeStatus: "EMITIDA",
+                    nfeProtocol: parsed.numeroNfse || null,
+                    nfeNumber: nsfeResult.rpsNumero || null
+                }
+            });
+
+            return NextResponse.json({
+                message: `NFS-e nº ${parsed.numeroNfse} emitida com sucesso!`,
+                protocol: parsed.numeroNfse,
+                soapResponse: soapXmlResponse
+            });
         }
 
-        const matchError = /<Mensagem>(.*?)<\/Mensagem>/i.exec(soapXmlResponse);
-        const isSuccessMessage = matchError && matchError[1] && matchError[1].includes("Solicitação recebida");
-
-        if (matchError && matchError[1] && !isSuccessMessage) {
-            msgRetorno = matchError[1];
-            // Se retornar mensagem mas não for de sucesso, é rejeição
+        // CASO 2: Erro real da prefeitura (código E)
+        if (parsed.isError) {
             return NextResponse.json({
-                error: "A Prefeitura retornou os seguintes alertas:",
-                details: msgRetorno,
+                error: "A Prefeitura retornou os seguintes erros:",
+                details: parsed.errorMessage,
+                mensagens: parsed.mensagens,
                 xmlSoap: soapXmlResponse
             }, { status: 422 });
         }
 
+        // CASO 3: Processamento assíncrono (protocolo ou mensagem de sucesso)
         await prisma.invoice.update({
             where: { id: invoice.id },
             data: {
-                nfeStatus: (nfeProtocol || isSuccessMessage) ? "PROCESSANDO" : "ERRO_LOTE",
-                nfeProtocol: nfeProtocol || null
+                nfeStatus: "PROCESSANDO",
+                nfeProtocol: parsed.protocolo || null,
+                nfeNumber: nsfeResult.rpsNumero || null
             }
         });
 
         return NextResponse.json({
             message: "Nota enviada para processamento com sucesso.",
-            protocol: nfeProtocol,
-            soapResponse: soapXmlResponse // log
+            protocol: parsed.protocolo,
+            soapResponse: soapXmlResponse
         });
 
     } catch (e: any) {
@@ -107,3 +118,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: e.message || "Erro interno do servidor ao gerar Nota Fiscal" }, { status: 500 });
     }
 }
+

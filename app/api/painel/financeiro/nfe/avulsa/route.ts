@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { emitirNfeSigcorp } from "@/lib/nfe/sigcorp";
+import { emitirNfeSigcorp, parseGerarNfseResponse } from "@/lib/nfe/sigcorp";
 
 export async function POST(req: Request) {
     try {
@@ -86,6 +86,7 @@ export async function POST(req: Request) {
             discriminacao: descricaoServico
         });
 
+        // 6. Trata erro de conexão HTTP (a chamada SOAP em si falhou)
         if (!nsfeResult.success) {
             await db.invoice.update({
                 where: { id: invoice.id },
@@ -113,43 +114,57 @@ export async function POST(req: Request) {
             }, { status: 422 });
         }
 
+        // 7. Analisa a resposta SOAP com o parser robusto
         const soapXmlResponse = nsfeResult.soapResponse;
-        let msgRetorno = "Ação recebida com sucesso pela prefeitura.";
-        let nfeProtocol = "";
+        console.log("[NFE_AVULSA] Resposta SOAP completa:", soapXmlResponse);
 
-        const matchProtocol = /<Protocolo>(.*?)<\/Protocolo>/i.exec(soapXmlResponse);
-        if (matchProtocol && matchProtocol[1]) {
-            nfeProtocol = matchProtocol[1];
+        const parsed = parseGerarNfseResponse(soapXmlResponse);
+
+        // CASO 1: NFS-e gerada com sucesso (síncrono — a prefeitura já retornou a nota)
+        if (parsed.isSuccess && parsed.nfseGerada) {
+            await db.invoice.update({
+                where: { id: invoice.id },
+                data: {
+                    nfeStatus: "EMITIDA",
+                    nfeProtocol: parsed.numeroNfse || null,
+                    nfeNumber: nsfeResult.rpsNumero || null
+                }
+            });
+
+            return NextResponse.json({
+                message: `NFS-e nº ${parsed.numeroNfse} emitida com sucesso!`,
+                protocol: parsed.numeroNfse,
+                invoiceId: invoice.id
+            });
         }
 
-        const matchError = /<Mensagem>(.*?)<\/Mensagem>/i.exec(soapXmlResponse);
-        const isSuccessMessage = matchError && matchError[1] && matchError[1].includes("Solicitação recebida");
-
-        if (matchError && matchError[1] && !isSuccessMessage) {
-            msgRetorno = matchError[1];
+        // CASO 2: Erro real da prefeitura (código E)
+        if (parsed.isError) {
             await db.invoice.update({
                 where: { id: invoice.id },
                 data: { nfeStatus: "ERRO_LOTE" }
             });
             return NextResponse.json({
-                error: "A Prefeitura retornou os seguintes alertas:",
-                details: msgRetorno,
+                error: "A Prefeitura retornou os seguintes erros:",
+                details: parsed.errorMessage,
+                mensagens: parsed.mensagens,
                 xmlSoap: soapXmlResponse
             }, { status: 422 });
         }
 
+        // CASO 3: Processamento assíncrono (protocolo ou mensagem de sucesso)
         await db.invoice.update({
             where: { id: invoice.id },
             data: {
-                nfeStatus: (nfeProtocol || isSuccessMessage) ? "PROCESSANDO" : "ERRO_LOTE",
-                nfeProtocol: nfeProtocol || null,
+                nfeStatus: "PROCESSANDO",
+                nfeProtocol: parsed.protocolo || null,
                 nfeNumber: nsfeResult.rpsNumero || null
             }
         });
 
         return NextResponse.json({
             message: "Nota enviada para processamento com sucesso.",
-            protocol: nfeProtocol,
+            protocol: parsed.protocolo,
             invoiceId: invoice.id
         });
 

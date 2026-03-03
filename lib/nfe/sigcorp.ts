@@ -235,6 +235,106 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
 }
 
 /**
+ * Analisa a resposta SOAP da GerarNfse e retorna um objeto estruturado.
+ * Detecta corretamente: NFS-e gerada (síncrono), processamento assíncrono, e erros reais.
+ */
+export function parseGerarNfseResponse(soapXml: string) {
+    const result = {
+        nfseGerada: false,
+        numeroNfse: '',
+        codigoVerificacao: '',
+        protocolo: '',
+        mensagens: [] as { codigo: string, mensagem: string }[],
+        isSuccess: false,
+        isProcessing: false,
+        isError: false,
+        errorMessage: ''
+    };
+
+    // 1. Verifica se a NFS-e foi gerada com sucesso (resposta síncrona)
+    const hasCompNfse = /<CompNfse>/i.test(soapXml) || /<ListaNfse>/i.test(soapXml);
+    if (hasCompNfse) {
+        result.nfseGerada = true;
+        result.isSuccess = true;
+
+        // Extrai número da NFS-e (dentro de InfNfse, NÃO o número do RPS)
+        const matchNumNfse = /<InfNfse[^>]*>[\s\S]*?<Numero>(.*?)<\/Numero>/i.exec(soapXml);
+        if (matchNumNfse) result.numeroNfse = matchNumNfse[1];
+
+        const matchCodVerif = /<CodigoVerificacao>(.*?)<\/CodigoVerificacao>/i.exec(soapXml);
+        if (matchCodVerif) result.codigoVerificacao = matchCodVerif[1];
+    }
+
+    // 2. Extrai protocolo (processamento assíncrono aceito)
+    const matchProtocol = /<Protocolo>(.*?)<\/Protocolo>/i.exec(soapXml);
+    if (matchProtocol) result.protocolo = matchProtocol[1];
+
+    // 3. Extrai TODAS as mensagens de retorno (estruturadas)
+    const mensagemRegex = /<MensagemRetorno>\s*[\s\S]*?<Codigo>(.*?)<\/Codigo>\s*[\s\S]*?<Mensagem>(.*?)<\/Mensagem>[\s\S]*?<\/MensagemRetorno>/gi;
+    let match;
+    while ((match = mensagemRegex.exec(soapXml)) !== null) {
+        result.mensagens.push({ codigo: match[1], mensagem: match[2] });
+    }
+
+    // Fallback: tenta pegar <Mensagem> solta se não encontrou estruturadas
+    if (result.mensagens.length === 0) {
+        const msgRegex = /<Mensagem>(.*?)<\/Mensagem>/gi;
+        const codRegex = /<Codigo>(.*?)<\/Codigo>/gi;
+        const msgs: string[] = [];
+        const codes: string[] = [];
+        let m;
+        while ((m = msgRegex.exec(soapXml)) !== null) msgs.push(m[1]);
+        while ((m = codRegex.exec(soapXml)) !== null) codes.push(m[1]);
+        for (let i = 0; i < msgs.length; i++) {
+            result.mensagens.push({ codigo: codes[i] || '', mensagem: msgs[i] });
+        }
+    }
+
+    // 4. Determina status final
+    if (result.nfseGerada) {
+        result.isSuccess = true;
+    } else if (result.protocolo) {
+        result.isProcessing = true;
+    } else if (result.mensagens.length > 0) {
+        // Códigos "L" = lote aceito/processando | "E" = erro real
+        const hasErrorCode = result.mensagens.some(m =>
+            m.codigo.toUpperCase().startsWith('E')
+        );
+        const hasSuccessIndicator = result.mensagens.some(m =>
+            m.codigo.toUpperCase().startsWith('L') ||
+            m.mensagem.toLowerCase().includes('sucesso') ||
+            m.mensagem.toLowerCase().includes('recebida')
+        );
+
+        if (hasSuccessIndicator && !hasErrorCode) {
+            result.isProcessing = true;
+        } else if (hasErrorCode) {
+            result.isError = true;
+            result.errorMessage = result.mensagens
+                .filter(m => m.codigo.toUpperCase().startsWith('E'))
+                .map(m => `[${m.codigo}] ${m.mensagem}`)
+                .join(' | ');
+        } else {
+            // Mensagem sem código — assume processando se não parece erro
+            const pareceErro = result.mensagens.some(m =>
+                m.mensagem.toLowerCase().includes('erro') ||
+                m.mensagem.toLowerCase().includes('invalid') ||
+                m.mensagem.toLowerCase().includes('rejeit')
+            );
+            if (pareceErro) {
+                result.isError = true;
+                result.errorMessage = result.mensagens.map(m => m.mensagem).join(' | ');
+            } else {
+                result.isProcessing = true;
+            }
+        }
+    }
+
+    console.log("[SIGCORP] parseGerarNfseResponse =>", JSON.stringify(result, null, 2));
+    return result;
+}
+
+/**
  * Consulta uma NFS-e pelo RPS no SigCorp (Abrasf 2.04)
  * Retorna o número da nota, código de verificação e link de impressão da prefeitura
  */
@@ -278,11 +378,12 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
         });
 
         const xml = response.data;
+        console.log("[SIGCORP] consultarNfsePorRps RESPOSTA COMPLETA:", xml);
 
-        // Extrai dados da NFS-e
-        const matchNumero = /Numero>(.*?)<\/Numero/i.exec(xml);
-        const matchCodVerif = /CodigoVerificacao>(.*?)<\/CodigoVerificacao/i.exec(xml);
-        const matchDataEmissao = /DataEmissao>(.*?)<\/DataEmissao/i.exec(xml);
+        // Extrai dados da NFS-e (dentro de InfNfse para pegar o nº correto, não o do RPS)
+        const matchNumero = /<InfNfse[^>]*>[\s\S]*?<Numero>(.*?)<\/Numero>/i.exec(xml);
+        const matchCodVerif = /<CodigoVerificacao>(.*?)<\/CodigoVerificacao>/i.exec(xml);
+        const matchDataEmissao = /<DataEmissao>(.*?)<\/DataEmissao>/i.exec(xml);
 
         if (matchNumero && matchCodVerif) {
             const numeroNfse = matchNumero[1];
@@ -302,7 +403,7 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
         }
 
         // Se não encontrou os dados, pode ser que ainda esteja processando
-        const matchMsg = /Mensagem>(.*?)<\/Mensagem/i.exec(xml);
+        const matchMsg = /<Mensagem>(.*?)<\/Mensagem>/i.exec(xml);
         return {
             success: false,
             message: matchMsg?.[1] || "NFS-e ainda não processada pela prefeitura.",
