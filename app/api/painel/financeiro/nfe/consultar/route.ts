@@ -9,7 +9,7 @@ export async function POST(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { invoiceId } = body;
+        const { invoiceId, environment = 'HOMOLOGATION' } = body;
 
         if (!invoiceId) {
             return NextResponse.json({ error: "ID da fatura é obrigatório." }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         const result = await consultarNfsePorRps({
             rpsNumero,
             company,
-            environment: 'HOMOLOGATION'
+            environment
         });
 
         if (result.success && 'linkImpressao' in result) {

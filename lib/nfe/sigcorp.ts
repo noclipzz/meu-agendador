@@ -187,7 +187,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     // 6. Define URL e Namespace baseado no Ambiente
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
         : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation
@@ -341,7 +341,7 @@ export function parseGerarNfseResponse(soapXml: string) {
 export async function consultarNfsePorRps({ rpsNumero, company, environment = 'HOMOLOGATION' }: { rpsNumero: string, company: any, environment?: 'HOMOLOGATION' | 'PRODUCTION' }) {
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
         : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation
@@ -456,7 +456,7 @@ export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, mot
 
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
         : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation

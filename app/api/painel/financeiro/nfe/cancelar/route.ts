@@ -9,7 +9,7 @@ export async function POST(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { invoiceId, motivo } = body;
+        const { invoiceId, motivo, environment = 'HOMOLOGATION' } = body;
 
         if (!invoiceId) {
             return NextResponse.json({ error: "ID da fatura é obrigatório." }, { status: 400 });
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
             numeroNfse: invoice.nfeProtocol,
             company,
             motivo: motivo || "Cancelamento solicitado pelo emitente.",
-            environment: 'HOMOLOGATION'
+            environment
         });
 
         if (result.success) {

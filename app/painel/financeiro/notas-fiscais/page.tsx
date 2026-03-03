@@ -34,6 +34,7 @@ export default function NotasFiscaisPage() {
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
     const [cancelingId, setCancelingId] = useState<string | null>(null);
     const router = useRouter();
+    const [nfeEnvironment, setNfeEnvironment] = useState<'HOMOLOGATION' | 'PRODUCTION'>('HOMOLOGATION');
 
     // Modal de Confirmação
     const [confirmModal, setConfirmModal] = useState<{
@@ -216,7 +217,7 @@ export default function NotasFiscaisPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...form,
-                    environment: 'HOMOLOGATION' // Forçar ambiente de testes ("Sem Valor Fiscal")
+                    environment: nfeEnvironment
                 })
             });
 
@@ -239,7 +240,7 @@ export default function NotasFiscaisPage() {
                         const res = await fetch("/api/painel/financeiro/nfe/consultar", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ invoiceId })
+                            body: JSON.stringify({ invoiceId, environment: nfeEnvironment })
                         });
                         const result = await res.json();
                         if (result.success && result.linkImpressao) {
@@ -281,7 +282,7 @@ export default function NotasFiscaisPage() {
             const res = await fetch("/api/painel/financeiro/nfe/consultar", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ invoiceId: inv.id })
+                body: JSON.stringify({ invoiceId: inv.id, environment: nfeEnvironment })
             });
 
             const result = await res.json();
@@ -306,7 +307,7 @@ export default function NotasFiscaisPage() {
             const res = await fetch("/api/painel/financeiro/nfe/consultar", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ invoiceId: inv.id })
+                body: JSON.stringify({ invoiceId: inv.id, environment: nfeEnvironment })
             });
 
             const result = await res.json();
@@ -356,7 +357,8 @@ export default function NotasFiscaisPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     invoiceId: inv.id,
-                    motivo: "Cancelamento solicitado pelo emitente."
+                    motivo: "Cancelamento solicitado pelo emitente.",
+                    environment: nfeEnvironment
                 })
             });
 
@@ -526,6 +528,17 @@ export default function NotasFiscaisPage() {
                         <p className="text-gray-500 dark:text-gray-400 font-bold text-sm mt-2">
                             Gerencie suas emissões e emita notas NFS-e avulsas manualmente.
                         </p>
+                        <div className="flex items-center gap-2 mt-3">
+                            <button
+                                onClick={() => setNfeEnvironment(prev => prev === 'HOMOLOGATION' ? 'PRODUCTION' : 'HOMOLOGATION')}
+                                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none ${nfeEnvironment === 'PRODUCTION' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                            >
+                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ${nfeEnvironment === 'PRODUCTION' ? 'translate-x-8' : 'translate-x-1'}`} />
+                            </button>
+                            <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${nfeEnvironment === 'PRODUCTION' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                {nfeEnvironment === 'PRODUCTION' ? '🟢 Produção' : '🟡 Homologação'}
+                            </span>
+                        </div>
                     </div>
                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         <Link
