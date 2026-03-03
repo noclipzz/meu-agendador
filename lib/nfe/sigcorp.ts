@@ -414,7 +414,9 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
         const errorData = error.response ? error.response.data : error.message;
         let msg = "Erro ao consultar NFS-e na prefeitura.";
 
-        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        if (error.response?.status === 500) {
+            msg = "🏦 O servidor da Prefeitura está com um erro interno (Erro 500). Tente novamente mais tarde.";
+        } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
             msg = "⚡ Servidor da Prefeitura demorou muito a responder (Time-out). Pode estar instável.";
         } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
             msg = "🔌 Não foi possível conectar ao servidor da Prefeitura. O serviço pode estar FORA DO AR.";
