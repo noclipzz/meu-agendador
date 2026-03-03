@@ -370,7 +370,7 @@ function PlanosSection({ billingCycle, setBillingCycle }: { billingCycle: 'month
             iconBg="bg-blue-50"
             iconColor="text-blue-500"
             checkColor="text-blue-500"
-            features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail, Emissão fichas técnicas, App para celular"]}
+            features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail", "Emissão fichas técnicas", "App para celular"]}
           />
 
           <PlanCard

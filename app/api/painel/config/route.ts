@@ -117,7 +117,9 @@ export async function POST(req: Request) {
       const forbiddenFields = [
         "cnpj", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
         "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
-        "cnae", "itemListaServico", "regimeTributario", "naturezaOperacao"
+        "cnae", "itemListaServico", "regimeTributario", "naturezaOperacao",
+        "codigoTributacao", "codigoNbs", "cofinsTax", "pisTax", "csllTax",
+        "irTax", "descontarImpostos", "construcaoCivil", "descontarDeducoes"
       ];
       const hasForbidden = forbiddenFields.some(field => body[field] !== undefined && body[field] !== null && body[field] !== "");
 
@@ -147,7 +149,8 @@ export async function POST(req: Request) {
       "cnpj", "phone", "cep", "address", "number", "complement", "neighborhood",
       "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
       "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
-      "cnae", "fiscalPadraoDesc", "itemListaServico" // Novos campos NFS-e
+      "cnae", "fiscalPadraoDesc", "itemListaServico",
+      "codigoTributacao", "codigoNbs"
     ];
 
     for (const field of stringFields) {
@@ -160,7 +163,8 @@ export async function POST(req: Request) {
     const numberFields = [
       "monthlyGoal", "interval", "regimeTributario", "naturezaOperacao",
       "aliquotaServico", "inssTax", "creditCardTax", "debitCardTax",
-      "coraFineRate", "coraInterestRate", "coraDiscountRate"
+      "coraFineRate", "coraInterestRate", "coraDiscountRate",
+      "cofinsTax", "pisTax", "csllTax", "irTax"
     ];
 
     for (const field of numberFields) {
@@ -172,6 +176,15 @@ export async function POST(req: Request) {
     // Processar campos tipo Boolean
     if (body.issRetidoTomador !== undefined) {
       dataToSave.issRetidoTomador = Boolean(body.issRetidoTomador);
+    }
+    if (body.descontarImpostos !== undefined) {
+      dataToSave.descontarImpostos = Boolean(body.descontarImpostos);
+    }
+    if (body.construcaoCivil !== undefined) {
+      dataToSave.construcaoCivil = Boolean(body.construcaoCivil);
+    }
+    if (body.descontarDeducoes !== undefined) {
+      dataToSave.descontarDeducoes = Boolean(body.descontarDeducoes);
     }
 
     // Consertando campos nulos que deviam ser string

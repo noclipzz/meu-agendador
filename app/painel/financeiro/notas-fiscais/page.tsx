@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw, Lock } from "lucide-react";
+import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw, Lock, Share2, FileCode, Mail, Copy, Ban, DollarSign, ChevronDown, Edit2, Trash2 } from "lucide-react";
 import { AddonPaywall } from "@/components/AddonPaywall";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -30,6 +30,7 @@ export default function NotasFiscaisPage() {
     const [formLoading, setFormLoading] = useState(false);
     const [searchClient, setSearchClient] = useState("");
     const [refreshingId, setRefreshingId] = useState<string | null>(null);
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
     // Configuração Padrão Puxada da Empresa
     const [configPadrao, setConfigPadrao] = useState<any>(null);
@@ -424,28 +425,98 @@ export default function NotasFiscaisPage() {
                                                 <span className="text-gray-400">-</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                                {(inv.nfeStatus === 'PROCESSANDO' || inv.nfeStatus === 'ERRO_LOTE') && inv.nfeNumber && (
-                                                    <button
-                                                        onClick={() => atualizarStatus(inv)}
-                                                        disabled={refreshingId === inv.id}
-                                                        className={`p-2 rounded-xl transition active:scale-95 ${refreshingId === inv.id
-                                                            ? 'bg-gray-100 text-gray-400 cursor-wait'
-                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
-                                                            }`}
-                                                        title="Atualizar Status na Prefeitura"
-                                                    >
-                                                        <RefreshCw size={16} className={refreshingId === inv.id ? 'animate-spin' : ''} />
-                                                    </button>
-                                                )}
+                                        <td className="px-6 py-5 text-center relative">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                {/* Detalhes */}
                                                 <button
-                                                    onClick={() => imprimirNfse(inv)}
-                                                    className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition active:scale-95"
-                                                    title="Imprimir NFS-e"
+                                                    onClick={() => toast.info("Visualizando detalhes...")}
+                                                    className="p-1.5 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition shadow-sm"
+                                                    title="Ver Detalhes"
                                                 >
-                                                    <Printer size={16} />
+                                                    <Search size={14} />
                                                 </button>
+
+                                                {/* Editar */}
+                                                <button
+                                                    onClick={() => toast.info("Edição em manutenção")}
+                                                    className="p-1.5 bg-orange-400 text-white rounded-md hover:bg-orange-500 transition shadow-sm"
+                                                    title="Editar"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+
+                                                {/* Excluir/Cancelar Rápido */}
+                                                <button
+                                                    onClick={() => toast.warning("Deseja cancelar esta nota?")}
+                                                    className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded-md hover:border-red-200 hover:text-red-500 transition shadow-sm"
+                                                    title="Cancelar/Excluir"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+
+                                                {/* Dropdown Menu */}
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setActiveMenuId(activeMenuId === inv.id ? null : inv.id)}
+                                                        className="p-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition shadow-sm flex items-center"
+                                                        title="Mais Opções"
+                                                    >
+                                                        <ChevronDown size={14} />
+                                                    </button>
+
+                                                    {activeMenuId === inv.id && (
+                                                        <>
+                                                            <div
+                                                                className="fixed inset-0 z-[60]"
+                                                                onClick={() => setActiveMenuId(null)}
+                                                            />
+                                                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 z-[70] py-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); imprimirNfse(inv); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-b dark:border-gray-700"
+                                                                >
+                                                                    <Printer size={16} className="text-gray-400" /> Imprimir NFS-e
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.info("Função de compartilhamento em breve"); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                >
+                                                                    <Share2 size={16} className="text-gray-400" /> Compartilhar
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.info("Download de XML em breve"); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                >
+                                                                    <FileCode size={16} className="text-gray-400" /> Baixar XML
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.info("Envio por e-mail em breve"); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                >
+                                                                    <Mail size={16} className="text-gray-400" /> Enviar por e-mail
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.info("Duplicação em manutenção"); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-t dark:border-gray-700"
+                                                                >
+                                                                    <Copy size={16} className="text-gray-400" /> Duplicar NFS-e
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.warning("Solicitação de cancelamento enviada"); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
+                                                                >
+                                                                    <Ban size={16} /> Cancelar NFS-e
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setActiveMenuId(null); toast.info("Abrindo faturamento..."); }}
+                                                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 flex items-center gap-2 border-t dark:border-gray-700"
+                                                                >
+                                                                    <DollarSign size={16} /> Ver no financeiro
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>

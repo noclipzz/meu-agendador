@@ -160,18 +160,18 @@ export default function ConfigPlano() {
     const statusLabel = config?.subscriptionStatus === "ACTIVE" ? "Ativo" : config?.subscriptionStatus === "PAST_DUE" ? "Atrasado" : "Inativo";
     const statusColor = config?.subscriptionStatus === "ACTIVE" ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50";
 
-    const limitPrefix = config?.plan === "MASTER" ? 15 : ((config?.plan === "PREMIUM" ? 5 : 1) + (config?.extraUsersCount || 0));
+    const limitPrefix = config?.plan === "MASTER" ? 10 : ((config?.plan === "PREMIUM" ? 5 : 1) + (config?.extraUsersCount || 0));
 
     const features = [
-        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" && !config?.extraUsersCount ? "Até 15" : `Até ${limitPrefix}`, included: true },
+        { name: "Profissionais / Usuários", value: config?.plan === "MASTER" && !config?.extraUsersCount ? "Até 10" : `Até ${limitPrefix}`, included: true },
         { name: "Agendamentos Online", value: "Ilimitados", included: true },
         { name: "Financeiro Completo", value: "", included: true },
         { name: "Gestão de Clientes", value: "", included: true },
         { name: "Fichas Técnicas e Histórico", value: "", included: true },
-        { name: "WhatsApp Automático", value: "", included: config?.plan === "MASTER" },
-        { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
-        { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM" },
-        { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER" },
+        { name: "WhatsApp Automático", value: "", included: config?.plan === "MASTER", required: "MASTER" },
+        { name: "Gestão de Estoques", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM", required: "PREMIUM" },
+        { name: "Link de Pagamento", value: "", included: config?.plan === "MASTER" || config?.plan === "PREMIUM", required: "PREMIUM" },
+        { name: "Relatórios DRE Avançados", value: "", included: config?.plan === "MASTER", required: "MASTER" },
         { name: "Emissão de Notas Fiscais", value: config?.hasNfeModule ? "Ativo" : "Add-on", included: !!config?.hasNfeModule },
         { name: "Emissão de Boletos", value: config?.hasBoletoModule ? "Ativo" : "Add-on", included: !!config?.hasBoletoModule },
         { name: "Assinatura Digital Autêntica", value: config?.hasDigitalSignatureModule ? "Ativo" : "Add-on", included: !!config?.hasDigitalSignatureModule },
@@ -500,13 +500,18 @@ export default function ConfigPlano() {
                                         {f.name}
                                     </span>
                                     <div className="flex items-center gap-3">
+                                        {(f as any).required && !f.included && (
+                                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm border ${(f as any).required === "MASTER" ? "bg-amber-100 text-amber-600 border-amber-200" : "bg-blue-100 text-blue-600 border-blue-200"}`}>
+                                                Exclusivo {(f as any).required}
+                                            </span>
+                                        )}
                                         {f.value && <span className="text-[11px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-lg group-hover:scale-110 transition">{f.value}</span>}
                                         {f.included ? (
                                             <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center">
                                                 <Check size={12} strokeWidth={4} />
                                             </div>
                                         ) : (
-                                            <div className="w-5 h-5 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center">
+                                            <div className="w-5 h-5 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center opacity-50">
                                                 <X size={12} strokeWidth={4} />
                                             </div>
                                         )}

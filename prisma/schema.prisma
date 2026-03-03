@@ -63,6 +63,18 @@ model Company {
   whatsappPaymentSuccessMessage String?            @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
   corporateName                String?
   notificationSettings         Json?              @default("{}")
+  
+  // Fiscal Fields
+  codigoTributacao             String?
+  codigoNbs                    String?
+  cofinsTax                    Decimal?           @default(0)
+  pisTax                       Decimal?           @default(0)
+  csllTax                      Decimal?           @default(0)
+  irTax                        Decimal?           @default(0)
+  descontarImpostos            Boolean?           @default(false)
+  construcaoCivil              Boolean?           @default(false)
+  descontarDeducoes             Boolean?           @default(false)
+
   // Cora Integration
   coraClientId                 String?
   coraCertUrl                  String?
