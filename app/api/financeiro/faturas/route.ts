@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataApenas } from "@/app/utils/formatters";
 import { createCoraCharge } from "@/lib/cora-api";
+import { sendEvolutionMessage, sendEvolutionMedia } from "@/lib/whatsapp";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -278,7 +279,67 @@ export async function POST(req: Request) {
         // 6. INTEGRAÇÃO CORA (Se método for PIX_CORA ou BOLETO)
         if (method === 'PIX_CORA' || method === 'BOLETO') {
             try {
-                await createCoraCharge(companyId, invoice.id);
+                const coraResult = await createCoraCharge(companyId, invoice.id);
+
+                // 6.1 ENVIO AUTOMÁTICO DO BOLETO VIA WHATSAPP
+                if (method === 'BOLETO' && cliente?.phone) {
+                    try {
+                        const empresa = await prisma.company.findUnique({ where: { id: companyId } });
+
+                        if (empresa?.evolutionServerUrl && empresa?.evolutionApiKey && empresa?.whatsappInstanceId) {
+                            const boletoUrl = coraResult?.payment_options?.bank_slip?.url;
+                            const pixCode = coraResult?.payment_options?.pix?.emv;
+                            const valorStr = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+                            // Mensagem formatada com dados do boleto
+                            let msg = `💰 *Boleto Gerado - ${empresa.name}*\n\n`;
+                            msg += `Olá, *${cliente.name}*!\n`;
+                            msg += `Segue o boleto referente ao serviço realizado:\n\n`;
+                            msg += `📝 *Serviço:* ${description}\n`;
+                            msg += `💵 *Valor:* R$ ${valorStr}\n`;
+                            msg += `📅 *Vencimento:* ${formatarDataApenas(new Date(dueDate))}\n`;
+
+                            if (boletoUrl) {
+                                msg += `\n🔗 *Link do Boleto:*\n${boletoUrl}\n`;
+                            }
+
+                            if (pixCode) {
+                                msg += `\n📱 *PIX (Copia e Cola):*\n${pixCode}\n`;
+                            }
+
+                            msg += `\n_Mensagem automática - ${empresa.name}_`;
+
+                            // Envia a mensagem de texto com os links
+                            await sendEvolutionMessage(
+                                empresa.evolutionServerUrl,
+                                empresa.evolutionApiKey,
+                                empresa.whatsappInstanceId,
+                                cliente.phone,
+                                msg
+                            );
+
+                            // Se tem URL do boleto PDF, envia também como documento
+                            if (boletoUrl) {
+                                await sendEvolutionMedia(
+                                    empresa.evolutionServerUrl,
+                                    empresa.evolutionApiKey,
+                                    empresa.whatsappInstanceId,
+                                    cliente.phone,
+                                    boletoUrl,
+                                    {
+                                        mediatype: 'document',
+                                        caption: `Boleto - ${description} - R$ ${valorStr}`,
+                                        fileName: `boleto_${empresa.name.replace(/\s/g, '_')}.pdf`
+                                    }
+                                );
+                            }
+
+                            console.log(`📨 [WHATSAPP] Boleto enviado para ${cliente.phone}`);
+                        }
+                    } catch (wpErr) {
+                        console.error("⚠️ [WHATSAPP] Erro ao enviar boleto:", wpErr);
+                    }
+                }
             } catch (coraErr) {
                 console.error("Erro ao gerar cobrança Cora automático:", coraErr);
             }
