@@ -54,10 +54,11 @@ export async function POST(req: Request) {
 
         if (result.success && 'linkImpressao' in result) {
             // Salva os dados da NFS-e na fatura
+            // NÃO sobrescreve nfeNumber (que é o RPS), salva nº NFS-e no nfeProtocol
             await db.invoice.update({
                 where: { id: invoiceId },
                 data: {
-                    nfeNumber: result.numeroNfse,
+                    nfeProtocol: result.numeroNfse,
                     nfeUrl: result.linkImpressao,
                     nfeStatus: "EMITIDA"
                 }

@@ -323,7 +323,7 @@ export default function NotasFiscaisPage() {
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tomador</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status NFE</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Valor</th>
-                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Protocolo</th>
+                                <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Nº RPS</th>
                                 <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Ações</th>
                             </tr>
                         </thead>
@@ -346,7 +346,7 @@ export default function NotasFiscaisPage() {
                                 data && data.map((inv: any) => (
                                     <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition group">
                                         <td className="px-6 py-5 font-black text-gray-700 dark:text-gray-300">
-                                            {inv.nfeNumber || "-"}
+                                            {inv.nfeProtocol || "-"}
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
@@ -369,8 +369,8 @@ export default function NotasFiscaisPage() {
                                             {formatCurrency(inv.value)}
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            {inv.nfeProtocol ? (
-                                                <span className="font-mono text-xs text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">{inv.nfeProtocol}</span>
+                                            {inv.nfeNumber ? (
+                                                <span className="font-mono text-xs text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">{inv.nfeNumber}</span>
                                             ) : (
                                                 <span className="text-gray-400">-</span>
                                             )}
