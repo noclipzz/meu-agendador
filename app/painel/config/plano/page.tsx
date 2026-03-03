@@ -73,6 +73,18 @@ export default function ConfigPlano() {
 
     async function handleAddItem(itemType: string, quantity: number = 1) {
         try {
+            // Se for trial, não pode adicionar addons via Stripe ainda
+            if (config?.stripeSubscriptionId === "TRIAL_PERIOD") {
+                toast.error("Você está no período de teste. Selecione um plano definitivo para adicionar recursos extras.");
+                return;
+            }
+
+            // Bloqueio de plano Individual para financeiro
+            if (config?.plan === "INDIVIDUAL" && (itemType === "NFE" || itemType === "BOLETO")) {
+                toast.error("O módulo financeiro (Boleto/Nota) exige o plano Premium ou Master.");
+                return;
+            }
+
             toast.loading("Adicionando recurso ao seu plano...");
             const res = await fetch('/api/checkout/subscription/add-item', {
                 method: 'POST',
@@ -298,11 +310,17 @@ export default function ConfigPlano() {
                                     {!config?.hasNfeModule ? (
                                         <>
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 29,90/mês</span>
-                                            <button
-                                                onClick={() => handleAddItem('NFE')}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
-                                                <Plus size={14} /> Adicionar
-                                            </button>
+                                            {config?.plan === "INDIVIDUAL" ? (
+                                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 uppercase">
+                                                    Necessário plano premium/master
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleAddItem('NFE')}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                                    <Plus size={14} /> Adicionar
+                                                </button>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="flex flex-col items-end gap-2">
@@ -339,11 +357,17 @@ export default function ConfigPlano() {
                                     {!config?.hasBoletoModule ? (
                                         <>
                                             <span className="text-xs font-black text-gray-900 dark:text-white uppercase">+ R$ 24,90/mês</span>
-                                            <button
-                                                onClick={() => handleAddItem('BOLETO')}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
-                                                <Plus size={14} /> Adicionar
-                                            </button>
+                                            {config?.plan === "INDIVIDUAL" ? (
+                                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 uppercase">
+                                                    Necessário plano premium/master
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleAddItem('BOLETO')}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
+                                                    <Plus size={14} /> Adicionar
+                                                </button>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="flex flex-col items-end gap-2">

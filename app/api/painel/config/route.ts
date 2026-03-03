@@ -8,7 +8,8 @@ const prisma = db;
 // Função para transformar "Studio VIP" em "studio-vip" (Link Profissional)
 function gerarSlug(text: string) {
   if (!text) return "empresa-" + Math.floor(Math.random() * 1000);
-  return text
+
+  let slug = text
     .toString()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -17,6 +18,19 @@ function gerarSlug(text: string) {
     .replace(/\s+/g, '-')
     .replace(/[^\w-]+/g, '')
     .replace(/--+/g, '-');
+
+  // 🚀 PROTEÇÃO CONTRA TERMOS RESERVADOS
+  const RESERVED_SLUGS = [
+    'painel', 'api', 'admin', 'dashboard', 'login', 'register', 'checkout',
+    'master', 'trial', 'suporte', 'ajuda', 'blog', 'site', 'app', 'config',
+    'auth', 'clerk', 'stripe', 'billing', 'financeiro', 'agenda'
+  ];
+
+  if (RESERVED_SLUGS.includes(slug)) {
+    slug = `${slug}-app`; // Evita colisão com rotas do sistema
+  }
+
+  return slug;
 }
 
 export async function GET() {
@@ -93,6 +107,26 @@ export async function POST(req: Request) {
 
     if (!existingConfig && !body.name) {
       return NextResponse.json({ error: "O nome da empresa é obrigatório na primeira configuração." }, { status: 400 });
+    }
+
+    // 🚀 TRAVA PARA TRIAL: Bloquear campos de Addons (Fiscal / Banco / Cora)
+    const subscription = await prisma.subscription.findUnique({ where: { userId } });
+    const isTrial = subscription?.stripeSubscriptionId === "TRIAL_PERIOD";
+
+    if (isTrial) {
+      const forbiddenFields = [
+        "cnpj", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
+        "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
+        "cnae", "itemListaServico", "regimeTributario", "naturezaOperacao"
+      ];
+      const hasForbidden = forbiddenFields.some(field => body[field] !== undefined && body[field] !== null && body[field] !== "");
+
+      if (hasForbidden) {
+        return NextResponse.json({
+          error: "Recurso indisponível no Trial.",
+          details: "Módulos de Nota Fiscal e Automação Bancária são exclusivos para assinantes pagantes. Por favor, escolha um plano para ativar."
+        }, { status: 403 });
+      }
     }
 
     // VALIDAÇÕES EXTRAS SOMENTE SE ENVIADAS

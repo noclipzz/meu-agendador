@@ -84,11 +84,15 @@ export async function POST(req: Request) {
         const priceId = stripeSubscription.items.data[0]?.price.id;
         const expiresAt = new Date((stripeSubscription as any).current_period_end * 1000);
 
-        // Determina o plano baseado no priceId
-        let plan = subscription.plan || "INDIVIDUAL";
-        if (priceId === process.env.STRIPE_PRICE_INDIVIDUAL) plan = "INDIVIDUAL";
-        else if (priceId === process.env.STRIPE_PRICE_PREMIUM) plan = "PREMIUM";
-        else if (priceId === process.env.STRIPE_PRICE_MASTER) plan = "MASTER";
+        // Determina o plano baseado no metadata (mais confiável) ou priceId
+        let plan = stripeSubscription.metadata?.plan || subscription.plan || "INDIVIDUAL";
+
+        // Fallback robusto por Price ID se o metadata falhar
+        if (priceId) {
+            if (priceId === process.env.STRIPE_PRICE_INDIVIDUAL || priceId === process.env.STRIPE_PRICE_INDIVIDUAL_YEAR) plan = "INDIVIDUAL";
+            else if (priceId === process.env.STRIPE_PRICE_PREMIUM || priceId === process.env.STRIPE_PRICE_PREMIUM_YEAR) plan = "PREMIUM";
+            else if (priceId === process.env.STRIPE_PRICE_MASTER || priceId === process.env.STRIPE_PRICE_MASTER_YEAR) plan = "MASTER";
+        }
 
         console.log("✅ [SYNC] Assinatura encontrada no Stripe:", {
             subscriptionId: stripeSubscription.id,

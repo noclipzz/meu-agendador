@@ -173,10 +173,10 @@ function HeroCTA() {
 
       if (res.ok) {
         toast.success("Período de teste de 7 dias ativado! 🎉");
-        router.push('/painel/dashboard');
+        router.push('/novo-negocio');
       } else {
         if (data.code === "TRIAL_USED") {
-          router.push('/painel/dashboard');
+          router.push('/novo-negocio');
         } else {
           toast.info(data.message || "Redirecionando...");
           router.push('/#planos');
@@ -370,7 +370,7 @@ function PlanosSection({ billingCycle, setBillingCycle }: { billingCycle: 'month
             iconBg="bg-blue-50"
             iconColor="text-blue-500"
             checkColor="text-blue-500"
-            features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail"]}
+            features={["1 Usuário (Você)", "Agenda Ilimitada", "Link Automático", "Lembretes por E-mail, Emissão fichas técnicas, App para celular"]}
           />
 
           <PlanCard
@@ -400,7 +400,7 @@ function PlanosSection({ billingCycle, setBillingCycle }: { billingCycle: 'month
             badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
             iconBg="bg-amber-500/10"
             iconColor="text-amber-400"
-            features={["Até 15 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Bot Whatsapp automático", "Maior banco de dados"]}
+            features={["Até 10 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Bot Whatsapp automático", "Maior banco de dados", "Tudo do Individual/Premium"]}
           />
 
           <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">

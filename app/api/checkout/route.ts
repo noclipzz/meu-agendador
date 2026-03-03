@@ -35,7 +35,10 @@ async function verificarEAtivarAssinatura(userId: string, stripeCustomerId: stri
         const priceId = subscription.items.data[0]?.price.id;
         const expiresAt = new Date((subscription as any).current_period_end * 1000);
 
-        console.log(`✅ [AUTO-SYNC] Assinatura ativa encontrada: ${subscription.id}`);
+        // Prioriza o plano do metadata da assinatura no Stripe
+        const planToActive = subscription.metadata?.plan || plan || "INDIVIDUAL";
+
+        console.log(`✅ [AUTO-SYNC] Assinatura ativa encontrada: ${subscription.id} | Plano: ${planToActive}`);
 
         // Atualiza no banco
         await prisma.subscription.upsert({
@@ -45,7 +48,7 @@ async function verificarEAtivarAssinatura(userId: string, stripeCustomerId: stri
                 stripeCustomerId: stripeCustomerId,
                 stripePriceId: priceId,
                 status: "ACTIVE",
-                plan: plan,
+                plan: planToActive,
                 expiresAt: expiresAt
             },
             create: {
@@ -54,7 +57,7 @@ async function verificarEAtivarAssinatura(userId: string, stripeCustomerId: stri
                 stripeCustomerId: stripeCustomerId,
                 stripePriceId: priceId,
                 status: "ACTIVE",
-                plan: plan,
+                plan: planToActive,
                 expiresAt: expiresAt
             }
         });
@@ -220,7 +223,8 @@ export async function GET() {
                 },
                 companyId: myCompany?.id, // ID da sua empresa
                 companyName: myCompany?.name,
-                isOwner: true // ✅ Flag de dono absoluto
+                isOwner: true, // ✅ Flag de dono absoluto
+                isTrial: false // Super Admin nunca é trial
             });
         }
         // --------------------------------
@@ -286,7 +290,8 @@ export async function GET() {
                 },
                 companyId: company.id,
                 companyName: company.name,
-                isOwner: true // ✅ Flag de dono
+                isOwner: true, // ✅ Flag de dono
+                isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD"
             });
         }
 
@@ -332,7 +337,8 @@ export async function GET() {
                 permissions: member?.permissions || { agenda: true, clientes: true },
                 companyId: professional.companyId,
                 companyName: professional.company.name,
-                isOwner: false
+                isOwner: false,
+                isTrial: subPatrao?.stripeSubscriptionId === "TRIAL_PERIOD"
             });
         }
 
@@ -343,7 +349,8 @@ export async function GET() {
         return NextResponse.json({
             active: !!hasActiveSub,
             role: "NEW",
-            plan: subscription?.plan || "INDIVIDUAL"
+            plan: subscription?.plan || "INDIVIDUAL",
+            isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD"
         });
 
     } catch (error: any) {

@@ -48,6 +48,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [hasAccess, setHasAccess] = useState(false);
     const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag se é o dono real
+    const [isTrial, setIsTrial] = useState(false); // ✅ NOVO: Flag de Trial
     const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -225,6 +226,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
                 setIsOwner(!!dados.isOwner); // ✅ Salva se é dono
+                setIsTrial(!!dados.isTrial); // ✅ Salva se é trial
                 setUserPermissions(dados.permissions); // <--- CARREGA PERMISSÕES
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
@@ -399,6 +401,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         if (userPlan === "PREMIUM") {
             if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
         }
+
         if (item.key === 'whatsapp' && !isOwner) return false;
         if (item.key === 'mural') return true;
         if (userRole === "ADMIN") return true;
@@ -411,7 +414,15 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const visibleItems = filterMenu(allItems);
     const visibleCadastros = filterMenu(cadastrosItems);
     const visibleFinanceiro = filterMenu(financeiroItems);
-    const visibleConfig = configItems.filter(() => isOwner || userPermissions?.config);
+    const visibleConfig = configItems.filter(item => {
+        const canView = isOwner || userPermissions?.config;
+        if (!canView) return false;
+
+        // Esconde faturamento para quem não tem financeiro (INDIVIDUAL)
+        if (item.key === 'faturamento' && userPlan === 'INDIVIDUAL') return false;
+
+        return true;
+    });
 
     const toggleMenu = (key: string) => {
         setOpenMenus(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);

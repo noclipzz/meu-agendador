@@ -11,12 +11,14 @@ import Link from "next/link";
 import { format, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { AddonPaywall } from "@/components/AddonPaywall";
 
 export default function BoletosPage() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<any>(null);
     const [busca, setBusca] = useState("");
     const [filtroStatus, setFiltroStatus] = useState("TODAS");
+    const [hasModule, setHasModule] = useState<boolean | null>(null);
 
     useEffect(() => {
         carregarDados();
@@ -40,7 +42,12 @@ export default function BoletosPage() {
             console.error(e);
             toast.error("Erro ao carregar boletos.");
         } finally {
-            setLoading(false);
+            // Verifica módulo
+            fetch("/api/painel/config")
+                .then(res => res.json())
+                .then(conf => setHasModule(!!conf.hasBoletoModule))
+                .catch(() => setHasModule(false))
+                .finally(() => setLoading(false));
         }
     }
 
@@ -81,6 +88,26 @@ export default function BoletosPage() {
 
         return matchBusca && matchStatus;
     }) || [];
+
+    if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Carregando...</div>;
+
+    if (hasModule === false) {
+        return (
+            <AddonPaywall
+                title="Automação Bancária (Cora)"
+                description="Gere boletos e cobranças PIX com baixa automática. Quando seu cliente paga, o sistema liquida a fatura sozinho para você."
+                icon={<Barcode size={32} />}
+                color="orange"
+                benefits={[
+                    "Emissão de Boletos e PIX em 1 clique",
+                    "Baixa automática no sistema (Sem conferência manual)",
+                    "Notificação de pagamento em tempo real",
+                    "Redução de inadimplência com links de cobrança",
+                    "Relatórios detalhados de liquidação"
+                ]}
+            />
+        );
+    }
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">

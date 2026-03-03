@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw } from "lucide-react";
+import { Plus, Search, FileText, Download, Filter, X, Eye, Loader2, ArrowLeft, Building2, UserCircle, Briefcase, Calculator, Settings, Check, Printer, RefreshCw, Lock } from "lucide-react";
+import { AddonPaywall } from "@/components/AddonPaywall";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ export default function NotasFiscaisPage() {
     const [data, setData] = useState<any>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isNovaNotaOpen, setIsNovaNotaOpen] = useState(false);
+    const [hasModule, setHasModule] = useState<boolean | null>(null);
 
     // Form states for Nova Nota Manual
     const [clientes, setClientes] = useState<any[]>([]);
@@ -112,8 +114,8 @@ export default function NotasFiscaisPage() {
             const resConf = await fetch("/api/painel/config");
             const confJson = await resConf.json();
             if (confJson) {
+                setHasModule(!!confJson.hasNfeModule);
                 setConfigPadrao(confJson);
-                // Pré-preenche Padrões
                 setForm(prev => ({
                     ...prev,
                     naturezaOperacao: String(confJson.naturezaOperacao || "1"),
@@ -299,6 +301,26 @@ export default function NotasFiscaisPage() {
         }
     }
 
+    if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Carregando...</div>;
+
+    if (hasModule === false) {
+        return (
+            <AddonPaywall
+                title="Emissão de Notas (NFS-e)"
+                description="Automatize a emissão de notas fiscais de serviço diretamente para a prefeitura. Sem redigitação, sem erros e com envio automático para o cliente."
+                icon={<FileText size={32} />}
+                color="blue"
+                benefits={[
+                    "Emissão automática nos agendamentos",
+                    "Envio automático por E-mail e WhatsApp",
+                    "Integração direta com +1.500 prefeituras",
+                    "Suporte a Notas Avulsas (Manuais)",
+                    "Gestão completa de impostos e RPS"
+                ]}
+            />
+        );
+    }
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
             {/* CABEÇALHO DA PÁGINA */}
@@ -409,8 +431,8 @@ export default function NotasFiscaisPage() {
                                                         onClick={() => atualizarStatus(inv)}
                                                         disabled={refreshingId === inv.id}
                                                         className={`p-2 rounded-xl transition active:scale-95 ${refreshingId === inv.id
-                                                                ? 'bg-gray-100 text-gray-400 cursor-wait'
-                                                                : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                                                            ? 'bg-gray-100 text-gray-400 cursor-wait'
+                                                            : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'
                                                             }`}
                                                         title="Atualizar Status na Prefeitura"
                                                     >
