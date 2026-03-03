@@ -123,7 +123,9 @@ export async function POST(req: Request) {
         }
 
         const matchError = /<Mensagem>(.*?)<\/Mensagem>/i.exec(soapXmlResponse);
-        if (matchError && matchError[1]) {
+        const isSuccessMessage = matchError && matchError[1] && matchError[1].includes("Solicitação recebida");
+
+        if (matchError && matchError[1] && !isSuccessMessage) {
             msgRetorno = matchError[1];
             await db.invoice.update({
                 where: { id: invoice.id },
@@ -139,7 +141,7 @@ export async function POST(req: Request) {
         await db.invoice.update({
             where: { id: invoice.id },
             data: {
-                nfeStatus: nfeProtocol ? "PROCESSANDO" : "ERRO_LOTE",
+                nfeStatus: (nfeProtocol || isSuccessMessage) ? "PROCESSANDO" : "ERRO_LOTE",
                 nfeProtocol: nfeProtocol || null
             }
         });

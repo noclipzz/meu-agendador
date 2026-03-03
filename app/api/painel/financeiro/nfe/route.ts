@@ -76,9 +76,11 @@ export async function POST(req: Request) {
         }
 
         const matchError = /<Mensagem>(.*?)<\/Mensagem>/i.exec(soapXmlResponse);
-        if (matchError && matchError[1]) {
+        const isSuccessMessage = matchError && matchError[1] && matchError[1].includes("Solicitação recebida");
+
+        if (matchError && matchError[1] && !isSuccessMessage) {
             msgRetorno = matchError[1];
-            // Se retornar mensagem, as vezes é rejeição de lote
+            // Se retornar mensagem mas não for de sucesso, é rejeição
             return NextResponse.json({
                 error: "A Prefeitura retornou os seguintes alertas:",
                 details: msgRetorno,
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
         await prisma.invoice.update({
             where: { id: invoice.id },
             data: {
-                nfeStatus: nfeProtocol ? "PROCESSANDO" : "ERRO_LOTE",
+                nfeStatus: (nfeProtocol || isSuccessMessage) ? "PROCESSANDO" : "ERRO_LOTE",
                 nfeProtocol: nfeProtocol || null
             }
         });
