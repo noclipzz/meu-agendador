@@ -346,6 +346,55 @@ export default function NotasFiscaisPage() {
         }
     }
 
+    async function enviarPorEmail(inv: any) {
+        if (!inv.nfeProtocol) {
+            toast.error("Esta nota ainda não foi processada. Não é possível enviar.");
+            return;
+        }
+        toast.loading("Enviando NFS-e por e-mail...", { id: `email_${inv.id}` });
+        try {
+            const res = await fetch("/api/painel/financeiro/nfe/enviar-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ invoiceId: inv.id })
+            });
+            const result = await res.json();
+            if (result.success) {
+                toast.success(result.message || "E-mail enviado com sucesso!", { id: `email_${inv.id}` });
+            } else {
+                toast.error(result.error || "Falha ao enviar e-mail.", { id: `email_${inv.id}` });
+            }
+        } catch {
+            toast.error("Erro de conexão ao enviar e-mail.", { id: `email_${inv.id}` });
+        }
+    }
+
+    function duplicarNota(inv: any) {
+        // Pré-preenche o formulário de nova nota com os dados da nota existente
+        setForm(prev => ({
+            ...prev,
+            clienteId: inv.clientId || "",
+            nomeRazao: inv.client?.name || "",
+            cpfCnpj: inv.client?.cpf || inv.client?.cnpj || "",
+            tipoCliente: inv.client?.clientType || "FISICA",
+            cep: inv.client?.cep || "",
+            logradouro: inv.client?.address || "",
+            numero: inv.client?.number || "",
+            complemento: inv.client?.complement || "",
+            bairro: inv.client?.neighborhood || "",
+            cidade: inv.client?.city || "",
+            uf: inv.client?.state || "",
+            telefone: inv.client?.phone || "",
+            email: inv.client?.email || "",
+            descricaoServico: inv.description || "",
+            valorServicos: inv.value ? formatarMoeda(String(inv.value)) : "",
+            dataEmissao: format(new Date(), "yyyy-MM-dd"),
+            horaEmissao: format(new Date(), "HH:mm")
+        }));
+        setIsNovaNotaOpen(true);
+        toast.info("Dados da nota duplicados. Revise e emita.");
+    }
+
     if (loading) return <div className="p-20 text-center"><Loader2 className="animate-spin inline mr-2" /> Carregando...</div>;
 
     if (hasModule === false) {
@@ -546,13 +595,16 @@ export default function NotasFiscaisPage() {
                                                                     <FileCode size={16} className="text-gray-400" /> Baixar XML
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActiveMenuId(null); toast.info("Envio por e-mail em breve"); }}
+                                                                    onClick={() => {
+                                                                        setActiveMenuId(null);
+                                                                        enviarPorEmail(inv);
+                                                                    }}
                                                                     className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                                                 >
                                                                     <Mail size={16} className="text-gray-400" /> Enviar por e-mail
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setActiveMenuId(null); toast.info("Duplicação em manutenção"); }}
+                                                                    onClick={() => { setActiveMenuId(null); duplicarNota(inv); }}
                                                                     className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-t dark:border-gray-700"
                                                                 >
                                                                     <Copy size={16} className="text-gray-400" /> Duplicar NFS-e
