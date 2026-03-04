@@ -135,6 +135,7 @@ export default function ConfigFaturamento() {
         try {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
                     codigoServico, itemListaServico, cnae, fiscalPadraoDesc, issRetidoTomador,
@@ -153,8 +154,12 @@ export default function ConfigFaturamento() {
                     coraDiscountRate: parseFloat(coraDiscountRate || "0")
                 })
             });
-            if (res.ok) toast.success("Dados de faturamento salvos!");
-            else toast.error("Erro ao salvar.");
+            if (res.ok) {
+                toast.success("Dados de faturamento salvos!");
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.error || errData.details || "Erro ao salvar.");
+            }
         } catch (error) { toast.error("Erro de conexão."); }
     }
 
