@@ -302,7 +302,7 @@ export async function POST(req: Request) {
                             msg += `Segue o boleto referente ao serviço realizado:\n\n`;
                             msg += `📝 *Serviço:* ${description}\n`;
                             msg += `💵 *Valor:* R$ ${valorStr}\n`;
-                            msg += `📅 *Vencimento:* ${formatarDataApenas(new Date(dueDate))}\n`;
+                            msg += `📅 *Vencimento:* ${formatarDataApenas(new Date(dueDate + (typeof dueDate === 'string' && dueDate.length === 10 ? 'T12:00:00' : '')))}\n`;
 
                             if (boletoUrl) {
                                 msg += `\n🔗 *Link do Boleto:*\n${boletoUrl}\n`;
