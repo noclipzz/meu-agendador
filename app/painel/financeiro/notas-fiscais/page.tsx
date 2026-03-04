@@ -144,8 +144,16 @@ export default function NotasFiscaisPage() {
                     ...prev,
                     naturezaOperacao: String(confJson.naturezaOperacao || "1"),
                     codigoTributacao: confJson.codigoServico || "",
+                    itemListaServico: confJson.itemListaServico || "",
+                    codigoCnae: confJson.cnae || "",
                     aliquota: confJson.aliquotaServico ? Number(confJson.aliquotaServico) : 0,
-                    percInss: confJson.inssTax ? Number(confJson.inssTax) : 0
+                    percInss: confJson.inssTax ? Number(confJson.inssTax) : 0,
+                    percCofins: confJson.cofinsTax ? Number(confJson.cofinsTax) : 0,
+                    percPis: confJson.pisTax ? Number(confJson.pisTax) : 0,
+                    percCsll: confJson.csllTax ? Number(confJson.csllTax) : 0,
+                    percIr: confJson.irTax ? Number(confJson.irTax) : 0,
+                    issRetido: !!confJson.issRetidoTomador,
+                    construcaoCivil: !!confJson.construcaoCivil,
                 }));
             }
 
