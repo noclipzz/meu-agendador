@@ -317,14 +317,20 @@ export default function ConfigFaturamento() {
                             <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={coraClientId} onChange={e => setCoraClientId(e.target.value)} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-500 uppercase">Certificado .pem</span>
-                                <button onClick={() => inputCoraCertRef.current?.click()} className="text-[10px] font-bold text-blue-600">Upload</button>
+                            <div className={`p-4 bg-white dark:bg-gray-900 border-2 rounded-2xl flex items-center justify-between ${coraCertUrl ? 'border-emerald-400 dark:border-emerald-600' : 'border-gray-200 dark:border-gray-800'}`}>
+                                <div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase block">Certificado .pem</span>
+                                    {coraCertUrl && <span className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 mt-0.5"><CheckCircle size={12} /> Instalado</span>}
+                                </div>
+                                <button onClick={() => inputCoraCertRef.current?.click()} className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition ${coraCertUrl ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-600'}`}>{coraCertUrl ? 'Trocar' : 'Upload'}</button>
                                 <input type="file" accept=".pem" ref={inputCoraCertRef} onChange={() => handleCoraFileUpload('CERT')} className="hidden" />
                             </div>
-                            <div className="p-4 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-500 uppercase">Chave .key</span>
-                                <button onClick={() => inputCoraKeyRef.current?.click()} className="text-[10px] font-bold text-blue-600">Upload</button>
+                            <div className={`p-4 bg-white dark:bg-gray-900 border-2 rounded-2xl flex items-center justify-between ${coraKeyUrl ? 'border-emerald-400 dark:border-emerald-600' : 'border-gray-200 dark:border-gray-800'}`}>
+                                <div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase block">Chave .key</span>
+                                    {coraKeyUrl && <span className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 mt-0.5"><CheckCircle size={12} /> Instalado</span>}
+                                </div>
+                                <button onClick={() => inputCoraKeyRef.current?.click()} className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition ${coraKeyUrl ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-600'}`}>{coraKeyUrl ? 'Trocar' : 'Upload'}</button>
                                 <input type="file" accept=".key" ref={inputCoraKeyRef} onChange={() => handleCoraFileUpload('KEY')} className="hidden" />
                             </div>
                         </div>
