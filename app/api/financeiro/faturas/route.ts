@@ -277,14 +277,19 @@ export async function POST(req: Request) {
         }
 
         // 6. INTEGRAÇÃO CORA (Se método for PIX_CORA ou BOLETO)
+        console.log(`💳 [CHECKOUT] Método: ${method} | Status: ${status} | ClienteID: ${clientId} | Telefone: ${cliente?.phone || 'N/A'}`);
         if (method === 'PIX_CORA' || method === 'BOLETO') {
             try {
+                console.log(`💰 [CORA] Gerando cobrança para fatura ${invoice.id}...`);
                 const coraResult = await createCoraCharge(companyId, invoice.id);
+                console.log(`✅ [CORA] Cobrança criada! BoletoURL: ${coraResult?.payment_options?.bank_slip?.url || 'N/A'} | PIX: ${coraResult?.payment_options?.pix?.emv ? 'SIM' : 'N/A'}`);
 
                 // 6.1 ENVIO AUTOMÁTICO DO BOLETO VIA WHATSAPP
                 if (method === 'BOLETO' && cliente?.phone) {
+                    console.log(`📨 [WHATSAPP] Cliente tem telefone: ${cliente.phone}. Verificando config da empresa...`);
                     try {
                         const empresa = await prisma.company.findUnique({ where: { id: companyId } });
+                        console.log(`📨 [WHATSAPP] Config: ServerURL=${empresa?.evolutionServerUrl ? 'SIM' : 'NÃO'} | ApiKey=${empresa?.evolutionApiKey ? 'SIM' : 'NÃO'} | Instance=${empresa?.whatsappInstanceId || 'NÃO'}`);
 
                         if (empresa?.evolutionServerUrl && empresa?.evolutionApiKey && empresa?.whatsappInstanceId) {
                             const boletoUrl = coraResult?.payment_options?.bank_slip?.url;
@@ -340,8 +345,8 @@ export async function POST(req: Request) {
                         console.error("⚠️ [WHATSAPP] Erro ao enviar boleto:", wpErr);
                     }
                 }
-            } catch (coraErr) {
-                console.error("Erro ao gerar cobrança Cora automático:", coraErr);
+            } catch (coraErr: any) {
+                console.error("❌ [CORA] Erro ao gerar cobrança:", coraErr?.message || coraErr);
             }
         }
 

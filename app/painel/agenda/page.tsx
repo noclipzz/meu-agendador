@@ -189,8 +189,11 @@ export default function PainelDashboard() {
                 setModalCheckout(false);
                 setAgendamentoSelecionado(null);
                 carregarDados();
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                toast.error(errData.error || "Erro ao finalizar checkout.");
             }
-        } catch (error) { toast.error("Erro no checkout."); }
+        } catch (error: any) { toast.error(error.message || "Erro no checkout."); }
         finally { setLoading(false); }
     }
 
