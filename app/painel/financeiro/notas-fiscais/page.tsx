@@ -542,7 +542,7 @@ export default function NotasFiscaisPage() {
                     </div>
                     <div className="flex flex-wrap gap-2 w-full md:w-auto">
                         <Link
-                            href="/painel/config"
+                            href="/painel/config/faturamento"
                             className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition active:scale-95 flex-1 md:flex-none justify-center whitespace-nowrap text-sm"
                         >
                             <Settings size={20} /> Padrões NFe
