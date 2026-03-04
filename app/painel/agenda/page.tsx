@@ -77,7 +77,8 @@ export default function PainelDashboard() {
     const [checkoutData, setCheckoutData] = useState({
         method: "PIX",
         status: "PAGO",
-        dueDate: new Date().toISOString().split('T')[0]
+        dueDate: new Date().toISOString().split('T')[0],
+        emitirNfse: false
     });
 
     const [busca, setBusca] = useState("");
@@ -85,6 +86,7 @@ export default function PainelDashboard() {
     const [msgWhatsapp, setMsgWhatsapp] = useState("");
     const [agora, setAgora] = useState<Date>(new Date());
     const [metaMensal, setMetaMensal] = useState(5000);
+    const [hasNfeModule, setHasNfeModule] = useState(false);
 
     useEffect(() => {
         const intervalo = setInterval(() => setAgora(new Date()), 60000);
@@ -103,6 +105,7 @@ export default function PainelDashboard() {
                 setMetaMensal(Number(dadosConfig.monthlyGoal) || 5000);
                 setEmpresaInfo({ name: dadosConfig.name || "Minha Empresa", logo: dadosConfig.logoUrl || "" });
                 setMsgWhatsapp(dadosConfig.whatsappMessage || "");
+                setHasNfeModule(!!dadosConfig.hasNfeModule);
             }
             const dadosPro = await resPro.json();
             if (Array.isArray(dadosPro)) setProfissionais(dadosPro);
@@ -753,6 +756,15 @@ export default function PainelDashboard() {
                                         <div className="animate-in fade-in slide-in-from-top-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Vencimento do Boleto</label>
                                             <input type="date" className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl dark:bg-gray-800 font-bold dark:text-white" value={checkoutData.dueDate} onChange={e => setCheckoutData({ ...checkoutData, dueDate: e.target.value })} />
+                                        </div>
+                                    )}
+                                    {hasNfeModule && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 flex items-center gap-3 bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 p-4 rounded-2xl cursor-pointer" onClick={() => setCheckoutData({ ...checkoutData, emitirNfse: !checkoutData.emitirNfse })}>
+                                            <input type="checkbox" checked={checkoutData.emitirNfse} onChange={(e) => setCheckoutData({ ...checkoutData, emitirNfse: e.target.checked })} className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0" onClick={(e) => e.stopPropagation()} />
+                                            <div>
+                                                <span className="font-black text-sm text-blue-700 dark:text-blue-400">Emitir Nota Fiscal (NFS-e)</span>
+                                                <p className="text-[10px] text-blue-500 dark:text-blue-500 font-medium">A nota será emitida automaticamente junto ao faturamento</p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>

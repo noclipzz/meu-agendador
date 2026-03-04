@@ -6,6 +6,7 @@ import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataApenas } from "@/app/utils/formatters";
 import { createCoraCharge } from "@/lib/cora-api";
 import { sendEvolutionMessage, sendEvolutionMedia } from "@/lib/whatsapp";
+import { emitirNfeSigcorp, parseGerarNfseResponse } from "@/lib/nfe/sigcorp";
 
 const prisma = db;
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { clientId, companyId, description, value, dueDate, status, method, bookingId } = body;
+        const { clientId, companyId, description, value, dueDate, status, method, bookingId, emitirNfse } = body;
 
         // 1. Busca dados do cliente e da empresa
         const [cliente, empresa] = await Promise.all([
@@ -347,6 +348,58 @@ export async function POST(req: Request) {
                 }
             } catch (coraErr: any) {
                 console.error("❌ [CORA] Erro ao gerar cobrança:", coraErr?.message || coraErr);
+            }
+        }
+
+        // 7. EMISSÃO AUTOMÁTICA DE NFS-e (Se checkbox marcada)
+        if (emitirNfse) {
+            try {
+                console.log(`📝 [NFSe] Emitindo nota fiscal para fatura ${invoice.id}...`);
+                const invoiceForNfse = await prisma.invoice.findUnique({
+                    where: { id: invoice.id },
+                    include: { client: true, company: true }
+                });
+
+                if (invoiceForNfse) {
+                    const nsfeResult = await emitirNfeSigcorp({
+                        invoice: invoiceForNfse,
+                        company: invoiceForNfse.company,
+                        environment: 'PRODUCTION',
+                        discriminacao: description
+                    });
+
+                    if (nsfeResult.success) {
+                        const parsed = parseGerarNfseResponse(nsfeResult.soapResponse);
+
+                        if (parsed.isSuccess && parsed.nfseGerada) {
+                            await prisma.invoice.update({
+                                where: { id: invoice.id },
+                                data: {
+                                    nfeStatus: "EMITIDA",
+                                    nfeProtocol: parsed.numeroNfse || null,
+                                    nfeNumber: nsfeResult.rpsNumero || null
+                                }
+                            });
+                            console.log(`✅ [NFSe] Nota fiscal emitida! Nº ${parsed.numeroNfse}`);
+                        } else if (!parsed.isError) {
+                            await prisma.invoice.update({
+                                where: { id: invoice.id },
+                                data: {
+                                    nfeStatus: "PROCESSANDO",
+                                    nfeProtocol: parsed.protocolo || null,
+                                    nfeNumber: nsfeResult.rpsNumero || null
+                                }
+                            });
+                            console.log(`⏳ [NFSe] Nota em processamento. Protocolo: ${parsed.protocolo}`);
+                        } else {
+                            console.error(`❌ [NFSe] Erro da prefeitura: ${parsed.errorMessage}`);
+                        }
+                    } else {
+                        console.error(`❌ [NFSe] Falha na comunicação: ${nsfeResult.error}`);
+                    }
+                }
+            } catch (nfseErr: any) {
+                console.error("⚠️ [NFSe] Erro ao emitir nota fiscal:", nfseErr?.message || nfseErr);
             }
         }
 
