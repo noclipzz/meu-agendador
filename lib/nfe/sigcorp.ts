@@ -385,7 +385,8 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
             timeout: 15000
         });
 
-        const xml = response.data;
+        let xml = response.data;
+        xml = xml.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"');
         console.log("[SIGCORP] consultarNfsePorRps RESPOSTA COMPLETA:", xml);
 
         // Extrai dados da NFS-e (dentro de InfNfse para pegar o nº correto, não o do RPS)
