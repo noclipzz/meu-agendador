@@ -909,13 +909,17 @@ export default function NotasFiscaisPage() {
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Discriminação dos Serviços*</label>
                                                 <textarea required rows={3} placeholder="Ex: Referente a prestação de serviços de Consultoria..." value={form.descricaoServico} onChange={e => setForm({ ...form, descricaoServico: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none resize-none"></textarea>
                                             </div>
-                                            <div className="col-span-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Código Tributação Municipal (ISS)</label>
-                                                <input type="text" value={form.codigoTributacao} onChange={e => setForm({ ...form, codigoTributacao: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
+                                            <div className="col-span-1">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Item Lista Serviço (LC 116)*</label>
+                                                <input required type="text" placeholder="Ex: 07.13" value={form.itemListaServico} onChange={e => setForm({ ...form, itemListaServico: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
+                                            </div>
+                                            <div className="col-span-1">
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Cód. Tributação Munic.</label>
+                                                <input required type="text" placeholder="Ex: 131307" value={form.codigoTributacao} onChange={e => setForm({ ...form, codigoTributacao: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
                                             </div>
                                             <div className="col-span-2">
-                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">CNAE</label>
-                                                <input type="text" value={form.codigoCnae} onChange={e => setForm({ ...form, codigoCnae: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
+                                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">CNAE (Nacional)</label>
+                                                <input type="text" placeholder="Ex: 8122200" value={form.codigoCnae} onChange={e => setForm({ ...form, codigoCnae: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm font-bold text-gray-700 dark:text-gray-300 outline-none" />
                                             </div>
 
                                             {/* Valores - Bloco Financeiro */}

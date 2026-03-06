@@ -207,7 +207,7 @@ export default function ConfigFaturamento() {
                             <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 131307" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% Alíquota ISS (Ipatinga)</label>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% Alíquota ISS</label>
                             <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="2.00" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
                         </div>
 

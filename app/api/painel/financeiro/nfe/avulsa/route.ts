@@ -17,7 +17,7 @@ export async function POST(req: Request) {
             descricaoServico,
             cpfCnpj, nomeRazao, cep, logradouro, numero, bairro, cidade, uf,
             clienteId,
-            naturezaOperacao, codigoTributacao, aliquota, codigoCnae, issRetido
+            naturezaOperacao, codigoTributacao, aliquota, codigoCnae, issRetido, itemListaServico
         } = body;
 
         // Limpa o valor para decimal (Ex: R$ 1.500,00 -> 1500.00)
@@ -71,6 +71,7 @@ export async function POST(req: Request) {
         // 4. Modifica a "company" em memória para usar os dados que vieram do formulário (CNAE, Codigo Serviço)
         const companyOverrides = {
             ...company,
+            itemListaServico: itemListaServico || company.itemListaServico,
             codigoServico: codigoTributacao || company.codigoServico,
             cnae: codigoCnae || (company as any).cnae,
             aliquotaServico: aliquota || company.aliquotaServico,
