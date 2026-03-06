@@ -489,7 +489,11 @@ export async function GET(req: Request) {
                 });
 
                 let cobrancasEnviadas = 0;
-                for (const invoice of faturasPendentes) {
+
+                // Limitar a quantidade de faturas processadas nesta execução (proteção contra timeout Vercel / banimento WA)
+                const faturasLimitadas = faturasPendentes.slice(0, 50);
+
+                for (const invoice of faturasLimitadas) {
                     try {
                         const company = invoice.company;
                         const client = invoice.client;
@@ -528,7 +532,9 @@ export async function GET(req: Request) {
 
                         await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, client.phone, msg);
                         cobrancasEnviadas++;
-                        await new Promise(r => setTimeout(r, 1000));
+
+                        // Delay seguro de 1.5 a 3 segundos entre envios para evitar banimento do WhatsApp e sobrecarga da Evolution API
+                        await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500));
                     } catch (e) { }
                 }
                 logs.push(`Avisos Financeiros: ${cobrancasEnviadas} cobranças enviadas.`);
