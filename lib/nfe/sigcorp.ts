@@ -108,7 +108,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     }
 
     // 3. Monta o XML do RPS padrão Abrasf v2.04
-    const rpsIdNumerico = invoice.nfeNumber || String(new Date().getTime()).slice(-8);
+    // Usamos o final do ID da fatura para garantir um número sequencial e estável (evitando números gigantes de timestamp)
+    const rpsIdNumerico = invoice.id.replace(/\D/g, "").slice(-7) || String(new Date().getTime()).slice(-7);
     const rpsIdName = `rps${rpsIdNumerico}`;
 
     const dataEmissao = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T');
@@ -142,9 +143,13 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
             <Servico>
                 <Valores>
                     <ValorServicos>${Number(invoice.value).toFixed(2)}</ValorServicos>
+                    <BaseCalculo>${Number(invoice.value).toFixed(2)}</BaseCalculo>
+                    <Aliquota>${Number(company.aliquotaServico || 0).toFixed(2)}</Aliquota>
+                    <ValorIss>${((Number(invoice.value) * Number(company.aliquotaServico || 0)) / 100).toFixed(2)}</ValorIss>
                 </Valores>
                 <IssRetido>2</IssRetido>
                 <ItemListaServico>${company.itemListaServico.replace(/[^0-9]/g, '')}</ItemListaServico>
+                ${company.cnae ? `<CodigoCnae>${company.cnae.replace(/\D/g, '')}</CodigoCnae>` : ''}
                 <CodigoTributacaoMunicipio>${company.codigoServico}</CodigoTributacaoMunicipio>
                 <Discriminacao>${textoDiscriminacao.substring(0, 200)}</Discriminacao>
                 <CodigoMunicipio>3131307</CodigoMunicipio>
