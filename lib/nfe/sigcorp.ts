@@ -143,9 +143,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
             <Servico>
                 <Valores>
                     <ValorServicos>${Number(invoice.value).toFixed(2)}</ValorServicos>
-                    <BaseCalculo>${Number(invoice.value).toFixed(2)}</BaseCalculo>
-                    <Aliquota>${Number(company.aliquotaServico || 0).toFixed(2)}</Aliquota>
                     <ValorIss>${((Number(invoice.value) * Number(company.aliquotaServico || 0)) / 100).toFixed(2)}</ValorIss>
+                    <Aliquota>${Number(company.aliquotaServico || 0).toFixed(2)}</Aliquota>
                 </Valores>
                 <IssRetido>2</IssRetido>
                 <ItemListaServico>${company.itemListaServico.replace(/[^0-9]/g, '')}</ItemListaServico>
