@@ -238,6 +238,7 @@ export default function DashboardPage() {
                                     ))}
                                     {(!dados.boletosVencidos || dados.boletosVencidos.length === 0) && <p className="text-gray-400 text-xs italic">Nenhuma conta atrasada.</p>}
                                 </div>
+                                <Link href="/painel/financeiro/contas-receber" className="flex items-center justify-end gap-1 text-[10px] font-black text-red-600 uppercase mt-4 hover:underline">Ver tudo <ArrowRight size={12} /></Link>
                             </div>
 
                             {/* A VENCER */}
@@ -257,7 +258,7 @@ export default function DashboardPage() {
                                     ))}
                                     {(!dados.boletosVencer || dados.boletosVencer.length === 0) && <p className="text-gray-400 text-xs italic">Nada para os próximos dias.</p>}
                                 </div>
-                                <Link href="/painel/financeiro" className="flex items-center justify-end gap-1 text-[10px] font-black text-yellow-600 uppercase mt-4 hover:underline">Ver tudo <ArrowRight size={12} /></Link>
+                                <Link href="/painel/financeiro/contas-receber" className="flex items-center justify-end gap-1 text-[10px] font-black text-yellow-600 uppercase mt-4 hover:underline">Ver tudo <ArrowRight size={12} /></Link>
                             </div>
                         </div>
                     )}

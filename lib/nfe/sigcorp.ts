@@ -410,11 +410,25 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
             };
         }
 
-        // Se não encontrou os dados, pode ser que ainda esteja processando
+        // Se não encontrou os dados, pode ser que ainda esteja processando ou tenha dado erro de schema
         const matchMsg = /<Mensagem>(.*?)<\/Mensagem>/i.exec(xml);
+        const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(xml);
+
+        let errorMsg = "NFS-e ainda não processada pela prefeitura.";
+
+        if (matchMsg) errorMsg = `Erro Prefeitura: ${matchMsg[1]}`;
+        else if (matchFault) errorMsg = `Erro SOAP: ${matchFault[1]}`;
+        else if (xml && !xml.includes("<Numero>")) {
+            // Último recurso: mostra o começo da resposta se ela não tiver uma mensagem amigável e falhou
+            const plainResponse = xml.replace(/(<([^>]+)>)/gi, "").trim();
+            if (plainResponse.length > 0) {
+                errorMsg = `Retorno: ${plainResponse.substring(0, 100)}...`;
+            }
+        }
+
         return {
             success: false,
-            message: matchMsg?.[1] || "NFS-e ainda não processada pela prefeitura.",
+            message: errorMsg,
             soapResponse: xml
         };
 

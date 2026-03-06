@@ -10,6 +10,7 @@ import { sendEvolutionMessage } from "@/lib/whatsapp";
 import { formatarHorario } from "@/app/utils/formatters";
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutos (limite para Vercel Pro)
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const prisma = db;
@@ -443,7 +444,12 @@ export async function GET(req: Request) {
                                 await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, b.customerPhone, msg);
                                 await prisma.booking.update({ where: { id: b.id }, data: { reminderSent: true } });
                                 remindersSent++;
-                                await new Promise(r => setTimeout(r, 1500));
+                                // Delay reduzido para evitar timeout excessivo em muitos agendamentos
+                                if (bookingsAmanha.length > 5) {
+                                    await new Promise(r => setTimeout(r, 500));
+                                } else {
+                                    await new Promise(r => setTimeout(r, 1500));
+                                }
                             }
                         }
                     } catch (err) { }
