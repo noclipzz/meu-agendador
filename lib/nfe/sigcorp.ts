@@ -79,7 +79,7 @@ export function signXML(xml: string, tagToSign: string, pfxBuffer: Buffer, passw
 }
 
 /**
- * Função Principal para Emitir NFe em Homologação/Produção pelo SigCorp (Abrasf 2.04)
+ * Função Principal para Emitir NFe em Homologação/Produção pelo SigCorp (Abrasf 2.03)
  */
 export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLOGATION', discriminacao }: { invoice: any, company: any, environment?: 'HOMOLOGATION' | 'PRODUCTION', discriminacao?: string }) {
 
@@ -107,7 +107,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
         throw new Error("Erro ao tentar baixar o certificado digital do nosso servidor para assinar a nota. Tente reenviar o arquivo na tela de configurações.");
     }
 
-    // 3. Monta o XML do RPS padrão Abrasf v2.04
+    // 3. Monta o XML do RPS padrão Abrasf v2.03
     // Usamos o final do ID da fatura para garantir um número sequencial e estável (evitando números gigantes de timestamp)
     const rpsIdNumerico = invoice.id.replace(/\D/g, "").slice(-8) || String(new Date().getTime()).slice(-8);
     const rpsIdName = `rps${rpsIdNumerico}`;
@@ -126,7 +126,27 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
         throw new Error("⚠️ BLOQUEIO: O Cliente associado a esta fatura não possui um CEP válido salvo em sua Ficha.");
     }
 
-    const textoDiscriminacao = discriminacao || invoice.description;
+    // NOVAS VALIDAÇÕES PARA ADN (Ambiente de Dados Nacional)
+    if (!tomadorClient.address) throw new Error("⚠️ BLOQUEIO: O endereço da rua do cliente está em branco e é obrigatório no novo layout nacional.");
+    if (!tomadorClient.number) throw new Error("⚠️ BLOQUEIO: O número do endereço do cliente está em branco e é obrigatório.");
+    if (!tomadorClient.neighborhood) throw new Error("⚠️ BLOQUEIO: O bairro do cliente está em branco e é obrigatório.");
+
+    const cleanFiscal = (txt: string) => (txt || "").normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[$,/|\\?\"%&\'=\n\r\=]/g, ' ').trim();
+
+    const textoDiscriminacao = cleanFiscal(discriminacao || invoice.description);
+    const razaoSocialTomador = cleanFiscal(tomadorClient.name || "CLIENTE CONSUMIDOR FINAL");
+    const enderecoTomador = cleanFiscal(tomadorClient.address);
+    const numeroTomador = cleanFiscal(tomadorClient.number);
+    const bairroTomador = cleanFiscal(tomadorClient.neighborhood);
+
+    // Cálculos para Reforma Tributária (IBS/CBS) - Início em 2026/2027
+    const vServ = Number(invoice.value);
+    const pAliqISS = Number(company.aliquotaServico || 0);
+    const vISS = (vServ * pAliqISS) / 100;
+
+    // Simplificamos o IBS/CBS como zero por enquanto, ou espelhamos o ISS dependendo da configuração futuramente.
+    // O ADN exige o grupo se estivermos em regime de transição.
+    const ibgeMunicipio = company.codigoTributacao || "3131307"; // Padrão Ipatinga se não informado
 
     let xmlInfDeclaracao = `
         <InfDeclaracaoPrestacaoServico Id="${rpsIdName}">
@@ -142,18 +162,19 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
             <Competencia>${dataEmissao.substring(0, 10)}</Competencia>
             <Servico>
                 <Valores>
-                    <ValorServicos>${Number(invoice.value).toFixed(2)}</ValorServicos>
-                    <ValorIss>${((Number(invoice.value) * Number(company.aliquotaServico || 0)) / 100).toFixed(2)}</ValorIss>
-                    <Aliquota>${Number(company.aliquotaServico || 0).toFixed(2)}</Aliquota>
+                    <ValorServicos>${vServ.toFixed(2)}</ValorServicos>
+                    <ValorIss>${vISS.toFixed(2)}</ValorIss>
+                    <Aliquota>${pAliqISS.toFixed(2)}</Aliquota>
                 </Valores>
                 <IssRetido>2</IssRetido>
                 <ItemListaServico>${company.itemListaServico.replace(/[^0-9]/g, '')}</ItemListaServico>
                 ${company.cnae ? `<CodigoCnae>${company.cnae.replace(/\D/g, '')}</CodigoCnae>` : ''}
                 <CodigoTributacaoMunicipio>${company.codigoServico}</CodigoTributacaoMunicipio>
                 <Discriminacao>${textoDiscriminacao.substring(0, 200)}</Discriminacao>
-                <CodigoMunicipio>3131307</CodigoMunicipio>
+                <CodigoMunicipio>${ibgeMunicipio}</CodigoMunicipio>
                 <ExigibilidadeISS>1</ExigibilidadeISS>
-                <MunicipioIncidencia>3131307</MunicipioIncidencia>
+                <MunicipioIncidencia>${ibgeMunicipio}</MunicipioIncidencia>
+                <cNBS>${(company.codigoNbs || "999999999").replace(/\D/g, '').substring(0, 9)}</cNBS>
             </Servico>
             <Prestador>
                 <CpfCnpj>
@@ -167,11 +188,11 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                         ${cpfCnpjTomador.length === 14 ? `<Cnpj>${cpfCnpjTomador}</Cnpj>` : `<Cpf>${cpfCnpjTomador}</Cpf>`}
                     </CpfCnpj>
                 </IdentificacaoTomador>
-                <RazaoSocial>${tomadorClient.name || "CLIENTE CONSUMIDOR FINAL"}</RazaoSocial>
+                <RazaoSocial>${razaoSocialTomador}</RazaoSocial>
                 <Endereco>
-                    <Endereco>${tomadorClient.address || "RUA EXEMPLO"}</Endereco>
-                    <Numero>${tomadorClient.number || "00"}</Numero>
-                    <Bairro>${tomadorClient.neighborhood || "BAIRRO"}</Bairro>
+                    <Endereco>${enderecoTomador}</Endereco>
+                    <Numero>${numeroTomador}</Numero>
+                    <Bairro>${bairroTomador}</Bairro>
                     <CodigoMunicipio>3131307</CodigoMunicipio>
                     <Uf>${tomadorClient.state || "MG"}</Uf>
                     <Cep>${cepTomador || "35160000"}</Cep>
@@ -179,6 +200,39 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
             </TomadorServico>
             <OptanteSimplesNacional>${company.regimeTributario === 1 ? '1' : '2'}</OptanteSimplesNacional>
             <IncentivoFiscal>2</IncentivoFiscal>
+            <IBSCBS>
+                <cLocalidadeIncid>${ibgeMunicipio}</cLocalidadeIncid>
+                <valores>
+                    <vBC>${vServ.toFixed(2)}</vBC>
+                    <uf>
+                        <pIBSUF>0.00</pIBSUF>
+                        <pAliqEfetUF>0.00</pAliqEfetUF>
+                    </uf>
+                    <mun>
+                        <pIBSMun>0.00</pIBSMun>
+                        <pAliqEfetMun>0.00</pAliqEfetMun>
+                    </mun>
+                    <fed>
+                        <pCBS>0.00</pCBS>
+                        <pAliqEfetCBS>0.00</pAliqEfetCBS>
+                    </fed>
+                </valores>
+                <totCIBS>
+                    <vTotNF>${vServ.toFixed(2)}</vTotNF>
+                    <gIBS>
+                        <vIBSTot>0.00</vIBSTot>
+                        <gIBSUFTot>
+                            <vIBSUF>0.00</vIBSUF>
+                        </gIBSUFTot>
+                        <gIBSMunTot>
+                            <vIBSMun>0.00</vIBSMun>
+                        </gIBSMunTot>
+                    </gIBS>
+                    <gCBS>
+                        <vCBS>0.00</vCBS>
+                    </gCBS>
+                </totCIBS>
+            </IBSCBS>
         </InfDeclaracaoPrestacaoServico>
     `;
 
@@ -204,11 +258,12 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     <soapenv:Header/>
     <soapenv:Body>
         <proc:GerarNfseRequest>
-            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.03"><versaoDados>2.03</versaoDados></cabecalho>]]></nfseCabecMsg>
             <nfseDadosMsg><![CDATA[${signedXml}]]></nfseDadosMsg>
         </proc:GerarNfseRequest>
     </soapenv:Body>
     </soapenv:Envelope>`;
+
 
     // 7. Envia pro Sigcorp!
     try {
@@ -347,7 +402,7 @@ export function parseGerarNfseResponse(soapXml: string) {
 }
 
 /**
- * Consulta uma NFS-e pelo RPS no SigCorp (Abrasf 2.04)
+ * Consulta uma NFS-e pelo RPS no SigCorp (Abrasf 2.03)
  * Retorna o número da nota, código de verificação e link de impressão da prefeitura
  */
 export async function consultarNfsePorRps({ rpsNumero, company, environment = 'HOMOLOGATION' }: { rpsNumero: string, company: any, environment?: 'HOMOLOGATION' | 'PRODUCTION' }) {
@@ -374,7 +429,7 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
     <soapenv:Header/>
     <soapenv:Body>
         <proc:ConsultarNfsePorRpsRequest>
-            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.03"><versaoDados>2.03</versaoDados></cabecalho>]]></nfseCabecMsg>
             <nfseDadosMsg><![CDATA[${consultaXml}]]></nfseDadosMsg>
         </proc:ConsultarNfsePorRpsRequest>
     </soapenv:Body>
@@ -472,7 +527,7 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
 }
 
 /**
- * Cancela uma NFS-e emitida no SigCorp (Abrasf 2.04)
+ * Cancela uma NFS-e emitida no SigCorp (Abrasf 2.03)
  * Requer o número da NFS-e (não o RPS) e o código de verificação
  */
 export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, motivo, environment = 'HOMOLOGATION' }: {
@@ -507,7 +562,7 @@ export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, mot
     const cnpj = (company.cnpj || "").replace(/\D/g, "");
     const im = (company.inscricaoMunicipal || "").replace(/\D/g, "");
 
-    // 2. Monta o XML de Cancelamento (ABRASF 2.04)
+    // 2. Monta o XML de Cancelamento (ABRASF 2.03)
     const cancelXmlInner = `<Pedido>
         <InfPedidoCancelamento Id="cancel_${numeroNfse}">
             <IdentificacaoNfse>
@@ -538,7 +593,7 @@ export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, mot
     <soapenv:Header/>
     <soapenv:Body>
         <proc:CancelarNfseRequest>
-            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
+            <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.03"><versaoDados>2.03</versaoDados></cabecalho>]]></nfseCabecMsg>
             <nfseDadosMsg><![CDATA[${signedXml}]]></nfseDadosMsg>
         </proc:CancelarNfseRequest>
     </soapenv:Body>

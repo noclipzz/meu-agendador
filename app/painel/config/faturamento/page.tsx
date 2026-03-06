@@ -16,6 +16,7 @@ export default function ConfigFaturamento() {
     const [codigoServico, setCodigoServico] = useState("");
     const [itemListaServico, setItemListaServico] = useState("");
     const [codigoTributacao, setCodigoTributacao] = useState("");
+    const [codigoNbs, setCodigoNbs] = useState("");
     const [cnae, setCnae] = useState("");
     const [aliquotaServico, setAliquotaServico] = useState("");
     const [cofinsTax, setCofinsTax] = useState("");
@@ -67,6 +68,7 @@ export default function ConfigFaturamento() {
                 setCodigoServico(dataConfig.codigoServico || "");
                 setItemListaServico(dataConfig.itemListaServico || "");
                 setCodigoTributacao(dataConfig.codigoTributacao || "");
+                setCodigoNbs(dataConfig.codigoNbs || "");
                 setCnae(dataConfig.cnae || "");
                 setAliquotaServico(String(dataConfig.aliquotaServico || ""));
                 setCofinsTax(String(dataConfig.cofinsTax || ""));
@@ -136,7 +138,7 @@ export default function ConfigFaturamento() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     inscricaoMunicipal, regimeTributario: Number(regimeTributario), naturezaOperacao: Number(naturezaOperacao),
-                    codigoServico, itemListaServico, cnae, codigoTributacao,
+                    codigoServico, itemListaServico, cnae, codigoTributacao, codigoNbs,
                     fiscalPadraoDesc, issRetidoTomador,
                     cofinsTax: parseFloat(cofinsTax || "0"),
                     pisTax: parseFloat(pisTax || "0"),
@@ -200,11 +202,19 @@ export default function ConfigFaturamento() {
                             <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">CNAE (Nacional)*</label>
                             <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 8122200" value={cnae} onChange={e => setCnae(e.target.value)} />
                         </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Código NBS (Nacional)*</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="9 dígitos" value={codigoNbs} onChange={e => setCodigoNbs(e.target.value)} />
+                        </div>
 
                         {/* Linha 2 */}
                         <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Código Tributação Municipal (ISS)*</label>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Cód. Tributação Municipal (ISS)*</label>
                             <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 131307" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Cód. IBGE Município (Incidência)*</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 3131307" value={codigoTributacao} onChange={e => setCodigoTributacao(e.target.value)} />
                         </div>
                         <div>
                             <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% Alíquota ISS</label>
