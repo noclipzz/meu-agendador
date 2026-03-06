@@ -369,10 +369,10 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
     <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:proc="${soapNamespace}">
     <soapenv:Header/>
     <soapenv:Body>
-        <proc:ConsultarNfseRpsRequest>
+        <proc:ConsultarNfsePorRpsRequest>
             <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="utf-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.04"><versaoDados>2.04</versaoDados></cabecalho>]]></nfseCabecMsg>
             <nfseDadosMsg><![CDATA[${consultaXml}]]></nfseDadosMsg>
-        </proc:ConsultarNfseRpsRequest>
+        </proc:ConsultarNfsePorRpsRequest>
     </soapenv:Body>
     </soapenv:Envelope>`;
 
@@ -380,7 +380,7 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
         const response = await axios.post(wsUrl, soapEnvelope, {
             headers: {
                 "Content-Type": "text/xml;charset=UTF-8",
-                "SOAPAction": "nfs#ConsultarNfseRps"
+                "SOAPAction": "nfs#ConsultarNfsePorRps"
             },
             timeout: 15000
         });
