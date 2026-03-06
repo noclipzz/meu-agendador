@@ -417,7 +417,15 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
 
         let errorMsg = "NFS-e ainda não processada pela prefeitura.";
 
-        if (matchMsg) errorMsg = `Erro Prefeitura: ${matchMsg[1]}`;
+        if (matchMsg) {
+            const rawMsg = matchMsg[1];
+            // Se for "Aguardando envio", significa que está ok, apenas na fila.
+            if (rawMsg.includes("Aguardando")) {
+                errorMsg = `Status Prefeitura: ${rawMsg}`;
+            } else {
+                errorMsg = `Erro Prefeitura: ${rawMsg}`;
+            }
+        }
         else if (matchFault) errorMsg = `Erro SOAP: ${matchFault[1]}`;
         else if (xml && !xml.includes("<Numero>")) {
             // Último recurso: mostra o começo da resposta se ela não tiver uma mensagem amigável e falhou
