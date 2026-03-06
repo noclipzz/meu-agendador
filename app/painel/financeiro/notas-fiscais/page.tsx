@@ -32,6 +32,7 @@ export default function NotasFiscaisPage() {
     const [searchClient, setSearchClient] = useState("");
     const [refreshingId, setRefreshingId] = useState<string | null>(null);
     const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
     const [cancelingId, setCancelingId] = useState<string | null>(null);
     const router = useRouter();
     const [nfeEnvironment, setNfeEnvironment] = useState<'HOMOLOGATION' | 'PRODUCTION'>('HOMOLOGATION');
@@ -669,7 +670,15 @@ export default function NotasFiscaisPage() {
                                                     {/* Dropdown Menu */}
                                                     <div className="relative">
                                                         <button
-                                                            onClick={() => setActiveMenuId(activeMenuId === inv.id ? null : inv.id)}
+                                                            onClick={(e) => {
+                                                                if (activeMenuId === inv.id) {
+                                                                    setActiveMenuId(null);
+                                                                } else {
+                                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                                    setMenuPos({ top: rect.bottom, right: window.innerWidth - rect.right });
+                                                                    setActiveMenuId(inv.id);
+                                                                }
+                                                            }}
                                                             className="p-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition shadow-sm flex items-center"
                                                             title="Mais Opções"
                                                         >
@@ -677,12 +686,15 @@ export default function NotasFiscaisPage() {
                                                         </button>
 
                                                         {activeMenuId === inv.id && (
-                                                            <>
+                                                            <ModalPortal>
                                                                 <div
-                                                                    className="fixed inset-0 z-[60]"
+                                                                    className="fixed inset-0 z-[100]"
                                                                     onClick={() => setActiveMenuId(null)}
                                                                 />
-                                                                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 z-[70] py-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                                                <div
+                                                                    className="fixed mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 z-[110] py-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right"
+                                                                    style={{ top: menuPos.top, right: menuPos.right }}
+                                                                >
                                                                     <button
                                                                         onClick={() => { setActiveMenuId(null); imprimirNfse(inv); }}
                                                                         className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 border-b dark:border-gray-700"
@@ -738,7 +750,7 @@ export default function NotasFiscaisPage() {
                                                                         <DollarSign size={16} /> Ver no financeiro
                                                                     </button>
                                                                 </div>
-                                                            </>
+                                                            </ModalPortal>
                                                         )}
                                                     </div>
                                                 </div>
