@@ -481,8 +481,8 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
 
             if (rawMsg.includes("Aguardando")) {
                 errorMsg = `Status: ${rawMsg}`;
-            } else if (rawMsg.includes("não encontrado")) {
-                errorMsg = `RPS ${rpsNumero} não encontrado na Prefeitura. Como Ipatinga mudou para o padrão ADN em 2026, notas antigas ou inválidas podem ter sido descartadas. Tente Emitir novamente.`;
+            } else if (rawMsg.toLowerCase().includes("encontrado")) {
+                errorMsg = `RPS ${rpsNumero} não foi encontrado na Prefeitura! Notas antigas emitidas fora do padrão ADN podem ter sido descartadas. Emita uma nova nota usando o layout atualizado.`;
             } else {
                 errorMsg = `Erro Prefeitura: ${rawMsg}${rawCod ? ` (Cód: ${rawCod})` : ''}`;
             }
