@@ -192,12 +192,12 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     // 6. Define URL e Namespace baseado no Ambiente
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation
         ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     // 5. Monta o Envelope SOAP
     const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
@@ -354,12 +354,12 @@ export function parseGerarNfseResponse(soapXml: string) {
 export async function consultarNfsePorRps({ rpsNumero, company, environment = 'HOMOLOGATION' }: { rpsNumero: string, company: any, environment?: 'HOMOLOGATION' | 'PRODUCTION' }) {
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation
         ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     const portalBase = isHomologation
         ? "https://testeipatinga.meumunicipio.online"
@@ -403,7 +403,6 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
             const numeroNfse = matchNumero[1];
             const codigoVerificacao = matchCodVerif[1];
 
-            // Link de impressão da prefeitura
             const linkImpressao = `${portalBase}/contribuinte/nfse/impressao?inscricaoMunicipal=${im}&numero=${numeroNfse}&codigoVerificacao=${codigoVerificacao}`;
 
             return {
@@ -416,19 +415,22 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
             };
         }
 
-        // Se não encontrou os dados, pode ser que ainda esteja processando ou tenha dado erro de schema
         const matchMsg = /<Mensagem>(.*?)<\/Mensagem>/i.exec(xml);
+        const matchCod = /<Codigo>(.*?)<\/Codigo>/i.exec(xml);
         const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(xml);
 
-        let errorMsg = "NFS-e ainda não processada pela prefeitura.";
+        let errorMsg = "NFS-e ainda não processada.";
 
         if (matchMsg) {
             const rawMsg = matchMsg[1];
-            // Se for "Aguardando envio", significa que está ok, apenas na fila.
+            const rawCod = matchCod?.[1] || "";
+
             if (rawMsg.includes("Aguardando")) {
-                errorMsg = `Status Prefeitura: ${rawMsg}`;
+                errorMsg = `Status: ${rawMsg}`;
+            } else if (rawMsg.includes("não encontrado")) {
+                errorMsg = `RPS ${rpsNumero} não encontrado na Prefeitura. Como Ipatinga mudou para o padrão ADN em 2026, notas antigas ou inválidas podem ter sido descartadas. Tente Emitir novamente.`;
             } else {
-                errorMsg = `Erro Prefeitura: ${rawMsg}`;
+                errorMsg = `Erro Prefeitura: ${rawMsg}${rawCod ? ` (Cód: ${rawCod})` : ''}`;
             }
         }
         else if (matchFault) errorMsg = `Erro SOAP: ${matchFault[1]}`;
@@ -496,12 +498,12 @@ export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, mot
 
     const isHomologation = environment === 'HOMOLOGATION';
     const wsUrl = isHomologation
-        ? "https://testeipatinga.meumunicipio.online/abrasf/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     const soapNamespace = isHomologation
         ? "https://testeipatingaabrasf.meumunicipio.online/ws/nfs"
-        : "https://abrasfipatinga.meumunicipio.online/ws/nfs";
+        : "https://ipatingaabrasf.meumunicipio.online/ws/nfs";
 
     const cnpj = (company.cnpj || "").replace(/\D/g, "");
     const im = (company.inscricaoMunicipal || "").replace(/\D/g, "");
