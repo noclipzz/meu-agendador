@@ -181,6 +181,16 @@ export async function POST(req: Request) {
 
     await prisma.expense.createMany({ data: expensesToCreate });
 
+    // Abate o saldo das contas bancárias se a despesa já nasceu PAGA
+    for (const exp of expensesToCreate) {
+      if (exp.status === 'PAGO' && exp.bankAccountId) {
+        await prisma.bankAccount.update({
+          where: { id: exp.bankAccountId },
+          data: { balance: { decrement: exp.value } }
+        }).catch(() => { });
+      }
+    }
+
     return NextResponse.json({ success: true, count: occurrences });
 
   } catch (error: any) {
@@ -224,10 +234,31 @@ export async function PUT(req: Request) {
       updatedBy: userName
     };
 
+    const current = await (prisma.expense as any).findUnique({ where: { id } });
+
     const updated = await (prisma.expense as any).update({
       where: { id },
       data: updateData
     });
+
+    // Controle de saldos bancários
+    if (current && updated) {
+      // Reverter o estado atual (se a despesa original estava PAGA, devolvemos o dinheiro pra conta que estava atrelada)
+      if (current.status === 'PAGO' && current.bankAccountId) {
+        await prisma.bankAccount.update({
+          where: { id: current.bankAccountId },
+          data: { balance: { increment: Number(current.value) } }
+        }).catch(() => { });
+      }
+
+      // Aplicar o novo estado (se a nova versão da despesa agora está PAGA, tiramos o dinheiro da nova conta)
+      if (updated.status === 'PAGO' && updated.bankAccountId) {
+        await prisma.bankAccount.update({
+          where: { id: updated.bankAccountId },
+          data: { balance: { decrement: Number(updated.value) } }
+        }).catch(() => { });
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (error: any) {
@@ -244,8 +275,18 @@ export async function DELETE(req: Request) {
     const body = await req.json();
     const { id, ids, deleteSeries } = body;
 
-    // Supote para exclusão em massa
+    // Suporte para exclusão em massa
     if (ids && Array.isArray(ids)) {
+      const toDelete = await (prisma.expense as any).findMany({ where: { id: { in: ids } } });
+      for (const e of toDelete) {
+        if (e.status === 'PAGO' && e.bankAccountId) {
+          await prisma.bankAccount.update({
+            where: { id: e.bankAccountId },
+            data: { balance: { increment: Number(e.value) } }
+          }).catch(() => { });
+        }
+      }
+
       await (prisma.expense as any).deleteMany({
         where: {
           id: { in: ids }
@@ -257,16 +298,33 @@ export async function DELETE(req: Request) {
     if (deleteSeries) {
       const original = await (prisma.expense as any).findUnique({ where: { id } });
       if (original) {
-        await (prisma.expense as any).deleteMany({
-          where: {
-            companyId: original.companyId,
-            description: original.description,
-            value: original.value,
-            category: original.category,
+        const queryParams = {
+          companyId: original.companyId,
+          description: original.description,
+          value: original.value,
+          category: original.category,
+        };
+        const toDelete = await (prisma.expense as any).findMany({ where: queryParams });
+        for (const e of toDelete) {
+          if (e.status === 'PAGO' && e.bankAccountId) {
+            await prisma.bankAccount.update({
+              where: { id: e.bankAccountId },
+              data: { balance: { increment: Number(e.value) } }
+            }).catch(() => { });
           }
+        }
+        await (prisma.expense as any).deleteMany({
+          where: queryParams
         });
       }
     } else {
+      const original = await (prisma.expense as any).findUnique({ where: { id } });
+      if (original?.status === 'PAGO' && original.bankAccountId) {
+        await prisma.bankAccount.update({
+          where: { id: original.bankAccountId },
+          data: { balance: { increment: Number(original.value) } }
+        }).catch(() => { });
+      }
       await (prisma.expense as any).delete({ where: { id } });
     }
 
