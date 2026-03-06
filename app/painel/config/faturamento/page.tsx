@@ -190,55 +190,57 @@ export default function ConfigFaturamento() {
                     <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
                         <FileText className="text-emerald-500" size={20} /> Emissão Fiscal (NFS-e)
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-white dark:bg-gray-800/30 rounded-3xl border dark:border-gray-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-white dark:bg-gray-800/30 rounded-[2.5rem] border dark:border-gray-800">
                         {/* Linha 1 */}
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Código do serviço*</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" placeholder="07.13" value={itemListaServico} onChange={e => setItemListaServico(e.target.value)} />
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Item Lista Serviço (LC 116)*</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 07.13" value={itemListaServico} onChange={e => setItemListaServico(e.target.value)} />
                         </div>
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Código de tributação</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" placeholder="0" value={codigoTributacao} onChange={e => setCodigoTributacao(e.target.value)} />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">CNAE*</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" placeholder="8122200" value={cnae} onChange={e => setCnae(e.target.value)} />
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">CNAE (Nacional)*</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 8122200" value={cnae} onChange={e => setCnae(e.target.value)} />
                         </div>
 
                         {/* Linha 2 */}
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Descrição da atividade*</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={fiscalPadraoDesc} onChange={e => setFiscalPadraoDesc(e.target.value)} />
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Código Tributação Municipal (ISS)*</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="Ex: 131307" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
                         </div>
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% ISS</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% COFINS</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={cofinsTax} onChange={e => setCofinsTax(e.target.value)} />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% PIS</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={pisTax} onChange={e => setPisTax(e.target.value)} />
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% Alíquota ISS (Ipatinga)</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white shadow-sm transition focus:ring-2 focus:ring-emerald-500/20" placeholder="2.00" value={aliquotaServico} onChange={e => setAliquotaServico(e.target.value)} />
                         </div>
 
-                        {/* Linha 3 */}
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% CSLL</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={csllTax} onChange={e => setCsllTax(e.target.value)} />
+                        {/* Linha 3: Impostos Federais */}
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% COFINS</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={cofinsTax} onChange={e => setCofinsTax(e.target.value)} />
                         </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% PIS</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={pisTax} onChange={e => setPisTax(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% CSLL</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={csllTax} onChange={e => setCsllTax(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% IR</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={irTax} onChange={e => setIrTax(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">% INSS</label>
+                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={inssTax} onChange={e => setInssTax(e.target.value)} />
+                        </div>
+
+                        {/* Linha 4 */}
                         <div className="md:col-span-2">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% IR</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={irTax} onChange={e => setIrTax(e.target.value)} />
-                        </div>
-                        <div className="md:col-span-1">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">% INSS</label>
-                            <input type="number" step="0.01" className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={inssTax} onChange={e => setInssTax(e.target.value)} />
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Descrição da Atividade (Padrão)*</label>
+                            <textarea rows={2} className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white resize-none" placeholder="Descrição completa..." value={fiscalPadraoDesc} onChange={e => setFiscalPadraoDesc(e.target.value)} />
                         </div>
 
-                        {/* Linha 4: Checkboxes */}
-                        <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                        {/* Linha Checkboxes */}
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
                             <div className="flex items-center gap-2">
                                 <input id="checkDescontarConfig" type="checkbox" checked={descontarImpostos} onChange={e => setDescontarImpostos(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                 <label htmlFor="checkDescontarConfig" className="font-bold text-[10px] text-gray-600 dark:text-gray-400 uppercase cursor-pointer">
@@ -248,34 +250,30 @@ export default function ConfigFaturamento() {
                             <div className="flex items-center gap-2">
                                 <input id="checkConstrucaoConfig" type="checkbox" checked={construcaoCivil} onChange={e => setConstrucaoCivil(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                 <label htmlFor="checkConstrucaoConfig" className="font-bold text-[10px] text-gray-600 dark:text-gray-400 uppercase cursor-pointer">
-                                    Serviços relacionados à construção civil
+                                    Serviços de Construção Civil
                                 </label>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input id="checkDeducoesConfig" type="checkbox" checked={descontarDeducoes} onChange={e => setDescontarDeducoes(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
                                 <label htmlFor="checkDeducoesConfig" className="font-bold text-[10px] text-gray-600 dark:text-gray-400 uppercase cursor-pointer">
-                                    Descontar deduções no valor total
+                                    Descontar deduções
                                 </label>
                             </div>
                         </div>
 
-                        {/* Inscrição Municipal e Outros campos técnicos */}
-                        <div className="md:col-span-2 mt-4 pt-4 border-t dark:border-gray-800">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Inscrição Municipal</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} />
+                        {/* Linha Técnica */}
+                        <div className="pt-4 border-t dark:border-gray-800">
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Inscrição Municipal</label>
+                            <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} />
                         </div>
-                        <div className="md:col-span-2 mt-4 pt-4 border-t dark:border-gray-800">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Natureza da Operação</label>
-                            <select className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={naturezaOperacao} onChange={e => setNaturezaOperacao(e.target.value)}>
+                        <div className="pt-4 border-t dark:border-gray-800">
+                            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Natureza da Operação</label>
+                            <select className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 font-bold dark:text-white" value={naturezaOperacao} onChange={e => setNaturezaOperacao(e.target.value)}>
                                 <option value="1">Tributação no Município</option>
                                 <option value="2">Tributação fora do Município</option>
                                 <option value="3">Isenção</option>
                                 <option value="4">Imune</option>
                             </select>
-                        </div>
-                        <div className="md:col-span-2 mt-4 pt-4 border-t dark:border-gray-800">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Código Tributação Municipal (ISS)</label>
-                            <input className="w-full border dark:border-gray-700 p-3 rounded-xl bg-white dark:bg-gray-900 font-bold dark:text-white transition focus:ring-4 ring-blue-500/10 outline-none" placeholder="Ex: 131307" value={codigoServico} onChange={e => setCodigoServico(e.target.value)} />
                         </div>
 
                         <div className="flex items-center gap-3 bg-white dark:bg-gray-900 border dark:border-gray-800 p-4 rounded-2xl cursor-pointer md:col-span-2">
