@@ -226,9 +226,17 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
     } catch (error: any) {
         const errorData = error.response ? error.response.data : error.message;
         console.error("NFSE_SOAP_ERROR", errorData);
+
+        let customMessage = "Falha na comunicação com a prefeitura.";
+        if (typeof errorData === 'string') {
+            const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(errorData);
+            if (matchFault) customMessage = `Erro Prefeitura: ${matchFault[1]}`;
+        }
+
         return {
             success: false,
-            error: errorData,
+            error: customMessage,
+            details: errorData,
             requestXml: soapEnvelope
         };
     }
@@ -416,6 +424,10 @@ export async function consultarNfsePorRps({ rpsNumero, company, environment = 'H
 
         if (error.response?.status === 500) {
             msg = "🏦 O servidor da Prefeitura está com um erro interno (Erro 500). Tente novamente mais tarde.";
+            if (typeof errorData === 'string') {
+                const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(errorData);
+                if (matchFault) msg = `Erro Prefeitura: ${matchFault[1]}`;
+            }
         } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
             msg = "⚡ Servidor da Prefeitura demorou muito a responder (Time-out). Pode estar instável.";
         } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
@@ -546,6 +558,10 @@ export async function cancelarNfse({ numeroNfse, codigoVerificacao, company, mot
         let msg = "Erro ao cancelar NFS-e na prefeitura.";
         if (error.response?.status === 500) {
             msg = "🏦 O servidor da Prefeitura retornou erro interno (500). Tente novamente.";
+            if (typeof errorData === 'string') {
+                const matchFault = /<faultstring>(.*?)<\/faultstring>/i.exec(errorData);
+                if (matchFault) msg = `Erro Prefeitura: ${matchFault[1]}`;
+            }
         } else if (error.code === 'ECONNABORTED') {
             msg = "⚡ Timeout ao conectar com a prefeitura.";
         }
