@@ -461,7 +461,84 @@ export async function GET(req: Request) {
         }
 
         // --------------------------------------------------------------------------------
-        // 6. TAREFA: BACKUP DIÁRIO DO BANCO DE DADOS (EMAIL)
+        // 6. TAREFA: AVISOS DE COBRANÇA DE FATURAS (WHATSAPP)
+        // --------------------------------------------------------------------------------
+        if (!isTestIg) {
+            try {
+                const hojeZoned = toZonedTime(now, timezone);
+
+                const start5 = fromZonedTime(startOfDay(addDays(hojeZoned, 5)), timezone);
+                const end5 = fromZonedTime(endOfDay(addDays(hojeZoned, 5)), timezone);
+
+                const start0 = fromZonedTime(startOfDay(hojeZoned), timezone);
+                const end0 = fromZonedTime(endOfDay(hojeZoned), timezone);
+
+                const startMinus2 = fromZonedTime(startOfDay(addDays(hojeZoned, -2)), timezone);
+                const endMinus2 = fromZonedTime(endOfDay(addDays(hojeZoned, -2)), timezone);
+
+                const faturasPendentes = await prisma.invoice.findMany({
+                    where: {
+                        status: "PENDENTE",
+                        OR: [
+                            { dueDate: { gte: start5, lte: end5 } },
+                            { dueDate: { gte: start0, lte: end0 } },
+                            { dueDate: { gte: startMinus2, lte: endMinus2 } },
+                        ]
+                    },
+                    include: { client: true, company: true }
+                });
+
+                let cobrancasEnviadas = 0;
+                for (const invoice of faturasPendentes) {
+                    try {
+                        const company = invoice.company;
+                        const client = invoice.client;
+
+                        if (!client?.phone || company.whatsappStatus !== 'CONNECTED' || !company.evolutionServerUrl) continue;
+
+                        const dataVencimentoUTC = new Date(invoice.dueDate);
+                        const dataVencimentoZoned = startOfDay(toZonedTime(dataVencimentoUTC, timezone));
+                        const targetHojeDia = startOfDay(hojeZoned).getTime();
+
+                        let tipoMensagem = "";
+                        let corpoBase = "";
+
+                        if (dataVencimentoZoned.getTime() === startOfDay(addDays(hojeZoned, 5)).getTime()) {
+                            tipoMensagem = "⏳ Aviso de Vencimento Próximo";
+                            corpoBase = `Faltam *5 dias* para o vencimento da sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*.\nEvite juros e multas!`;
+                        } else if (dataVencimentoZoned.getTime() === targetHojeDia) {
+                            tipoMensagem = "⚠️ Vencimento Hoje";
+                            corpoBase = `Sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* vence *HOJE*.\nNão esqueça de realizar o pagamento para evitar suspensão ou juros.`;
+                        } else if (dataVencimentoZoned.getTime() === startOfDay(addDays(hojeZoned, -2)).getTime()) {
+                            tipoMensagem = "🚨 Fatura Vencida";
+                            corpoBase = `Notamos que sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* venceu há *2 DIAS* e ainda consta como pendente em nosso sistema.\nPor favor, regularize sua situação assim que possível.`;
+                        } else {
+                            continue; // Caiu fora da regra exata por conversão de fuso
+                        }
+
+                        let msg = `💰 *${tipoMensagem} - ${company.name}*\n\n`;
+                        msg += `Olá, *${client.name}*!\n`;
+                        msg += `${corpoBase}\n\n`;
+                        msg += `📝 *Serviço/Referência:* ${invoice.description}\n`;
+
+                        if (invoice.bankUrl) msg += `🔗 *Link do Boleto:*\n${invoice.bankUrl}\n\n`;
+                        if (invoice.pixCopyPaste) msg += `📱 *PIX (Copia e Cola):*\n${invoice.pixCopyPaste}\n\n`;
+
+                        msg += `_Caso já tenha realizado o pagamento, desconsidere esta mensagem._`;
+
+                        await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, client.phone, msg);
+                        cobrancasEnviadas++;
+                        await new Promise(r => setTimeout(r, 1000));
+                    } catch (e) { }
+                }
+                logs.push(`Avisos Financeiros: ${cobrancasEnviadas} cobranças enviadas.`);
+            } catch (err: any) {
+                logs.push(`Avisos Financeiros: Erro na automação (${err.message})`);
+            }
+        }
+
+        // --------------------------------------------------------------------------------
+        // 7. TAREFA: BACKUP DIÁRIO DO BANCO DE DADOS (EMAIL)
         // --------------------------------------------------------------------------------
         if (!isTestIg) {
             try {
