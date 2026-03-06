@@ -109,7 +109,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
 
     // 3. Monta o XML do RPS padrão Abrasf v2.04
     // Usamos o final do ID da fatura para garantir um número sequencial e estável (evitando números gigantes de timestamp)
-    const rpsIdNumerico = invoice.id.replace(/\D/g, "").slice(-7) || String(new Date().getTime()).slice(-7);
+    const rpsIdNumerico = invoice.id.replace(/\D/g, "").slice(-8) || String(new Date().getTime()).slice(-8);
     const rpsIdName = `rps${rpsIdNumerico}`;
 
     const dataEmissao = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T');
