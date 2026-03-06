@@ -146,7 +146,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
 
     // Simplificamos o IBS/CBS como zero por enquanto, ou espelhamos o ISS dependendo da configuração futuramente.
     // O ADN exige o grupo se estivermos em regime de transição.
-    const ibgeMunicipio = company.codigoTributacao || "3131307"; // Padrão Ipatinga se não informado
+    let ibgeMunicipio = (company.codigoTributacao || "").replace(/\D/g, "");
+    if (ibgeMunicipio.length !== 7) ibgeMunicipio = "3131307"; // Padrão Ipatinga se inválido
 
     let xmlInfDeclaracao = `
         <InfDeclaracaoPrestacaoServico Id="${rpsIdName}">
@@ -182,7 +183,7 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                 </CpfCnpj>
                 <InscricaoMunicipal>${company.inscricaoMunicipal.replace(/\D/g, "")}</InscricaoMunicipal>
             </Prestador>
-            <TomadorServico>
+            <Tomador>
                 <IdentificacaoTomador>
                     <CpfCnpj>
                         ${cpfCnpjTomador.length === 14 ? `<Cnpj>${cpfCnpjTomador}</Cnpj>` : `<Cpf>${cpfCnpjTomador}</Cpf>`}
@@ -197,42 +198,9 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
                     <Uf>${tomadorClient.state || "MG"}</Uf>
                     <Cep>${cepTomador || "35160000"}</Cep>
                 </Endereco>
-            </TomadorServico>
+            </Tomador>
             <OptanteSimplesNacional>${company.regimeTributario === 1 ? '1' : '2'}</OptanteSimplesNacional>
             <IncentivoFiscal>2</IncentivoFiscal>
-            <IBSCBS>
-                <cLocalidadeIncid>${ibgeMunicipio}</cLocalidadeIncid>
-                <valores>
-                    <vBC>${vServ.toFixed(2)}</vBC>
-                    <uf>
-                        <pIBSUF>0.00</pIBSUF>
-                        <pAliqEfetUF>0.00</pAliqEfetUF>
-                    </uf>
-                    <mun>
-                        <pIBSMun>0.00</pIBSMun>
-                        <pAliqEfetMun>0.00</pAliqEfetMun>
-                    </mun>
-                    <fed>
-                        <pCBS>0.00</pCBS>
-                        <pAliqEfetCBS>0.00</pAliqEfetCBS>
-                    </fed>
-                </valores>
-                <totCIBS>
-                    <vTotNF>${vServ.toFixed(2)}</vTotNF>
-                    <gIBS>
-                        <vIBSTot>0.00</vIBSTot>
-                        <gIBSUFTot>
-                            <vIBSUF>0.00</vIBSUF>
-                        </gIBSUFTot>
-                        <gIBSMunTot>
-                            <vIBSMun>0.00</vIBSMun>
-                        </gIBSMunTot>
-                    </gIBS>
-                    <gCBS>
-                        <vCBS>0.00</vCBS>
-                    </gCBS>
-                </totCIBS>
-            </IBSCBS>
         </InfDeclaracaoPrestacaoServico>
     `;
 
@@ -305,7 +273,8 @@ export async function emitirNfeSigcorp({ invoice, company, environment = 'HOMOLO
  * Analisa a resposta SOAP da GerarNfse e retorna um objeto estruturado.
  * Detecta corretamente: NFS-e gerada (síncrono), processamento assíncrono, e erros reais.
  */
-export function parseGerarNfseResponse(soapXml: string) {
+export function parseGerarNfseResponse(rawSoapXml: string) {
+    const soapXml = rawSoapXml ? rawSoapXml.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"') : "";
     const result = {
         nfseGerada: false,
         numeroNfse: '',
