@@ -63,7 +63,7 @@ model Company {
   whatsappPaymentSuccessMessage String?            @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
   corporateName                String?
   notificationSettings         Json?              @default("{}")
-  
+  financeAuxiliaries           Json?              @default("{}")
   // Fiscal Fields
   codigoTributacao             String?
   codigoNbs                    String?
