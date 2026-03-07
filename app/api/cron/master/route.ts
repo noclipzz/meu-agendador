@@ -504,16 +504,21 @@ export async function GET(req: Request) {
                         const dataVencimentoZoned = startOfDay(toZonedTime(dataVencimentoUTC, timezone));
                         const targetHojeDia = startOfDay(hojeZoned).getTime();
 
+                        const settings = company.notificationSettings as any || {};
+
                         let tipoMensagem = "";
                         let corpoBase = "";
 
                         if (dataVencimentoZoned.getTime() === startOfDay(addDays(hojeZoned, 5)).getTime()) {
+                            if (settings.client_billing_reminder_5d === false) continue;
                             tipoMensagem = "⏳ Aviso de Vencimento Próximo";
                             corpoBase = `Faltam *5 dias* para o vencimento da sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*.\nEvite juros e multas!`;
                         } else if (dataVencimentoZoned.getTime() === targetHojeDia) {
+                            if (settings.client_billing_reminder_today === false) continue;
                             tipoMensagem = "⚠️ Vencimento Hoje";
                             corpoBase = `Sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* vence *HOJE*.\nNão esqueça de realizar o pagamento para evitar suspensão ou juros.`;
                         } else if (dataVencimentoZoned.getTime() === startOfDay(addDays(hojeZoned, -2)).getTime()) {
+                            if (settings.client_billing_reminder_2d_after === false) continue;
                             tipoMensagem = "🚨 Fatura Vencida";
                             corpoBase = `Notamos que sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* venceu há *2 DIAS* e ainda consta como pendente em nosso sistema.\nPor favor, regularize sua situação assim que possível.`;
                         } else {

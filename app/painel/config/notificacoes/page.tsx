@@ -29,7 +29,10 @@ export default function NotificacoesPage() {
         client_new_booking_whatsapp: true,
         client_reminder_whatsapp: true,
         client_waiting_list_whatsapp: true,
-        client_payment_whatsapp: true
+        client_payment_whatsapp: true,
+        client_billing_reminder_5d: true,
+        client_billing_reminder_today: true,
+        client_billing_reminder_2d_after: true
     } as Record<string, boolean>);
 
     const [companyId, setCompanyId] = useState("");
@@ -65,6 +68,9 @@ export default function NotificacoesPage() {
                     client_reminder_whatsapp: data.companySettings?.client_reminder_whatsapp ?? true,
                     client_waiting_list_whatsapp: data.companySettings?.client_waiting_list_whatsapp ?? true,
                     client_payment_whatsapp: data.companySettings?.client_payment_whatsapp ?? true,
+                    client_billing_reminder_5d: data.companySettings?.client_billing_reminder_5d ?? true,
+                    client_billing_reminder_today: data.companySettings?.client_billing_reminder_today ?? true,
+                    client_billing_reminder_2d_after: data.companySettings?.client_billing_reminder_2d_after ?? true,
                 });
 
                 setCompanyId(data.companyId || "");
@@ -271,8 +277,32 @@ export default function NotificacoesPage() {
                                 <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
                                     <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_payment_whatsapp} onChange={() => toggleCompanySetting('client_payment_whatsapp')} />
                                     <div>
-                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Avisos Financeiros do Boleto/Pix</span>
-                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Emite lembrete de cobrança e recibo de pagamento aos clientes.</p>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Confirmação de Pagamento PIX/Cora</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Avisa o cliente quando o pagamento cai no sistema.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_billing_reminder_5d} onChange={() => toggleCompanySetting('client_billing_reminder_5d')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Vencimento (5 Dias Antes)</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Lembrete amigável com link do boleto/PIX antes do vencimento.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_billing_reminder_today} onChange={() => toggleCompanySetting('client_billing_reminder_today')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Vencimento (No Dia)</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Mensagem urgente no dia que a fatura vence.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_billing_reminder_2d_after} onChange={() => toggleCompanySetting('client_billing_reminder_2d_after')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Fatura Vencida (2 Dias Depois)</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Cobrança de pendência para faturas não pagas.</p>
                                     </div>
                                 </label>
                             </div>

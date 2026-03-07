@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Calendar as CalIcon, Filter, Search, Plus, User, FileText, CheckCircle, Clock, AlertTriangle, FileCheck, Trash2, Box, Info, X, MapPin, Phone, MessageSquare, Download, Hash, ShieldCheck, UploadCloud, TrendingUp, HelpCircle, ArrowDownRight, MoreVertical, Pencil, CheckCircle2, Eye, Receipt, CreditCard, Banknote, Loader2, QrCode, ArrowLeft, MoreHorizontal, ChevronDown, Barcode, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
+import { PromptModal } from "@/components/ui/PromptModal";
 import Link from "next/link";
 import { format, startOfMonth, endOfMonth, startOfDay, endOfDay, startOfWeek, endOfWeek, subMonths, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,6 +40,9 @@ export default function ContasReceberPage() {
     const [customDates, setCustomDates] = useState({ start: '', end: '' });
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [isNfePromptModalOpen, setIsNfePromptModalOpen] = useState(false);
+    const [nfePromptValue, setNfePromptValue] = useState("");
     const [isPixModalOpen, setIsPixModalOpen] = useState(false);
     const [pixData, setPixData] = useState<{ qrCode: string, emv: string } | null>(null);
     const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
@@ -231,10 +235,8 @@ export default function ContasReceberPage() {
     const [isEmitindoNfe, setIsEmitindoNfe] = useState(false);
     const [isGerandoCora, setIsGerandoCora] = useState(false);
 
-    async function handleBulkDelete() {
+    async function executarBulkDelete() {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Deseja excluir ${selectedIds.length} faturas selecionadas?`)) return;
-
         setIsBulkDeleting(true);
         try {
             const res = await fetch('/api/financeiro/faturas', {
@@ -246,6 +248,7 @@ export default function ContasReceberPage() {
                 toast.success(`${selectedIds.length} faturas excluídas`);
                 setSelectedIds([]);
                 carregarDados();
+                setIsBulkDeleteModalOpen(false);
             }
         } catch (error) {
             toast.error("Erro ao excluir em massa");
@@ -320,21 +323,8 @@ export default function ContasReceberPage() {
         });
     }
 
-    async function emitirNfe() {
+    async function handleEmitirNfe(discriminacaoInput: string) {
         if (!selectedInvoice) return;
-
-        const discriminacaoInput = window.prompt(
-            "✍️ Digite a Discriminação dos Serviços que sairá na Nota Fiscal:",
-            selectedInvoice.description || "Serviços Prestados"
-        );
-
-        if (discriminacaoInput === null) return; // cancelou
-
-        if (discriminacaoInput.trim() === "") {
-            toast.error("A discriminação não pode estar vazia.");
-            return;
-        }
-
         setIsEmitindoNfe(true);
 
         const promise = fetch('/api/painel/financeiro/nfe', {
@@ -353,13 +343,14 @@ export default function ContasReceberPage() {
             return data;
         }).finally(() => {
             setIsEmitindoNfe(false);
+            setIsNfePromptModalOpen(false);
             carregarDados();
         });
 
         toast.promise(promise, {
             loading: 'Enviando XML para a Prefeitura...',
             success: (data) => `Retorno: ${data.message}`,
-            error: (err) => `Atenção (Prefeitura): ${err.message}`, // Para o usuário ler oq estourou
+            error: (err) => `Atenção (Prefeitura): ${err.message}`,
         });
     }
 
@@ -468,7 +459,7 @@ export default function ContasReceberPage() {
 
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={handleBulkDelete}
+                            onClick={() => setIsBulkDeleteModalOpen(true)}
                             disabled={isBulkDeleting}
                             className="px-4 py-2 hover:bg-red-500/20 rounded-xl transition flex items-center gap-2 text-sm font-bold text-red-400"
                         >
@@ -978,7 +969,7 @@ export default function ContasReceberPage() {
 
                                     <button
                                         type="button"
-                                        onClick={emitirNfe}
+                                        onClick={() => setIsNfePromptModalOpen(true)}
                                         disabled={isEmitindoNfe}
                                         className="w-full bg-blue-600 text-white p-5 rounded-2xl font-black text-lg hover:bg-blue-700 transition flex justify-center items-center gap-2 shadow-lg shadow-blue-500/30"
                                     >
@@ -996,32 +987,6 @@ export default function ContasReceberPage() {
                                 </div>
                             )}
                         </form>
-                    </div>
-                </div></ModalPortal>
-            )}
-
-            {/* MODAL Exclusão (Personalizado como na imagem) */}
-            {isDeleteModalOpen && (
-                <ModalPortal><div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-6">
-                            <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
-                            <p className="text-gray-300 text-sm">Tem certeza que deseja excluir esta fatura?</p>
-                        </div>
-                        <div className="p-4 bg-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={executarExclusaoFatura}
-                                className="bg-[#2463eb] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-600 transition shadow-md active:scale-95 uppercase"
-                            >
-                                OK
-                            </button>
-                            <button
-                                onClick={() => { setIsDeleteModalOpen(false); setInvoiceToDelete(null); }}
-                                className="bg-transparent text-white border border-white/30 px-6 py-2 rounded-lg font-bold text-sm hover:bg-white/10 transition uppercase"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
                     </div>
                 </div></ModalPortal>
             )}
@@ -1133,6 +1098,39 @@ export default function ContasReceberPage() {
                     </div>
                 </div></ModalPortal>
             )}
+            {/* Modais de Confirmação */}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => { setIsDeleteModalOpen(false); setInvoiceToDelete(null); }}
+                onConfirm={executarExclusaoFatura}
+                title="Excluir Fatura?"
+                message={`Deseja realmente excluir a fatura de ${invoiceToDelete?.client?.name}? Esta ação não pode ser desfeita.`}
+                confirmText="Excluir"
+                variant="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                onConfirm={executarBulkDelete}
+                title="Excluir em Massa?"
+                message={`Deseja excluir as ${selectedIds.length} faturas selecionadas? Todos os dados serão removidos permanentemente.`}
+                confirmText="Excluir Tudo"
+                isLoading={isBulkDeleting}
+                variant="danger"
+            />
+
+            <PromptModal
+                isOpen={isNfePromptModalOpen}
+                onClose={() => setIsNfePromptModalOpen(false)}
+                onConfirm={handleEmitirNfe}
+                title="Emitir Nota Fiscal"
+                message="Digite a discriminação dos serviços que aparecerá na NFS-e:"
+                defaultValue={selectedInvoice?.description || "Serviços Prestados"}
+                placeholder="Ex: Consultoria técnica referente ao mês de Março..."
+                confirmText="Emitir Nota"
+                isLoading={isEmitindoNfe}
+            />
         </div>
     );
 }

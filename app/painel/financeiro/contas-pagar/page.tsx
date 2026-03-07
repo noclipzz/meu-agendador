@@ -38,6 +38,8 @@ export default function ContasPagarPage() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [isBulkDuplicateModalOpen, setIsBulkDuplicateModalOpen] = useState(false);
     const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
     const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
@@ -276,10 +278,8 @@ export default function ContasPagarPage() {
         }
     }
 
-    async function handleBulkDelete() {
+    async function executarBulkDelete() {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Deseja excluir ${selectedIds.length} lançamentos selecionados?`)) return;
-
         setIsBulkDeleting(true);
         try {
             const res = await fetch('/api/painel/financeiro/despesas', {
@@ -291,6 +291,7 @@ export default function ContasPagarPage() {
                 toast.success(`${selectedIds.length} lançamentos excluídos`);
                 setSelectedIds([]);
                 loadData();
+                setIsBulkDeleteModalOpen(false);
             }
         } catch (error) {
             toast.error("Erro ao excluir em massa");
@@ -299,10 +300,8 @@ export default function ContasPagarPage() {
         }
     }
 
-    async function handleBulkDuplicate() {
+    async function executarBulkDuplicate() {
         if (selectedIds.length === 0) return;
-        if (!confirm(`Deseja duplicar ${selectedIds.length} lançamentos para o próximo mês?`)) return;
-
         setIsBulkDuplicating(true);
         try {
             const promises = selectedIds.map(id => {
@@ -324,6 +323,7 @@ export default function ContasPagarPage() {
             toast.success(`${selectedIds.length} lançamentos duplicados`);
             setSelectedIds([]);
             loadData();
+            setIsBulkDuplicateModalOpen(false);
         } catch (error) {
             toast.error("Erro ao duplicar em massa");
         } finally {
@@ -419,7 +419,7 @@ export default function ContasPagarPage() {
 
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={handleBulkDuplicate}
+                            onClick={() => setIsBulkDuplicateModalOpen(true)}
                             disabled={isBulkDuplicating}
                             className="px-4 py-2 hover:bg-white/10 rounded-xl transition flex items-center gap-2 text-sm font-bold text-emerald-400"
                         >
@@ -427,7 +427,7 @@ export default function ContasPagarPage() {
                             Duplicar
                         </button>
                         <button
-                            onClick={handleBulkDelete}
+                            onClick={() => setIsBulkDeleteModalOpen(true)}
                             disabled={isBulkDeleting}
                             className="px-4 py-2 hover:bg-red-500/20 rounded-xl transition flex items-center gap-2 text-sm font-bold text-red-400"
                         >
@@ -1091,37 +1091,37 @@ export default function ContasPagarPage() {
                 </ModalPortal>
             )}
 
-            {/* MODAL Exclusão (Personalizado como na imagem) */}
-            {isDeleteModalOpen && (
-                <ModalPortal><div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-                    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-6">
-                            <h3 className="text-white font-bold text-lg mb-2">www.nohud.com.br diz</h3>
-                            <p className="text-gray-300 text-sm">Deseja excluir esta despesa?</p>
-                        </div>
-                        <div className="p-4 bg-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={() => {
-                                    handleDelete();
-                                }}
-                                className="bg-[#2463eb] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-600 transition shadow-md active:scale-95 uppercase"
-                            >
-                                OK
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsDeleteModalOpen(false);
-                                    setExpenseToDelete(null);
-                                }}
-                                className="bg-transparent text-white border border-white/30 px-6 py-2 rounded-lg font-bold text-sm hover:bg-white/10 transition uppercase"
-                            >
-                                Cancelar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => { setIsDeleteModalOpen(false); setExpenseToDelete(null); }}
+                onConfirm={handleDelete}
+                title="Excluir Despesa?"
+                message={`Deseja realmente excluir a despesa "${expenseToDelete?.description}"? Esta ação não pode ser desfeita.`}
+                confirmText="Excluir"
+                variant="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={isBulkDeleteModalOpen}
+                onClose={() => setIsBulkDeleteModalOpen(false)}
+                onConfirm={executarBulkDelete}
+                title="Excluir em Massa?"
+                message={`Deseja excluir os ${selectedIds.length} lançamentos selecionados? Esta ação é irreversível.`}
+                confirmText="Excluir Tudo"
+                isLoading={isBulkDeleting}
+                variant="danger"
+            />
+
+            <ConfirmationModal
+                isOpen={isBulkDuplicateModalOpen}
+                onClose={() => setIsBulkDuplicateModalOpen(false)}
+                onConfirm={executarBulkDuplicate}
+                title="Duplicar Lançamentos?"
+                message={`Deseja duplicar os ${selectedIds.length} lançamentos selecionados para o próximo mês?`}
+                confirmText="Duplicar"
+                isLoading={isBulkDuplicating}
+                variant="info"
+            />
             {/* MODAL PERÍODO CUSTOMIZADO */}
             {isCustomDateModalOpen && (
                 <ModalPortal><div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[250] p-4 animate-in fade-in duration-200">
