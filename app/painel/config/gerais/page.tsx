@@ -6,24 +6,12 @@ import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../../contexts/AgendaContext";
-import { formatarTelefone } from "../../../utils/formatters";
+import { formatarTelefone, formatarCEP, formatarCNPJ, formatarCPF } from "@/lib/validators";
 
 const formatarCpfCnpj = (value: string) => {
-    const raw = value.replace(/\D/g, "");
-    if (raw.length <= 11) {
-        let v = raw;
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d)/, "$1.$2");
-        v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-        return v;
-    } else {
-        let v = raw.slice(0, 14);
-        v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-        v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-        v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
-        v = v.replace(/(\d{4})(\d)/, "$1-$2");
-        return v;
-    }
+    const raw = value.replace(/\D/g, "").slice(0, 14);
+    if (raw.length <= 11) return formatarCPF(raw);
+    return formatarCNPJ(raw);
 };
 
 export default function ConfigGerais() {
@@ -98,8 +86,8 @@ export default function ConfigGerais() {
                 setMonthlyGoal(dataConfig.monthlyGoal || "5000");
                 if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
 
-                setCnpj(dataConfig.cnpj || "");
-                setPhone(dataConfig.phone || "");
+                setCnpj(formatarCpfCnpj(dataConfig.cnpj || ""));
+                setPhone(formatarTelefone(dataConfig.phone || ""));
                 setCep(dataConfig.cep || "");
                 setAddress(dataConfig.address || "");
                 setNumber(dataConfig.number || "");
@@ -131,14 +119,7 @@ export default function ConfigGerais() {
     }
 
     async function handlePhoneChange(v: string) {
-        const raw = v.replace(/\D/g, "").slice(0, 11);
-        if (raw.length <= 10) {
-            // (11) 1234-5678
-            setPhone(raw.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3"));
-        } else {
-            // (11) 91234-5678
-            setPhone(raw.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3"));
-        }
+        setPhone(formatarTelefone(v));
     }
 
     async function handleCNPJChange(v: string) {

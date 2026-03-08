@@ -2,21 +2,11 @@
 
 export const formatarTelefone = (telefone: string | null | undefined) => {
   if (!telefone) return "";
-
-  // Remove tudo que não for número
-  const apenasNumeros = telefone.replace(/\D/g, "");
-
-  // Formato Celular: (11) 91234-5678
-  if (apenasNumeros.length === 11) {
-    return apenasNumeros.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-  }
-
-  // Formato Fixo: (11) 1234-5678
-  if (apenasNumeros.length === 10) {
-    return apenasNumeros.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-  }
-
-  return telefone;
+  const raw = telefone.replace(/\D/g, "").slice(0, 11);
+  if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
+  if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+  if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
+  return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
 };
 
 export const formatarHorario = (data: Date | string) => {

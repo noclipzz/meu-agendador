@@ -12,28 +12,10 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
+import { formatarTelefone, formatarCPF, formatarCEP } from "@/lib/validators";
 import { ModalPortal } from "@/components/ui/ModalPortal";
 
-// --- HELPER: MASCARAS ---
-const formatarTelefone = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 11);
-    if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
-    if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
-    if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
-    return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
-};
-const formatarCPF = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 11);
-    if (raw.length <= 3) return raw;
-    if (raw.length <= 6) return `${raw.slice(0, 3)}.${raw.slice(3)}`;
-    if (raw.length <= 9) return `${raw.slice(0, 3)}.${raw.slice(3, 6)}.${raw.slice(6)}`;
-    return `${raw.slice(0, 3)}.${raw.slice(3, 6)}.${raw.slice(6, 9)}-${raw.slice(9)}`;
-};
-const formatarCEP = (value: string) => {
-    const raw = value.replace(/\D/g, "").slice(0, 8);
-    if (raw.length <= 5) return raw;
-    return `${raw.slice(0, 5)}-${raw.slice(5)}`;
-};
+// --- HELPER OBSELETO REMOVIDO EM FAVOR DO @/lib/validators ---
 
 export default function GestaoEquipe() {
     const { refreshAgenda, userRole } = useAgenda();

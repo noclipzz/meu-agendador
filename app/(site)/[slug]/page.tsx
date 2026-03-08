@@ -7,15 +7,9 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
+import { formatarTelefone } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-// --- HELPER: MÁSCARA DE TELEFONE ---
-const formatarTelefone = (value: string) => {
-  const raw = value.replace(/\D/g, "").slice(0, 11);
-  if (raw.length <= 2) return raw.length > 0 ? `(${raw}` : "";
-  if (raw.length <= 6) return `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
-  if (raw.length <= 10) return `(${raw.slice(0, 2)}) ${raw.slice(2, 6)}-${raw.slice(6)}`;
-  return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
-};
+// --- HELPER OBSELETO REMOVIDO EM FAVOR DO @/lib/validators ---
 
 // --- FUNÇÃO AVANÇADA DE HORÁRIOS ---
 function gerarHorarios(
