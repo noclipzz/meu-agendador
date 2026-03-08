@@ -1,0 +1,16 @@
+{
+  "nfseGerada": false,
+  "numeroNfse": "",
+  "codigoVerificacao": "",
+  "protocolo": "",
+  "mensagens": [
+    {
+      "codigo": "",
+      "mensagem": "Solicitação recebida! Aguarde a confirmação da Nota Fiscal pelo Sefaz/ADN."
+    }
+  ],
+  "isSuccess": false,
+  "isProcessing": true,
+  "isError": false,
+  "errorMessage": ""
+}

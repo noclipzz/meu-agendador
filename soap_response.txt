@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="https://testeipatingaabrasf.meumunicipio.online/ws/nfs"><SOAP-ENV:Body><ns1:GerarNfseResponse><GerarNfseResponse><outputXML>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;GerarNfseResposta xmlns="http://www.abrasf.org.br/nfse.xsd"&gt;
+  &lt;Mensagem&gt;Solicitação recebida! Aguarde a confirmação da Nota Fiscal pelo Sefaz/ADN.&lt;/Mensagem&gt;
+&lt;/GerarNfseResposta&gt;
+</outputXML></GerarNfseResponse></ns1:GerarNfseResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>

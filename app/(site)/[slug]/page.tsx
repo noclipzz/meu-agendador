@@ -7,7 +7,7 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
-import { ConfirmationModal } from "@/app/components/ui/ConfirmationModal";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
   const raw = value.replace(/\D/g, "").slice(0, 11);

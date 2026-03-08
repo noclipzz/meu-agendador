@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="https://testeipatingaabrasf.meumunicipio.online/ws/nfs"><SOAP-ENV:Body><ns1:ConsultarNfsePorRpsResponse><ConsultarNfsePorRpsResponse><outputXML><?xml version="1.0" encoding="UTF-8"?>
+<ConsultarNfseRpsResposta xmlns="http://www.abrasf.org.br/nfse.xsd">
+  <CompNfse>
+    <Situacao>
+      <Rps>
+        <Numero>00015093</Numero>
+        <Serie>1</Serie>
+        <Tipo>1</Tipo>
+      </Rps>
+      <Status>0</Status>
+      <Mensagem>Aguardando envio para o ADN</Mensagem>
+    </Situacao>
+  </CompNfse>
+</ConsultarNfseRpsResposta>
+</outputXML></ConsultarNfsePorRpsResponse></ns1:ConsultarNfsePorRpsResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>

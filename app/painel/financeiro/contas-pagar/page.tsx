@@ -14,7 +14,7 @@ import {
     MoreVertical
 } from "lucide-react";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
-import { ConfirmationModal } from "@/app/components/ui/ConfirmationModal";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 function ModalPortal({ children }: { children: React.ReactNode }) {
     const [mounted, setMounted] = useState(false);
