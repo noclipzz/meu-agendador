@@ -82,6 +82,7 @@ export async function GET(req: NextRequest) {
         const emoji = searchParams.get('emoji') || '';
         const themeIdx = parseInt(searchParams.get('theme') || '0') % COLOR_THEMES.length;
         const style = searchParams.get('style') || 'default';
+        const bgImg = searchParams.get('bgImg') || '';
 
         const theme = COLOR_THEMES[themeIdx];
 
@@ -110,6 +111,48 @@ export async function GET(req: NextRequest) {
                         overflow: 'hidden',
                     }}
                 >
+                    {/* Background Image (If Provided) */}
+                    {bgImg && (
+                        <img
+                            src={bgImg}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                opacity: 0.25, // Mantém sutil para não ofuscar o texto
+                            }}
+                        />
+                    )}
+
+                    {/* Overlay Gradient to ensure text readability */}
+                    {bgImg && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            background: `linear-gradient(to bottom, transparent 0%, ${theme.bg} 100%)`,
+                            display: 'flex',
+                        }} />
+                    )}
+
+                    {/* Overlay Radial to ensure center readable */}
+                    {bgImg && (
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            background: `radial-gradient(circle at center, transparent 0%, ${theme.bg} 120%)`,
+                            display: 'flex',
+                        }} />
+                    )}
+
                     {/* Background Orb 1 */}
                     <div style={{
                         position: 'absolute',
