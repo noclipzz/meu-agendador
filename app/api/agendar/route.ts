@@ -68,14 +68,38 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
         }
 
-        // --- PROTEÇÃO ANTI-SPAM / GRIEFING ---
+        // 2. Busca dados da empresa e serviço (Necessário para checks seguintes)
+        const [service, company] = await Promise.all([
+            serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
+            prisma.company.findUnique({ where: { id: companyId } })
+        ]);
+
+        if (!company) {
+            return new NextResponse("Empresa não encontrada", { status: 404 });
+        }
+
+        // 3. Verifica se o usuário está logado e se é equipe interna
         const { userId } = await auth();
+        let isInternalUser = false;
+        if (userId) {
+            if (company.ownerId === userId) {
+                isInternalUser = true;
+            } else {
+                const teamMember = await prisma.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
+                if (teamMember) isInternalUser = true;
+
+                if (!isInternalUser) {
+                    const prof = await prisma.professional.findFirst({ where: { userId, companyId } });
+                    if (prof) isInternalUser = true;
+                }
+            }
+        }
+
         const phoneClean = phone?.replace(/\D/g, "") || "";
 
-        // Apenas para usuários públicos (não logados)
-        if (!userId) {
-            // Regra: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
-            // Isso evita que uma pessoa bloqueie a agenda inteira
+        // --- PROTEÇÃO ANTI-SPAM / GRIEFING (Apenas para clientes externos) ---
+        if (!isInternalUser) {
+            // Regra A: Máximo de 2 agendamentos futuros pendentes/confirmados por pessoa
             const agendamentosFuturos = await prisma.booking.count({
                 where: {
                     companyId,
@@ -90,22 +114,32 @@ export async function POST(req: Request) {
                     error: "Você já possui agendamentos ativos. Por favor, aguarde ou cancele um horário existente."
                 }, { status: 429 });
             }
-        }
-        // -------------------------------------
 
-        // 2. Busca dados auxiliares
-        const [service, company] = await Promise.all([
-            serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
-            prisma.company.findUnique({ where: { id: companyId } })
-        ]);
+            // Regra B: Evita duplicidade exata (Mesmo telefone, mesma hora)
+            if (phone) {
+                const duplicate = await prisma.booking.findFirst({
+                    where: {
+                        companyId,
+                        customerPhone: phone,
+                        date: dataAgendamento,
+                        status: { not: 'CANCELADO' }
+                    }
+                });
+
+                if (duplicate) {
+                    return NextResponse.json({
+                        error: "Você já possui uma solicitação enviada para este horário. Verifique seu WhatsApp ou aguarde a confirmação."
+                    }, { status: 409 });
+                }
+            }
+        }
+        // --------------------------------------------------------------------
 
         let companyPlan = "FREE";
-        if (company) {
-            const subscription = await prisma.subscription.findUnique({
-                where: { userId: company.ownerId }
-            });
-            companyPlan = subscription?.plan || "FREE";
-        }
+        const subscription = await prisma.subscription.findUnique({
+            where: { userId: company.ownerId }
+        });
+        companyPlan = subscription?.plan || "FREE";
 
         let finalClientId = clientId;
         // const phoneClean já definido acima
@@ -265,21 +299,6 @@ export async function POST(req: Request) {
         const dataFormatada = formatarDataCompleta(new Date(date));
         const nomeServico = service?.name || (isEvento ? `Evento (${category || "Interno"})` : "Atendimento");
 
-        // VERIFICA SE QUEM AGENDOU É DA EQUIPE INTERNA (Dono, Admin, Profissional)
-        let isInternalUser = false;
-        if (userId && company) {
-            if (company.ownerId === userId) {
-                isInternalUser = true;
-            } else {
-                const teamMember = await prisma.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
-                if (teamMember) isInternalUser = true;
-
-                if (!isInternalUser) {
-                    const prof = await prisma.professional.findFirst({ where: { userId, companyId } });
-                    if (prof) isInternalUser = true;
-                }
-            }
-        }
 
         // A) E-mail para Admin (Apenas se for CLIENTE agendando)
         if (company?.notificationEmail && !isInternalUser) {

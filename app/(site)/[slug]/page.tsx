@@ -7,7 +7,7 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle } from "lucide-react";
 import Image from 'next/image';
-import { ConfirmationModal } from "@/app/components/ConfirmationModal";
+import { ConfirmationModal } from "@/app/components/ui/ConfirmationModal";
 // --- HELPER: MÁSCARA DE TELEFONE ---
 const formatarTelefone = (value: string) => {
   const raw = value.replace(/\D/g, "").slice(0, 11);
@@ -87,6 +87,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   const [telefoneCliente, setTelefoneCliente] = useState("");
   const [isIdentified, setIsIdentified] = useState(false);
   const [agendamentoConcluido, setAgendamentoConcluido] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   // --- ESTADOS LISTA DE ESPERA ---
   const [showWaitingList, setShowWaitingList] = useState(false);
@@ -162,34 +163,43 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   // 4. Salva o agendamento
   async function finalizar() {
     if (!nomeCliente || !telefoneCliente || !horarioSelecionado) return alert("Preencha todos os dados!");
+    if (finalizing) return;
 
-    const dataFinal = new Date(dataSelecionada);
-    const [hora, minuto] = horarioSelecionado.split(':');
-    dataFinal.setHours(parseInt(hora), parseInt(minuto), 0, 0);
+    setFinalizing(true);
+    try {
+      const dataFinal = new Date(dataSelecionada);
+      const [hora, minuto] = horarioSelecionado.split(':');
+      dataFinal.setHours(parseInt(hora), parseInt(minuto), 0, 0);
 
-    const res = await fetch('/api/agendar', {
-      method: 'POST',
-      body: JSON.stringify({
-        serviceId: servicoSelecionado.id,
-        companyId: empresa.id,
-        professionalId: profissionalSelecionado.id,
-        date: dataFinal,
-        name: nomeCliente,
-        phone: telefoneCliente,
-        type: "CLIENTE"
-      })
-    });
-
-    if (res.ok) {
-      setAgendamentoConcluido(true);
-    } else {
-      const err = await res.json();
-      setHorarioSelecionado(null);
-      setErrorModal({
-        isOpen: true,
-        title: "Não foi possível agendar",
-        message: err.error || "Ocorreu um erro ao processar seu agendamento. Por favor, tente novamente."
+      const res = await fetch('/api/agendar', {
+        method: 'POST',
+        body: JSON.stringify({
+          serviceId: servicoSelecionado.id,
+          companyId: empresa.id,
+          professionalId: profissionalSelecionado.id,
+          date: dataFinal,
+          name: nomeCliente,
+          phone: telefoneCliente,
+          type: "CLIENTE"
+        })
       });
+
+      if (res.ok) {
+        setAgendamentoConcluido(true);
+      } else {
+        const err = await res.json();
+        setHorarioSelecionado(null);
+        setErrorModal({
+          isOpen: true,
+          title: "Não foi possível agendar",
+          message: err.error || "Ocorreu um erro ao processar seu agendamento. Por favor, tente novamente."
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Ocorreu um erro de conexão. Tente novamente.");
+    } finally {
+      setFinalizing(false);
     }
   }
 
@@ -369,7 +379,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             </div>
             {empresa.phone && (
               <div className="mt-3 flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
-                <Phone size={10} /> {empresa.phone}
+                <Phone size={10} /> {formatarTelefone(empresa.phone)}
               </div>
             )}
           </div>
@@ -582,7 +592,20 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             {/* FORMULÁRIO FINAL */}
             {horarioSelecionado && (
               <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 border-t pt-8">
-                <button onClick={finalizar} className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95">Finalizar Agendamento</button>
+                <button
+                  onClick={finalizar}
+                  disabled={finalizing}
+                  className="w-full bg-green-600 text-white p-5 rounded-[1.5rem] font-black text-lg shadow-xl hover:bg-green-700 transition active:scale-95 flex items-center justify-center gap-3 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  {finalizing ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    "Finalizar Agendamento"
+                  )}
+                </button>
               </div>
             )}
           </div>

@@ -6,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Loader2, Trash2, CheckCircle, MessageSquare, Clock, User, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "@/contexts/AgendaContext";
-import { ConfirmationModal } from "@/app/components/ConfirmationModal";
+import { ConfirmationModal } from "@/app/components/ui/ConfirmationModal";
 
 export default function ListaEsperaPage() {
     const { companyId } = useAgenda();

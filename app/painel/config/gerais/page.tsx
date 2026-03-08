@@ -6,6 +6,7 @@ import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../../contexts/AgendaContext";
+import { formatarTelefone } from "../../../utils/formatters";
 
 const formatarCpfCnpj = (value: string) => {
     const raw = value.replace(/\D/g, "");
@@ -129,6 +130,17 @@ export default function ConfigGerais() {
         }
     }
 
+    async function handlePhoneChange(v: string) {
+        const raw = v.replace(/\D/g, "").slice(0, 11);
+        if (raw.length <= 10) {
+            // (11) 1234-5678
+            setPhone(raw.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3"));
+        } else {
+            // (11) 91234-5678
+            setPhone(raw.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3"));
+        }
+    }
+
     async function handleCNPJChange(v: string) {
         const formatado = formatarCpfCnpj(v);
         setCnpj(formatado);
@@ -143,7 +155,7 @@ export default function ConfigGerais() {
                     if (data.razao_social) setCorporateName(data.razao_social);
                     if (data.nome_fantasia) setName(data.nome_fantasia || data.razao_social);
                     if (data.email && !notificationEmail) setNotificationEmail(data.email);
-                    if (data.ddd_telefone_1 && !phone) setPhone(data.ddd_telefone_1);
+                    if (data.ddd_telefone_1 && !phone) handlePhoneChange(data.ddd_telefone_1);
                     if (data.cep) {
                         const rawCep = String(data.cep).replace(/\D/g, "");
                         setCep(rawCep.length === 8 ? `${rawCep.slice(0, 5)}-${rawCep.slice(5)}` : rawCep);
@@ -277,6 +289,15 @@ export default function ConfigGerais() {
                                     className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1 dark:text-gray-400"> Telefone de Contato</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    placeholder="(00) 00000-0000"
+                                    value={phone}
+                                    onChange={e => handlePhoneChange(e.target.value)}
                                 />
                             </div>
                             <div>

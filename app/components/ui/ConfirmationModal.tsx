@@ -8,7 +8,8 @@ interface ConfirmationModalProps {
     onClose: () => void;
     onConfirm: () => void;
     title: string;
-    message: string;
+    message?: string;
+    description?: string;
     confirmText?: string;
     cancelText?: string;
     isLoading?: boolean;
@@ -16,7 +17,7 @@ interface ConfirmationModalProps {
 }
 
 export function ConfirmationModal({
-    isOpen, onClose, onConfirm, title, message,
+    isOpen, onClose, onConfirm, title, message, description,
     confirmText = "Confirmar", cancelText = "Cancelar",
     isLoading = false,
     variant = 'danger'
@@ -89,7 +90,7 @@ export function ConfirmationModal({
                         </h3>
 
                         <p className="text-gray-500 dark:text-gray-400 text-sm font-semibold mb-8 leading-relaxed max-w-[280px]">
-                            {message}
+                            {message || description}
                         </p>
 
                         <div className="flex flex-col gap-3 w-full">
