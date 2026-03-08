@@ -219,7 +219,7 @@ export async function GET() {
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
                     financeiro: true, estoque: true, "fichas-tecnicas": true,
-                    servicos: true, profissionais: true, config: true
+                    servicos: true, profissionais: true, config: true, rastreamento: true
                 },
                 companyId: myCompany?.id, // ID da sua empresa
                 companyName: myCompany?.name,
@@ -287,7 +287,7 @@ export async function GET() {
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
                     financeiro: true, estoque: true, "fichas-tecnicas": true,
-                    servicos: true, profissionais: true, config: true
+                    servicos: true, profissionais: true, config: true, rastreamento: true
                 },
                 companyId: company.id,
                 companyName: company.name,

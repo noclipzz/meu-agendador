@@ -54,6 +54,7 @@ export default function GestaoEquipe() {
             'fichas-tecnicas': false,
             servicos: false,
             profissionais: false,
+            rastreamento: false,
             config: false,
             mural: true
         },
@@ -362,6 +363,7 @@ export default function GestaoEquipe() {
                 'fichas-tecnicas': false,
                 servicos: false,
                 profissionais: false,
+                rastreamento: false,
                 config: false,
                 mural: true
             },
@@ -386,6 +388,7 @@ export default function GestaoEquipe() {
                 'fichas-tecnicas': false,
                 servicos: false,
                 profissionais: false,
+                rastreamento: false,
                 config: false,
                 mural: true
             },
@@ -902,6 +905,7 @@ export default function GestaoEquipe() {
                                                         { key: 'fichas-tecnicas', label: 'Fichas Técnicas', icon: <ClipboardList size={14} /> },
                                                         { key: 'servicos', label: 'Serviços', icon: <Briefcase size={14} /> },
                                                         { key: 'profissionais', label: 'Equipe', icon: <UserIcon size={14} /> },
+                                                        { key: 'rastreamento', label: 'Radar de Equipe', icon: <MapPin size={14} /> },
                                                         { key: 'config', label: 'Configurações', icon: <Settings size={14} /> },
                                                         { key: 'mural', label: 'Mural', icon: <Megaphone size={14} /> },
                                                     ].map((perm) => (
