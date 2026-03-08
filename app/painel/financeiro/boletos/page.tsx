@@ -97,7 +97,7 @@ export default function BoletosPage() {
                 title="Automação Bancária (Cora)"
                 description="Gere boletos e cobranças PIX com baixa automática. Quando seu cliente paga, o sistema liquida a fatura sozinho para você."
                 icon={<Barcode size={32} />}
-                color="orange"
+                color="amber"
                 benefits={[
                     "Emissão de Boletos e PIX em 1 clique",
                     "Baixa automática no sistema (Sem conferência manual)",

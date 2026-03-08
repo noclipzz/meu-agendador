@@ -55,6 +55,15 @@ export function AddonPaywall({ title, description, benefits, icon, color }: Addo
             lock: "text-emerald-500",
             pulse1: "bg-emerald-200/50",
             pulse2: "bg-emerald-300/30"
+        },
+        amber: {
+            bgIcon: "bg-amber-100 dark:bg-amber-900/30 text-amber-600",
+            benefitIcon: "text-amber-500",
+            button: "bg-amber-600 hover:bg-amber-700 shadow-amber-500/30",
+            sideBg: "bg-amber-50 dark:bg-gray-800/50",
+            lock: "text-amber-500",
+            pulse1: "bg-amber-200/50",
+            pulse2: "bg-amber-300/30"
         }
     };
 
