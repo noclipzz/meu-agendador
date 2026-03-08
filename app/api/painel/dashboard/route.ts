@@ -131,6 +131,7 @@ export async function GET() {
             plano,
             userRole,
             permissions,
+            hasTrackingModule: sub?.hasTrackingModule || false,
             agendamentosHoje,
             boletosVencidos,
             boletosVencer,

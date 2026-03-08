@@ -39,6 +39,9 @@ export async function POST(req: Request) {
             case "SIGNATURE":
                 priceId = process.env.STRIPE_PRICE_SIGNATURE || "price_1T5UcSDVX38Ti5nKF1N3x9pL";
                 break;
+            case "TRACKING":
+                priceId = process.env.STRIPE_PRICE_TRACKING || "price_1T8jfcDVX38Ti5nKvqxSYc5Ie";
+                break;
             default: return NextResponse.json({ error: "Tipo de item inválido" }, { status: 400 });
         }
 
@@ -77,6 +80,7 @@ export async function POST(req: Request) {
         if (itemType === "NFE") updateData.hasNfeModule = false;
         if (itemType === "BOLETO") updateData.hasBoletoModule = false;
         if (itemType === "SIGNATURE") updateData.hasDigitalSignatureModule = false;
+        if (itemType === "TRACKING") updateData.hasTrackingModule = false;
         if (itemType === "STAFF") {
             const currentExtraStaff = subscription.extraUsersCount || 0;
             updateData.extraUsersCount = Math.max(0, currentExtraStaff - quantity);

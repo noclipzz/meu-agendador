@@ -224,7 +224,8 @@ export async function GET() {
                 companyId: myCompany?.id, // ID da sua empresa
                 companyName: myCompany?.name,
                 isOwner: true, // ✅ Flag de dono absoluto
-                isTrial: false // Super Admin nunca é trial
+                isTrial: false, // Super Admin nunca é trial
+                hasTrackingModule: true // Super Admin tem tudo
             });
         }
         // --------------------------------
@@ -291,7 +292,8 @@ export async function GET() {
                 companyId: company.id,
                 companyName: company.name,
                 isOwner: true, // ✅ Flag de dono
-                isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD"
+                isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD",
+                hasTrackingModule: subscription?.hasTrackingModule || false
             });
         }
 
@@ -338,7 +340,8 @@ export async function GET() {
                 companyId: professional.companyId,
                 companyName: professional.company.name,
                 isOwner: false,
-                isTrial: subPatrao?.stripeSubscriptionId === "TRIAL_PERIOD"
+                isTrial: subPatrao?.stripeSubscriptionId === "TRIAL_PERIOD",
+                hasTrackingModule: subPatrao?.hasTrackingModule || false
             });
         }
 

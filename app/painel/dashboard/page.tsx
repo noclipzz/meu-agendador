@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { toast } from "sonner";
+import { TrackingToggle } from "@/components/TrackingToggle";
 
 export default function DashboardPage() {
     const [dados, setDados] = useState<any>(null);
@@ -46,9 +47,14 @@ export default function DashboardPage() {
                         <h1 className="text-3xl font-black text-gray-800 dark:text-white">Visão Geral</h1>
                         <p className="text-sm text-gray-500 font-medium">Resumo do dia e pendências importantes.</p>
                     </div>
-
-
                 </div>
+
+                {/* Rastreamento Toggle para Profissionais */}
+                {dados.userRole === "PROFESSIONAL" && dados.hasTrackingModule && (
+                    <div className="flex items-center gap-4">
+                        <TrackingToggle hasTrackingModule={dados.hasTrackingModule} />
+                    </div>
+                )}
                 {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
                     <div className="relative group cursor-default">
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition duration-500" />

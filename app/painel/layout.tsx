@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Navigation,
     ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
@@ -42,12 +42,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     const router = useRouter();
-    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole } = useAgenda();
+    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole, setIsOwner, setHasTrackingModule, hasTrackingModule, isOwner } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
     const [userPlan, setUserPlan] = useState<string | null>(null);
-    const [isOwner, setIsOwner] = useState(false); // ✅ Novo: Flag se é o dono real
     const [isTrial, setIsTrial] = useState(false); // ✅ NOVO: Flag de Trial
     const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
@@ -227,6 +226,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 setUserRole(dados.role);
                 setIsOwner(!!dados.isOwner); // ✅ Salva se é dono
                 setIsTrial(!!dados.isTrial); // ✅ Salva se é trial
+                setHasTrackingModule(!!dados.hasTrackingModule); // ✅ NOVO: Módulo de rastreio
                 setUserPermissions(dados.permissions); // <--- CARREGA PERMISSÕES
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
@@ -361,6 +361,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const allItems = [
         { key: 'dashboard', name: "Dashboard", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
+        { key: 'rastreamento', name: "Radar de Equipe", path: "/painel/rastreamento", icon: <Navigation size={20} className="text-indigo-500" /> },
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
@@ -396,8 +397,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
+        if (!hasTrackingModule && item.key === 'rastreamento') return false;
         if (userPlan === "PREMIUM") {
             if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
         }
@@ -486,8 +488,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 </div>
 
                 <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-1 overflow-y-auto custom-scrollbar">
-                    {/* DASHBOARD E AGENDA */}
-                    {visibleItems.slice(0, 2).map(item => (
+                    {/* DASHBOARD, AGENDA E RASTREAMENTO */}
+                    {visibleItems.slice(0, 3).map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
@@ -535,7 +537,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     )}
 
                     {/* DEMAIS ITENS DE ALLITEMS */}
-                    {visibleItems.slice(2).map(item => (
+                    {visibleItems.slice(3).map(item => (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}

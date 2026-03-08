@@ -99,6 +99,7 @@ model Company {
   waitingList                  WaitingList[]
   bankAccounts                 BankAccount[]
   consentTerms                 ConsentTerm[]
+  professionalLocations        ProfessionalLocation[]
 }
 
 model OrganizationPost {
@@ -155,6 +156,7 @@ model Professional {
   company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   waitingList   WaitingList[]
   services      Service[]     @relation("ProfessionalToService")
+  locations     ProfessionalLocation[]
 }
 
 model Service {
@@ -268,6 +270,7 @@ model Subscription {
   hasNfeModule         Boolean   @default(false)
   hasBoletoModule      Boolean   @default(false)
   hasDigitalSignatureModule Boolean   @default(false)
+  hasTrackingModule        Boolean   @default(false)
   extraUsersCount      Int       @default(0)
   expiresAt            DateTime?
   createdAt            DateTime  @default(now())
@@ -510,4 +513,21 @@ model ConsentTerm {
 
   client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model ProfessionalLocation {
+  id             String       @id @default(cuid())
+  professionalId String       @unique
+  companyId      String
+  latitude       Float
+  longitude      Float
+  accuracy       Float?
+  lastUpdate     DateTime     @default(now())
+  status         String       @default("ONLINE") // ONLINE, OFFLINE
+  
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([companyId])
 }

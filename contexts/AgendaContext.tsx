@@ -12,6 +12,8 @@ interface AgendaContextType {
   setUserRole: Dispatch<SetStateAction<string>>;
   isOwner: boolean;
   setIsOwner: Dispatch<SetStateAction<boolean>>;
+  hasTrackingModule: boolean;
+  setHasTrackingModule: Dispatch<SetStateAction<boolean>>;
 }
 
 // Cria o contexto com valores iniciais vazios
@@ -24,6 +26,8 @@ const AgendaContext = createContext<AgendaContextType>({
   setUserRole: () => { },
   isOwner: false,
   setIsOwner: () => { },
+  hasTrackingModule: false,
+  setHasTrackingModule: () => { },
 });
 
 // Um atalho para usar o contexto mais facilmente
@@ -35,6 +39,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState("PROFESSIONAL");
   const [isOwner, setIsOwner] = useState(false);
+  const [hasTrackingModule, setHasTrackingModule] = useState(false);
 
   // Função para "avisar" a agenda que ela precisa recarregar
   const refreshAgenda = useCallback(() => {
@@ -42,7 +47,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // O valor que será compartilhado com todos os componentes filhos
-  const value = { refreshKey, refreshAgenda, companyId, setCompanyId, userRole, setUserRole, isOwner, setIsOwner };
+  const value = { refreshKey, refreshAgenda, companyId, setCompanyId, userRole, setUserRole, isOwner, setIsOwner, hasTrackingModule, setHasTrackingModule };
 
   return (
     <AgendaContext.Provider value={value}>
