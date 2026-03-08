@@ -7,7 +7,7 @@ import { format, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-import { ModalPortal } from "../../../components/ui/ModalPortal";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 export default function EstoquePage() {
     const [produtos, setProdutos] = useState<any[]>([]);
@@ -410,8 +410,8 @@ export default function EstoquePage() {
                 onClose={() => setProdutoParaExcluir(null)}
                 onConfirm={confirmarExclusao}
                 title="Excluir Produto?"
-                message="Tem certeza que deseja apagar este produto e todo seu histórico de movimentações? Esta ação não pode ser desfeita."
-                isDeleting={true}
+                description="Tem certeza que deseja apagar este produto e todo seu histórico de movimentações? Esta ação não pode ser desfeita."
+                variant="danger"
             />
         </div>
     );

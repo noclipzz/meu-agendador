@@ -1393,9 +1393,9 @@ export default function FichasTecnicasPage() {
                 onClose={() => setTemplateParaExcluir(null)}
                 onConfirm={() => templateParaExcluir && excluirTemplate(templateParaExcluir)}
                 title="Excluir Modelo de Ficha?"
-                message="Tem certeza? Todos os preenchimentos baseados neste modelo continuarão salvos, mas você não poderá mais usar este formulário para novos atendimentos."
+                description="Tem certeza? Todos os preenchimentos baseados neste modelo continuarão salvos, mas você não poderá mais usar este formulário para novos atendimentos."
                 confirmText="Sim, Excluir Modelo"
-                isDeleting={true}
+                variant="danger"
             />
 
             {/* MODAL DE CONFIRMAÇÃO DO REGISTRO */}
@@ -1404,9 +1404,9 @@ export default function FichasTecnicasPage() {
                 onClose={() => setEntryParaExcluir(null)}
                 onConfirm={() => entryParaExcluir && excluirFichaPreenchida(entryParaExcluir)}
                 title="Excluir Registro Permanente?"
-                message="Esta ação é irreversível. Todas as respostas dadas nesta consulta serão apagadas do histórico do cliente."
+                description="Esta ação é irreversível. Todas as respostas dadas nesta consulta serão apagadas do histórico do cliente."
                 confirmText="Sim, Excluir Registro"
-                isDeleting={true}
+                variant="danger"
             />
 
             {/* MODAL DE PREFERÊNCIAS DE IMPRESSÃO */}

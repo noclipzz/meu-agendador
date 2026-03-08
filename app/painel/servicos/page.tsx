@@ -6,7 +6,7 @@ import { Plus, Search, Briefcase, Trash2, Save, X, Pencil, Beaker } from "lucide
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { useAgenda } from "../../../contexts/AgendaContext";
-import { ModalPortal } from "../../../components/ui/ModalPortal";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 export default function ServicosPage() {
     const { userRole } = useAgenda();
@@ -274,8 +274,8 @@ export default function ServicosPage() {
                 onClose={() => setServicoParaExcluir(null)}
                 onConfirm={confirmarExclusao}
                 title="Excluir Serviço?"
-                message="Tem certeza que deseja remover este serviço? Esta ação não pode ser desfeita."
-                isDeleting={true}
+                description="Tem certeza que deseja remover este serviço? Esta ação não pode ser desfeita."
+                variant="danger"
             />
         </div>
     );

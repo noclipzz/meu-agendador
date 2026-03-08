@@ -12,7 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
-import { ModalPortal } from "../../../components/ui/ModalPortal";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 // --- HELPER: MASCARAS ---
 const formatarTelefone = (value: string) => {
