@@ -1,15 +1,29 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 
 interface MapViewProps {
     locations: any[];
+    selectedLocation?: any;
 }
 
-export default function MapView({ locations = [] }: MapViewProps) {
+function MapUpdater({ selectedLocation }: { selectedLocation: any }) {
+    const map = useMap();
+    useEffect(() => {
+        if (selectedLocation) {
+            map.flyTo([selectedLocation.latitude, selectedLocation.longitude], 16, {
+                animate: true,
+                duration: 1.5
+            });
+        }
+    }, [selectedLocation, map]);
+    return null;
+}
+
+export default function MapView({ locations = [], selectedLocation }: MapViewProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -47,6 +61,7 @@ export default function MapView({ locations = [] }: MapViewProps) {
             style={{ height: '100%', width: '100%' }}
             className="z-0"
         >
+            <MapUpdater selectedLocation={selectedLocation} />
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

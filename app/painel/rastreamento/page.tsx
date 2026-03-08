@@ -21,6 +21,7 @@ export default function TrackingPage() {
     const [loading, setLoading] = useState(true);
     const [hasModule, setHasModule] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [selectedLocation, setSelectedLocation] = useState<any>(null);
 
     useEffect(() => {
         carregarDados();
@@ -128,7 +129,8 @@ export default function TrackingPage() {
                                 locations.map((loc) => (
                                     <div
                                         key={loc.id}
-                                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-2xl transition cursor-pointer group"
+                                        onClick={() => setSelectedLocation(loc)}
+                                        className={`flex items-center gap-3 p-3 rounded-2xl transition cursor-pointer group border-2 ${selectedLocation?.id === loc.id ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent'}`}
                                     >
                                         <div className="relative">
                                             <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 border-2 border-white dark:border-gray-900 overflow-hidden shadow-sm">
@@ -167,7 +169,7 @@ export default function TrackingPage() {
                 {/* VISUALIZAÇÃO DO MAPA REAL */}
                 <div className="lg:col-span-3 space-y-6">
                     <div className="bg-white dark:bg-gray-900 h-[600px] rounded-[3rem] border-8 border-white dark:border-gray-800 shadow-2xl relative overflow-hidden group z-0">
-                        <MapView locations={locations} />
+                        <MapView locations={locations} selectedLocation={selectedLocation} />
 
                         {/* UI Overlay no Mapa */}
                         <div className="absolute bottom-6 right-6 flex flex-col gap-2">
