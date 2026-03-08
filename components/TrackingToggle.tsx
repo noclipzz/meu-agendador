@@ -1,53 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { MapPin, Loader2, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boolean }) {
     const [isOnline, setIsOnline] = useState(false);
     const [loading, setLoading] = useState(false);
     const [watchId, setWatchId] = useState<number | null>(null);
-    const wakeLockRef = useRef<any>(null);
 
-    const requestWakeLock = async () => {
-        if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+    // Enviar posição avulsa (usado quando o app volta para o foco)
+    const sendCurrentPosition = () => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(async (position) => {
             try {
-                wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-                console.log('Wake Lock ativo. Tela não vai apagar.');
-            } catch (err) {
-                console.warn('Falha ao ativar Wake Lock:', err);
-            }
-        }
-    };
-
-    const releaseWakeLock = async () => {
-        if (wakeLockRef.current) {
-            try {
-                await wakeLockRef.current.release();
-                wakeLockRef.current = null;
-            } catch (err) { }
-        }
+                await fetch("/api/location/update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        status: "ONLINE"
+                    })
+                });
+            } catch (e) { }
+        }, () => { }, { enableHighAccuracy: true, maximumAge: 0 });
     };
 
     useEffect(() => {
-        const handleVisibilityChange = async () => {
+        const handleVisibilityChange = () => {
+            // Se o usuário tirou o celular do bolso e abriu o app, force um update imediato
             if (document.visibilityState === 'visible' && isOnline) {
-                await requestWakeLock();
+                sendCurrentPosition();
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            releaseWakeLock(); // Limpa ao desmontar se não for mais necessário
-        };
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [isOnline]);
 
     useEffect(() => {
         return () => {
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-            releaseWakeLock();
         };
     }, [watchId]);
 
@@ -60,9 +55,6 @@ export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boole
         }
 
         setLoading(true);
-
-        // Ativa Tela Sempre Ligada
-        requestWakeLock();
 
         const id = navigator.geolocation.watchPosition(
             async (position) => {
@@ -85,8 +77,11 @@ export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boole
             },
             (error) => {
                 console.error("Erro GPS:", error);
-                toast.error("Erro ao acessar GPS. Verifique se a localização está permitida para o site.");
-                stopTracking();
+                // Não paramos o rastreio em caso de timeout(3), pois ele pode estar apenas no bolso sem sinal
+                if (error.code !== 3) {
+                    toast.error("Erro ao acessar GPS. Verifique se a localização está permitida para o site.");
+                    stopTracking();
+                }
             },
             {
                 enableHighAccuracy: true,
@@ -106,7 +101,6 @@ export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boole
 
         setIsOnline(false);
         setLoading(false);
-        releaseWakeLock();
 
         // Notifica o servidor que ficou offline
         try {
@@ -159,16 +153,6 @@ export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boole
                     </span>
                 )}
             </button>
-            {isOnline && (
-                <div className="absolute top-full left-0 right-0 mt-4 animate-in fade-in slide-in-from-top-2">
-                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 p-3 rounded-xl flex items-start gap-3 shadow-lg">
-                        <Info className="text-amber-500 shrink-0 mt-0.5" size={14} />
-                        <p className="text-[9px] font-bold text-amber-700 dark:text-amber-500 uppercase leading-relaxed tracking-widest">
-                            Para não perder o sinal, deixe esta tela aberta e o celular ligado.
-                        </p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
