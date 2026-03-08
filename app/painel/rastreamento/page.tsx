@@ -89,7 +89,7 @@ export default function TrackingPage() {
                     </div>
                     <p className="text-gray-500 font-medium text-sm flex items-center gap-2">
                         Profissionais ativos no mapa atualizado às {format(lastRefresh, 'HH:mm:ss')}
-                        <Signal className="text-emerald-500 animate-pulse" size={14} />
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2" />
                     </p>
                 </div>
 
@@ -166,8 +166,9 @@ export default function TrackingPage() {
 
                 {/* VISUALIZAÇÃO DO MAPA REAL */}
                 <div className="lg:col-span-3 space-y-6">
-                    <div className="bg-white dark:bg-gray-900 h-[600px] rounded-[3rem] border-8 border-white dark:border-gray-800 shadow-2xl relative overflow-hidden group z-0">
-                        <MapView locations={locations} />
+                    <div className="bg-white dark:bg-gray-900 h-[600px] rounded-[3rem] border-8 border-white dark:border-gray-800 shadow-2xl relative overflow-hidden group z-0 flex items-center justify-center">
+                        <p className="text-gray-400 font-bold italic">Mapa desativado para teste de erro...</p>
+                        {/* <MapView locations={locations} /> */}
 
                         {/* UI Overlay no Mapa */}
                         <div className="absolute bottom-6 right-6 flex flex-col gap-2">
