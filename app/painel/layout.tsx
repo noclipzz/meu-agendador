@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, MapPin as MapIcon2,
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
     ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
@@ -180,7 +180,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         const dadosSync = await resSync.json();
                         setCompanyId(dadosSync.companyId);
                         setUserRole(dadosSync.role);
-                        setUserPermissions(dadosSync.permissions || null);
+                        setUserPermissions(dadosSync.permissions || {});
                         setUserPlan(dadosSync.plan || null);
                         setIsOwner(!!dadosSync.isOwner);
                         setHasAccess(true);
