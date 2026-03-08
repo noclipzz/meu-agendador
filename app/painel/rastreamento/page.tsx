@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-    MapPin, Navigation, Map as MapIcon, Users, RefreshCw,
+    MapPin, Map as MapIcon, Users, RefreshCw,
     MoreHorizontal, Smartphone, Signal, Info, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
@@ -70,7 +70,7 @@ export default function TrackingPage() {
                     "Integração com rotas de entrega",
                     "Aumente a segurança dos colaboradores"
                 ]}
-                icon={<Navigation size={32} />}
+                icon={<MapPin size={32} />}
                 color="indigo"
             />
         );
@@ -83,7 +83,7 @@ export default function TrackingPage() {
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
                         <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/30">
-                            <Navigation className="text-white" size={20} />
+                            <MapPin className="text-white" size={20} />
                         </div>
                         <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Radar de Equipe</h1>
                     </div>

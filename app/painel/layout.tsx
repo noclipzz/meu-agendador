@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Navigation,
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
     ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
@@ -48,7 +48,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [hasAccess, setHasAccess] = useState(false);
     const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isTrial, setIsTrial] = useState(false); // ✅ NOVO: Flag de Trial
-    const [userPermissions, setUserPermissions] = useState<any>(null); // Novo: Permissões granulares
+    const [userPermissions, setUserPermissions] = useState<any>({}); // Iniciando como objeto vazio para evitar erros de filtro
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -361,7 +361,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const allItems = [
         { key: 'dashboard', name: "Dashboard", path: "/painel/dashboard", icon: <LayoutDashboard size={20} /> },
         { key: 'agenda', name: "Agenda", path: "/painel/agenda", icon: <Calendar size={20} /> },
-        { key: 'rastreamento', name: "Radar de Equipe", path: "/painel/rastreamento", icon: <Navigation size={20} className="text-indigo-500" /> },
+        { key: 'rastreamento', name: "Radar de Equipe", path: "/painel/rastreamento", icon: <MapPin size={20} className="text-indigo-500" /> },
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
