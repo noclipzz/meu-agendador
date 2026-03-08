@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapPin, Power, Loader2, Navigation } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boolean }) {
@@ -94,16 +94,16 @@ export function TrackingToggle({ hasTrackingModule }: { hasTrackingModule: boole
                 onClick={toggle}
                 disabled={loading}
                 className={`relative flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-xl border-2 ${isOnline
-                        ? "bg-white text-emerald-600 border-emerald-500 dark:bg-gray-900 dark:text-emerald-400"
-                        : "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700"
+                    ? "bg-white text-emerald-600 border-emerald-500 dark:bg-gray-900 dark:text-emerald-400"
+                    : "bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700"
                     }`}
             >
                 {loading ? (
                     <Loader2 className="animate-spin" size={18} />
                 ) : isOnline ? (
-                    <Navigation className="animate-bounce" size={18} />
+                    <MapPin className="animate-bounce" size={18} />
                 ) : (
-                    <Power size={18} />
+                    <MapPin size={18} className="opacity-40" />
                 )}
 
                 <div className="text-left">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,7 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
-    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle,
+    LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, MapPin as MapIcon2,
     ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
@@ -226,8 +226,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 setUserRole(dados.role);
                 setIsOwner(!!dados.isOwner); // ✅ Salva se é dono
                 setIsTrial(!!dados.isTrial); // ✅ Salva se é trial
-                setHasTrackingModule(!!dados.hasTrackingModule); // ✅ NOVO: Módulo de rastreio
-                setUserPermissions(dados.permissions); // <--- CARREGA PERMISSÕES
+                setHasTrackingModule(!!dados.hasTrackingModule);
+                setUserPermissions(dados.permissions || {}); // Garante objeto
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
                 setVerificando(false);
@@ -489,7 +489,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-1 overflow-y-auto custom-scrollbar">
                     {/* DASHBOARD, AGENDA E RASTREAMENTO */}
-                    {visibleItems.slice(0, 3).map(item => (
+                    {(visibleItems || []).slice(0, 3).map(item => item && (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
@@ -537,7 +537,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     )}
 
                     {/* DEMAIS ITENS DE ALLITEMS */}
-                    {visibleItems.slice(3).map(item => (
+                    {(visibleItems || []).slice(3).map(item => item && (
                         <Link
                             key={item.path}
                             id={`tour-nav-${item.key}`}
