@@ -89,7 +89,7 @@ export default function TrackingPage() {
                     </div>
                     <p className="text-gray-500 font-medium text-sm flex items-center gap-2">
                         Profissionais ativos no mapa atualizado às {format(lastRefresh, 'HH:mm:ss')}
-                        <Signal className="text-emerald-500 animate-pulse" size={14} />
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" title="Sinal Ativo" />
                     </p>
                 </div>
 
