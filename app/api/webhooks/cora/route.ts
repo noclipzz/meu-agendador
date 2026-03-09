@@ -1,19 +1,33 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendEvolutionMessage } from '@/lib/whatsapp';
+import { logIntegration } from '@/lib/integration-logger';
 
 export async function POST(req: Request) {
+    let payloadStr = "";
+    let payloadObj: any = {};
     try {
-        const payload = await req.json();
-        console.log('--- Cora Webhook Payload ---', JSON.stringify(payload, null, 2));
+        payloadStr = await req.text();
+        payloadObj = JSON.parse(payloadStr);
+        console.log('--- Cora Webhook Payload ---', JSON.stringify(payloadObj, null, 2));
 
-        const { event, data } = payload;
+        const { event, data } = payloadObj;
         const gatewayId = data?.id;
 
-        if (!gatewayId) return NextResponse.json({ message: 'No gatewayId found' }, { status: 400 });
+        if (!gatewayId) {
+            await logIntegration({
+                service: "CORA",
+                type: "WEBHOOK",
+                status: "WARNING",
+                endpoint: "/api/webhooks/cora",
+                payload: payloadObj,
+                errorMessage: "No gatewayId found in payload",
+            });
+            return NextResponse.json({ message: 'No gatewayId found' }, { status: 400 });
+        }
 
         if (event === 'invoice.paid') {
-            const invoice = await db.invoice.findUnique({
+            const invoice = await db.invoice.findFirst({
                 where: { gatewayId } as any,
                 include: {
                     client: true,
@@ -28,6 +42,17 @@ export async function POST(req: Request) {
                         status: 'PAGO',
                         paidAt: new Date(),
                     },
+                });
+
+                await logIntegration({
+                    companyId: invoice.companyId,
+                    service: "CORA",
+                    type: "WEBHOOK",
+                    status: "SUCCESS",
+                    endpoint: "/api/webhooks/cora",
+                    identifier: invoice.id,
+                    payload: payloadObj,
+                    response: { message: `Fatura ${invoice.id} marcada como PAGO` }
                 });
 
                 console.log(`✅ Fatura ${invoice.id} marcada como PAGO via Webhook Cora.`);
@@ -54,12 +79,30 @@ export async function POST(req: Request) {
                     );
                     console.log(`[WHATSAPP] Notificação de pagamento enviada para ${client.name}`);
                 }
+            } else {
+                await logIntegration({
+                    service: "CORA",
+                    type: "WEBHOOK",
+                    status: "WARNING",
+                    endpoint: "/api/webhooks/cora",
+                    identifier: gatewayId,
+                    payload: payloadObj,
+                    errorMessage: "Invoice not found for gatewayId",
+                });
             }
         }
 
         return NextResponse.json({ received: true });
     } catch (error: any) {
         console.error('❌ Erro no Webhook da Cora:', error.message);
+        await logIntegration({
+            service: "CORA",
+            type: "WEBHOOK",
+            status: "ERROR",
+            endpoint: "/api/webhooks/cora",
+            payload: payloadObj || { raw: payloadStr },
+            errorMessage: error?.message || String(error),
+        });
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

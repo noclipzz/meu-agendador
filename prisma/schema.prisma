@@ -100,6 +100,7 @@ model Company {
   bankAccounts                 BankAccount[]
   consentTerms                 ConsentTerm[]
   professionalLocations        ProfessionalLocation[]
+  integrationLogs              IntegrationLog[]
 }
 
 model OrganizationPost {
@@ -536,4 +537,20 @@ model ProfessionalLocation {
 
   @@index([professionalId])
   @@index([companyId])
+}
+
+model IntegrationLog {
+  id          String   @id @default(cuid())
+  companyId   String?
+  service     String   // "CORA", "EVOLUTION", "SIGCORP", "RESEND", "CLERK", etc.
+  type        String   // "WEBHOOK", "API_REQUEST", "CRON", etc.
+  status      String   // "SUCCESS", "ERROR", "WARNING"
+  endpoint    String?
+  identifier  String?  // Reference ID (ex: "inv_123", "booking_abc")
+  payload     Json?
+  response    Json?
+  errorMessage String? @db.Text
+  createdAt   DateTime @default(now())
+
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }

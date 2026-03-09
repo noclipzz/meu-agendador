@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 import { sendEvolutionMessage } from "@/lib/whatsapp";
+import { logIntegration } from "@/lib/integration-logger";
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +65,16 @@ export async function POST(req: Request) {
                     whatsappStatus: newStatus,
                     ...(newStatus === "CONNECTED" ? { whatsappQrCode: null } : {})
                 } as any
+            });
+
+            await logIntegration({
+                companyId: company.id,
+                service: "EVOLUTION",
+                type: "WEBHOOK",
+                status: "SUCCESS",
+                identifier: instanceName,
+                payload: { event, state, newStatus },
+                response: { message: "Status updated" }
             });
         }
 
@@ -180,6 +191,16 @@ export async function POST(req: Request) {
                             if (booking.professionalId) {
                                 await notifyProfessional(booking.professionalId, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
                             }
+
+                            await logIntegration({
+                                companyId: company.id,
+                                service: "EVOLUTION",
+                                type: "WEBHOOK",
+                                status: "SUCCESS",
+                                identifier: booking.id,
+                                payload: { message: messageBody, phone: phoneStr },
+                                response: { message: "Booking confirmed by customer" }
+                            });
                         }
                     }
                     // --- SCENARIO 2: USER WANTS TO CANCEL (OR REJECT CANCELLATION) ---
@@ -219,6 +240,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
     } catch (error: any) {
         console.error("[EVOLUTION WEBHOOK] Error:", error);
+
+        let reqPayload = null;
+        try {
+            // We already awaited req.json(), body is available
+            // Since body is parsed above, we can't read it again, but we can't access `body` due to scope.
+            // However it's fine, we just log the generic error.
+        } catch (e) { }
+
+        await logIntegration({
+            service: "EVOLUTION",
+            type: "WEBHOOK",
+            status: "ERROR",
+            errorMessage: error?.message || String(error),
+        });
+
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
