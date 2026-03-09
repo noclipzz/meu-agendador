@@ -128,7 +128,8 @@ export async function POST(req: Request) {
                         quantity: body.quantity,
                         expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
                         costPrice: body.costPrice ? Number(body.costPrice) : null,
-                        totalCost: totalCost
+                        totalCost: totalCost,
+                        supplierId: body.supplierId
                     }
                 });
 
@@ -141,7 +142,8 @@ export async function POST(req: Request) {
                         type: "ENTRADA",
                         reason: "Cadastro Inicial",
                         costPrice: body.costPrice ? Number(body.costPrice) : null,
-                        totalCost: totalCost
+                        totalCost: totalCost,
+                        supplierId: body.supplierId
                     }
                 });
             }
@@ -168,7 +170,7 @@ export async function PUT(req: Request) {
         }
 
         const body = await req.json();
-        const { id, operation, amountAdjustment, expiryDate, reason, name, minStock, costPrice } = body;
+        const { id, operation, amountAdjustment, expiryDate, reason, name, minStock, costPrice, supplierId } = body;
 
         console.log("Recebendo PUT Estoque:", { id, operation, amountAdjustment, expiryDate });
 
@@ -204,7 +206,8 @@ export async function PUT(req: Request) {
                         quantity: amount,
                         expiryDate: validadeFinal,
                         costPrice: costPrice ? Number(costPrice) : null,
-                        totalCost: costPrice ? Number(costPrice) * amount : null
+                        totalCost: costPrice ? Number(costPrice) * amount : null,
+                        supplierId: supplierId
                     }
                 });
                 newTotal += amount;
@@ -259,7 +262,8 @@ export async function PUT(req: Request) {
                     type: operation === 'ADD' ? 'ENTRADA' : 'SAIDA',
                     reason: reason || (operation === 'ADD' ? 'Novo Lote' : 'Ajuste Manual'),
                     costPrice: operation === 'ADD' && costPrice ? Number(costPrice) : null,
-                    totalCost: operation === 'ADD' && costPrice ? Number(costPrice) * amount : null
+                    totalCost: operation === 'ADD' && costPrice ? Number(costPrice) * amount : null,
+                    supplierId: (operation === 'ADD' ? supplierId : undefined)
                 }
             });
 

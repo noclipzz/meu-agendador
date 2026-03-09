@@ -346,7 +346,8 @@ model ProductBatch {
   costPrice  Decimal?
   totalCost  Decimal?
   expiryDate DateTime?
-  createdAt  DateTime  @default(now())
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
   product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
@@ -360,7 +361,8 @@ model StockLog {
   reason     String?
   costPrice  Decimal?
   totalCost  Decimal?
-  createdAt  DateTime @default(now())
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
@@ -465,6 +467,8 @@ model Supplier {
   updatedAt     DateTime  @updatedAt
   expenses      Expense[]
   products      SupplierProduct[]
+  batches       ProductBatch[]
+  stockLogs     StockLog[]
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 

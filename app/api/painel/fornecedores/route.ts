@@ -48,6 +48,21 @@ export async function GET(req: Request) {
                     expenses: {
                         take: 10,
                         orderBy: { dueDate: 'desc' }
+                    },
+                    batches: {
+                        include: {
+                            product: true
+                        },
+                        orderBy: { createdAt: 'desc' },
+                        take: 20
+                    },
+                    stockLogs: {
+                        include: {
+                            product: true
+                        },
+                        where: { type: 'ENTRADA' },
+                        orderBy: { createdAt: 'desc' },
+                        take: 20
                     }
                 }
             });

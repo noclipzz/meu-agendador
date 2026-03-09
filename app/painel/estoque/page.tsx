@@ -26,12 +26,22 @@ export default function EstoquePage() {
     const [validadeInput, setValidadeInput] = useState("");
     const [motivoInput, setMotivoInput] = useState("");
     const [costPriceInput, setCostPriceInput] = useState("");
+    const [selectedSupplierId, setSelectedSupplierId] = useState("");
+    const [allSuppliers, setAllSuppliers] = useState<any[]>([]);
     const [operacao, setOperacao] = useState<"ADD" | "REMOVE">("ADD");
 
     // Form de Criação/Edição Básica
     const [formBasico, setFormBasico] = useState({ name: "", unit: "UN", minStock: "5", costPrice: "" });
 
-    useEffect(() => { carregarEstoque(); }, []);
+    useEffect(() => {
+        carregarEstoque();
+        carregarFornecedores();
+    }, []);
+
+    async function carregarFornecedores() {
+        const res = await fetch('/api/painel/fornecedores');
+        if (res.ok) setAllSuppliers(await res.json());
+    }
 
     async function carregarEstoque() {
         const res = await fetch('/api/painel/estoque');
@@ -58,6 +68,7 @@ export default function EstoquePage() {
         setQtdInput("");
         setValidadeInput("");
         setCostPriceInput("");
+        setSelectedSupplierId("");
         carregarLogs(produto.id);
         setModalOpen(true);
     }
@@ -68,6 +79,7 @@ export default function EstoquePage() {
         setQtdInput("");
         setValidadeInput("");
         setCostPriceInput("");
+        setSelectedSupplierId("");
         setModalOpen(true);
     }
 
@@ -90,7 +102,8 @@ export default function EstoquePage() {
                         minStock: formBasico.minStock,
                         costPrice: unitCost,
                         quantity: qtdInput,
-                        expiryDate: validadeInput
+                        expiryDate: validadeInput,
+                        supplierId: selectedSupplierId
                     })
                 });
                 if (res.ok) {
@@ -115,7 +128,8 @@ export default function EstoquePage() {
                     amountAdjustment: qtdInput,
                     expiryDate: validadeInput,
                     reason: motivoInput,
-                    costPrice: operacao === 'ADD' ? unitCostAdd : undefined
+                    costPrice: operacao === 'ADD' ? unitCostAdd : undefined,
+                    supplierId: operacao === 'ADD' ? selectedSupplierId : undefined
                 })
             });
 
@@ -275,6 +289,13 @@ export default function EstoquePage() {
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Validade (Opcional)</label>
                                             <input type="date" className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
                                         </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Fornecedor (Opcional)</label>
+                                            <select className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={selectedSupplierId} onChange={e => setSelectedSupplierId(e.target.value)}>
+                                                <option value="">Nenhum fornecedor</option>
+                                                {allSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
 
                                     <button onClick={salvarMovimentacao} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl transition shadow-lg flex justify-center items-center gap-2 mt-4">
@@ -309,6 +330,13 @@ export default function EstoquePage() {
                                                     <div className="md:w-48">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Validade do Lote</label>
                                                         <input type="date" className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={validadeInput} onChange={e => setValidadeInput(e.target.value)} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block md:hidden">Fornecedor</label>
+                                                        <select className="w-full p-4 rounded-2xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none" value={selectedSupplierId} onChange={e => setSelectedSupplierId(e.target.value)}>
+                                                            <option value="">Sem Fornecedor</option>
+                                                            {allSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                        </select>
                                                     </div>
                                                 </>
                                             )}
