@@ -44,14 +44,27 @@ export default function EstoquePage() {
     }
 
     async function carregarEstoque() {
-        const res = await fetch('/api/painel/estoque');
-        const data = await res.json();
-        setProdutos(data);
-        setLoading(false);
-        // Se tiver produto selecionado, atualiza ele também para refletir mudanças em tempo real
-        if (produtoSelecionado) {
-            const atualizado = data.find((p: any) => p.id === produtoSelecionado.id);
-            if (atualizado) setProdutoSelecionado(atualizado);
+        try {
+            const res = await fetch('/api/painel/estoque');
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                setProdutos(data);
+                if (produtoSelecionado) {
+                    const atualizado = data.find((p: any) => p.id === produtoSelecionado.id);
+                    if (atualizado) setProdutoSelecionado(atualizado);
+                }
+            } else {
+                setProdutos([]);
+                if (data.error) {
+                    toast.error(data.error);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao carregar estoque:", error);
+            setProdutos([]);
+        } finally {
+            setLoading(false);
         }
     }
 

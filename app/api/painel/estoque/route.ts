@@ -14,10 +14,15 @@ export async function GET(req: Request) {
         try {
             await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "costPrice" DECIMAL(65,30);`);
             await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "totalCost" DECIMAL(65,30);`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "supplierId" TEXT;`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "ProductBatch" ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
+
             await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "costPrice" DECIMAL(65,30);`);
             await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "totalCost" DECIMAL(65,30);`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "supplierId" TEXT;`);
+            await prisma.$executeRawUnsafe(`ALTER TABLE "StockLog" ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;`);
         } catch (e) {
-            console.log("Colunas já existem ou erro interno");
+            console.error("Erro ao verificar colunas (ignorar se já existirem):", e);
         }
 
         // 1. Identifica a empresa (Dono ou Membro)
