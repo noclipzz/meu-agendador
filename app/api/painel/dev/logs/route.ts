@@ -2,41 +2,35 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 
-const prisma = db;
-
 export async function GET(req: Request) {
     try {
         const { userId } = await auth();
-        if (!userId) {
+
+        // Proteção Master
+        if (userId !== "user_39S9qNrKwwgObMZffifdZyNKUKm") {
             return new NextResponse("Unauthorized", { status: 401 });
         }
 
-        // Ideally, check if the user is a super admin or if they own the company
-        let targetCompanyId = null;
-
-        const ownerCompany = await prisma.company.findUnique({ where: { ownerId: userId } });
-        if (ownerCompany) {
-            targetCompanyId = ownerCompany.id;
-        }
-
-        // For this API, we might want to see ALL logs if they are a system admin.
-        // But for now, let's limit to the company of the owner.
-        // If no company, return 401.
-        if (!targetCompanyId) {
-            return new NextResponse("Unauthorized - Not a company owner", { status: 401 });
-        }
-
-        const logs = await prisma.integrationLog.findMany({
-            where: {
-                companyId: targetCompanyId
-            },
+        // Retorna os últimos 200 logs do sistema todo
+        const logs = await db.integrationLog.findMany({
             orderBy: {
                 createdAt: 'desc'
             },
-            take: 100 // Limit to recent 100 logs
+            take: 200,
+            include: {
+                company: {
+                    select: { name: true }
+                }
+            }
         });
 
-        return NextResponse.json(logs);
+        // Adaptação para o frontend mostrar o nome da empresa se disponível
+        const formattedLogs = logs.map((log: any) => ({
+            ...log,
+            companyName: log.company?.name || "Sistema"
+        }));
+
+        return NextResponse.json(formattedLogs);
 
     } catch (error) {
         console.error("ERRO_GET_LOGS:", error);
