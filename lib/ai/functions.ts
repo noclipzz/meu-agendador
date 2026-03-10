@@ -286,6 +286,7 @@ export async function executeAiFunction(functionName: string, args: any, company
                 const dataFmt = format(bookingToUpdate.date, 'dd/MM/yyyy HH:mm');
                 const emoji = acao === "CONFIRMAR" ? "✅" : "❌";
                 const acaoTxt = acao === "CONFIRMAR" ? "CONFIRMOU" : "CANCELOU";
+                const acaoPassiva = acao === "CONFIRMAR" ? "confirmado" : "cancelado";
                 
                 await notifyAdminsOfCompany(
                     companyId, 
@@ -298,7 +299,7 @@ export async function executeAiFunction(functionName: string, args: any, company
                     await notifyProfessional(
                         bookingToUpdate.professionalId, 
                         `${emoji} IA (WhatsApp): ${acaoTxt}`, 
-                        `O horário de ${bookingToUpdate.customerName} às ${dataFmt.split(' ')[1]} foi ${acaoTxt.toLowerCase()}`, 
+                        `O horário de ${bookingToUpdate.customerName} às ${dataFmt.split(' ')[1]} foi ${acaoPassiva}`, 
                         "/painel/agenda"
                     );
                 }
