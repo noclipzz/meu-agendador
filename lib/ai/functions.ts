@@ -154,14 +154,12 @@ export async function executeAiFunction(functionName: string, args: any, company
                 return JSON.stringify({ error: "Horário já está ocupado por outra pessoa. Por favor, peça ao cliente para escolher outro." });
             }
 
-            // Tenta encontrar o cliente se já existir (para vincular historico)
-            let cliente = await db.client.findFirst({
-                where: { companyId, phone: { contains: telefoneCliente.slice(-8) } }
-            });
-
             // Formatar telefone para máscara local se for BR para exibir corretamente no painel
             let phoneFormatted = telefoneCliente;
             const apenasNumeros = telefoneCliente.replace(/\D/g, "");
+            let last4 = apenasNumeros.slice(-4);
+            let mid4 = apenasNumeros.length >= 8 ? apenasNumeros.slice(-8, -4) : apenasNumeros.slice(0, 4);
+
             if (apenasNumeros.startsWith("55") && apenasNumeros.length === 13) {
                 const ddd = apenasNumeros.substring(2, 4);
                 const parte1 = apenasNumeros.substring(4, 9);
@@ -173,6 +171,18 @@ export async function executeAiFunction(functionName: string, args: any, company
                 const parte2 = apenasNumeros.substring(8, 12);
                 phoneFormatted = `(${ddd}) ${parte1}-${parte2}`;
             }
+
+            // Tenta encontrar o cliente se já existir (para vincular historico)
+            let cliente = await db.client.findFirst({
+                where: { 
+                    companyId, 
+                    OR: [
+                        { phone: { equals: phoneFormatted } },
+                        { phone: { contains: `${mid4}-${last4}` } },
+                        { phone: { contains: apenasNumeros.slice(-8) } }
+                    ]
+                }
+            });
 
             const newBooking = await db.booking.create({
                 data: {
