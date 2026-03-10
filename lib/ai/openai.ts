@@ -73,6 +73,10 @@ Regras Gerais:
 
         // Format historical messages
         updatedSession.messages.forEach((msg: any) => {
+            // Protect OpenAI from bad historical data (roles without required IDs)
+            if (msg.role === "tool" || (msg.role === "assistant" && !msg.content)) {
+                return;
+            }
             openAiMessages.push({ role: msg.role as any, content: msg.content });
         });
 
@@ -99,8 +103,8 @@ Regras Gerais:
             await db.whatsAppChatMessage.create({
                 data: {
                     sessionId: session.id,
-                    role: "assistant",
-                    content: `[TOOL_CALLS] Executando ações na base de dados...`
+                    role: "system",
+                    content: `[ACTION STARTED] IA acionou uma ferramenta do sistema...`
                 }
             });
 
@@ -125,8 +129,8 @@ Regras Gerais:
                 await db.whatsAppChatMessage.create({
                     data: {
                         sessionId: session.id,
-                        role: "tool",
-                        content: functionResponse
+                        role: "system",
+                        content: `[DATA FROM BACKEND - ${functionName}]: ${functionResponse}`
                     }
                 });
             }
