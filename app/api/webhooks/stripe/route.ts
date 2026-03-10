@@ -91,34 +91,19 @@ export async function POST(req: Request) {
             console.log(`📋 Dados Finais: Plano=${plan}, Expira=${expiresAt.toISOString()}, PriceID=${priceId}`);
 
             try {
-                // UPSERT: Cria se não existir, Atualiza se existir
-                const updatedSub = await prisma.subscription.upsert({
-                    where: { userId: userId },
-                    update: {
-                        stripeSubscriptionId: subscriptionId,
-                        stripeCustomerId: customerId,
-                        stripePriceId: priceId,
-                        status: "ACTIVE",
-                        plan: plan,
-                        expiresAt: expiresAt
-                    },
-                    create: {
-                        userId: userId,
-                        stripeSubscriptionId: subscriptionId,
-                        stripeCustomerId: customerId,
-                        stripePriceId: priceId,
-                        status: "ACTIVE",
-                        plan: plan,
-                        expiresAt: expiresAt
-                    }
-                });
-                console.log(`✔️ [STRIPE WEBHOOK] Banco de dados atualizado! ID: ${updatedSub.id}, Status: ${updatedSub.status}`);
-            } catch (dbError: any) {
-                console.error("❌ [STRIPE WEBHOOK] Erro ao salvar no banco:", dbError.message);
-                // Se falhou, tenta mais uma vez após 2 segundos
-                try {
-                    await new Promise(res => setTimeout(res, 2000));
-                    await prisma.subscription.upsert({
+                if (plan === "AI_RECEPTION") {
+                    // Tratar como Add-on: Não sobrescreve o plano principal, apenas ativa o módulo
+                    console.log(`✅ [STRIPE WEBHOOK] Ativando Módulo AI Reception para o usuário: ${userId}`);
+                    await prisma.subscription.update({
+                        where: { userId: userId },
+                        data: {
+                            hasAiReceptionModule: true
+                        }
+                    });
+                    console.log(`✔️ [STRIPE WEBHOOK] Módulo de IA ativado com sucesso!`);
+                } else {
+                    // UPSERT Normal: Assinatura de plano base
+                    const updatedSub = await prisma.subscription.upsert({
                         where: { userId: userId },
                         update: {
                             stripeSubscriptionId: subscriptionId,
@@ -138,7 +123,43 @@ export async function POST(req: Request) {
                             expiresAt: expiresAt
                         }
                     });
-                    console.log("✔️ [STRIPE WEBHOOK] Banco atualizado na segunda tentativa!");
+                    console.log(`✔️ [STRIPE WEBHOOK] Banco de dados atualizado! ID: ${updatedSub.id}, Status: ${updatedSub.status}`);
+                }
+            } catch (dbError: any) {
+                console.error("❌ [STRIPE WEBHOOK] Erro ao salvar no banco:", dbError.message);
+                // Se falhou, tenta mais uma vez após 2 segundos
+                try {
+                    await new Promise(res => setTimeout(res, 2000));
+
+                    if (plan === "AI_RECEPTION") {
+                        await prisma.subscription.update({
+                            where: { userId: userId },
+                            data: { hasAiReceptionModule: true }
+                        });
+                        console.log("✔️ [STRIPE WEBHOOK] Módulo de IA atualizado na segunda tentativa!");
+                    } else {
+                        await prisma.subscription.upsert({
+                            where: { userId: userId },
+                            update: {
+                                stripeSubscriptionId: subscriptionId,
+                                stripeCustomerId: customerId,
+                                stripePriceId: priceId,
+                                status: "ACTIVE",
+                                plan: plan,
+                                expiresAt: expiresAt
+                            },
+                            create: {
+                                userId: userId,
+                                stripeSubscriptionId: subscriptionId,
+                                stripeCustomerId: customerId,
+                                stripePriceId: priceId,
+                                status: "ACTIVE",
+                                plan: plan,
+                                expiresAt: expiresAt
+                            }
+                        });
+                        console.log("✔️ [STRIPE WEBHOOK] Banco atualizado na segunda tentativa!");
+                    }
                 } catch (retryError: any) {
                     console.error("❌ [STRIPE WEBHOOK] FALHA TOTAL ao salvar assinatura:", retryError.message);
                 }
