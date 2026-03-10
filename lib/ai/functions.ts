@@ -264,7 +264,7 @@ export async function executeAiFunction(functionName: string, args: any, company
             // Se existe MAIS de um e não foi passado o ID específico, a IA deve perguntar.
             if (clientBookings.length > 1 && !agendamentoId) {
                 const listStr = clientBookings.map((b: any) => 
-                    `ID: ${b.id} | Serviço: ${b.service?.name} | Data: ${b.date}`
+                    `ID: ${b.id} | Serviço: ${b.service?.name} | Data: ${formatarDiaExtenso(b.date)} às ${formatarHorario(b.date)}`
                 );
                 
                 return JSON.stringify({ 
@@ -311,7 +311,8 @@ export async function executeAiFunction(functionName: string, args: any, company
                 success: true,
                 statusAtualizado: novoStatus,
                 servico: bookingToUpdate.service?.name,
-                data: bookingToUpdate.date,
+                data: formatarDiaExtenso(bookingToUpdate.date),
+                horario: formatarHorario(bookingToUpdate.date),
                 mensagemParaBot: acao === "CONFIRMAR" 
                     ? "Responda ao cliente com alegria dizendo que o agendamento foi Confirmado e deseje um ótimo dia."
                     : "Responda ao cliente dizendo que o agendamento foi Cancelado e que vocês esperam ele numa próxima oportunidade."
