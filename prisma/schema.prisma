@@ -580,7 +580,7 @@ model WhatsAppChatMessage {
   id             String                @id @default(cuid())
   sessionId      String
   role           String                // "user", "assistant", "system", "tool"
-  content        String                @db.Text
+  content        String?               @db.Text
   toolCalls      Json?                 // Stores OpenAI tool_calls object
   toolCallId     String?               // Stores individual tool_call_id for role=tool
   createdAt      DateTime              @default(now())
