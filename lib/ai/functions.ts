@@ -157,6 +157,21 @@ export async function executeAiFunction(functionName: string, args: any, company
                 where: { companyId, phone: { contains: telefoneCliente.slice(-8) } }
             });
 
+            // Formatar telefone para máscara local se for BR para exibir corretamente no painel
+            let phoneFormatted = telefoneCliente;
+            const apenasNumeros = telefoneCliente.replace(/\D/g, "");
+            if (apenasNumeros.startsWith("55") && apenasNumeros.length === 13) {
+                const ddd = apenasNumeros.substring(2, 4);
+                const parte1 = apenasNumeros.substring(4, 9);
+                const parte2 = apenasNumeros.substring(9, 13);
+                phoneFormatted = `(${ddd}) ${parte1}-${parte2}`;
+            } else if (apenasNumeros.startsWith("55") && apenasNumeros.length === 12) {
+                const ddd = apenasNumeros.substring(2, 4);
+                const parte1 = apenasNumeros.substring(4, 8);
+                const parte2 = apenasNumeros.substring(8, 12);
+                phoneFormatted = `(${ddd}) ${parte1}-${parte2}`;
+            }
+
             const newBooking = await db.booking.create({
                 data: {
                     companyId,
@@ -164,7 +179,7 @@ export async function executeAiFunction(functionName: string, args: any, company
                     serviceId,
                     professionalId,
                     customerName: nomeCliente,
-                    customerPhone: telefoneCliente,
+                    customerPhone: phoneFormatted,
                     date: new Date(dataHora),
                     status: "CONFIRMADO", // IA já confirma direto
                     type: "CLIENTE"
