@@ -278,76 +278,93 @@ export async function POST(req: Request) {
         }
 
         // 6. INTEGRAÇÃO CORA (Se método for PIX_CORA ou BOLETO)
+        let coraResult = null;
         console.log(`💳 [CHECKOUT] Método: ${method} | Status: ${status} | ClienteID: ${clientId} | Telefone: ${cliente?.phone || 'N/A'}`);
         if (method === 'PIX_CORA' || method === 'BOLETO') {
             try {
                 console.log(`💰 [CORA] Gerando cobrança para fatura ${invoice.id}...`);
-                const coraResult = await createCoraCharge(companyId, invoice.id);
+                coraResult = await createCoraCharge(companyId, invoice.id);
                 console.log(`✅ [CORA] Cobrança criada! BoletoURL: ${coraResult?.payment_options?.bank_slip?.url || 'N/A'} | PIX: ${coraResult?.payment_options?.pix?.emv ? 'SIM' : 'N/A'}`);
-
-                // 6.1 ENVIO AUTOMÁTICO DO BOLETO VIA WHATSAPP
-                if (method === 'BOLETO' && cliente?.phone) {
-                    console.log(`📨 [WHATSAPP] Cliente tem telefone: ${cliente.phone}. Verificando config da empresa...`);
-                    try {
-                        const empresa = await prisma.company.findUnique({ where: { id: companyId } });
-                        console.log(`📨 [WHATSAPP] Config: ServerURL=${empresa?.evolutionServerUrl ? 'SIM' : 'NÃO'} | ApiKey=${empresa?.evolutionApiKey ? 'SIM' : 'NÃO'} | Instance=${empresa?.whatsappInstanceId || 'NÃO'}`);
-
-                        if (empresa?.evolutionServerUrl && empresa?.evolutionApiKey && empresa?.whatsappInstanceId) {
-                            const boletoUrl = coraResult?.payment_options?.bank_slip?.url;
-                            const pixCode = coraResult?.payment_options?.pix?.emv;
-                            const valorStr = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-                            // Mensagem formatada com dados do boleto
-                            let msg = `💰 *Boleto Gerado - ${empresa.name}*\n\n`;
-                            msg += `Olá, *${cliente.name}*!\n`;
-                            msg += `Segue o boleto referente ao serviço realizado:\n\n`;
-                            msg += `📝 *Serviço:* ${description}\n`;
-                            msg += `💵 *Valor:* R$ ${valorStr}\n`;
-                            msg += `📅 *Vencimento:* ${formatarDataApenas(new Date(dueDate + (typeof dueDate === 'string' && dueDate.length === 10 ? 'T12:00:00' : '')))}\n`;
-
-                            if (boletoUrl) {
-                                msg += `\n🔗 *Link do Boleto:*\n${boletoUrl}\n`;
-                            }
-
-                            if (pixCode) {
-                                msg += `\n📱 *PIX (Copia e Cola):*\n${pixCode}\n`;
-                            }
-
-                            msg += `\n_Mensagem automática - ${empresa.name}_`;
-
-                            // Envia a mensagem de texto com os links
-                            await sendEvolutionMessage(
-                                empresa.evolutionServerUrl,
-                                empresa.evolutionApiKey,
-                                empresa.whatsappInstanceId,
-                                cliente.phone,
-                                msg
-                            );
-
-                            // Se tem URL do boleto PDF, envia também como documento
-                            if (boletoUrl) {
-                                await sendEvolutionMedia(
-                                    empresa.evolutionServerUrl,
-                                    empresa.evolutionApiKey,
-                                    empresa.whatsappInstanceId,
-                                    cliente.phone,
-                                    boletoUrl,
-                                    {
-                                        mediatype: 'document',
-                                        caption: `Boleto - ${description} - R$ ${valorStr}`,
-                                        fileName: `boleto_${empresa.name.replace(/\s/g, '_')}.pdf`
-                                    }
-                                );
-                            }
-
-                            console.log(`📨 [WHATSAPP] Boleto enviado para ${cliente.phone}`);
-                        }
-                    } catch (wpErr) {
-                        console.error("⚠️ [WHATSAPP] Erro ao enviar boleto:", wpErr);
-                    }
-                }
             } catch (coraErr: any) {
                 console.error("❌ [CORA] Erro ao gerar cobrança:", coraErr?.message || coraErr);
+            }
+        }
+
+        // 6.1 ENVIO AUTOMÁTICO VIA WHATSAPP (BOT)
+        if (cliente?.phone && empresa?.evolutionServerUrl && empresa?.evolutionApiKey && empresa?.whatsappInstanceId) {
+            try {
+                if (status === 'PAGO') {
+                    // MENSAGEM DE SUCESSO DE PAGAMENTO
+                    let msgSucesso = empresa.whatsappPaymentSuccessMessage || "✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!";
+                    msgSucesso = msgSucesso
+                        .replace(/{nome}/g, cliente.name)
+                        .replace(/{valor}/g, `R$ ${parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`)
+                        .replace(/{descricao}/g, description);
+
+                    await sendEvolutionMessage(empresa.evolutionServerUrl, empresa.evolutionApiKey, empresa.whatsappInstanceId, cliente.phone, msgSucesso);
+                    console.log(`📨 [WHATSAPP] Confirmação de pagamento enviada para ${cliente.phone}`);
+                } 
+                else if (status === 'PENDENTE') {
+                    // MENSAGEM COBRANDO OU ENVIANDO PIX/BOLETO
+                    const valorStr = parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    let msg = "";
+
+                    if (method === 'BOLETO' && coraResult) {
+                        const boletoUrl = coraResult?.payment_options?.bank_slip?.url;
+                        const pixCode = coraResult?.payment_options?.pix?.emv;
+
+                        msg = `💰 *Boleto Gerado - ${empresa.name}*\n\n`;
+                        msg += `Olá, *${cliente.name}*!\n`;
+                        msg += `Segue o boleto referente ao serviço realizado:\n\n`;
+                        msg += `📝 *Serviço:* ${description}\n`;
+                        msg += `💵 *Valor:* R$ ${valorStr}\n`;
+                        msg += `📅 *Vencimento:* ${formatarDataApenas(new Date(dueDate + (typeof dueDate === 'string' && dueDate.length === 10 ? 'T12:00:00' : '')))}\n`;
+
+                        if (boletoUrl) msg += `\n🔗 *Link do Boleto:*\n${boletoUrl}\n`;
+                        if (pixCode) msg += `\n📱 *PIX (Copia e Cola):*\n${pixCode}\n`;
+                        msg += `\n_Mensagem automática - ${empresa.name}_`;
+
+                        await sendEvolutionMessage(empresa.evolutionServerUrl, empresa.evolutionApiKey, empresa.whatsappInstanceId, cliente.phone, msg);
+
+                        if (boletoUrl) {
+                            await sendEvolutionMedia(empresa.evolutionServerUrl, empresa.evolutionApiKey, empresa.whatsappInstanceId, cliente.phone, boletoUrl, {
+                                mediatype: 'document',
+                                caption: `Boleto - ${description} - R$ ${valorStr}`,
+                                fileName: `boleto_${empresa.name.replace(/\s/g, '_')}.pdf`
+                            });
+                        }
+                        console.log(`📨 [WHATSAPP] Boleto enviado para ${cliente.phone}`);
+                    } 
+                    else if (method === 'PIX_CORA' && coraResult) {
+                        const pixCode = coraResult?.payment_options?.pix?.emv;
+                        
+                        msg = `✨ *Serviço Concluído - ${empresa.name}*\n\n`;
+                        msg += `Olá, *${cliente.name}*! O seu atendimento foi finalizado com sucesso.\n\n`;
+                        msg += `📝 *Serviço:* ${description}\n`;
+                        msg += `💵 *Valor:* R$ ${valorStr}\n\n`;
+                        if (pixCode) {
+                            msg += `Para facilitar, segue o seu PIX Copia e Cola:\n\n${pixCode}\n\n`;
+                        }
+                        msg += `Muito obrigado pela preferência! 😊`;
+
+                        await sendEvolutionMessage(empresa.evolutionServerUrl, empresa.evolutionApiKey, empresa.whatsappInstanceId, cliente.phone, msg);
+                        console.log(`📨 [WHATSAPP] PIX enviado para ${cliente.phone}`);
+                    }
+                    else {
+                        // Aviso genérico de pendência
+                        msg = `✨ *Serviço Concluído - ${empresa.name}*\n\n`;
+                        msg += `Olá, *${cliente.name}*! O seu atendimento foi finalizado com sucesso.\n\n`;
+                        msg += `📝 *Serviço:* ${description}\n`;
+                        msg += `💵 *Ficou no valor de:* R$ ${valorStr}\n\n`;
+                        msg += `Consta no sistema que o pagamento está pendente (A combinar / Acerto na recepção).\n`;
+                        msg += `Muito obrigado pela preferência! 😊`;
+
+                        await sendEvolutionMessage(empresa.evolutionServerUrl, empresa.evolutionApiKey, empresa.whatsappInstanceId, cliente.phone, msg);
+                        console.log(`📨 [WHATSAPP] Aviso de pendência genérico enviado para ${cliente.phone}`);
+                    }
+                }
+            } catch (wpErr) {
+                console.error("⚠️ [WHATSAPP] Erro ao enviar mensagem de checkout:", wpErr);
             }
         }
 
