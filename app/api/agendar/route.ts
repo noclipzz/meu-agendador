@@ -372,15 +372,50 @@ export async function POST(req: Request) {
                     // CUIDs share the same prefix if created at the same time, so we take the LAST 4 characters
                     const shortId = booking.id.slice(-4).toUpperCase();
 
-                    const messageText = company.whatsappMessage
-                        ? company.whatsappMessage
-                            .replace(/\\n/g, '\n')
-                            .replace("{nome}", name)
-                            .replace("{dia}", formatarDiaExtenso(new Date(booking.date)))
-                            .replace("{servico}", nomeServico)
-                            .replace("{hora}", formatarHorario(new Date(booking.date)))
-                        + `\n\n*(Ref: #${shortId})*`
-                        : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.\n*(Ref: #${shortId})*`;
+                    let messageText = "";
+
+                    if (company.aiEnabled) {
+                        messageText = `Olá ${name}! ✨ Vi que você acabou de solicitar um agendamento online para *${nomeServico}* no dia ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nPara deixarmos tudo prontinho na agenda, você confirma esse horário para mim? 😊`;
+
+                        try {
+                            const cleanPhone = phone.replace(/\D/g, "");
+                            let remoteJid = cleanPhone;
+                            if (cleanPhone.length <= 11) remoteJid = `55${cleanPhone}`;
+                            else if (!cleanPhone.startsWith("55")) remoteJid = `55${cleanPhone}`;
+                            remoteJid += "@s.whatsapp.net";
+
+                            let session = await db.whatsAppChatSession.findFirst({
+                                where: { companyId: company.id, remoteJid, status: "ACTIVE" },
+                                orderBy: { createdAt: "desc" }
+                            });
+
+                            if (!session) {
+                                session = await db.whatsAppChatSession.create({
+                                    data: { companyId: company.id, remoteJid, status: "ACTIVE" }
+                                });
+                            }
+
+                            await db.whatsAppChatMessage.create({
+                                data: {
+                                    sessionId: session.id,
+                                    role: "assistant",
+                                    content: messageText
+                                }
+                            });
+                        } catch (e) {
+                            console.error("Erro inserindo IA msg contexto:", e);
+                        }
+                    } else {
+                        messageText = company.whatsappMessage
+                            ? company.whatsappMessage
+                                .replace(/\\n/g, '\n')
+                                .replace("{nome}", name)
+                                .replace("{dia}", formatarDiaExtenso(new Date(booking.date)))
+                                .replace("{servico}", nomeServico)
+                                .replace("{hora}", formatarHorario(new Date(booking.date)))
+                            + `\n\n*(Ref: #${shortId})*`
+                            : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.\n*(Ref: #${shortId})*`;
+                    }
 
                     // Post Request (Agora usando await para garantir entrega no serverless)
                     await sendEvolutionMessage(

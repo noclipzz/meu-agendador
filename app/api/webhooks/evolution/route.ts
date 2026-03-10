@@ -103,13 +103,19 @@ export async function POST(req: Request) {
             const kConfirm = ['sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'];
             const kCancel = ['cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'];
 
-            // Use regex for exact word boundary matches to avoid false positives (e.g. "Boa Noite" containing "n")
-            let isConfirmOrYes = kConfirm.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
-            let isCancelTrigger = kCancel.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
+            let isConfirmOrYes = false;
+            let isCancelTrigger = false;
 
-            // Se enviou apenas a referência de 4 dígitos (ex: "ss8k"), assumimos como "Sim/Confirmar"
-            if (shortIdRef && !isConfirmOrYes && !isCancelTrigger && intentWord.replace(/[^a-z0-9]/g, '').length === 0) {
-                isConfirmOrYes = true;
+            // Se a IA NÃO estiver habilitada, executa o fluxo engessado de "Sim/Não", 
+            // caso contrário, pula direto para a IA resolver.
+            if (!company.aiEnabled) {
+                isConfirmOrYes = kConfirm.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
+                isCancelTrigger = kCancel.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
+
+                // Se enviou apenas a referência de 4 dígitos (ex: "ss8k"), assumimos como "Sim/Confirmar"
+                if (shortIdRef && !isConfirmOrYes && !isCancelTrigger && intentWord.replace(/[^a-z0-9]/g, '').length === 0) {
+                    isConfirmOrYes = true;
+                }
             }
 
             if (phoneStr && (isConfirmOrYes || isCancelTrigger)) {

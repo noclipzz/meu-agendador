@@ -58,6 +58,21 @@ export const aiTools: any[] = [
                 required: ["nomeCliente", "telefoneCliente", "dataHora", "serviceId", "professionalId"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "alterar_status_agendamento",
+            description: "Confirma ou Cancela o agendamento pendente de um cliente quando ele responde positivamente ou negativamente à sua pergunta de confirmação.",
+            parameters: {
+                type: "object",
+                properties: {
+                    telefoneCliente: { type: "string", description: "O telefone do cliente com 13 dígitos apenas números (ex: 5511999999999)" },
+                    acao: { type: "string", description: "'CONFIRMAR' ou 'CANCELAR'" }
+                },
+                required: ["telefoneCliente", "acao"]
+            }
+        }
     }
 ];
 
@@ -165,6 +180,57 @@ export async function executeAiFunction(functionName: string, args: any, company
         } catch (error: any) {
             console.error("[AGENDAMENTO IA ERRO]", error);
             return JSON.stringify({ error: "Erro interno no banco de dados ao tentar salvar." });
+        }
+    }
+
+    if (functionName === "alterar_status_agendamento") {
+        try {
+            const { telefoneCliente, acao } = args;
+            if (!["CONFIRMAR", "CANCELAR"].includes(acao)) {
+                return JSON.stringify({ error: "A ação deve ser 'CONFIRMAR' ou 'CANCELAR'" });
+            }
+
+            const cleanPhone = telefoneCliente.replace(/\D/g, '');
+            const last8 = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+
+            const bookings = await db.booking.findMany({
+                where: {
+                    companyId,
+                    status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO"] }
+                },
+                include: { service: true },
+                orderBy: { date: 'asc' }
+            });
+
+            const clientBookings = bookings.filter(b => {
+                const bPhone = b.customerPhone?.replace(/\D/g, '') || "";
+                return bPhone.length >= 8 && bPhone.endsWith(last8);
+            });
+
+            if (clientBookings.length === 0) {
+                return JSON.stringify({ erro: "Nenhum agendamento pendente encontrado para este número. Pode ser que já tenha sido confirmado/cancelado ou o número não bate." });
+            }
+
+            const bookingToUpdate = clientBookings[0];
+            const novoStatus = acao === "CONFIRMAR" ? "CONFIRMADO" : "CANCELADO";
+
+            await db.booking.update({
+                where: { id: bookingToUpdate.id },
+                data: { status: novoStatus }
+            });
+
+            return JSON.stringify({
+                success: true,
+                statusAtualizado: novoStatus,
+                servico: bookingToUpdate.service?.name,
+                data: bookingToUpdate.date,
+                mensagemParaBot: acao === "CONFIRMAR" 
+                    ? "Responda ao cliente com alegria dizendo que o agendamento foi Confirmado e deseje um ótimo dia."
+                    : "Responda ao cliente dizendo que o agendamento foi Cancelado e que vocês esperam ele numa próxima oportunidade."
+            });
+        } catch (error: any) {
+            console.error("[IA ERRO alterar_status_agendamento]", error);
+            return JSON.stringify({ error: "Erro interno no banco de dados ao alterar status." });
         }
     }
 
