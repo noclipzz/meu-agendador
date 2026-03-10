@@ -62,6 +62,7 @@ Aqui estão as regras do seu comportamento e as informações do negócio:
 ${company.aiSystemPrompt || "Seja educado, prestativo e focado em solucionar as dúvidas do cliente."}
 
 Regras Gerais:
+- NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago (ex: "quero agendar"), chame obrigatoriamente a ferramenta 'buscar_servicos' para ver o cardápio real em vez de sugerir um aleatório.
 - Responda de forma natural, humanóide e empática.
 - Não use linguagem excessivamente formal de robôs, use emojis sutilmente.
 - O formato do seu output será no WhatsApp. Então pode usar formatações do WhatsApp como *negrito*, _itálico_ etc.
@@ -73,11 +74,19 @@ Regras Gerais:
 
         // Format historical messages
         updatedSession.messages.forEach((msg: any) => {
-            // Protect OpenAI from bad historical data (roles without required IDs)
-            if (msg.role === "tool" || (msg.role === "assistant" && !msg.content)) {
-                return;
+            const msgObj: any = { role: msg.role as any, content: msg.content };
+
+            if (msg.role === "assistant" && msg.toolCalls) {
+                msgObj.tool_calls = msg.toolCalls;
+                // OpenAI often expects content: null if tool_calls is present
+                if (!msgObj.content) msgObj.content = null;
             }
-            openAiMessages.push({ role: msg.role as any, content: msg.content });
+
+            if (msg.role === "tool") {
+                msgObj.tool_call_id = msg.toolCallId;
+            }
+
+            openAiMessages.push(msgObj);
         });
 
         // call OpenAI (First Pass)
@@ -99,12 +108,13 @@ Regras Gerais:
             // Salvar a requisição da Tool como Assistant (Conforme exigido pela OpenAI)
             openAiMessages.push(responseMessage);
 
-            // Logar no DB como contexto invisível para uso futuro (se quiser)
+            // Salvar a requisição da Tool como Assistant (MUITO IMPORTANTE para a memória da IA)
             await db.whatsAppChatMessage.create({
                 data: {
                     sessionId: session.id,
-                    role: "system",
-                    content: `[ACTION STARTED] IA acionou uma ferramenta do sistema...`
+                    role: "assistant",
+                    content: responseMessage.content || "",
+                    toolCalls: responseMessage.tool_calls as any
                 }
             });
 
@@ -125,12 +135,13 @@ Regras Gerais:
                     content: functionResponse
                 });
 
-                // Opcional: Salvar no DB para o histórico
+                // Salvar a resposta da ferramenta para manter o contexto na próxima mensagem
                 await db.whatsAppChatMessage.create({
                     data: {
                         sessionId: session.id,
-                        role: "system",
-                        content: `[DATA FROM BACKEND - ${functionName}]: ${functionResponse}`
+                        role: "tool",
+                        content: functionResponse,
+                        toolCallId: toolCall.id
                     }
                 });
             }
