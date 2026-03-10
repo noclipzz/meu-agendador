@@ -14,7 +14,7 @@ export async function processIncomingMessage(
     if (!company.aiEnabled) return;
 
     try {
-        let session = await db.whatsappChatSession.findFirst({
+        let session = await db.whatsAppChatSession.findFirst({
             where: {
                 companyId: company.id,
                 remoteJid,
@@ -24,7 +24,7 @@ export async function processIncomingMessage(
         });
 
         if (!session) {
-            session = await db.whatsappChatSession.create({
+            session = await db.whatsAppChatSession.create({
                 data: {
                     companyId: company.id,
                     remoteJid,
@@ -35,7 +35,7 @@ export async function processIncomingMessage(
         }
 
         // Add user message to DB
-        await db.whatsappChatMessage.create({
+        await db.whatsAppChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "user",
@@ -44,7 +44,7 @@ export async function processIncomingMessage(
         });
 
         // Refetch to get updated list
-        const updatedSession = await db.whatsappChatSession.findUnique({
+        const updatedSession = await db.whatsAppChatSession.findUnique({
             where: { id: session.id },
             include: {
                 messages: {
@@ -96,7 +96,7 @@ Regras Gerais:
             openAiMessages.push(responseMessage);
 
             // Logar no DB como contexto invisível para uso futuro (se quiser)
-            await db.whatsappChatMessage.create({
+            await db.whatsAppChatMessage.create({
                 data: {
                     sessionId: session.id,
                     role: "assistant",
@@ -122,7 +122,7 @@ Regras Gerais:
                 });
 
                 // Opcional: Salvar no DB para o histórico
-                await db.whatsappChatMessage.create({
+                await db.whatsAppChatMessage.create({
                     data: {
                         sessionId: session.id,
                         role: "tool",
@@ -148,7 +148,7 @@ Regras Gerais:
         const reply = responseMessage?.content || "Desculpe, esbarrei numa dificuldade técnica.";
 
         // Save reply to DB
-        await db.whatsappChatMessage.create({
+        await db.whatsAppChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "assistant",
