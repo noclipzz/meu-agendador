@@ -100,8 +100,8 @@ export async function POST(req: Request) {
                 intentWord = cleanMessage.replace(new RegExp(shortIdRef, 'i'), '').replace('#', '').trim();
             }
 
-            let isConfirmOrYes = ['1', 'sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'].includes(intentWord);
-            let isCancelTrigger = ['2', 'cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'].includes(intentWord);
+            let isConfirmOrYes = ['sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'].includes(intentWord);
+            let isCancelTrigger = ['cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'].includes(intentWord);
 
             // Se enviou apenas a referência de 4 dígitos (ex: "ss8k"), assumimos como "Sim/Confirmar"
             if (shortIdRef && !isConfirmOrYes && !isCancelTrigger && intentWord.replace(/[^a-z0-9]/g, '').length === 0) {

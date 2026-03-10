@@ -380,7 +380,7 @@ export async function POST(req: Request) {
                             .replace("{servico}", nomeServico)
                             .replace("{hora}", formatarHorario(new Date(booking.date)))
                         + `\n\n*(Ref: #${shortId})*`
-                        : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nDigite *1* ou *Sim* para Confirmar ou *2* para Cancelar.\n*(Ref: #${shortId})*`;
+                        : `Olá ${name}, recebemos seu agendamento para *${nomeServico}* em ${formatarDiaExtenso(new Date(booking.date))} às ${formatarHorario(new Date(booking.date))}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.\n*(Ref: #${shortId})*`;
 
                     // Post Request (Agora usando await para garantir entrega no serverless)
                     await sendEvolutionMessage(

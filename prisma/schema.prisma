@@ -23,7 +23,7 @@ model Company {
   interval                     Int                @default(30)
   workDays                     String             @default("1,2,3,4,5")
   monthlyGoal                  Decimal            @default(5000)
-  whatsappMessage              String?            @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nDigite *1* para Confirmar ou *2* para Cancelar.")
+  whatsappMessage              String?            @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.")
   notificationEmail            String?
   facebookUrl                  String?            @default("")
   instagramUrl                 String?            @default("")
