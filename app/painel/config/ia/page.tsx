@@ -14,6 +14,7 @@ export default function AIConfigPage() {
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiBotName, setAiBotName] = useState("Noclip");
     const [aiSystemPrompt, setAiSystemPrompt] = useState("");
+    const [aiFaq, setAiFaq] = useState("");
 
     useEffect(() => {
         carregarConfiguracoes();
@@ -29,6 +30,7 @@ export default function AIConfigPage() {
                 setAiEnabled(data.config.aiEnabled || false);
                 setAiBotName(data.config.aiBotName || "Noclip");
                 setAiSystemPrompt(data.config.aiSystemPrompt || "");
+                setAiFaq(data.config.aiFaq || "");
             }
         } catch (error) {
             toast.error("Erro ao carregar configurações de IA.");
@@ -47,7 +49,8 @@ export default function AIConfigPage() {
                 body: JSON.stringify({
                     aiEnabled,
                     aiBotName,
-                    aiSystemPrompt
+                    aiSystemPrompt,
+                    aiFaq
                 })
             });
 
@@ -220,6 +223,25 @@ export default function AIConfigPage() {
                             </p>
                         </div>
                     </div>
+                </div>
+
+                {/* FAQ / BASE DE CONHECIMENTO */}
+                <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-gray-500 ml-2 tracking-wider flex items-center gap-1.5">
+                        Base de Conhecimento (FAQ Tira Dúvidas)
+                        <div className="group relative">
+                            <Sparkles size={14} className="text-amber-500 cursor-help" />
+                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 p-3 bg-gray-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 shadow-xl">
+                                Escreva aqui em parágrafos simples ou tópicos as perguntas mais frequentes que seu cliente faz e a respectiva resposta (ex: Quais as formas de pgto?, Tem garagem?, etc). O robô irá ler isso e instruir o cliente.
+                            </div>
+                        </div>
+                    </label>
+                    <textarea
+                        value={aiFaq}
+                        onChange={(e) => setAiFaq(e.target.value)}
+                        placeholder="Ex: - Endereço: Av Paulista, 1000 - Aceite PIX e Cartão Crédito - Não temos estacionamento próprio."
+                        className="w-full p-6 rounded-3xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 font-medium outline-none dark:text-white focus:border-amber-500 focus:bg-white dark:focus:bg-gray-900 transition-colors resize-none h-48 leading-relaxed"
+                    />
                 </div>
 
             </div>

@@ -9,7 +9,7 @@ export async function GET() {
 
         const company = await db.company.findUnique({
             where: { ownerId: userId },
-            select: { id: true, aiEnabled: true, aiBotName: true, aiSystemPrompt: true }
+            select: { id: true, aiEnabled: true, aiBotName: true, aiSystemPrompt: true, aiFaq: true }
         });
 
         if (!company) {
@@ -51,7 +51,8 @@ export async function PUT(req: Request) {
             data: {
                 aiEnabled: data.aiEnabled,
                 aiBotName: data.aiBotName,
-                aiSystemPrompt: data.aiSystemPrompt
+                aiSystemPrompt: data.aiSystemPrompt,
+                aiFaq: data.aiFaq
             }
         });
 
