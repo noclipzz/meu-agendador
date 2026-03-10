@@ -7,7 +7,6 @@ import { toast } from "sonner";
 export default function AIConfigPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [loadingCheckout, setLoadingCheckout] = useState(false);
 
     const [hasModule, setHasModule] = useState(false);
 
@@ -65,24 +64,7 @@ export default function AIConfigPage() {
     }
 
     async function handleCheckout() {
-        setLoadingCheckout(true);
-        try {
-            const res = await fetch("/api/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ plan: "AI_RECEPTION", cycle: "month" })
-            });
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                toast.error(data.error || data.details || "Erro ao gerar cobrança.");
-            }
-        } catch (e) {
-            toast.error("Serviço financeiro indisponível no momento.");
-        } finally {
-            setLoadingCheckout(false);
-        }
+        window.location.href = "/painel/config/plano";
     }
 
     if (loading) {
@@ -116,10 +98,8 @@ export default function AIConfigPage() {
                         <div className="pt-4 flex flex-col md:flex-row items-center gap-4">
                             <button
                                 onClick={handleCheckout}
-                                disabled={loadingCheckout}
-                                className="bg-white disabled:opacity-75 disabled:cursor-not-allowed text-indigo-900 hover:bg-gray-100 px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-white/10 transition-transform active:scale-95 flex items-center justify-center gap-2 w-full md:w-auto">
-                                {loadingCheckout ? <Bot className="animate-spin" size={20} /> : <Lock size={20} />}
-                                {loadingCheckout ? "Redirecionando..." : "Liberar por R$ 49,90/mês"}
+                                className="bg-white text-indigo-900 hover:bg-gray-100 px-8 py-4 rounded-2xl font-black text-lg shadow-xl shadow-white/10 transition-transform active:scale-95 flex items-center justify-center gap-2 w-full md:w-auto">
+                                <Lock size={20} /> Liberar por R$ 49,90/mês
                             </button>
                             <span className="text-sm font-bold text-gray-400">Cancelamento grátis a qualquer momento.</span>
                         </div>

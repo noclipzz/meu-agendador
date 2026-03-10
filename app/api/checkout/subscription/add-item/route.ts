@@ -42,6 +42,9 @@ export async function POST(req: Request) {
             case "TRACKING":
                 priceId = process.env.STRIPE_PRICE_TRACKING || "price_1T8jfcDVX38Ti5nKvqxSYc5Ie";
                 break;
+            case "AI_RECEPTION":
+                priceId = process.env.STRIPE_PRICE_AI_RECEPTION_MONTH || "";
+                break;
             default: return NextResponse.json({ error: "Tipo de item inválido" }, { status: 400 });
         }
 
@@ -79,6 +82,7 @@ export async function POST(req: Request) {
         if (itemType === "BOLETO") updateData.hasBoletoModule = true;
         if (itemType === "SIGNATURE") updateData.hasDigitalSignatureModule = true;
         if (itemType === "TRACKING") updateData.hasTrackingModule = true;
+        if (itemType === "AI_RECEPTION") updateData.hasAiReceptionModule = true;
         if (itemType === "STAFF") updateData.extraUsersCount = { increment: quantity };
 
         await prisma.subscription.update({

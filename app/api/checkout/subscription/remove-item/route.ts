@@ -42,6 +42,9 @@ export async function POST(req: Request) {
             case "TRACKING":
                 priceId = process.env.STRIPE_PRICE_TRACKING || "price_1T8jfcDVX38Ti5nKvqxSYc5Ie";
                 break;
+            case "AI_RECEPTION":
+                priceId = process.env.STRIPE_PRICE_AI_RECEPTION_MONTH || "";
+                break;
             default: return NextResponse.json({ error: "Tipo de item inválido" }, { status: 400 });
         }
 
@@ -81,6 +84,7 @@ export async function POST(req: Request) {
         if (itemType === "BOLETO") updateData.hasBoletoModule = false;
         if (itemType === "SIGNATURE") updateData.hasDigitalSignatureModule = false;
         if (itemType === "TRACKING") updateData.hasTrackingModule = false;
+        if (itemType === "AI_RECEPTION") updateData.hasAiReceptionModule = false;
         if (itemType === "STAFF") {
             const currentExtraStaff = subscription.extraUsersCount || 0;
             updateData.extraUsersCount = Math.max(0, currentExtraStaff - quantity);
