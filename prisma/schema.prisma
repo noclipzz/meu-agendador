@@ -101,6 +101,12 @@ model Company {
   consentTerms                 ConsentTerm[]
   professionalLocations        ProfessionalLocation[]
   integrationLogs              IntegrationLog[]
+  chatSessions                 WhatsAppChatSession[]
+
+  // AI Reception Settings
+  aiEnabled                    Boolean?           @default(false)
+  aiBotName                    String?            @default("Noclip")
+  aiSystemPrompt               String?            @db.Text
 }
 
 model OrganizationPost {
@@ -272,6 +278,7 @@ model Subscription {
   hasBoletoModule      Boolean   @default(false)
   hasDigitalSignatureModule Boolean   @default(false)
   hasTrackingModule        Boolean   @default(false)
+  hasAiReceptionModule     Boolean   @default(false)
   extraUsersCount      Int       @default(0)
   expiresAt            DateTime?
   createdAt            DateTime  @default(now())
@@ -553,4 +560,28 @@ model IntegrationLog {
   createdAt   DateTime @default(now())
 
   company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppChatSession {
+  id             String                @id @default(cuid())
+  companyId      String
+  remoteJid      String                
+  status         String                @default("ACTIVE") // ACTIVE, CLOSED
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  company        Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messages       WhatsAppChatMessage[]
+
+  @@index([companyId, remoteJid, status])
+}
+
+model WhatsAppChatMessage {
+  id             String                @id @default(cuid())
+  sessionId      String
+  role           String                // "user", "assistant", "system", "tool"
+  content        String                @db.Text
+  createdAt      DateTime              @default(now())
+
+  session        WhatsAppChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
