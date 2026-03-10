@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { formatarDiaExtenso, formatarHorario } from "@/app/utils/formatters";
+import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { startOfDay, endOfDay, addDays, format, parseISO } from "date-fns";
 
 export const aiTools: any[] = [
@@ -184,8 +185,20 @@ export async function executeAiFunction(functionName: string, args: any, company
                     date: new Date(dataHora),
                     status: "CONFIRMADO", // IA já confirma direto
                     type: "CLIENTE"
-                }
+                },
+                include: { service: true }
             });
+
+            // NOTIFICAR ESTABELECIMENTO DE NOVO AGENDAMENTO VIA ZAP/IA
+            try {
+                const dataFmt = format(newBooking.date, 'dd/MM/yyyy HH:mm');
+                await notifyAdminsOfCompany(companyId, "🤖 Novo Agendamento via IA (WhatsApp)", `${nomeCliente} agendou ${newBooking.service?.name} para ${dataFmt}`, "/painel/agenda");
+                if (professionalId) {
+                    await notifyProfessional(professionalId, "🤖 Novo Agendamento via IA (WhatsApp)", `${nomeCliente} agendou para ${dataFmt}`, "/painel/agenda");
+                }
+            } catch (err) {
+                console.error("Erro disparando push IA", err);
+            }
 
             return JSON.stringify({
                 success: true,
