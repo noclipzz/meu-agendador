@@ -52,8 +52,8 @@ export const aiTools: any[] = [
                     nomeCliente: { type: "string" },
                     telefoneCliente: { type: "string", description: "Telefone do cliente apenas números" },
                     dataHora: { type: "string", description: "Data e hora no formato ISO completo com fuso horário, exemplo: 2026-03-10T14:30:00-03:00" },
-                    serviceId: { type: "string", description: "ID do serviço escolhido" },
-                    professionalId: { type: "string", description: "ID do profissional escolhido" }
+                    serviceId: { type: "string", description: "O ID único do serviço (um código alfanumérico longo retornado por buscar_servicos). NUNCA use o nome do serviço." },
+                    professionalId: { type: "string", description: "O ID único do profissional (um código alfanumérico longo retornado por buscar_servicos). NUNCA use o nome do profissional." }
                 },
                 required: ["nomeCliente", "telefoneCliente", "dataHora", "serviceId", "professionalId"]
             }
