@@ -208,7 +208,14 @@ Regras Gerais:
             hasToolCalls = !!responseMessage?.tool_calls?.length;
         }
 
-        const reply = responseMessage?.content || "Desculpe, esbarrei numa dificuldade técnica.";
+        let reply = responseMessage?.content || "Desculpe, esbarrei numa dificuldade técnica.";
+
+        // Força a conversão do bold Markdown (**) nativo da OpenAI para o bold Whatsapp (*)
+        // E remove barras invertidas (\) que a IA usa pra tentar escapar a "formatação"
+        reply = reply
+            .replace(/\\\*/g, '*')
+            .replace(/\\_/g, '_')
+            .replace(/\*\*(.*?)\*\*/g, '*$1*');
 
         // Save reply to DB
         await db.whatsAppChatMessage.create({
