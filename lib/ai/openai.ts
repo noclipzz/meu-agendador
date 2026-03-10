@@ -56,13 +56,21 @@ export async function processIncomingMessage(
 
         if (!updatedSession) return;
 
+        const now = new Date();
+        const dataHoje = now.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+        const horaAtu = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
         // Build OpenAI context
         const sysPrompt = `Você é o assistente virtual da empresa/clínica. Seu nome é ${company.aiBotName || "Noclip"}.
+Data de Hoje: ${dataHoje}
+Horário Atual: ${horaAtu}
+
 Aqui estão as regras do seu comportamento e as informações do negócio:
 ${company.aiSystemPrompt || "Seja educado, prestativo e focado em solucionar as dúvidas do cliente."}
 
 Regras Gerais:
 - NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago (ex: "quero agendar"), chame obrigatoriamente a ferramenta 'buscar_servicos' para ver o cardápio real em vez de sugerir um aleatório.
+- Assim que o cliente ESCOLHER um horário dentre os livres que você ofereceu, NÃO repita a lista. Chame IMEDIATAMENTE a ferramenta 'marcar_horario' para efetivar o agendamento no banco de dados.
 - Responda de forma natural, humanóide e empática.
 - Não use linguagem excessivamente formal de robôs, use emojis sutilmente.
 - O formato do seu output será no WhatsApp. Então pode usar formatações do WhatsApp como *negrito*, _itálico_ etc.
@@ -99,9 +107,14 @@ Regras Gerais:
 
         // Caso a última mensagem no histórico seja um 'assistant' com ferramentas mas sem a 'tool' correspondente
         // (ex: timeout no meio da execução), a OpenAI daria erro. Removemos ela para limpar o contexto.
-        const lastMsg = openAiMessages[openAiMessages.length - 1];
-        if (lastMsg && lastMsg.role === "assistant" && lastMsg.tool_calls) {
-            openAiMessages.pop();
+        // O loop garante que removemos o par assistant-toolCalls incompleto.
+        while (openAiMessages.length > 0) {
+            const lastMsg = openAiMessages[openAiMessages.length - 1];
+            if (lastMsg && lastMsg.role === "assistant" && lastMsg.tool_calls) {
+                openAiMessages.pop();
+            } else {
+                break;
+            }
         }
 
         // call OpenAI (First Pass)
