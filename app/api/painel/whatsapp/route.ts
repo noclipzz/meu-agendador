@@ -151,6 +151,12 @@ export async function POST(req: Request) {
                 syncFullHistory: false,
                 readMessages: false,
                 readStatus: false,
+                // Configuração para transcrever áudios automaticamente via OpenAI/Whisper do servidor
+                openai: {
+                    enabled: true,
+                    transcription: true,
+                    apiKey: process.env.OPENAI_API_KEY || ""
+                },
                 // Webhook para receber o QR Code e eventos de conexão e evitar delays
                 webhook: {
                     url: webhookUrl,

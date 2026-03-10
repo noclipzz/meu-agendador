@@ -85,6 +85,7 @@ export async function POST(req: Request) {
             const remoteJid = messageData?.key?.remoteJid;
             const messageBody = messageData?.message?.conversation
                 || messageData?.message?.extendedTextMessage?.text
+                || messageData?.message?.audioMessage?.transcription // Transcrição automática da Evolution API
                 || "";
 
             const cleanMessage = messageBody.trim().toLowerCase();
