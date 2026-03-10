@@ -4,6 +4,7 @@ import { notifyAdminsOfCompany, notifyProfessional } from "@/lib/push-server";
 import { formatarDataCompleta, formatarHorario, formatarDiaExtenso } from "@/app/utils/formatters";
 import { sendEvolutionMessage } from "@/lib/whatsapp";
 import { logIntegration } from "@/lib/integration-logger";
+import { processIncomingMessage } from "@/lib/ai/openai";
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,8 @@ export async function POST(req: Request) {
             });
         }
 
-        if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe && companyPlan === "MASTER") {
+        const canUseWhatsapp = companyPlan === "MASTER" || subscription?.hasTrackingModule || subscription?.hasAiReceptionModule || company.aiEnabled;
+        if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe && canUseWhatsapp) {
             const messageData = body.data;
             const remoteJid = messageData?.key?.remoteJid;
             const messageBody = messageData?.message?.conversation
@@ -231,7 +233,14 @@ export async function POST(req: Request) {
                             await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgPrompt);
                         }
                     }
+
+                    return NextResponse.json({ received: true });
                 }
+            }
+
+            // AI Routing (se ativado e se não for resposta padrão de agendamento)
+            if (company.aiEnabled && remoteJid) {
+                await processIncomingMessage(company, remoteJid, messageBody);
             }
 
             return NextResponse.json({ received: true });
