@@ -115,8 +115,7 @@ export async function executeAiFunction(functionName: string, args: any, company
         return JSON.stringify({
             data: data,
             horarioComercialBase: "Geralmente das 08:00 às 18:00",
-            horariosJaOcupados: ocupados,
-            orientacaoAoBot: "Calcule os horários livres baseados no horário comercial subtraindo os horários ocupados + duração. Ofereça os horários livres ao cliente."
+            horariosJaOcupados: ocupados
         });
     }
 

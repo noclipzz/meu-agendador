@@ -20,6 +20,7 @@ export async function processIncomingMessage(
                 remoteJid,
                 status: "ACTIVE"
             },
+            orderBy: { createdAt: "desc" }, // Always get the most recent active session
             include: { messages: { orderBy: { createdAt: "asc" } } }
         });
 
@@ -49,7 +50,7 @@ export async function processIncomingMessage(
             include: {
                 messages: {
                     orderBy: { createdAt: "asc" },
-                    take: 15 // Keep context window manageable (last 15 messages)
+                    take: 15 // Keep context window manageable
                 }
             }
         });
@@ -64,17 +65,17 @@ export async function processIncomingMessage(
         const sysPrompt = `Você é o assistente virtual da empresa/clínica. Seu nome é ${company.aiBotName || "Noclip"}.
 Data de Hoje: ${dataHoje}
 Horário Atual: ${horaAtu}
+ATENÇÃO: Estamos no ano de 2026. NUNCA use o ano de 2023 ou qualquer outro.
 
 Aqui estão as regras do seu comportamento e as informações do negócio:
 ${company.aiSystemPrompt || "Seja educado, prestativo e focado em solucionar as dúvidas do cliente."}
 
 Regras Gerais:
 - NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago (ex: "quero agendar"), chame obrigatoriamente a ferramenta 'buscar_servicos' para ver o cardápio real em vez de sugerir um aleatório.
-- Assim que o cliente ESCOLHER um horário dentre os livres que você ofereceu, NÃO repita a lista. Chame IMEDIATAMENTE a ferramenta 'marcar_horario' para efetivar o agendamento no banco de dados.
+- Quando o cliente escolher um horário (ex: "15:00"), chame IMEDIATAMENTE a ferramenta 'marcar_horario'. 
+- Após chamar 'marcar_horario' e receber SUCESSO, você DEVE confirmar detalhadamente para o cliente (serviço, dia, hora e profissional) e encerrar a marcação. NÃO mostre a lista de horários livres de novo após agendar.
 - Responda de forma natural, humanóide e empática.
-- Não use linguagem excessivamente formal de robôs, use emojis sutilmente.
-- O formato do seu output será no WhatsApp. Então pode usar formatações do WhatsApp como *negrito*, _itálico_ etc.
-- Caso o usuário pergunte algo fora do escopo do negócio, seja educado e volte o assunto.`;
+- O formato do seu output será no WhatsApp. Então pode usar formatações do WhatsApp como *negrito*, _itálico_ etc.`;
 
         const openAiMessages: any[] = [
             { role: "system", content: sysPrompt }
@@ -82,14 +83,15 @@ Regras Gerais:
 
         // Format historical messages
         updatedSession.messages.forEach((msg: any) => {
-            const msgObj: any = { role: msg.role as any, content: msg.content };
+            const msgObj: any = { role: msg.role as any, content: msg.content || null };
 
             if (msg.role === "assistant" && msg.toolCalls) {
                 // Se o JSON for vazio ou inválido, ignora a parte de tool_calls
                 const calls = msg.toolCalls as any[];
                 if (calls && calls.length > 0) {
                     msgObj.tool_calls = calls;
-                    if (!msgObj.content) msgObj.content = null;
+                    // MUITO IMPORTANTE: Se tem tool_calls, o content DEVE ser null para a OpenAI
+                    msgObj.content = null;
                 } else {
                     // Se era um role assistant mas sem conteúdo nem ferramentas (bug), ignora a mensagem inteira
                     if (!msg.content) return;
@@ -137,11 +139,16 @@ Regras Gerais:
             openAiMessages.push(responseMessage);
 
             // Salvar a requisição da Tool como Assistant (MUITO IMPORTANTE para a memória da IA)
+            await db.whatsAppChatSession.update({
+                where: { id: session.id },
+                data: { updatedAt: new Date() }
+            });
+
             await db.whatsAppChatMessage.create({
                 data: {
                     sessionId: session.id,
                     role: "assistant",
-                    content: responseMessage.content || "",
+                    content: responseMessage.content || null,
                     toolCalls: responseMessage.tool_calls as any
                 }
             });
