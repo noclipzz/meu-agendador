@@ -208,10 +208,14 @@ export async function executeAiFunction(functionName: string, args: any, company
             const cleanPhone = telefoneCliente.replace(/\D/g, '');
             const last8 = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
 
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
             const bookings = await db.booking.findMany({
                 where: {
                     companyId,
-                    status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO"] }
+                    status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO", "CONFIRMADO"] },
+                    date: { gte: hoje }
                 },
                 include: { service: true },
                 orderBy: { id: 'desc' } // <-- Usa o CUID (cronológico) para pegar o mais recente
