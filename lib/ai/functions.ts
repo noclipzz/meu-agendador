@@ -281,6 +281,31 @@ export async function executeAiFunction(functionName: string, args: any, company
                 data: { status: novoStatus }
             });
 
+            // NOTIFICAR ESTABELECIMENTO DE QUE A IA ALTEROU O STATUS
+            try {
+                const dataFmt = format(bookingToUpdate.date, 'dd/MM/yyyy HH:mm');
+                const emoji = acao === "CONFIRMAR" ? "✅" : "❌";
+                const acaoTxt = acao === "CONFIRMAR" ? "CONFIRMOU" : "CANCELOU";
+                
+                await notifyAdminsOfCompany(
+                    companyId, 
+                    `${emoji} IA (WhatsApp): Agendamento ${acaoTxt}`, 
+                    `Cliente ${bookingToUpdate.customerName} ${acaoTxt.toLowerCase()} o serviço de ${bookingToUpdate.service?.name || ''} para ${dataFmt}`, 
+                    "/painel/agenda"
+                );
+
+                if (bookingToUpdate.professionalId) {
+                    await notifyProfessional(
+                        bookingToUpdate.professionalId, 
+                        `${emoji} IA (WhatsApp): ${acaoTxt}`, 
+                        `O horário de ${bookingToUpdate.customerName} às ${dataFmt.split(' ')[1]} foi ${acaoTxt.toLowerCase()}`, 
+                        "/painel/agenda"
+                    );
+                }
+            } catch (err) {
+                console.error("Erro disparando push IA (alterar_status)", err);
+            }
+
             return JSON.stringify({
                 success: true,
                 statusAtualizado: novoStatus,
