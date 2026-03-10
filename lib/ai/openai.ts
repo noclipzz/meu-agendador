@@ -1,20 +1,20 @@
 import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { sendEvolutionMessage } from "@/lib/whatsapp";
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+import { aiTools, executeAiFunction } from "./functions";
 
 export async function processIncomingMessage(
     company: any,
     remoteJid: string,
     messageBody: string
 ) {
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY || "dummy",
+    });
     if (!company.aiEnabled) return;
 
     try {
-        let session = await db.whatsAppChatSession.findFirst({
+        let session = await db.whatsappChatSession.findFirst({
             where: {
                 companyId: company.id,
                 remoteJid,
@@ -24,7 +24,7 @@ export async function processIncomingMessage(
         });
 
         if (!session) {
-            session = await db.whatsAppChatSession.create({
+            session = await db.whatsappChatSession.create({
                 data: {
                     companyId: company.id,
                     remoteJid,
@@ -35,7 +35,7 @@ export async function processIncomingMessage(
         }
 
         // Add user message to DB
-        await db.whatsAppChatMessage.create({
+        await db.whatsappChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "user",
@@ -44,7 +44,7 @@ export async function processIncomingMessage(
         });
 
         // Refetch to get updated list
-        const updatedSession = await db.whatsAppChatSession.findUnique({
+        const updatedSession = await db.whatsappChatSession.findUnique({
             where: { id: session.id },
             include: {
                 messages: {
@@ -72,22 +72,83 @@ Regras Gerais:
         ];
 
         // Format historical messages
-        updatedSession.messages.forEach(msg => {
-            openAiMessages.push({ role: msg.role, content: msg.content });
+        updatedSession.messages.forEach((msg: any) => {
+            openAiMessages.push({ role: msg.role as any, content: msg.content });
         });
 
-        // call OpenAI
-        const completion = await openai.chat.completions.create({
+        // call OpenAI (First Pass)
+        let completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: openAiMessages,
             temperature: 0.7,
             max_tokens: 500,
+            tools: aiTools,
+            tool_choice: "auto"
         });
 
-        const reply = completion.choices[0]?.message?.content || "Desculpe, não entendi.";
+        let responseMessage = completion.choices[0]?.message;
+
+        // Loop para lidar com múltiplos Tool Calls em sequência (se houver)
+        let hasToolCalls = !!responseMessage?.tool_calls?.length;
+
+        while (hasToolCalls) {
+            // Salvar a requisição da Tool como Assistant (Conforme exigido pela OpenAI)
+            openAiMessages.push(responseMessage);
+
+            // Logar no DB como contexto invisível para uso futuro (se quiser)
+            await db.whatsappChatMessage.create({
+                data: {
+                    sessionId: session.id,
+                    role: "assistant",
+                    content: `[TOOL_CALLS] Executando ações na base de dados...`
+                }
+            });
+
+            const toolCalls = responseMessage.tool_calls || [];
+
+            for (const toolCall of toolCalls) {
+                const functionName = (toolCall as any).function.name;
+                const functionArgs = JSON.parse((toolCall as any).function.arguments);
+
+                // Executar a logica pesada real no backend
+                const functionResponse = await executeAiFunction(functionName, functionArgs, company.id);
+
+                // Adicionar a resposta da ferramenta no contexto
+                openAiMessages.push({
+                    tool_call_id: toolCall.id,
+                    role: "tool",
+                    name: functionName,
+                    content: functionResponse
+                });
+
+                // Opcional: Salvar no DB para o histórico
+                await db.whatsappChatMessage.create({
+                    data: {
+                        sessionId: session.id,
+                        role: "tool",
+                        content: functionResponse
+                    }
+                });
+            }
+
+            // Segunda Chamada para pedir a resposta final ao cliente, agora que ele tem os dados
+            completion = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: openAiMessages,
+                temperature: 0.7,
+                max_tokens: 500,
+                tools: aiTools,
+                tool_choice: "auto"
+            });
+
+            responseMessage = completion.choices[0]?.message;
+            hasToolCalls = !!responseMessage?.tool_calls?.length;
+        }
+
+        const reply = responseMessage?.content || "Desculpe, esbarrei numa dificuldade técnica.";
 
         // Save reply to DB
-        await db.whatsAppChatMessage.create({
+        await db.whatsappChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "assistant",
