@@ -89,10 +89,25 @@ export const aiTools: any[] = [
                 required: ["telefoneCliente"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "transferir_para_humano",
+            description: "Pausa o atendimento automático temporariamente e notifica um humano para assumir o chat, útil quando o cliente estiver irritado, tiver dúvidas específicas não cobertas, ou solicitar explicitamente falar com uma pessoa.",
+            parameters: {
+                type: "object",
+                properties: {
+                    motivo: { type: "string", description: "Breve explicação do porquê está transferindo (ex: 'Cliente solicitou falar com atendente')" },
+                    telefoneCliente: { type: "string", description: "O telefone do cliente com 13 dígitos apenas números" }
+                },
+                required: ["motivo"]
+            }
+        }
     }
 ];
 
-export async function executeAiFunction(functionName: string, args: any, companyId: string) {
+export async function executeAiFunction(functionName: string, args: any, companyId: string, sessionId?: string) {
     console.log(`[AI FUNCTION CALL] ${functionName}`, args);
 
     if (functionName === "buscar_servicos") {
@@ -113,6 +128,24 @@ export async function executeAiFunction(functionName: string, args: any, company
                 fazServicosIds: p.services.map(s => s.id)
             }))
         });
+    }
+
+    if (functionName === "transferir_para_humano") {
+        if (!sessionId) return JSON.stringify({ error: "Sessão não identificada" });
+
+        try {
+            await db.whatsAppChatSession.update({
+                where: { id: sessionId },
+                data: { status: "PAUSED" }
+            });
+
+            await notifyAdminsOfCompany(companyId, "🚨 Ação Requerida (WhatsApp)", `O bot pausou e precisa de suporte humano para o telefone: ${args.telefoneCliente || 'Desconhecido'}.\nMotivo: ${args.motivo}`, "/painel/chat");
+
+            return JSON.stringify({ success: true, instruction: "Diga ao cliente que um humano assumirá o atendimento em breve e já foi notificado." });
+        } catch (error) {
+            console.error("Erro ao transferir_para_humano", error);
+            return JSON.stringify({ error: "Falha na transferência para humano." });
+        }
     }
 
     if (functionName === "checar_disponibilidade") {

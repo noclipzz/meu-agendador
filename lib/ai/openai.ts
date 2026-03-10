@@ -18,11 +18,25 @@ export async function processIncomingMessage(
             where: {
                 companyId: company.id,
                 remoteJid,
-                status: "ACTIVE"
+                status: { in: ["ACTIVE", "PAUSED"] }
             },
-            orderBy: { createdAt: "desc" }, // Always get the most recent active session
+            orderBy: { createdAt: "desc" },
             include: { messages: { orderBy: { createdAt: "asc" } } }
         });
+
+        // Se a sessão está pausada (esperando humano), a IA não responde mais neste número por um tempo
+        // (A menos que um botão no painel "retomar_ia" volte o status para ACTIVE futuramente,
+        // mas por hora, bloqueamos a execução para ela ficar muda)
+        if (session && session.status === "PAUSED") {
+            const horasPausada = (new Date().getTime() - session.updatedAt.getTime()) / (1000 * 60 * 60);
+            if (horasPausada < 12) {
+                console.log(`[AI IGNORED] Sessão de ${remoteJid} está pausada aguardando humano.`);
+                return;
+            } else {
+                // Passou 12h, libera nova sessão
+                session = null;
+            }
+        }
 
         if (!session) {
             session = await db.whatsAppChatSession.create({
@@ -78,6 +92,8 @@ ATENÇÃO: Estamos no ano de 2026. NUNCA use o ano de 2023 ou qualquer outro.
 
 Aqui estão as regras do seu comportamento e as informações do negócio:
 ${company.aiSystemPrompt || "Seja educado, prestativo e focado em solucionar as dúvidas do cliente."}
+
+${company.aiFaq ? `BASE DE CONHECIMENTO DA EMPRESA (FAQ):\n${company.aiFaq}\n` : ""}
 
 Regras Gerais:
 - NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago, chame a ferramenta 'buscar_servicos'.
@@ -175,7 +191,7 @@ Regras Gerais:
                 const functionArgs = JSON.parse((toolCall as any).function.arguments);
 
                 // Executar a logica pesada real no backend
-                const functionResponse = await executeAiFunction(functionName, functionArgs, company.id);
+                const functionResponse = await executeAiFunction(functionName, functionArgs, company.id, session.id);
 
                 // Adicionar a resposta da ferramenta no contexto
                 openAiMessages.push({

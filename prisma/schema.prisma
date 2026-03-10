@@ -107,6 +107,7 @@ model Company {
   aiEnabled                    Boolean?           @default(false)
   aiBotName                    String?            @default("Noclip")
   aiSystemPrompt               String?            @db.Text
+  aiFaq                        String?            @db.Text
 }
 
 model OrganizationPost {
