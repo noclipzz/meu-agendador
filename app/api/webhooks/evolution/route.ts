@@ -100,8 +100,12 @@ export async function POST(req: Request) {
                 intentWord = cleanMessage.replace(new RegExp(shortIdRef, 'i'), '').replace('#', '').trim();
             }
 
-            let isConfirmOrYes = ['sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'].includes(intentWord);
-            let isCancelTrigger = ['cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'].includes(intentWord);
+            const kConfirm = ['sim', 's', 'si', 'smi', 'ss', 'simm', 'confirmar', 'confirma', 'ok', 'yes', 'y'];
+            const kCancel = ['cancelar', 'cancela', 'não', 'nao', 'n', 'nn', 'quero cancelar'];
+
+            // Use regex for exact word boundary matches to avoid false positives (e.g. "Boa Noite" containing "n")
+            let isConfirmOrYes = kConfirm.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
+            let isCancelTrigger = kCancel.some(k => new RegExp(`\\b${k}\\b`, 'i').test(intentWord));
 
             // Se enviou apenas a referência de 4 dígitos (ex: "ss8k"), assumimos como "Sim/Confirmar"
             if (shortIdRef && !isConfirmOrYes && !isCancelTrigger && intentWord.replace(/[^a-z0-9]/g, '').length === 0) {
@@ -121,8 +125,11 @@ export async function POST(req: Request) {
                     include: { service: true }
                 });
 
-                // Filtrar os agendamentos do cliente pelo telefone
-                const customerBookings = bookings.filter(b => (b.customerPhone?.replace(/\D/g, '') || "").endsWith(last8));
+                // Filtrar os agendamentos do cliente pelo telefone (garantindo que não venha vazio)
+                const customerBookings = bookings.filter(b => {
+                    const bPhone = b.customerPhone?.replace(/\D/g, '') || "";
+                    return bPhone.length >= 8 && bPhone.endsWith(last8);
+                });
 
                 let booking = null;
 
