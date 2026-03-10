@@ -176,7 +176,7 @@ export default function ConfigPlano() {
         { name: "Emissão de Boletos", value: config?.hasBoletoModule ? "Ativo" : "Add-on", included: !!config?.hasBoletoModule },
         { name: "Assinatura Digital Autêntica", value: config?.hasDigitalSignatureModule ? "Ativo" : "Add-on", included: !!config?.hasDigitalSignatureModule },
         { name: "Rastreamento em Tempo Real", value: config?.hasTrackingModule ? "Ativo" : "Add-on", included: !!config?.hasTrackingModule },
-        { name: "Robô de Atendimento IA", value: config?.hasAiReceptionModule ? "Ativo" : "Add-on", included: !!config?.hasAiReceptionModule },
+        { name: "Robô de Atendimento IA", value: config?.plan === "MASTER" ? "Ativo" : "Exclusivo Master", included: config?.plan === "MASTER" },
     ];
 
     return (
@@ -470,14 +470,14 @@ export default function ConfigPlano() {
                             </div>
 
                             {/* Robô de Atendimento IA */}
-                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.hasAiReceptionModule ? 'bg-purple-900 text-white border-purple-800' : 'bg-gradient-to-r from-indigo-900 to-purple-900 text-white border-purple-800 group hover:border-purple-500 hover:shadow-xl hover:shadow-purple-900/20'}`}>
+                            <div className={`flex items-center justify-between p-6 rounded-3xl border transition-all ${config?.plan === "MASTER" ? 'bg-purple-900 text-white border-purple-800' : 'bg-gradient-to-r from-indigo-900 to-purple-900 text-white border-purple-800 group hover:border-purple-500 hover:shadow-xl hover:shadow-purple-900/20'}`}>
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${config?.hasAiReceptionModule ? 'bg-purple-800' : 'bg-white/10'}`}>
-                                        <Bot className={config?.hasAiReceptionModule ? "text-purple-300" : "text-white"} size={24} />
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${config?.plan === "MASTER" ? 'bg-purple-800' : 'bg-white/10'}`}>
+                                        <Bot className={config?.plan === "MASTER" ? "text-purple-300" : "text-white"} size={24} />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
-                                            {config?.hasAiReceptionModule && <Sparkles size={14} className="text-purple-300" />} Atendimento IA
+                                            {config?.plan === "MASTER" && <Sparkles size={14} className="text-purple-300" />} Atendimento IA
                                         </h3>
                                         <p className="text-[10px] text-purple-200 font-bold uppercase mt-1 italic">
                                             Robô inteligente no WhatsApp 24 horas por dia
@@ -485,26 +485,15 @@ export default function ConfigPlano() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 text-right">
-                                    {!config?.hasAiReceptionModule ? (
+                                    {config?.plan !== "MASTER" ? (
                                         <>
-                                            <span className="text-xs font-black uppercase">+ R$ 49,90/mês</span>
-                                            <button
-                                                onClick={() => handleAddItem('AI_RECEPTION')}
-                                                className="bg-white hover:bg-purple-50 text-indigo-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition active:scale-95 flex items-center gap-2">
-                                                <Plus size={14} /> Adicionar
-                                            </button>
+                                            <span className="text-[10px] font-black uppercase text-purple-300">Exclusivo Plano Master</span>
                                         </>
                                     ) : (
                                         <div className="flex flex-col items-end gap-2">
                                             <span className="bg-purple-800 px-4 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-2">
-                                                <Check size={14} /> Ativo no Plano
+                                                <Check size={14} /> Incluso no Plano
                                             </span>
-                                            <button
-                                                onClick={() => setShowRemoveConfirm({ type: 'AI_RECEPTION', name: 'Robô de Atendimento IA', quantity: 1 })}
-                                                className="text-[9px] font-black text-purple-300 uppercase hover:underline"
-                                            >
-                                                Remover do Plano
-                                            </button>
                                         </div>
                                     )}
                                 </div>

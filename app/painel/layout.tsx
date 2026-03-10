@@ -389,7 +389,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     ];
 
     const configItems = [
-        { key: 'ia', name: "Inteligência Artificial", path: "/painel/config/ia", icon: <Bot size={18} className="text-purple-500" /> },
         { key: 'gerais', name: "Gerais", path: "/painel/config/gerais", icon: <Settings size={18} /> },
         { key: 'faturamento', name: "Nota Fiscal e Banco", path: "/painel/config/faturamento", icon: <FileText size={18} /> },
         { key: 'notificacoes', name: "Notificações", path: "/painel/config/notificacoes", icon: <Bell size={18} /> },

@@ -61,12 +61,10 @@ export async function GET(req: Request) {
         status,
         qrCode,
         managerUrl: `${serverUrl}/manager`,
-        whatsappMessage: targetCompany.whatsappMessage,
-        whatsappConfirmMessage: targetCompany.whatsappConfirmMessage,
-        whatsappCancelPromptMessage: targetCompany.whatsappCancelPromptMessage,
-        whatsappCancelSuccessMessage: targetCompany.whatsappCancelSuccessMessage,
-        whatsappCancelRevertMessage: targetCompany.whatsappCancelRevertMessage,
-        whatsappWaitingListMessage: (targetCompany as any).whatsappWaitingListMessage,
+        aiEnabled: targetCompany.aiEnabled,
+        aiBotName: targetCompany.aiBotName,
+        aiSystemPrompt: targetCompany.aiSystemPrompt,
+        aiFaq: (targetCompany as any).aiFaq,
         whatsappPaymentSuccessMessage: (targetCompany as any).whatsappPaymentSuccessMessage
     });
 }
@@ -91,24 +89,20 @@ export async function POST(req: Request) {
 
     if (action === 'SAVE_CONFIG') {
         const {
-            whatsappMessage,
-            whatsappConfirmMessage,
-            whatsappCancelPromptMessage,
-            whatsappCancelSuccessMessage,
-            whatsappCancelRevertMessage,
-            whatsappWaitingListMessage,
+            aiEnabled,
+            aiBotName,
+            aiSystemPrompt,
+            aiFaq,
             whatsappPaymentSuccessMessage
         } = body;
 
         await db.company.update({
             where: { id: targetCompany.id },
             data: {
-                whatsappMessage,
-                whatsappConfirmMessage,
-                whatsappCancelPromptMessage,
-                whatsappCancelSuccessMessage,
-                whatsappCancelRevertMessage,
-                whatsappWaitingListMessage,
+                aiEnabled,
+                aiBotName,
+                aiSystemPrompt,
+                aiFaq,
                 whatsappPaymentSuccessMessage
             } as any
         });
