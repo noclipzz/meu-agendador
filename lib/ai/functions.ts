@@ -68,7 +68,8 @@ export const aiTools: any[] = [
                 type: "object",
                 properties: {
                     telefoneCliente: { type: "string", description: "O telefone do cliente com 13 dígitos apenas números (ex: 5511999999999)" },
-                    acao: { type: "string", description: "'CONFIRMAR' ou 'CANCELAR'" }
+                    acao: { type: "string", description: "'CONFIRMAR' ou 'CANCELAR'" },
+                    agendamentoId: { type: "string", description: "Opcional. O ID longo do agendamento se o cliente tiver mais de um e você souber qual é a intenção." }
                 },
                 required: ["telefoneCliente", "acao"]
             }
@@ -200,7 +201,7 @@ export async function executeAiFunction(functionName: string, args: any, company
 
     if (functionName === "alterar_status_agendamento") {
         try {
-            const { telefoneCliente, acao } = args;
+            const { telefoneCliente, acao, agendamentoId } = args;
             if (!["CONFIRMAR", "CANCELAR"].includes(acao)) {
                 return JSON.stringify({ error: "A ação deve ser 'CONFIRMAR' ou 'CANCELAR'" });
             }
@@ -211,23 +212,42 @@ export async function executeAiFunction(functionName: string, args: any, company
             const hoje = new Date();
             hoje.setHours(0, 0, 0, 0);
 
+            // Se o ID foi passado, tentamos atuar direto nele
+            let queryWhere: any = {
+                companyId,
+                status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO", "CONFIRMADO"] },
+                date: { gte: hoje }
+            };
+
+            if (agendamentoId) {
+                queryWhere.id = agendamentoId;
+            }
+
             const bookings = await db.booking.findMany({
-                where: {
-                    companyId,
-                    status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO", "CONFIRMADO"] },
-                    date: { gte: hoje }
-                },
+                where: queryWhere,
                 include: { service: true },
                 orderBy: { id: 'desc' } // <-- Usa o CUID (cronológico) para pegar o mais recente
             });
 
-            const clientBookings = bookings.filter(b => {
+            let clientBookings = bookings.filter(b => {
                 const bPhone = b.customerPhone?.replace(/\D/g, '') || "";
                 return bPhone.length >= 8 && bPhone.endsWith(last8);
             });
 
             if (clientBookings.length === 0) {
                 return JSON.stringify({ erro: "Nenhum agendamento pendente encontrado para este número. Pode ser que já tenha sido confirmado/cancelado ou o número não bate." });
+            }
+
+            // Se existe MAIS de um e não foi passado o ID específico, a IA deve perguntar.
+            if (clientBookings.length > 1 && !agendamentoId) {
+                const listStr = clientBookings.map((b: any) => 
+                    `ID: ${b.id} | Serviço: ${b.service?.name} | Data: ${b.date}`
+                );
+                
+                return JSON.stringify({ 
+                    alerta: "O cliente tem MÚLTIPLOS agendamentos futuros não-cancelados. Você DEVE perguntar a ele qual deles ele quer agir. Mostre um resumo dos horários abaixo e após a escolha, chame essa ferramenta novamente passando 'agendamentoId'.",
+                    agendamentos: listStr
+                });
             }
 
             const bookingToUpdate = clientBookings[0] as any;
