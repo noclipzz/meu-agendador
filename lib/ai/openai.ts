@@ -77,17 +77,32 @@ Regras Gerais:
             const msgObj: any = { role: msg.role as any, content: msg.content };
 
             if (msg.role === "assistant" && msg.toolCalls) {
-                msgObj.tool_calls = msg.toolCalls;
-                // OpenAI often expects content: null if tool_calls is present
-                if (!msgObj.content) msgObj.content = null;
+                // Se o JSON for vazio ou inválido, ignora a parte de tool_calls
+                const calls = msg.toolCalls as any[];
+                if (calls && calls.length > 0) {
+                    msgObj.tool_calls = calls;
+                    if (!msgObj.content) msgObj.content = null;
+                } else {
+                    // Se era um role assistant mas sem conteúdo nem ferramentas (bug), ignora a mensagem inteira
+                    if (!msg.content) return;
+                }
             }
 
             if (msg.role === "tool") {
+                // NUNCA enviar um role 'tool' sem o ID, pois a OpenAI rejeita a requisição inteira
+                if (!msg.toolCallId) return;
                 msgObj.tool_call_id = msg.toolCallId;
             }
 
             openAiMessages.push(msgObj);
         });
+
+        // Caso a última mensagem no histórico seja um 'assistant' com ferramentas mas sem a 'tool' correspondente
+        // (ex: timeout no meio da execução), a OpenAI daria erro. Removemos ela para limpar o contexto.
+        const lastMsg = openAiMessages[openAiMessages.length - 1];
+        if (lastMsg && lastMsg.role === "assistant" && lastMsg.tool_calls) {
+            openAiMessages.pop();
+        }
 
         // call OpenAI (First Pass)
         let completion = await openai.chat.completions.create({
