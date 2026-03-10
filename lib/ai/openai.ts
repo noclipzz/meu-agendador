@@ -63,7 +63,11 @@ export async function processIncomingMessage(
         const now = new Date();
         const dataHoje = now.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
         const horaAtu = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-        const telefoneCliente = remoteJid.split('@')[0];
+        let telefoneCliente = remoteJid.split('@')[0];
+        // Tratamento para números brasileiros de WhatsApp sem o 9 (ex: 553188357138 -> 5531988357138)
+        if (telefoneCliente.startsWith("55") && telefoneCliente.length === 12) {
+            telefoneCliente = `55${telefoneCliente.substring(2, 4)}9${telefoneCliente.substring(4)}`;
+        }
 
         // Build OpenAI context
         const sysPrompt = `Você é o assistente virtual da empresa/clínica. Seu nome é ${company.aiBotName || "Noclip"}.
