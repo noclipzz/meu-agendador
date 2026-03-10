@@ -51,7 +51,7 @@ export const aiTools: any[] = [
                 properties: {
                     nomeCliente: { type: "string" },
                     telefoneCliente: { type: "string", description: "Telefone do cliente apenas números" },
-                    dataHora: { type: "string", description: "Data e hora no formato ISO completo, exemplo: 2026-03-10T14:30:00Z" },
+                    dataHora: { type: "string", description: "Data e hora no formato ISO completo com fuso horário, exemplo: 2026-03-10T14:30:00-03:00" },
                     serviceId: { type: "string", description: "ID do serviço escolhido" },
                     professionalId: { type: "string", description: "ID do profissional escolhido" }
                 },

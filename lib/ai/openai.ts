@@ -44,35 +44,41 @@ export async function processIncomingMessage(
             }
         });
 
-        // Refetch to get updated list
+        // Refetch to get updated list - fetching the LAST 15 messages
         const updatedSession = await db.whatsAppChatSession.findUnique({
-            where: { id: session.id },
-            include: {
-                messages: {
-                    orderBy: { createdAt: "asc" },
-                    take: 15 // Keep context window manageable
-                }
-            }
+            where: { id: session.id }
         });
 
         if (!updatedSession) return;
 
+        const recentMessages = await db.whatsAppChatMessage.findMany({
+            where: { sessionId: session.id },
+            orderBy: { createdAt: "desc" },
+            take: 20 // Keep context window manageable (last 20 messages)
+        });
+        
+        // Reverse to get them in chronological (asc) order for OpenAI
+        const chronologicalMessages = recentMessages.reverse();
+
         const now = new Date();
         const dataHoje = now.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
         const horaAtu = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        const telefoneCliente = remoteJid.split('@')[0];
 
         // Build OpenAI context
         const sysPrompt = `Você é o assistente virtual da empresa/clínica. Seu nome é ${company.aiBotName || "Noclip"}.
 Data de Hoje: ${dataHoje}
 Horário Atual: ${horaAtu}
+Telefone do Cliente: ${telefoneCliente}
 ATENÇÃO: Estamos no ano de 2026. NUNCA use o ano de 2023 ou qualquer outro.
 
 Aqui estão as regras do seu comportamento e as informações do negócio:
 ${company.aiSystemPrompt || "Seja educado, prestativo e focado em solucionar as dúvidas do cliente."}
 
 Regras Gerais:
-- NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago (ex: "quero agendar"), chame obrigatoriamente a ferramenta 'buscar_servicos' para ver o cardápio real em vez de sugerir um aleatório.
-- Quando o cliente escolher um horário (ex: "15:00"), chame IMEDIATAMENTE a ferramenta 'marcar_horario'. 
+- NUNCA assuma qual serviço o cliente quer. Caso o cliente seja vago, chame a ferramenta 'buscar_servicos'.
+- Se o cliente escolher um horário (ex: "15:00") e um serviço, certifique-se de ter o nome do cliente. Se não tiver o nome do cliente, PERGUNTE o nome dele ANTES de chamar a ferramenta 'marcar_horario'.
+- Quando você tiver todas as informações (horário, serviço selecionado e nome do cliente), chame IMEDIATAMENTE a ferramenta 'marcar_horario', usando a data exata no formato ISO (ex: 2026-03-10T15:00:00-03:00) e o telefone do cliente (${telefoneCliente}).
 - Após chamar 'marcar_horario' e receber SUCESSO, você DEVE confirmar detalhadamente para o cliente (serviço, dia, hora e profissional) e encerrar a marcação. NÃO mostre a lista de horários livres de novo após agendar.
 - Responda de forma natural, humanóide e empática.
 - O formato do seu output será no WhatsApp. Então pode usar formatações do WhatsApp como *negrito*, _itálico_ etc.`;
@@ -82,7 +88,7 @@ Regras Gerais:
         ];
 
         // Format historical messages
-        updatedSession.messages.forEach((msg: any) => {
+        chronologicalMessages.forEach((msg: any) => {
             const msgObj: any = { role: msg.role as any, content: msg.content || null };
 
             if (msg.role === "assistant" && msg.toolCalls) {
