@@ -199,7 +199,7 @@ export async function executeAiFunction(functionName: string, args: any, company
                     status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO"] }
                 },
                 include: { service: true },
-                orderBy: { date: 'asc' }
+                orderBy: { id: 'desc' } // <-- Usa o CUID (cronológico) para pegar o mais recente
             });
 
             const clientBookings = bookings.filter(b => {
@@ -211,7 +211,7 @@ export async function executeAiFunction(functionName: string, args: any, company
                 return JSON.stringify({ erro: "Nenhum agendamento pendente encontrado para este número. Pode ser que já tenha sido confirmado/cancelado ou o número não bate." });
             }
 
-            const bookingToUpdate = clientBookings[0];
+            const bookingToUpdate = clientBookings[0] as any;
             const novoStatus = acao === "CONFIRMAR" ? "CONFIRMADO" : "CANCELADO";
 
             await db.booking.update({
