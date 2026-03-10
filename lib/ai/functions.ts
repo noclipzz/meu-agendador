@@ -75,6 +75,20 @@ export const aiTools: any[] = [
                 required: ["telefoneCliente", "acao"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "consultar_agendamentos_cliente",
+            description: "Consulta se o cliente tem agendamentos futuros marcados, pendentes ou confirmados.",
+            parameters: {
+                type: "object",
+                properties: {
+                    telefoneCliente: { type: "string", description: "O telefone do cliente com 13 dígitos apenas números" }
+                },
+                required: ["telefoneCliente"]
+            }
+        }
     }
 ];
 
@@ -219,6 +233,48 @@ export async function executeAiFunction(functionName: string, args: any, company
         } catch (error: any) {
             console.error("[AGENDAMENTO IA ERRO]", error);
             return JSON.stringify({ error: "Erro interno no banco de dados ao tentar salvar." });
+        }
+    }
+
+    if (functionName === "consultar_agendamentos_cliente") {
+        try {
+            const { telefoneCliente } = args;
+            const cleanPhone = telefoneCliente.replace(/\D/g, '');
+            const last8 = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            const bookings = await db.booking.findMany({
+                where: {
+                    companyId,
+                    status: { in: ["PENDENTE", "CANCELAMENTO_SOLICITADO", "CONFIRMADO"] },
+                    date: { gte: hoje }
+                },
+                include: { service: true, professional: true },
+                orderBy: { date: 'asc' }
+            });
+
+            const clientBookings = bookings.filter(b => {
+                const bPhone = b.customerPhone?.replace(/\D/g, '') || "";
+                return bPhone.length >= 8 && bPhone.endsWith(last8);
+            });
+
+            if (clientBookings.length === 0) {
+                return JSON.stringify({ agendamentos: [], mensagem: "O cliente NÃO possui nenhum agendamento futuro no sistema." });
+            }
+
+            const listStr = clientBookings.map((b: any) => 
+                `- ID: ${b.id}\n  Serviço: ${b.service?.name}\n  Profissional: ${b.professional?.name || 'Não definindo'}\n  Data: ${formatarDiaExtenso(b.date)} às ${formatarHorario(b.date)}\n  Status: ${b.status}`
+            );
+
+            return JSON.stringify({
+                agendamentosFuturos: listStr,
+                mensagem: "Responda de forma amigável informando os detalhes dos agendamentos listados."
+            });
+        } catch (error: any) {
+            console.error("[IA ERRO consultar_agendamentos]", error);
+            return JSON.stringify({ error: "Erro ao buscar agendamentos do cliente." });
         }
     }
 
