@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook, Calendar as CalendarIcon, Store, ChevronRight, Plus, Minus, Trash2, CheckCircle2, Truck, Package } from "lucide-react";
-import { formatarTelefone } from "@/lib/validators";
+import { formatarTelefone, formatarCEP } from "@/lib/validators";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -26,7 +26,13 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     name: "",
     email: "",
     phone: "",
-    address: ""
+    cep: "",
+    address: "",
+    number: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    complement: ""
   });
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
 
@@ -85,9 +91,36 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   const cartTotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
 
+  async function buscarCep(cep: string) {
+    const value = cep.replace(/\D/g, "");
+    setCustomerInfo(prev => ({ ...prev, cep: formatarCEP(value) }));
+
+    if (value.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${value}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setCustomerInfo(prev => ({
+            ...prev,
+            address: data.logradouro,
+            neighborhood: data.bairro,
+            city: data.localidade,
+            state: data.uf
+          }));
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+      }
+    }
+  }
+
   async function handleProceedToPayment() {
     if (!customerInfo.name || !customerInfo.phone) {
       return toast.error("Por favor, preencha seu nome e telefone.");
+    }
+
+    if (deliveryMethod === "DELIVERY" && (!customerInfo.cep || !customerInfo.address || !customerInfo.number)) {
+      return toast.error("Por favor, preencha o endereço de entrega completo.");
     }
     
     setCheckingOut(true);
@@ -99,7 +132,15 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           items: cart,
           customerInfo,
           deliveryMethod,
-          addressInfo: { address: customerInfo.address },
+          addressInfo: { 
+            cep: customerInfo.cep,
+            address: customerInfo.address,
+            number: customerInfo.number,
+            neighborhood: customerInfo.neighborhood,
+            city: customerInfo.city,
+            state: customerInfo.state,
+            complement: customerInfo.complement
+          },
           companyId: empresa.id,
           slug: params.slug
         })
@@ -351,16 +392,62 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 </button>
               </div>
 
-              {deliveryMethod === "DELIVERY" && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Endereço de Entrega</h3>
-                  <textarea 
-                    placeholder="Rua, Número, Bairro, Cidade..." 
+               {deliveryMethod === "DELIVERY" && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-3">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Endereço de Entrega</h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <input 
+                      placeholder="CEP" 
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                      value={customerInfo.cep}
+                      onChange={e => buscarCep(e.target.value)}
+                    />
+                    <input 
+                      placeholder="Número" 
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                      value={customerInfo.number}
+                      onChange={e => setCustomerInfo({...customerInfo, number: e.target.value})}
+                    />
+                  </div>
+
+                  <input 
+                    placeholder="Logradouro (Rua/Avenida)" 
                     className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
-                    rows={3}
                     value={customerInfo.address}
                     onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})}
                   />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input 
+                      placeholder="Bairro" 
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                      value={customerInfo.neighborhood}
+                      onChange={e => setCustomerInfo({...customerInfo, neighborhood: e.target.value})}
+                    />
+                    <input 
+                      placeholder="Complemento (Opcional)" 
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                      value={customerInfo.complement}
+                      onChange={e => setCustomerInfo({...customerInfo, complement: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <input 
+                      placeholder="Cidade" 
+                      className="col-span-2 w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                      value={customerInfo.city}
+                      onChange={e => setCustomerInfo({...customerInfo, city: e.target.value})}
+                    />
+                    <input 
+                      placeholder="UF" 
+                      maxLength={2}
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold uppercase"
+                      value={customerInfo.state}
+                      onChange={e => setCustomerInfo({...customerInfo, state: e.target.value.toUpperCase()})}
+                    />
+                  </div>
                 </div>
               )}
             </div>
