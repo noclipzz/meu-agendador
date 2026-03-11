@@ -53,7 +53,7 @@ export default function OnboardingPage() {
             const payload = {
                 service: {
                     name: servicoName,
-                    price: parseFloat(servicoPreco.replace(',', '.')),
+                    price: parseFloat(servicoPreco.replace(/\D/g, '')) / 100,
                     duration: parseInt(servicoDuracao, 10)
                 },
                 schedule: {
@@ -165,11 +165,18 @@ export default function OnboardingPage() {
                                     <label className="text-xs font-semibold text-gray-400 uppercase">Valor do serviço</label>
                                     <input
                                         className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800"
-                                        placeholder="Ex: 150,00"
+                                        placeholder="Ex: R$ 150,00"
                                         value={servicoPreco}
                                         onChange={(e) => {
-                                            const val = e.target.value.replace(/[^0-9,]/g, '');
-                                            setServicoPreco(val);
+                                            let v = e.target.value.replace(/\D/g, "");
+                                            if (!v) {
+                                                setServicoPreco("");
+                                                return;
+                                            }
+                                            v = (parseInt(v, 10) / 100).toFixed(2);
+                                            v = v.replace(".", ",");
+                                            v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                                            setServicoPreco(`R$ ${v}`);
                                         }}
                                     />
                                 </div>
