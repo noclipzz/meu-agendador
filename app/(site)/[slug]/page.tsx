@@ -5,7 +5,8 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle, ShoppingBag, Tag, ChevronLeft, ChevronRight } from "lucide-react";
+import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle, ShoppingBag, Tag, ChevronLeft, ChevronRight, Store, Calendar as CalendarIcon } from "lucide-react";
+import Link from "next/link";
 import Image from 'next/image';
 import { formatarTelefone } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
@@ -437,9 +438,26 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         <h3 className="mt-8 text-sm font-black text-gray-900 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 delay-500 flex items-center gap-2 mb-2">
           👇 Realize seu agendamento:
         </h3>
+
+        {/* --- TABS DE NAVEGAÇÃO --- */}
+        {vitrineProducts.length > 0 && (
+          <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mx-auto mt-6 shadow-inner animate-in zoom-in duration-500">
+            <button 
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all bg-white text-blue-600 shadow-md"
+            >
+              <CalendarIcon size={18} /> Agendamento
+            </button>
+            <Link 
+              href={`/${params.slug}/vitrine`}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
+            >
+              <Store size={18} /> Vitrine
+            </Link>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all">
+      <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all relative">
         {!isIdentified && (
           <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
@@ -740,122 +758,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         variant="danger"
         isLoading={cancelando}
       />
-
-      {/* --- SEÇÃO VITRINE DE PRODUTOS --- */}
-      {vitrineProducts.length > 0 && (
-        <div className="w-full max-w-lg mt-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-lg mb-3">
-              <ShoppingBag size={14} /> Nossos Produtos
-            </div>
-            <p className="text-gray-500 text-sm font-medium">Conheça nossos produtos disponíveis</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {vitrineProducts.map((product: any) => (
-              <button
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
-                className="bg-white rounded-[1.5rem] shadow-md border border-gray-100 overflow-hidden text-left hover:shadow-xl hover:scale-[1.02] transition-all group"
-              >
-                <div className="relative h-36 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ShoppingBag size={32} />
-                    </div>
-                  )}
-                  {product.price && Number(product.price) > 0 && (
-                    <div className="absolute bottom-2 right-2">
-                      <span className="bg-white/95 backdrop-blur-sm text-green-600 text-[11px] font-black px-2.5 py-1 rounded-lg shadow flex items-center gap-1">
-                        <Tag size={10} /> R$ {Number(product.price).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <h4 className="font-black text-gray-900 text-sm truncate group-hover:text-violet-600 transition">{product.name}</h4>
-                  {product.description && (
-                    <p className="text-gray-400 text-[11px] font-medium mt-0.5 line-clamp-1">{product.description}</p>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DETALHE DO PRODUTO */}
-      {selectedProduct && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
-          <div
-            className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-gray-500 hover:text-red-500 transition"
-            >
-              <X size={20} />
-            </button>
-
-            {selectedProduct.imageUrl ? (
-              <div className="relative h-64 bg-gray-100">
-                <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                {Number(selectedProduct.price) > 0 && (
-                  <div className="absolute bottom-4 left-4">
-                    <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
-                      <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-40 bg-gradient-to-br from-violet-100 to-pink-100 flex items-center justify-center">
-                <ShoppingBag size={48} className="text-violet-300" />
-              </div>
-            )}
-
-            <div className="p-8">
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">{selectedProduct.name}</h3>
-
-              {!selectedProduct.imageUrl && Number(selectedProduct.price) > 0 && (
-                <div className="mt-3">
-                  <span className="bg-green-50 text-green-600 text-lg font-black px-4 py-2 rounded-2xl inline-flex items-center gap-2">
-                    <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
-                  </span>
-                </div>
-              )}
-
-              {selectedProduct.description && (
-                <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
-              )}
-
-              {Number(selectedProduct.price) > 0 && (
-                <button
-                  onClick={() => handleCheckout(selectedProduct)}
-                  disabled={checkingOut}
-                  className="w-full mt-8 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-black py-4 rounded-2xl hover:opacity-90 transition shadow-xl active:scale-95 flex items-center justify-center gap-2"
-                >
-                  {checkingOut ? <Loader2 className="animate-spin" /> : <>Comprar Agora <ChevronRight size={18} /></>}
-                </button>
-              )}
-
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="w-full mt-3 bg-gray-100 text-gray-500 font-bold py-3 rounded-2xl hover:bg-gray-200 transition"
-              >
-                Talvez depois
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <footer className="mt-12 text-gray-400 text-center">
         <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>
