@@ -139,7 +139,7 @@ export default function OnboardingPage() {
                                         <label className="text-xs font-semibold text-gray-400 uppercase">Nome do serviço</label>
                                         <input
                                             className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800"
-                                            placeholder="Ex: Dedetização"
+                                            placeholder="Ex: Digite o serviço"
                                             value={servicoName}
                                             onChange={(e) => setServicoName(e.target.value)}
                                         />
