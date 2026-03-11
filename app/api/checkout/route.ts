@@ -225,7 +225,8 @@ export async function GET() {
                 companyName: myCompany?.name,
                 isOwner: true, // ✅ Flag de dono absoluto
                 isTrial: false, // Super Admin nunca é trial
-                hasTrackingModule: true // Super Admin tem tudo
+                hasTrackingModule: true, // Super Admin tem tudo
+                onboardingCompleted: myCompany?.onboardingCompleted ?? true
             });
         }
         // --------------------------------
@@ -293,7 +294,8 @@ export async function GET() {
                 companyName: company.name,
                 isOwner: true, // ✅ Flag de dono
                 isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD",
-                hasTrackingModule: subscription?.hasTrackingModule || false
+                hasTrackingModule: subscription?.hasTrackingModule || false,
+                onboardingCompleted: company.onboardingCompleted
             });
         }
 

@@ -69,9 +69,7 @@ export default function NovoNegocio() {
                 toast.success("Empresa configurada com sucesso!");
                 // Pequeno delay para garantir que o banco salvou antes de redirecionar
                 setTimeout(() => {
-                    router.push('/painel/dashboard');
-                    // Força um recarregamento para o layout perceber a empresa nova
-                    window.location.href = '/painel/dashboard';
+                    router.push('/onboarding');
                 }, 1000);
             } else {
                 toast.error(data.error || "Este nome já está em uso.");

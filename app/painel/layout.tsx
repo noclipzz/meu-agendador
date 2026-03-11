@@ -222,6 +222,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 }
 
                 // CASO 3: Acesso liberado (Dono Ativo ou Profissional)
+                if (dados.isOwner && dados.onboardingCompleted === false) {
+                    console.log("➡️ [ONBOARDING] Redirecionando para wizard inicial.");
+                    window.location.href = '/onboarding';
+                    return;
+                }
+
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
                 setIsOwner(!!dados.isOwner); // ✅ Salva se é dono

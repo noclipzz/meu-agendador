@@ -8,106 +8,111 @@ datasource db {
 }
 
 model Company {
-  id                           String             @id @default(cuid())
-  name                         String
-  slug                         String             @unique
-  ownerId                      String             @unique
-  createdAt                    DateTime           @default(now())
-  logoUrl                      String?            @default("")
-  signatureUrl                 String?            @default("")
-  legalRepresentative          String?
-  openTime                     String             @default("09:00")
-  closeTime                    String             @default("18:00")
-  lunchStart                   String             @default("12:00")
-  lunchEnd                     String             @default("13:00")
-  interval                     Int                @default(30)
-  workDays                     String             @default("1,2,3,4,5")
-  monthlyGoal                  Decimal            @default(5000)
-  whatsappMessage              String?            @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.")
-  notificationEmail            String?
-  facebookUrl                  String?            @default("")
-  instagramUrl                 String?            @default("")
-  address                      String?
-  cep                          String?
-  city                         String?
-  cnpj                         String?
-  complement                   String?
-  neighborhood                 String?
-  number                       String?
-  phone                        String?
-  state                        String?
-  aliquotaServico              Decimal?           @default(0)
-  inssTax                      Decimal?           @default(0)
-  certificadoA1Url             String?
-  certificadoSenha             String?
-  codigoServico                String?
-  itemListaServico             String?
-  cnae                         String?
-  issRetidoTomador             Boolean?           @default(false)
-  fiscalPadraoDesc             String?
-  inscricaoMunicipal           String?
-  naturezaOperacao             Int?               @default(1)
-  regimeTributario             Int?               @default(1)
-  creditCardTax                Decimal?           @default(0)
-  debitCardTax                 Decimal?           @default(0)
-  evolutionApiKey              String?
-  evolutionServerUrl           String?
-  whatsappInstanceId           String?
-  whatsappStatus               String?            @default("DISCONNECTED")
-  whatsappQrCode               String?
-  whatsappCancelPromptMessage  String?            @default("⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.")
-  whatsappCancelRevertMessage  String?            @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
-  whatsappCancelSuccessMessage String?            @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
-  whatsappConfirmMessage       String?            @default("✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
-  whatsappWaitingListMessage   String?            @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
-  whatsappPaymentSuccessMessage String?            @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
-  corporateName                String?
-  notificationSettings         Json?              @default("{}")
-  financeAuxiliaries           Json?              @default("{}")
+  id                            String   @id @default(cuid())
+  name                          String
+  slug                          String   @unique
+  ownerId                       String   @unique
+  createdAt                     DateTime @default(now())
+  logoUrl                       String?  @default("")
+  signatureUrl                  String?  @default("")
+  legalRepresentative           String?
+  openTime                      String   @default("09:00")
+  closeTime                     String   @default("18:00")
+  lunchStart                    String   @default("12:00")
+  lunchEnd                      String   @default("13:00")
+  interval                      Int      @default(30)
+  workDays                      String   @default("1,2,3,4,5")
+  monthlyGoal                   Decimal  @default(5000)
+  whatsappMessage               String?  @default("Olá {nome}, recebemos seu agendamento para *{servico}* em {dia} às {hora}.\n\nResponda *Sim* para Confirmar ou *Não* para Cancelar.")
+  notificationEmail             String?
+  facebookUrl                   String?  @default("")
+  instagramUrl                  String?  @default("")
+  address                       String?
+  cep                           String?
+  city                          String?
+  cnpj                          String?
+  complement                    String?
+  neighborhood                  String?
+  number                        String?
+  phone                         String?
+  state                         String?
+  aliquotaServico               Decimal? @default(0)
+  inssTax                       Decimal? @default(0)
+  certificadoA1Url              String?
+  certificadoSenha              String?
+  codigoServico                 String?
+  itemListaServico              String?
+  cnae                          String?
+  issRetidoTomador              Boolean? @default(false)
+  fiscalPadraoDesc              String?
+  inscricaoMunicipal            String?
+  naturezaOperacao              Int?     @default(1)
+  regimeTributario              Int?     @default(1)
+  creditCardTax                 Decimal? @default(0)
+  debitCardTax                  Decimal? @default(0)
+  evolutionApiKey               String?
+  evolutionServerUrl            String?
+  whatsappInstanceId            String?
+  whatsappStatus                String?  @default("DISCONNECTED")
+  whatsappQrCode                String?
+  whatsappCancelPromptMessage   String?  @default("⚠️ *Confirmação de Cancelamento*\n\n{nome}, você deseja realmente *CANCELAR* seu horário de *{servico}*?\n\nResponda *SIM* para confirmar o cancelamento definitivo.")
+  whatsappCancelRevertMessage   String?  @default("Entendido! Mantivemos seu agendamento como *Pendente*. Caso deseje confirmar, digite *Sim*.")
+  whatsappCancelSuccessMessage  String?  @default("❌ *Agendamento Cancelado*\n\nSeu agendamento foi cancelado com sucesso.")
+  whatsappConfirmMessage        String?  @default("✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!")
+  whatsappWaitingListMessage    String?  @default("Olá {nome}, uma vaga surgiu para o dia {dia}! 🎉\n\nToque no link abaixo para garantir seu horário:\n{link}")
+  whatsappPaymentSuccessMessage String?  @default("✅ *Pagamento Confirmado!*\n\nOlá {nome}, recebemos seu pagamento de *{valor}* referente a *{descricao}*.\n\nObrigado!")
+  corporateName                 String?
+  notificationSettings          Json?    @default("{}")
+  financeAuxiliaries            Json?    @default("{}")
   // Fiscal Fields
-  codigoTributacao             String?
-  codigoNbs                    String?
-  cofinsTax                    Decimal?           @default(0)
-  pisTax                       Decimal?           @default(0)
-  csllTax                      Decimal?           @default(0)
-  irTax                        Decimal?           @default(0)
-  descontarImpostos            Boolean?           @default(false)
-  construcaoCivil              Boolean?           @default(false)
-  descontarDeducoes             Boolean?           @default(false)
+  codigoTributacao              String?
+  codigoNbs                     String?
+  cofinsTax                     Decimal? @default(0)
+  pisTax                        Decimal? @default(0)
+  csllTax                       Decimal? @default(0)
+  irTax                         Decimal? @default(0)
+  descontarImpostos             Boolean? @default(false)
+  construcaoCivil               Boolean? @default(false)
+  descontarDeducoes             Boolean? @default(false)
 
   // Cora Integration
-  coraClientId                 String?
-  coraCertUrl                  String?
-  coraKeyUrl                   String?
-  coraAccessToken              String?
-  coraRefreshToken             String?
-  coraTokenExpiry              DateTime?
-  coraFineRate                 Decimal?           @default(2.0)
-  coraInterestRate             Decimal?           @default(1.0)
-  coraDiscountRate             Decimal?           @default(0.0)
-  bookings                     Booking[]
-  clients                      Client[]
-  expenses                     Expense[]
-  formTemplates                FormTemplate[]
-  invoices                     Invoice[]
-  posts                        OrganizationPost[]
-  products                     Product[]
-  professionals                Professional[]
-  services                     Service[]
-  suppliers                    Supplier[]
-  teamMembers                  TeamMember[]
-  waitingList                  WaitingList[]
-  bankAccounts                 BankAccount[]
-  consentTerms                 ConsentTerm[]
-  professionalLocations        ProfessionalLocation[]
-  integrationLogs              IntegrationLog[]
-  chatSessions                 WhatsAppChatSession[]
+  coraClientId          String?
+  coraCertUrl           String?
+  coraKeyUrl            String?
+  coraAccessToken       String?
+  coraRefreshToken      String?
+  coraTokenExpiry       DateTime?
+  coraFineRate          Decimal?               @default(2.0)
+  coraInterestRate      Decimal?               @default(1.0)
+  coraDiscountRate      Decimal?               @default(0.0)
+  bookings              Booking[]
+  clients               Client[]
+  expenses              Expense[]
+  formTemplates         FormTemplate[]
+  invoices              Invoice[]
+  posts                 OrganizationPost[]
+  products              Product[]
+  professionals         Professional[]
+  services              Service[]
+  suppliers             Supplier[]
+  teamMembers           TeamMember[]
+  waitingList           WaitingList[]
+  bankAccounts          BankAccount[]
+  consentTerms          ConsentTerm[]
+  professionalLocations ProfessionalLocation[]
+  integrationLogs       IntegrationLog[]
+  chatSessions          WhatsAppChatSession[]
 
   // AI Reception Settings
-  aiEnabled                    Boolean?           @default(false)
-  aiBotName                    String?            @default("Noclip")
-  aiSystemPrompt               String?            @db.Text
-  aiFaq                        String?            @db.Text
+  aiEnabled      Boolean? @default(false)
+  aiBotName      String?  @default("Noclip")
+  aiSystemPrompt String?  @db.Text
+  aiFaq          String?  @db.Text
+
+  // Onboarding & Display 
+  onboardingCompleted Boolean? @default(false)
+  siteColor           String?  @default("#3b82f6")
+  businessBranch      String?
 }
 
 model OrganizationPost {
@@ -135,13 +140,13 @@ model TeamMember {
 }
 
 model Professional {
-  id            String        @id @default(cuid())
+  id            String                 @id @default(cuid())
   name          String
   photoUrl      String?
   phone         String?
-  color         String        @default("#3b82f6")
+  color         String                 @default("#3b82f6")
   companyId     String
-  userId        String?       @unique
+  userId        String?                @unique
   email         String?
   address       String?
   birthDate     String?
@@ -149,21 +154,21 @@ model Professional {
   city          String?
   complement    String?
   cpf           String?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime               @default(now())
   neighborhood  String?
   notes         String?
   number        String?
   rg            String?
   state         String?
-  status        String        @default("ATIVO")
+  status        String                 @default("ATIVO")
   signatureUrl  String?
-  updatedAt     DateTime      @default(now()) @updatedAt
+  updatedAt     DateTime               @default(now()) @updatedAt
   maritalStatus String?
   attachments   Attachment[]
   bookings      Booking[]
-  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   waitingList   WaitingList[]
-  services      Service[]     @relation("ProfessionalToService")
+  services      Service[]              @relation("ProfessionalToService")
   locations     ProfessionalLocation[]
 }
 
@@ -183,11 +188,11 @@ model Service {
 }
 
 model Expense {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   description    String
   value          Decimal
   category       String?
-  status         String    @default("PENDENTE")
+  status         String       @default("PENDENTE")
   paymentMethod  String?
   dueDate        DateTime
   paidAt         DateTime?
@@ -196,15 +201,15 @@ model Expense {
   costCenter     String?
   nfe            String?
   notes          String?
-  frequency      String?   @default("ONCE")
+  frequency      String?      @default("ONCE")
   createdBy      String?
   updatedBy      String?
   companyId      String
   bankAccountId  String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier       Supplier?    @relation(fields: [supplierId], references: [id])
   bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
 }
 
@@ -223,20 +228,20 @@ model Invoice {
   companyId   String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   // Cora Cobrança
-  gatewayId      String?   @unique
-  bankUrl        String?
-  pixQrCode      String?
-  pixCopyPaste   String?
+  gatewayId    String? @unique
+  bankUrl      String?
+  pixQrCode    String?
+  pixCopyPaste String?
 
   // NFS-e (Nota Fiscal)
-  nfeStatus      String?
-  nfeNumber      String?
-  nfeUrl         String?
-  nfeProtocol    String?
+  nfeStatus   String?
+  nfeNumber   String?
+  nfeUrl      String?
+  nfeProtocol String?
 
-  bankAccountId  String?
+  bankAccountId String?
 
   booking     Booking?     @relation(fields: [bookingId], references: [id])
   client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -267,27 +272,27 @@ model Booking {
 }
 
 model Subscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  plan                 String?
-  status               String    @default("INACTIVE")
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
-  stripePriceId        String?
-  cancelAtPeriodEnd    Boolean   @default(false)
-  hasNfeModule         Boolean   @default(false)
-  hasBoletoModule      Boolean   @default(false)
+  id                        String    @id @default(cuid())
+  userId                    String    @unique
+  plan                      String?
+  status                    String    @default("INACTIVE")
+  stripeCustomerId          String?   @unique
+  stripeSubscriptionId      String?   @unique
+  stripePriceId             String?
+  cancelAtPeriodEnd         Boolean   @default(false)
+  hasNfeModule              Boolean   @default(false)
+  hasBoletoModule           Boolean   @default(false)
   hasDigitalSignatureModule Boolean   @default(false)
-  hasTrackingModule        Boolean   @default(false)
-  hasAiReceptionModule     Boolean   @default(false)
-  extraUsersCount      Int       @default(0)
-  expiresAt            DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  hasTrackingModule         Boolean   @default(false)
+  hasAiReceptionModule      Boolean   @default(false)
+  extraUsersCount           Int       @default(0)
+  expiresAt                 DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 }
 
 model Client {
-  id                String       @id @default(cuid())
+  id                String        @id @default(cuid())
   name              String
   phone             String?
   email             String?
@@ -298,21 +303,21 @@ model Client {
   address           String?
   city              String?
   notes             String?
-  status            String       @default("ATIVO")
+  status            String        @default("ATIVO")
   companyId         String
-  createdAt         DateTime     @default(now())
+  createdAt         DateTime      @default(now())
   complement        String?
   neighborhood      String?
   number            String?
   state             String?
   maritalStatus     String?
   photoUrl          String?
-  clientType        String       @default("FISICA")
+  clientType        String        @default("FISICA")
   cnpj              String?
   inscricaoEstadual String?
   attachments       Attachment[]
   bookings          Booking[]
-  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   formEntries       FormEntry[]
   invoices          Invoice[]
   consentTerms      ConsentTerm[]
@@ -332,20 +337,20 @@ model Attachment {
 }
 
 model Product {
-  id             String           @id @default(cuid())
-  name           String
-  quantity       Decimal          @default(0)
-  unit           String           @default("UN")
-  minStock       Decimal          @default(5)
-  costPrice      Decimal?         @default(0)
-  companyId      String
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  batches        ProductBatch[]
-  usedInServices ServiceProduct[]
+  id               String            @id @default(cuid())
+  name             String
+  quantity         Decimal           @default(0)
+  unit             String            @default("UN")
+  minStock         Decimal           @default(5)
+  costPrice        Decimal?          @default(0)
+  companyId        String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  batches          ProductBatch[]
+  usedInServices   ServiceProduct[]
   supplierProducts SupplierProduct[]
-  logs           StockLog[]
+  logs             StockLog[]
 }
 
 model ProductBatch {
@@ -362,19 +367,19 @@ model ProductBatch {
 }
 
 model StockLog {
-  id        String   @id @default(cuid())
-  productId String
-  quantity  Decimal
-  oldStock  Decimal
-  newStock  Decimal
+  id         String    @id @default(cuid())
+  productId  String
+  quantity   Decimal
+  oldStock   Decimal
+  newStock   Decimal
   type       String
   reason     String?
   costPrice  Decimal?
   totalCost  Decimal?
   supplierId String?
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ServiceProduct {
@@ -428,24 +433,24 @@ model PushSubscription {
 }
 
 model UserNotificationPref {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  email       Boolean  @default(true)
-  whatsapp    Boolean  @default(true)
-  push        Boolean  @default(true)
-  phone       String?
-  settings    Json?    @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  email     Boolean  @default(true)
+  whatsapp  Boolean  @default(true)
+  push      Boolean  @default(true)
+  phone     String?
+  settings  Json?    @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FormEntry {
-  id         String       @id @default(cuid())
-  data       Json
-  templateId String
-  clientId   String
-  companyId  String
-  status          String     @default("PENDENTE")
+  id              String       @id @default(cuid())
+  data            Json
+  templateId      String
+  clientId        String
+  companyId       String
+  status          String       @default("PENDENTE")
   signatureUrl    String?
   clientIp        String?
   clientUserAgent String?
@@ -453,12 +458,12 @@ model FormEntry {
   filledBy        String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  template   FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  client          Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }
 
 model Supplier {
-  id            String    @id @default(cuid())
+  id            String            @id @default(cuid())
   name          String
   corporateName String?
   cnpj          String?
@@ -472,15 +477,15 @@ model Supplier {
   city          String?
   state         String?
   notes         String?
-  status        String    @default("ATIVO")
+  status        String            @default("ATIVO")
   companyId     String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   expenses      Expense[]
   products      SupplierProduct[]
   batches       ProductBatch[]
   stockLogs     StockLog[]
-  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company       Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model SupplierProduct {
@@ -488,28 +493,28 @@ model SupplierProduct {
   supplierId String
   productId  String
   price      Decimal  @default(0)
-  sku        String?  // Código do fornecedor
+  sku        String? // Código do fornecedor
   notes      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([supplierId, productId])
 }
 
 model BankAccount {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
-  balance   Decimal   @default(0)
+  balance   Decimal  @default(0)
   companyId String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  expenses  Expense[]
-  invoices  Invoice[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+  invoices Invoice[]
 }
 
 model ConsentTerm {
@@ -526,65 +531,65 @@ model ConsentTerm {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  client          Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model ProfessionalLocation {
-  id             String       @id @default(cuid())
-  professionalId String       @unique
+  id             String   @id @default(cuid())
+  professionalId String   @unique
   companyId      String
   latitude       Float
   longitude      Float
   accuracy       Float?
-  lastUpdate     DateTime     @default(now())
-  status         String       @default("ONLINE") // ONLINE, OFFLINE
-  
-  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lastUpdate     DateTime @default(now())
+  status         String   @default("ONLINE") // ONLINE, OFFLINE
+
+  professional Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([professionalId])
   @@index([companyId])
 }
 
 model IntegrationLog {
-  id          String   @id @default(cuid())
-  companyId   String?
-  service     String   // "CORA", "EVOLUTION", "SIGCORP", "RESEND", "CLERK", etc.
-  type        String   // "WEBHOOK", "API_REQUEST", "CRON", etc.
-  status      String   // "SUCCESS", "ERROR", "WARNING"
-  endpoint    String?
-  identifier  String?  // Reference ID (ex: "inv_123", "booking_abc")
-  payload     Json?
-  response    Json?
-  errorMessage String? @db.Text
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  companyId    String?
+  service      String // "CORA", "EVOLUTION", "SIGCORP", "RESEND", "CLERK", etc.
+  type         String // "WEBHOOK", "API_REQUEST", "CRON", etc.
+  status       String // "SUCCESS", "ERROR", "WARNING"
+  endpoint     String?
+  identifier   String? // Reference ID (ex: "inv_123", "booking_abc")
+  payload      Json?
+  response     Json?
+  errorMessage String?  @db.Text
+  createdAt    DateTime @default(now())
 
-  company     Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
 model WhatsAppChatSession {
-  id             String                @id @default(cuid())
-  companyId      String
-  remoteJid      String                
-  status         String                @default("ACTIVE") // ACTIVE, CLOSED
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  id        String   @id @default(cuid())
+  companyId String
+  remoteJid String
+  status    String   @default("ACTIVE") // ACTIVE, CLOSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company        Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  messages       WhatsAppChatMessage[]
+  company  Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messages WhatsAppChatMessage[]
 
   @@index([companyId, remoteJid, status])
 }
 
 model WhatsAppChatMessage {
-  id             String                @id @default(cuid())
-  sessionId      String
-  role           String                // "user", "assistant", "system", "tool"
-  content        String?               @db.Text
-  toolCalls      Json?                 // Stores OpenAI tool_calls object
-  toolCallId     String?               // Stores individual tool_call_id for role=tool
-  createdAt      DateTime              @default(now())
+  id         String   @id @default(cuid())
+  sessionId  String
+  role       String // "user", "assistant", "system", "tool"
+  content    String?  @db.Text
+  toolCalls  Json? // Stores OpenAI tool_calls object
+  toolCallId String? // Stores individual tool_call_id for role=tool
+  createdAt  DateTime @default(now())
 
-  session        WhatsAppChatSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session WhatsAppChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
