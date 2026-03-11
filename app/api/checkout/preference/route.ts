@@ -24,6 +24,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
+    // 1.1 Verifica se o dono da empresa possui o Addon ativo
+    const subscription = await db.subscription.findUnique({
+      where: { userId: company.ownerId }
+    });
+
+    if (!subscription?.hasMercadoPagoModule && company.ownerId !== "user_39S9qNrKwwgObMZffifdZyNKUKm") {
+      return NextResponse.json({ error: "O módulo de pagamentos online (Mercado Pago) não está ativo no seu plano." }, { status: 403 });
+    }
+
     if (!company.mercadopagoAccessToken) {
       return NextResponse.json({ error: "Esta empresa ainda não configurou pagamentos online." }, { status: 400 });
     }

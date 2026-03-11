@@ -63,7 +63,8 @@ export async function GET() {
         cancelAtPeriodEnd: false,
         hasNfeModule: true,
         hasBoletoModule: true,
-        hasDigitalSignatureModule: true,
+        hasAiReceptionModule: true,
+        hasMercadoPagoModule: true,
         extraUsersCount: 0,
         isOwner: true
       });
@@ -83,6 +84,7 @@ export async function GET() {
       hasNfeModule: subscription?.hasNfeModule || false,
       hasBoletoModule: subscription?.hasBoletoModule || false,
       hasDigitalSignatureModule: subscription?.hasDigitalSignatureModule || false,
+      hasMercadoPagoModule: subscription?.hasMercadoPagoModule || false,
       extraUsersCount: subscription?.extraUsersCount || 0,
       isOwner: config.ownerId === userId // ✅ Flag de dono
     });

@@ -119,6 +119,10 @@ export async function POST(req: Request) {
                     unit: body.unit || "UN",
                     minStock: body.minStock || 5,
                     costPrice: body.costPrice ? Number(body.costPrice) : 0,
+                    price: body.price ? Number(body.price) : 0,
+                    description: body.description || null,
+                    imageUrl: body.imageUrl || null,
+                    showInVitrine: body.showInVitrine ?? false,
                     companyId: company.id,
                 }
             });
@@ -183,7 +187,15 @@ export async function PUT(req: Request) {
         if (!operation) {
             const updated = await prisma.product.update({
                 where: { id },
-                data: { name, minStock: Number(minStock), costPrice: costPrice ? Number(costPrice) : null }
+                data: { 
+                    name, 
+                    minStock: Number(minStock), 
+                    costPrice: costPrice ? Number(costPrice) : null,
+                    price: body.price !== undefined ? Number(body.price) : undefined,
+                    description: body.description ?? undefined,
+                    imageUrl: body.imageUrl ?? undefined,
+                    showInVitrine: body.showInVitrine ?? undefined
+                }
             });
             return NextResponse.json(updated);
         }

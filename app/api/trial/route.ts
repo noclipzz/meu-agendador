@@ -13,10 +13,14 @@ export async function POST(req: Request) {
     try {
         const { userId } = auth();
         const user = await currentUser();
-        const { phone } = await req.json();
+        const { name, phone, email } = await req.json();
 
         if (!userId || !user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        if (!name || !phone || !email) {
+            return NextResponse.json({ error: "Todos os campos são obrigatórios." }, { status: 400 });
         }
 
         const userEmail = user.emailAddresses[0]?.emailAddress;
@@ -50,16 +54,19 @@ export async function POST(req: Request) {
         });
 
         // Envia E-mail de Confirmação
-        if (userEmail) {
+        const targetEmail = email || userEmail;
+        const targetName = name || user.firstName || "Usuário";
+
+        if (targetEmail) {
             try {
                 await resend.emails.send({
                     from: 'NOHUD App <nao-responda@nohud.com.br>',
-                    to: userEmail,
+                    to: targetEmail,
                     subject: '🚀 Seu período de teste começou!',
                     html: `
                         <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
                             <h1 style="color: #2563eb;">Bem-vindo ao NOHUD!</h1>
-                            <p style="font-size: 16px; line-height: 1.5;">Olá, <strong>${user.firstName}</strong>!</p>
+                            <p style="font-size: 16px; line-height: 1.5;">Olá, <strong>${targetName}</strong>!</p>
                             <p style="font-size: 16px; line-height: 1.5;">Seu período de teste de <strong>7 dias gratuitos</strong> no plano <strong>MASTER</strong> foi ativado com sucesso.</p>
                             <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                                 <p style="margin: 0; font-weight: bold;">Seu teste expira em: ${format(expiresAt, 'dd/MM/yyyy')}</p>
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
         // --- LOGICA DE BOAS-VINDAS WHATSAPP ---
         // Se houver um telefone, aqui enviaríamos a mensagem automática usando uma instância 'Master' do sistema
         if (phone) {
-            console.log(`[TRIAL] Novo usuário ${user.firstName} ativado. Telefone para boas-vindas: ${phone}`);
+            console.log(`[TRIAL] Novo usuário ${targetName} (${targetEmail}) ativado. Telefone para boas-vindas: ${phone}`);
             // TODO: Integrar com Evolution API usando instância administrativa para enviar mensagem de saudação
         }
 

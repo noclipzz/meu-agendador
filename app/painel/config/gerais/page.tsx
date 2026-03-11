@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool, Lock } from "lucide-react";
 import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
@@ -51,6 +51,7 @@ export default function ConfigGerais() {
     const [monthlyGoal, setMonthlyGoal] = useState("5000");
     const [mercadopagoAccessToken, setMercadopagoAccessToken] = useState("");
     const [mercadopagoPublicKey, setMercadopagoPublicKey] = useState("");
+    const [hasMercadoPago, setHasMercadoPago] = useState(false);
     const [clerkUserId, setClerkUserId] = useState("");
 
     // --- ENDEREÇO E CONTATO ---
@@ -97,14 +98,15 @@ export default function ConfigGerais() {
                 setInterval(dataConfig.interval || 30);
                 setMonthlyGoal(dataConfig.monthlyGoal || "5000");
                 if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
-                
+                setMercadopagoAccessToken(dataConfig.mercadopagoAccessToken || "");
+                setMercadopagoPublicKey(dataConfig.mercadopagoPublicKey || "");
+                setHasMercadoPago(dataConfig.hasMercadoPagoModule || false);
+
                 if (dataConfig.customSchedule) {
                     try {
                         const parsed = typeof dataConfig.customSchedule === 'string' ? JSON.parse(dataConfig.customSchedule) : dataConfig.customSchedule;
-                        if (Object.keys(parsed).length > 0) {
-                            setCustomSchedule(parsed);
-                        }
-                    } catch(e) {}
+                        setCustomSchedule(parsed);
+                    } catch(e) { console.error("Erro no parse do customSchedule", e); }
                 }
 
                 setCnpj(formatarCpfCnpj(dataConfig.cnpj || ""));
@@ -116,10 +118,11 @@ export default function ConfigGerais() {
                 setNeighborhood(dataConfig.neighborhood || "");
                 setCity(dataConfig.city || "");
                 setState(dataConfig.state || "");
-                setMercadopagoAccessToken(dataConfig.mercadopagoAccessToken || "");
-                setMercadopagoPublicKey(dataConfig.mercadopagoPublicKey || "");
             }
-        } catch (e) { console.error(e) }
+        } catch (error) {
+            console.error("ERRO_AO_CARREGAR:", error);
+            toast.error("Erro ao carregar configurações.");
+        }
         finally { setLoading(false); }
     }
 
@@ -416,7 +419,22 @@ export default function ConfigGerais() {
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t dark:border-gray-700">
+                    <div className="mt-8 pt-6 border-t dark:border-gray-700 relative">
+                        {!hasMercadoPago && (
+                            <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 dark:border-blue-900/50 p-6 text-center">
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-full flex items-center justify-center mb-3">
+                                    <Lock size={20} />
+                                </div>
+                                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">Módulo de Pagamentos Online</h3>
+                                <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold max-w-[250px] mt-1">Este é um recurso exclusivo. Entre em contato com o suporte para ativar o addon do Mercado Pago.</p>
+                                <button 
+                                    onClick={() => window.open('https://wa.me/5511999999999', '_blank')}
+                                    className="mt-4 bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-lg hover:bg-blue-700 transition uppercase tracking-widest shadow-lg shadow-blue-500/20"
+                                >
+                                    Ativar Agora
+                                </button>
+                            </div>
+                        )}
                         <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
                              💳 Mercado Pago (Pagamentos Vitrine)
                         </h2>
@@ -427,7 +445,8 @@ export default function ConfigGerais() {
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Access Token (Prod ou Teste)</label>
                                 <input
                                     type="password"
-                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    disabled={!hasMercadoPago}
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white disabled:opacity-50"
                                     placeholder="APP_USR-..."
                                     value={mercadopagoAccessToken}
                                     onChange={e => setMercadopagoAccessToken(e.target.value)}
@@ -436,7 +455,8 @@ export default function ConfigGerais() {
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Public Key</label>
                                 <input
-                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:border-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    disabled={!hasMercadoPago}
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white disabled:opacity-50"
                                     placeholder="APP_USR-..."
                                     value={mercadopagoPublicKey}
                                     onChange={e => setMercadopagoPublicKey(e.target.value)}

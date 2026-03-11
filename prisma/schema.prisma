@@ -291,6 +291,7 @@ model Subscription {
   hasDigitalSignatureModule Boolean   @default(false)
   hasTrackingModule         Boolean   @default(false)
   hasAiReceptionModule      Boolean   @default(false)
+  hasMercadoPagoModule      Boolean   @default(false)
   extraUsersCount           Int       @default(0)
   expiresAt                 DateTime?
   createdAt                 DateTime  @default(now())

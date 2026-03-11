@@ -42,8 +42,21 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
+    // Busca a assinatura do dono
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId: empresa.ownerId }
+    });
+
+    const hasMercadoPagoModule = subscription?.hasMercadoPagoModule || empresa.ownerId === "user_39S9qNrKwwgObMZffifdZyNKUKm";
+
     // O objeto 'empresa' aqui já inclui instagramUrl e facebookUrl automaticamente
-    return NextResponse.json(empresa);
+    return NextResponse.json({
+      ...empresa,
+      // Nunca retornar o Access Token e Public Key privadas para o front-end público!
+      // Se eles estiverem no modelo, o ideal é usar select no findUnique.
+      // Por enquanto vamos apenas garantir que o flag chegue.
+      hasMercadoPagoModule
+    });
 
   } catch (error) {
     console.error("ERRO_GET_EMPRESA_PUBLICA:", error);

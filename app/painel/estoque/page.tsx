@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Package, AlertTriangle, Trash2, Save, X, ArrowUpCircle, ArrowDownCircle, Clock, Calendar as CalIcon, Box } from "lucide-react";
+import { Plus, Search, Package, AlertTriangle, Trash2, Save, X, ArrowUpCircle, ArrowDownCircle, Clock, Calendar as CalIcon, Box, Store, Eye, EyeOff, DollarSign, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -31,7 +31,16 @@ export default function EstoquePage() {
     const [operacao, setOperacao] = useState<"ADD" | "REMOVE">("ADD");
 
     // Form de Criação/Edição Básica
-    const [formBasico, setFormBasico] = useState({ name: "", unit: "UN", minStock: "5", costPrice: "" });
+    const [formBasico, setFormBasico] = useState({ 
+        name: "", 
+        unit: "UN", 
+        minStock: "5", 
+        costPrice: "", 
+        price: "", 
+        description: "", 
+        showInVitrine: false,
+        imageUrl: ""
+    });
 
     useEffect(() => {
         carregarEstoque();
@@ -75,7 +84,16 @@ export default function EstoquePage() {
 
     function abrirFicha(produto: any) {
         setProdutoSelecionado(produto);
-        setFormBasico({ name: produto.name, unit: produto.unit, minStock: produto.minStock, costPrice: produto.costPrice ? formatarMoeda(produto.costPrice) : "" });
+        setFormBasico({ 
+            name: produto.name, 
+            unit: produto.unit, 
+            minStock: produto.minStock, 
+            costPrice: produto.costPrice ? formatarMoeda(produto.costPrice) : "",
+            price: produto.price ? formatarMoeda(produto.price) : "",
+            description: produto.description || "",
+            showInVitrine: !!produto.showInVitrine,
+            imageUrl: produto.imageUrl || ""
+        });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
         setQtdInput("");
@@ -88,7 +106,16 @@ export default function EstoquePage() {
 
     function abrirNovoProduto() {
         setProdutoSelecionado(null);
-        setFormBasico({ name: "", unit: "UN", minStock: "5", costPrice: "" });
+        setFormBasico({ 
+            name: "", 
+            unit: "UN", 
+            minStock: "5", 
+            costPrice: "", 
+            price: "", 
+            description: "", 
+            showInVitrine: false,
+            imageUrl: ""
+        });
         setQtdInput("");
         setValidadeInput("");
         setCostPriceInput("");
@@ -114,6 +141,10 @@ export default function EstoquePage() {
                         unit: formBasico.unit,
                         minStock: formBasico.minStock,
                         costPrice: unitCost,
+                        price: desformatarMoeda(formBasico.price),
+                        description: formBasico.description,
+                        showInVitrine: formBasico.showInVitrine,
+                        imageUrl: formBasico.imageUrl,
                         quantity: qtdInput,
                         expiryDate: validadeInput,
                         supplierId: selectedSupplierId
@@ -165,7 +196,11 @@ export default function EstoquePage() {
                 id: produtoSelecionado.id,
                 name: formBasico.name,
                 minStock: formBasico.minStock,
-                costPrice: desformatarMoeda(formBasico.costPrice)
+                costPrice: desformatarMoeda(formBasico.costPrice),
+                price: desformatarMoeda(formBasico.price),
+                description: formBasico.description,
+                showInVitrine: formBasico.showInVitrine,
+                imageUrl: formBasico.imageUrl
             })
         });
         if (res.ok) {
@@ -215,7 +250,10 @@ export default function EstoquePage() {
                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isLow ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-blue-600'}`}>
                                     <Package size={24} />
                                 </div>
-                                {temVencimentoProximo && <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-lg text-[9px] font-black uppercase">Atenção Validade</span>}
+                                <div className="flex gap-1">
+                                    {p.showInVitrine && <span className="bg-violet-100 text-violet-600 px-2 py-1 rounded-lg text-[9px] font-black uppercase flex items-center gap-1"><Store size={10} /> Vitrine</span>}
+                                    {temVencimentoProximo && <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded-lg text-[9px] font-black uppercase">Atenção Validade</span>}
+                                </div>
                             </div>
                             <h3 className="font-black text-lg dark:text-white uppercase truncate">{p.name}</h3>
                             <div className="flex items-end gap-1 mt-2">
@@ -425,12 +463,106 @@ export default function EstoquePage() {
                             {produtoSelecionado && abaAtiva === "CONFIG" && (
                                 <div className="space-y-6 animate-in fade-in">
                                     <div className="space-y-4">
-                                        <div><label className="text-xs font-bold text-gray-400 uppercase">Nome</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} /></div>
+                                        <div><label className="text-xs font-bold text-gray-400 uppercase">Nome</label><input className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" value={formBasico.name} onChange={e => setFormBasico({ ...formBasico, name: e.target.value })} /></div>
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input type="number" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
-                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo (Unidade)</label><input type="text" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} /></div>
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Estoque Mínimo (Alerta)</label><input type="number" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" value={formBasico.minStock} onChange={e => setFormBasico({ ...formBasico, minStock: e.target.value })} /></div>
+                                            <div><label className="text-xs font-bold text-gray-400 uppercase">Preço de Custo (Unidade)</label><input type="text" className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" placeholder="R$ 0,00" value={formBasico.costPrice} onChange={e => setFormBasico({ ...formBasico, costPrice: formatarMoeda(e.target.value) })} /></div>
                                         </div>
-                                        <button onClick={atualizarDadosBasicos} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">Salvar Alterações</button>
+
+                                        <div className="pt-4 border-t dark:border-gray-800">
+                                            <h4 className="text-sm font-black dark:text-white flex items-center gap-2 mb-4"><ImageIcon size={18} className="text-blue-500" /> Foto do Produto</h4>
+                                            
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-24 h-24 rounded-2xl bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 overflow-hidden flex items-center justify-center relative group">
+                                                    {formBasico.imageUrl ? (
+                                                        <>
+                                                            <img src={formBasico.imageUrl} className="w-full h-full object-cover" alt="Produto" />
+                                                            <button 
+                                                                onClick={() => setFormBasico({ ...formBasico, imageUrl: "" })}
+                                                                className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
+                                                            >
+                                                                <X size={20} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <ImageIcon className="text-gray-300" size={32} />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-gray-500 mb-2 font-medium">Formatos aceitos: JPG, PNG, WebP. Máximo 10MB.</p>
+                                                    <input 
+                                                        type="file" 
+                                                        id="product-image-upload" 
+                                                        className="hidden" 
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            
+                                                            const toastId = toast.loading("Enviando imagem...");
+                                                            try {
+                                                                const res = await fetch(`/api/upload?filename=${encodeURIComponent(file.name)}`, {
+                                                                    method: "POST",
+                                                                    body: file
+                                                                });
+                                                                const data = await res.json();
+                                                                if (data.url) {
+                                                                    setFormBasico(prev => ({ ...prev, imageUrl: data.url }));
+                                                                    toast.success("Imagem enviada!", { id: toastId });
+                                                                } else {
+                                                                    toast.error("Erro no upload", { id: toastId });
+                                                                }
+                                                            } catch (err) {
+                                                                toast.error("Erro de conexão", { id: toastId });
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label 
+                                                        htmlFor="product-image-upload"
+                                                        className="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-4 py-2 rounded-xl text-xs font-black uppercase cursor-pointer transition dark:text-white"
+                                                    >
+                                                         Escolher Foto
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t dark:border-gray-800">
+                                            <h4 className="text-sm font-black dark:text-white flex items-center gap-2 mb-4"><Store size={18} className="text-violet-500" /> Configurações de Vitrine</h4>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">Preço de Venda (Clientes)</label>
+                                                    <div className="relative">
+                                                        <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                        <input type="text" className="w-full p-3 pl-10 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" placeholder="R$ 0,00" value={formBasico.price} onChange={e => setFormBasico({ ...formBasico, price: formatarMoeda(e.target.value) })} />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">Status na Vitrine</label>
+                                                    <button 
+                                                        onClick={() => setFormBasico({ ...formBasico, showInVitrine: !formBasico.showInVitrine })}
+                                                        className={`w-full p-3 rounded-xl border font-black uppercase text-xs flex items-center justify-center gap-2 transition ${formBasico.showInVitrine ? "bg-green-50 border-green-200 text-green-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
+                                                    >
+                                                        {formBasico.showInVitrine ? <><Eye size={16} /> Visível na Vitrine</> : <><EyeOff size={16} /> Oculto da Vitrine</>}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4">
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Descrição para Clientes</label>
+                                                <textarea 
+                                                    className="w-full p-3 rounded-xl border font-medium dark:bg-gray-800 dark:text-white resize-none h-20" 
+                                                    placeholder="Descreva o produto..."
+                                                    value={formBasico.description}
+                                                    onChange={e => setFormBasico({ ...formBasico, description: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <button onClick={atualizarDadosBasicos} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                            <Save size={20} /> Salvar Alterações
+                                        </button>
                                     </div>
 
                                     <div className="pt-6 border-t dark:border-gray-800 mt-6">

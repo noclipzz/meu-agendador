@@ -98,47 +98,89 @@ function AuthButton() {
   );
 }
 
-// --- MODAL DE TELEFONE ---
-function PhoneModal({ isOpen, onClose, onConfirm, loading }: { isOpen: boolean, onClose: () => void, onConfirm: (phone: string) => void, loading: boolean }) {
+// --- MODAL DE TRIAL ---
+function TrialModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  loading,
+  initialData
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  onConfirm: (data: { name: string, phone: string, email: string }) => void, 
+  loading: boolean,
+  initialData?: { name: string, email: string }
+}) {
+  const [name, setName] = useState(initialData?.name || "");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(initialData?.email || "");
+
+  useEffect(() => {
+    if (initialData) {
+      if (!name) setName(initialData.name);
+      if (!email) setEmail(initialData.email);
+    }
+  }, [initialData]);
 
   if (!isOpen) return null;
+
+  const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const isFormValid = name.trim().length >= 3 && phone.trim().length >= 10 && isValidEmail(email);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl scale-in-center animate-in zoom-in-95 duration-300">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Smartphone size={32} />
+            <Zap size={32} className="fill-blue-600" />
           </div>
           <h3 className="text-2xl font-black text-gray-900">Quase lá! 🚀</h3>
-          <p className="text-gray-500 font-medium mt-2">Informe seu WhatsApp para recebermos você com um presente especial de boas-vindas.</p>
+          <p className="text-gray-500 font-medium mt-2">Preencha seus dados para liberar seu acesso gratuito de 7 dias.</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Seu WhatsApp</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Seu Nome</label>
+            <input
+              type="text"
+              placeholder="Nome Completo"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full mt-1 px-6 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Seu E-mail</label>
+            <input
+              type="email"
+              placeholder="exemplo@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full mt-1 px-6 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all font-bold"
+            />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Seu WhatsApp</label>
             <input
               type="tel"
               placeholder="(00) 00000-0000"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full mt-1 px-6 py-4 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all font-bold text-lg"
-              autoFocus
+              className="w-full mt-1 px-6 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-2xl outline-none transition-all font-bold"
             />
           </div>
 
           <button
-            onClick={() => onConfirm(phone)}
-            disabled={loading || !phone}
-            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+            onClick={() => onConfirm({ name, phone, email })}
+            disabled={loading || !isFormValid}
+            className="w-full mt-4 py-4 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="animate-spin" /> : <>Ativar Meus 7 Dias Grátis <ArrowRight size={20} /></>}
           </button>
-
-          <button onClick={onClose} className="w-full py-2 text-gray-400 font-bold hover:text-gray-600 transition text-sm">
-            Depois eu informo
-          </button>
+          <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-2">Acesso imediato • Sem cartão</p>
         </div>
       </div>
     </div>
@@ -147,18 +189,18 @@ function PhoneModal({ isOpen, onClose, onConfirm, loading }: { isOpen: boolean, 
 
 // --- HERO CTA (BOTAO COMEÇAR) ---
 function HeroCTA() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const handleStart = async (phone?: string) => {
+  const handleStart = async (data?: { name: string, phone: string, email: string }) => {
     if (!isSignedIn) {
       router.push('/sign-up');
       return;
     }
 
-    if (!phone && !showModal) {
+    if (!data && !showModal) {
       setShowModal(true);
       return;
     }
@@ -167,18 +209,18 @@ function HeroCTA() {
     try {
       const res = await fetch('/api/trial', {
         method: 'POST',
-        body: JSON.stringify({ phone })
+        body: JSON.stringify(data)
       });
-      const data = await res.json();
+      const resData = await res.json();
 
       if (res.ok) {
         toast.success("Período de teste de 7 dias ativado! 🎉");
         router.push('/novo-negocio');
       } else {
-        if (data.code === "TRIAL_USED") {
+        if (resData.code === "TRIAL_USED") {
           router.push('/novo-negocio');
         } else {
-          toast.info(data.message || "Redirecionando...");
+          toast.info(resData.message || "Redirecionando...");
           router.push('/#planos');
         }
       }
@@ -200,11 +242,15 @@ function HeroCTA() {
         {loading ? <Loader2 className="animate-spin" /> : <>Começar Gratuitamente <ArrowRight size={20} /></>}
       </button>
 
-      <PhoneModal
+      <TrialModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onConfirm={(p) => handleStart(p)}
+        onConfirm={(d) => handleStart(d)}
         loading={loading}
+        initialData={{
+          name: user?.fullName || "",
+          email: user?.primaryEmailAddress?.emailAddress || ""
+        }}
       />
     </>
   );

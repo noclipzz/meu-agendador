@@ -142,7 +142,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   }, [dataSelecionada, profissionalSelecionado, servicoSelecionado, empresa]);
 
   async function handleCheckout(product: any) {
-    if (!empresa?.mercadopagoPublicKey) {
+    if (!empresa?.hasMercadoPagoModule || !empresa?.mercadopagoPublicKey) {
       return toast.error("Este estabelecimento ainda não aceita pagamentos online.");
     }
     
