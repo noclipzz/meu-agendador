@@ -122,7 +122,11 @@ export default function EstoquePage() {
             price: "", 
             description: "", 
             showInVitrine: false,
-            imageUrl: ""
+            imageUrl: "",
+            showStock: false,
+            deliveryDeadline: "",
+            shippingCost: "0",
+            variations: []
         });
         setQtdInput("");
         setValidadeInput("");
@@ -212,7 +216,11 @@ export default function EstoquePage() {
                 price: desformatarMoeda(formBasico.price),
                 description: formBasico.description,
                 showInVitrine: formBasico.showInVitrine,
-                imageUrl: formBasico.imageUrl
+                imageUrl: formBasico.imageUrl,
+                showStock: formBasico.showStock,
+                deliveryDeadline: formBasico.deliveryDeadline,
+                shippingCost: desformatarMoeda(formBasico.shippingCost),
+                variations: formBasico.variations
             })
         });
         if (res.ok) {
@@ -552,12 +560,47 @@ export default function EstoquePage() {
                                                 </div>
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-400 uppercase">Status na Vitrine</label>
-                                                    <button 
-                                                        onClick={() => setFormBasico({ ...formBasico, showInVitrine: !formBasico.showInVitrine })}
-                                                        className={`w-full p-3 rounded-xl border font-black uppercase text-xs flex items-center justify-center gap-2 transition ${formBasico.showInVitrine ? "bg-green-50 border-green-200 text-green-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
-                                                    >
-                                                        {formBasico.showInVitrine ? <><Eye size={16} /> Visível na Vitrine</> : <><EyeOff size={16} /> Oculto da Vitrine</>}
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => setFormBasico({ ...formBasico, showInVitrine: !formBasico.showInVitrine })}
+                                                            className={`flex-1 p-3 rounded-xl border font-black uppercase text-[10px] flex items-center justify-center gap-2 transition ${formBasico.showInVitrine ? "bg-green-50 border-green-200 text-green-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
+                                                        >
+                                                            {formBasico.showInVitrine ? <><Eye size={14} /> Visível</> : <><EyeOff size={14} /> Oculto</>}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setFormBasico({ ...formBasico, showStock: !formBasico.showStock })}
+                                                            className={`flex-1 p-3 rounded-xl border font-black uppercase text-[10px] flex items-center justify-center gap-2 transition ${formBasico.showStock ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
+                                                            title="Mostrar quantidade disponível para o cliente"
+                                                        >
+                                                            {formBasico.showStock ? <><Package size={14} /> Com Estoque</> : <><Package size={14} /> Sem Estoque</>}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">Prazo de Entrega</label>
+                                                    <input 
+                                                        type="text" 
+                                                        className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" 
+                                                        placeholder="Ex: 2 dias úteis" 
+                                                        value={formBasico.deliveryDeadline} 
+                                                        onChange={e => setFormBasico({ ...formBasico, deliveryDeadline: e.target.value })} 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">Custo de Envio (Frete)</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
+                                                        <input 
+                                                            type="text" 
+                                                            className="w-full p-3 pl-10 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" 
+                                                            placeholder="0,00" 
+                                                            value={formBasico.shippingCost} 
+                                                            onChange={e => setFormBasico({ ...formBasico, shippingCost: formatarMoeda(e.target.value) })} 
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 

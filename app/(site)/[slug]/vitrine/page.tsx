@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook, Calendar as CalendarIcon, Store } from "lucide-react";
+import { Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook, Calendar as CalendarIcon, Store, ChevronRight, Plus, Minus, Trash2, CheckCircle2, Truck, Package } from "lucide-react";
 import { formatarTelefone } from "@/lib/validators";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+
+type Step = "VITRINE" | "CART" | "CHECKOUT" | "SUCCESS";
 
 export default function VitrinePublica({ params }: { params: { slug: string } }) {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -13,6 +15,21 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [step, setStep] = useState<Step>("VITRINE");
+  
+  // Carrinho
+  const [cart, setCart] = useState<any[]>([]);
+  const [selectedQty, setSelectedQty] = useState(1);
+
+  // Informações do Cliente
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: ""
+  });
+  const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -31,16 +48,46 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   useEffect(() => {
     const payment = searchParams.get('payment');
+    const orderId = searchParams.get('orderId');
     if (payment === 'success') {
+      setStep("SUCCESS");
       toast.success("Pagamento realizado com sucesso!");
     } else if (payment === 'failure') {
       toast.error("Ocorreu um erro no seu pagamento.");
     }
   }, [searchParams]);
 
-  async function handleCheckout(product: any) {
-    if (!empresa?.hasMercadoPagoModule || !empresa?.mercadopagoPublicKey) {
-      return toast.error("Este estabelecimento ainda não aceita pagamentos online.");
+  function addToCart(product: any, qty: number) {
+    const existing = cart.find(item => item.id === product.id);
+    if (existing) {
+      setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + qty } : item));
+    } else {
+      setCart([...cart, { ...product, quantity: qty }]);
+    }
+    setSelectedProduct(null);
+    setSelectedQty(1);
+    toast.success("Adicionado ao carrinho!");
+  }
+
+  function removeFromCart(id: string) {
+    setCart(cart.filter(item => item.id !== id));
+  }
+
+  function updateQty(id: string, delta: number) {
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const newQty = Math.max(1, item.quantity + delta);
+        return { ...item, quantity: newQty };
+      }
+      return item;
+    }));
+  }
+
+  const cartTotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+
+  async function handleProceedToPayment() {
+    if (!customerInfo.name || !customerInfo.phone) {
+      return toast.error("Por favor, preencha seu nome e telefone.");
     }
     
     setCheckingOut(true);
@@ -49,7 +96,10 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          productId: product.id, 
+          items: cart,
+          customerInfo,
+          deliveryMethod,
+          addressInfo: { address: customerInfo.address },
           companyId: empresa.id,
           slug: params.slug
         })
@@ -78,11 +128,37 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   if (!empresa) return <div className="h-screen flex items-center justify-center text-red-500 font-bold">Empresa não encontrada.</div>;
 
+  // TELA DE SUCESSO
+  if (step === "SUCCESS") {
+    const hasProntaEntrega = cart.some(item => item.deliveryDeadline?.toLowerCase().includes("pronta entrega"));
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-10 rounded-[3rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in duration-300">
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 size={40} />
+          </div>
+          <h2 className="text-2xl font-black text-gray-900 mb-2">Pagamento confirmado!</h2>
+          <p className="text-gray-500 font-medium mb-6">
+            {hasProntaEntrega 
+              ? "Seu pedido já está te aguardando!" 
+              : "Você receberá uma mensagem assim que seu pedido estiver disponível."}
+          </p>
+          <button 
+            onClick={() => window.location.href = `/${params.slug}/vitrine`}
+            className="w-full bg-gray-900 text-white font-black py-4 rounded-2xl hover:bg-black transition"
+          >
+            Voltar para a Vitrine
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 font-sans">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 font-sans pb-32">
       
       {/* CABEÇALHO */}
-      <div className="text-center mb-10">
+      <div className="text-center mb-10 w-full max-w-lg">
         <div className="relative inline-block mb-4">
           {empresa.logoUrl ? (
             <img src={empresa.logoUrl} alt={empresa.name} className="w-28 h-28 object-cover rounded-[2.5rem] mx-auto shadow-2xl border-4 border-white" />
@@ -93,21 +169,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           )}
         </div>
         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">{empresa.name}</h1>
-        <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Conheça nossos produtos</p>
-
-        <div className="flex justify-center gap-3 mt-6">
-          {empresa.instagramUrl && (
-            <a href={empresa.instagramUrl} target="_blank" className="p-3 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 text-white rounded-2xl shadow-lg transition hover:scale-110">
-              <Instagram size={20} />
-            </a>
-          )}
-          {empresa.facebookUrl && (
-            <a href={empresa.facebookUrl} target="_blank" className="p-3 bg-blue-600 text-white rounded-2xl shadow-lg transition hover:scale-110">
-              <Facebook size={20} />
-            </a>
-          )}
-        </div>
-
+        
         {(empresa.address || empresa.city) && (
           <div className="mt-8 flex flex-col items-center">
              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-[1.5rem] shadow-sm">
@@ -134,64 +196,203 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         )}
       </div>
 
-      {/* TABS DE NAVEGAÇÃO */}
-      <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mb-8 shadow-inner">
-        <Link 
-          href={`/${params.slug}`}
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
-        >
-          <CalendarIcon size={18} /> Agendamento
-        </Link>
-        <button 
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all bg-white text-violet-600 shadow-md"
-        >
-          <Store size={18} /> Vitrine
-        </button>
-      </div>
-
-      {/* GRID DE PRODUTOS */}
-      <div className="w-full max-w-lg">
-        {vitrineProducts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-[2.5rem] shadow-xl">
-             <ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" />
-             <p className="text-gray-500 font-bold">Nenhum produto na vitrine no momento.</p>
+      {step === "VITRINE" && (
+        <>
+          {/* TABS DE NAVEGAÇÃO */}
+          <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mb-8 shadow-inner">
+            <Link 
+              href={`/${params.slug}`}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
+            >
+              <CalendarIcon size={18} /> Agendamento
+            </Link>
+            <button className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all bg-white text-violet-600 shadow-md">
+              <Store size={18} /> Vitrine
+            </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {vitrineProducts.map((product: any) => (
-              <button
-                key={product.id}
-                onClick={() => setSelectedProduct(product)}
-                className="bg-white rounded-[1.5rem] shadow-md border border-gray-100 overflow-hidden text-left hover:shadow-xl hover:scale-[1.02] transition-all group"
-              >
-                <div className="relative h-44 bg-gray-100">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ShoppingBag size={40} />
-                    </div>
-                  )}
-                    <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
-                      {product.unitValue > 1 && (
-                        <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
-                          {product.unitValue} UNIDADES
-                        </span>
+
+          <div className="w-full max-w-lg">
+            {vitrineProducts.length === 0 ? (
+              <div className="text-center py-20 bg-white rounded-[2.5rem] shadow-xl">
+                 <ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" />
+                 <p className="text-gray-500 font-bold">Nenhum produto na vitrine no momento.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {vitrineProducts.map((product: any) => (
+                  <button
+                    key={product.id}
+                    onClick={() => { setSelectedProduct(product); setSelectedQty(1); }}
+                    className="bg-white rounded-[1.5rem] shadow-md border border-gray-100 overflow-hidden text-left hover:shadow-xl hover:scale-[1.02] transition-all group"
+                  >
+                    <div className="relative h-44 bg-gray-100">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <ShoppingBag size={40} />
+                        </div>
                       )}
-                      <span className="bg-white/95 backdrop-blur-sm text-green-600 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1">
-                        <Tag size={12} /> R$ {Number(product.price).toFixed(2)}
-                      </span>
+                      <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
+                        {product.unitValue > 1 && (
+                          <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
+                            {product.unitValue} UNIDADES
+                          </span>
+                        )}
+                        <span className="bg-white/95 backdrop-blur-sm text-green-600 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1">
+                          <Tag size={12} /> R$ {Number(product.price).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
+                    <div className="p-4">
+                      <h4 className="font-black text-gray-900 text-sm truncate">{product.name}</h4>
+                      <p className="text-gray-400 text-[10px] font-bold mt-1 line-clamp-2">{product.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {step === "CART" && (
+        <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <button onClick={() => setStep("VITRINE")} className="p-2 bg-white rounded-xl shadow-sm"><X size={20} /></button>
+            <h2 className="text-2xl font-black text-gray-900">Meu Carrinho</h2>
+          </div>
+
+          <div className="space-y-4">
+            {cart.map(item => (
+              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
+                <img src={item.imageUrl} className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-black text-sm">{item.name}</h4>
+                  <p className="text-green-600 font-bold text-xs">R$ {Number(item.price).toFixed(2)}</p>
                 </div>
-                <div className="p-4">
-                  <h4 className="font-black text-gray-900 text-sm truncate">{product.name}</h4>
-                  <p className="text-gray-400 text-[10px] font-bold mt-1 line-clamp-2">{product.description}</p>
+                <div className="flex items-center gap-3 bg-gray-50 p-1 rounded-xl">
+                  <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={14} /></button>
+                  <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
+                  <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Plus size={14} /></button>
                 </div>
-              </button>
+                <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 transition p-2"><Trash2 size={18} /></button>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+
+          {cart.length > 0 && (
+            <div className="mt-8 bg-white p-6 rounded-3xl shadow-xl space-y-4">
+              <div className="flex justify-between items-center text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+                <span>Subtotal</span>
+                <span>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-gray-900 font-black text-xl border-t pt-4">
+                <span>Total</span>
+                <span>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+              <button 
+                onClick={() => setStep("CHECKOUT")}
+                className="w-full bg-violet-600 text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-xl transition flex items-center justify-center gap-2"
+              >
+                Continuar <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === "CHECKOUT" && (
+        <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <button onClick={() => setStep("CART")} className="p-2 bg-white rounded-xl shadow-sm"><X size={20} /></button>
+            <h2 className="text-2xl font-black text-gray-900">Finalizar Pedido</h2>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl shadow-xl space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Seus Dados</h3>
+              <input 
+                placeholder="Nome Completo" 
+                className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                value={customerInfo.name}
+                onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})}
+              />
+              <input 
+                placeholder="E-mail" 
+                className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                value={customerInfo.email}
+                onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})}
+              />
+              <input 
+                placeholder="WhatsApp" 
+                className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                value={customerInfo.phone}
+                onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Forma de Recebimento</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => setDeliveryMethod("PICKUP")}
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === "PICKUP" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                >
+                  <Package size={24} />
+                  <span className="font-black text-xs">Retirada na Loja</span>
+                </button>
+                <button 
+                  onClick={() => setDeliveryMethod("DELIVERY")}
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                >
+                  <Truck size={24} />
+                  <span className="font-black text-xs">Entrega</span>
+                </button>
+              </div>
+
+              {deliveryMethod === "DELIVERY" && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Endereço de Entrega</h3>
+                  <textarea 
+                    placeholder="Rua, Número, Bairro, Cidade..." 
+                    className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
+                    rows={3}
+                    value={customerInfo.address}
+                    onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4">
+              <button 
+                onClick={handleProceedToPayment}
+                disabled={checkingOut}
+                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
+              >
+                {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={20} /> Ir para o Pagamento</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FLOAT CART BUTTON */}
+      {step === "VITRINE" && cart.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50">
+          <button 
+            onClick={() => setStep("CART")}
+            className="w-full bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center font-black text-xs">{cart.length}</div>
+              <span className="font-black text-sm uppercase tracking-tighter">Ver Carrinho</span>
+            </div>
+            <span className="font-black text-sm">R$ {cartTotal.toFixed(2)}</span>
+          </button>
+        </div>
+      )}
 
       {/* MODAL DETALHE DO PRODUTO */}
       {selectedProduct && (
@@ -210,18 +411,16 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
             {selectedProduct.imageUrl ? (
               <div className="relative h-64 bg-gray-100">
                 <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                {selectedProduct.price && Number(selectedProduct.price) > 0 && (
-                  <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
-                    {selectedProduct.unitValue > 1 && (
-                      <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">
-                        {selectedProduct.unitValue} UNIDADES
-                      </span>
-                    )}
-                    <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
-                      <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
+                <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
+                  {selectedProduct.unitValue > 1 && (
+                    <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">
+                      {selectedProduct.unitValue} UNIDADES
                     </span>
-                  </div>
-                )}
+                  )}
+                  <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
+                    <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="h-40 bg-gradient-to-br from-violet-100 to-pink-100 flex items-center justify-center">
@@ -235,22 +434,30 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
               )}
 
-              <div className="flex gap-4 mt-8">
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="flex-1 bg-gray-100 text-gray-600 font-black py-4 rounded-2xl transition active:scale-95"
-                >
-                  Fechar
-                </button>
-                {selectedProduct.price && Number(selectedProduct.price) > 0 && empresa.hasMercadoPagoModule && (
+              <div className="mt-8 space-y-4">
+                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl">
+                  <span className="font-black text-sm text-gray-400 uppercase tracking-widest">Quantidade</span>
+                  <div className="flex items-center gap-4">
+                    <button onClick={() => setSelectedQty(Math.max(1, selectedQty - 1))} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm"><Minus size={18} /></button>
+                    <span className="font-black text-xl w-6 text-center">{selectedQty}</span>
+                    <button onClick={() => setSelectedQty(selectedQty + 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm"><Plus size={18} /></button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
                   <button
-                    onClick={() => handleCheckout(selectedProduct)}
-                    disabled={checkingOut}
-                    className="flex-[2] bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition active:scale-95 flex items-center justify-center gap-2"
+                    onClick={() => setSelectedProduct(null)}
+                    className="flex-1 bg-gray-100 text-gray-600 font-black py-4 rounded-2xl transition active:scale-95"
                   >
-                    {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={18} /> Comprar Agora</>}
+                    Voltar
                   </button>
-                )}
+                  <button
+                    onClick={() => addToCart(selectedProduct, selectedQty)}
+                    className="flex-[2] bg-violet-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <ShoppingBag size={18} /> Adicionar
+                  </button>
+                </div>
               </div>
             </div>
           </div>

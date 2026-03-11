@@ -103,6 +103,7 @@ model Company {
   professionalLocations ProfessionalLocation[]
   integrationLogs       IntegrationLog[]
   chatSessions          WhatsAppChatSession[]
+  orders                Order[]
 
   // AI Reception Settings
   aiEnabled      Boolean? @default(false)
@@ -367,6 +368,7 @@ model Product {
   usedInServices   ServiceProduct[]
   supplierProducts SupplierProduct[]
   logs             StockLog[]
+  orderItems       OrderItem[]
 }
 
 model ProductBatch {
@@ -609,3 +611,35 @@ model WhatsAppChatMessage {
 
   session WhatsAppChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
+
+model Order {
+  id              String      @id @default(cuid())
+  customerName    String
+  customerEmail   String?
+  customerPhone   String
+  deliveryMethod  String      // "PICKUP" or "DELIVERY"
+  addressInfo     Json?       // CEP, Rua, Bairro, Cidade, Estado, etc (se for entrega)
+  status          String      @default("PENDING") // PENDING, PAID, PREPARING, SHIPPED, DELIVERED, CANCELED
+  totalAmount     Decimal
+  paymentId       String?     @unique
+  paymentMethod   String?
+  companyId       String
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Decimal
+  variation   Json?
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id])
+}
+

@@ -4,45 +4,89 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 
 export async function POST(req: Request) {
   try {
-    const { productId, companyId, slug } = await req.json();
+    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo } = await req.json();
 
-    if (!productId || !companyId) {
+    if (!items || items.length === 0 || !companyId || !customerInfo) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // 1. Busca a empresa para pegar o Access Token do Mercado Pago
+    // 1. Busca a empresa
     const company = await db.company.findUnique({
-      where: { id: companyId },
-      include: {
-        products: {
-            where: { id: productId }
-        }
-      }
+      where: { id: companyId }
     });
 
     if (!company) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
-    // 1.1 Verifica se o dono da empresa possui o Addon ativo
+    // Verifica módulo MP
     const subscription = await db.subscription.findUnique({
       where: { userId: company.ownerId }
     });
 
     if (!subscription?.hasMercadoPagoModule && company.ownerId !== "user_39S9qNrKwwgObMZffifdZyNKUKm") {
-      return NextResponse.json({ error: "O módulo de pagamentos online (Mercado Pago) não está ativo no seu plano." }, { status: 403 });
+      return NextResponse.json({ error: "O módulo de pagamentos online não está ativo." }, { status: 403 });
     }
 
     if (!company.mercadopagoAccessToken) {
       return NextResponse.json({ error: "Esta empresa ainda não configurou pagamentos online." }, { status: 400 });
     }
 
-    const product = company.products[0];
-    if (!product) {
-      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 });
+    // 2. Calcula total e prepara intens
+    let totalItems = 0;
+    const mpItems = [];
+    
+    // Busca os produtos no BD para garantir o preço correto
+    const productIds = items.map((i: any) => i.id);
+    const dbProducts = await db.product.findMany({
+      where: { id: { in: productIds } }
+    });
+
+    for (const item of items) {
+      const p = dbProducts.find(dbP => dbP.id === item.id);
+      if (!p) continue;
+      
+      const price = Number(p.price || 0);
+      const qty = Number(item.quantity || 1);
+      totalItems += price * qty;
+
+      mpItems.push({
+        id: p.id,
+        title: p.name,
+        quantity: qty,
+        unit_price: price,
+        currency_id: "BRL",
+        picture_url: p.imageUrl || undefined,
+        description: p.description?.substring(0, 250) || undefined,
+      });
     }
 
-    // 2. Configura o Mercado Pago com o token da empresa
+    // 3. Cria o Pedido no Banco de Dados (PENDENTE)
+    const order = await db.order.create({
+      data: {
+        companyId: company.id,
+        customerName: customerInfo.name,
+        customerEmail: customerInfo.email || null,
+        customerPhone: customerInfo.phone,
+        deliveryMethod: deliveryMethod,
+        addressInfo: addressInfo || {},
+        totalAmount: totalItems,
+        status: "PENDING",
+        items: {
+          create: items.map((i: any) => {
+            const p = dbProducts.find(dbP => dbP.id === i.id);
+            return {
+              productId: i.id,
+              quantity: Number(i.quantity || 1),
+              price: Number(p?.price || 0),
+              variation: i.variation || null
+            };
+          })
+        }
+      }
+    });
+
+    // 4. Configura o Mercado Pago
     const client = new MercadoPagoConfig({
       accessToken: company.mercadopagoAccessToken,
     });
@@ -51,26 +95,17 @@ export async function POST(req: Request) {
 
     const result = await preference.create({
       body: {
-        items: [
-          {
-            id: product.id,
-            title: product.name,
-            quantity: 1,
-            unit_price: Number(product.price || 0),
-            currency_id: "BRL",
-            picture_url: product.imageUrl || undefined,
-            description: product.description || undefined,
-          },
-        ],
+        items: mpItems,
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}?payment=success`,
-          failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}?payment=failure`,
-          pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}?payment=pending`,
+          success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=success&orderId=${order.id}`,
+          failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=failure`,
+          pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=pending`,
         },
         auto_return: "approved",
+        external_reference: order.id,
         notification_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/api/webhooks/mercadopago`,
         metadata: {
-            productId: product.id,
+            orderId: order.id,
             companyId: company.id,
             slug: slug
         }
@@ -80,6 +115,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: result.id });
   } catch (error) {
     console.error("ERRO_MP_PREFERENCE:", error);
-    return NextResponse.json({ error: "Erro ao gerar link de pagamento" }, { status: 500 });
+    return NextResponse.json({ error: "Erro ao gerar link de pagamento", debug: String(error) }, { status: 500 });
   }
 }

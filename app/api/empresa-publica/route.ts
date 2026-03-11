@@ -59,8 +59,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ...empresa,
       // Nunca retornar o Access Token e Public Key privadas para o front-end público!
-      // Se eles estiverem no modelo, o ideal é usar select no findUnique.
-      // Por enquanto vamos apenas garantir que o flag chegue.
+      mercadopagoAccessToken: undefined,
+      mercadopagoPublicKey: empresa.mercadopagoPublicKey || null, // A chave pública pode ser enviada se necessário para o Brick, mas cuidado.
       hasMercadoPagoModule
     });
 

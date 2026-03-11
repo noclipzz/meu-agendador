@@ -104,9 +104,16 @@ export default function ConfigGerais() {
 
                 if (dataConfig.customSchedule) {
                     try {
-                        const parsed = typeof dataConfig.customSchedule === 'string' ? JSON.parse(dataConfig.customSchedule) : dataConfig.customSchedule;
-                        setCustomSchedule(parsed);
-                    } catch(e) { console.error("Erro no parse do customSchedule", e); }
+                        const parsed = typeof dataConfig.customSchedule === 'string' 
+                            ? JSON.parse(dataConfig.customSchedule) 
+                            : dataConfig.customSchedule;
+                        
+                        // Garante que todos os dias existam mesclando com o padrão
+                        setCustomSchedule(prev => ({
+                            ...prev,
+                            ...parsed
+                        }));
+                    } catch (e) { console.error("Erro no parse do customSchedule", e); }
                 }
 
                 setCnpj(formatarCpfCnpj(dataConfig.cnpj || ""));
@@ -497,14 +504,14 @@ export default function ConfigGerais() {
                                         <div className="flex items-center gap-2">
                                             {editandoHorario === diaNum ? (
                                                 <div className="flex gap-1 items-center bg-white dark:bg-gray-700 p-1 px-2 rounded-lg border dark:border-gray-600">
-                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum].openTime} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...customSchedule[diaNum], openTime: e.target.value}})} />
+                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum]?.openTime || "08:00"} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...(customSchedule[diaNum] || {openTime: "08:00", closeTime: "18:00"}), openTime: e.target.value}})} />
                                                     <span className="text-gray-400">-</span>
-                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum].closeTime} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...customSchedule[diaNum], closeTime: e.target.value}})} />
+                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum]?.closeTime || "18:00"} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...(customSchedule[diaNum] || {openTime: "08:00", closeTime: "18:00"}), closeTime: e.target.value}})} />
                                                     <button onClick={() => setEditandoHorario(null)} className="ml-2 text-green-600 font-bold text-xs bg-green-50 dark:bg-green-900/40 px-2 py-1 rounded-md">OK</button>
                                                 </div>
                                             ) : (
                                                 <div onClick={() => setEditandoHorario(diaNum)} className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer px-2 py-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
-                                                    {customSchedule[diaNum].openTime}-{customSchedule[diaNum].closeTime} <span className="text-xs">✏️</span>
+                                                    {customSchedule[diaNum]?.openTime || "08:00"}-{customSchedule[diaNum]?.closeTime || "18:00"} <span className="text-xs">✏️</span>
                                                 </div>
                                             )}
                                         </div>
