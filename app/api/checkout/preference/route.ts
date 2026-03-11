@@ -4,7 +4,7 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 
 export async function POST(req: Request) {
   try {
-    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo } = await req.json();
+    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo, shippingCost } = await req.json();
 
     if (!items || items.length === 0 || !companyId || !customerInfo) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
@@ -50,14 +50,29 @@ export async function POST(req: Request) {
       const qty = Number(item.quantity || 1);
       totalItems += price * qty;
 
+      const title = item.variationLabel ? `${p.name} (${item.variationLabel})` : p.name;
+
       mpItems.push({
         id: p.id,
-        title: p.name,
+        title: title,
         quantity: qty,
         unit_price: price,
         currency_id: "BRL",
         picture_url: p.imageUrl || undefined,
         description: p.description?.substring(0, 250) || undefined,
+      });
+    }
+
+    // 2.5 Adiciona Frete se houver
+    if (shippingCost > 0) {
+      totalItems += Number(shippingCost);
+      mpItems.push({
+        id: "shipping_cost",
+        title: "Custo de Entrega (Frete)",
+        quantity: 1,
+        unit_price: Number(shippingCost),
+        currency_id: "BRL",
+        description: "Taxa de entrega para o endereço informado",
       });
     }
 
@@ -79,7 +94,7 @@ export async function POST(req: Request) {
               vitrineProductId: i.id,
               quantity: Number(i.quantity || 1),
               price: Number(p?.price || 0),
-              variation: i.variation || null
+              variation: i.variationLabel || null
             };
           })
         }

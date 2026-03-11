@@ -20,6 +20,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   // Carrinho
   const [cart, setCart] = useState<any[]>([]);
   const [selectedQty, setSelectedQty] = useState(1);
+  const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
 
   // Informações do Cliente
   const [customerInfo, setCustomerInfo] = useState({
@@ -46,6 +47,14 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         const data = await res.json();
         setEmpresa(data);
         setVitrineProducts(data.vitrineProducts || []);
+
+        // PERSISTÊNCIA: Carregar dados do cliente
+        const saved = localStorage.getItem('nohud_customer_info');
+        if (saved) {
+          try {
+            setCustomerInfo(prev => ({ ...prev, ...JSON.parse(saved) }));
+          } catch { /* ignora erro de parse */ }
+        }
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     }
@@ -64,24 +73,37 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   }, [searchParams]);
 
   function addToCart(product: any, qty: number) {
-    const existing = cart.find(item => item.id === product.id);
+    const variationString = Object.entries(selectedVariations)
+      .map(([name, val]) => `${name}: ${val}`)
+      .join(", ");
+
+    const cartItemId = variationString ? `${product.id}-${variationString}` : product.id;
+    
+    const existing = cart.find(item => item.cartItemId === cartItemId);
     if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + qty } : item));
+      setCart(cart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + qty } : item));
     } else {
-      setCart([...cart, { ...product, quantity: qty }]);
+      setCart([...cart, { 
+        ...product, 
+        cartItemId,
+        quantity: qty, 
+        selectedVariations: { ...selectedVariations },
+        variationLabel: variationString
+      }]);
     }
     setSelectedProduct(null);
     setSelectedQty(1);
+    setSelectedVariations({});
     toast.success("Adicionado ao carrinho!");
   }
 
-  function removeFromCart(id: string) {
-    setCart(cart.filter(item => item.id !== id));
+  function removeFromCart(cartItemId: string) {
+    setCart(cart.filter(item => item.cartItemId !== cartItemId));
   }
 
-  function updateQty(id: string, delta: number) {
+  function updateQty(cartItemId: string, delta: number) {
     setCart(cart.map(item => {
-      if (item.id === id) {
+      if (item.cartItemId === cartItemId) {
         const newQty = Math.max(1, item.quantity + delta);
         return { ...item, quantity: newQty };
       }
@@ -89,7 +111,14 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     }));
   }
 
-  const cartTotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+  const cartSubtotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
+  
+  // FRETE: O valor do frete agora é somado se for entrega. Pegamos o frete do produto ou o maior se houver vários.
+  const shippingCost = deliveryMethod === "DELIVERY" 
+    ? cart.reduce((max, item) => Math.max(max, Number(item.shippingCost || 0)), 0)
+    : 0;
+
+  const cartTotal = cartSubtotal + shippingCost;
 
   async function buscarCep(cep: string) {
     const value = cep.replace(/\D/g, "");
@@ -125,6 +154,9 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     
     setCheckingOut(true);
     try {
+      // PERSISTÊNCIA: Salvar dados para a próxima compra
+      localStorage.setItem('nohud_customer_info', JSON.stringify(customerInfo));
+
       const res = await fetch('/api/checkout/preference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +164,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           items: cart,
           customerInfo,
           deliveryMethod,
+          shippingCost,
           addressInfo: { 
             cep: customerInfo.cep,
             address: customerInfo.address,
@@ -263,7 +296,17 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 {vitrineProducts.map((product: any) => (
                   <button
                     key={product.id}
-                    onClick={() => { setSelectedProduct(product); setSelectedQty(1); }}
+                    onClick={() => { 
+                      setSelectedProduct(product); 
+                      setSelectedQty(1);
+                      const initialVars: any = {};
+                      if (Array.isArray(product.variations)) {
+                        product.variations.forEach((v: any) => {
+                          if (v.options?.length > 0) initialVars[v.name] = v.options[0];
+                        });
+                      }
+                      setSelectedVariations(initialVars);
+                    }}
                     className="bg-white rounded-[1.5rem] shadow-md border border-gray-100 overflow-hidden text-left hover:shadow-xl hover:scale-[1.02] transition-all group"
                   >
                     <div className="relative h-44 bg-gray-100">
@@ -306,29 +349,38 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
           <div className="space-y-4">
             {cart.map(item => (
-              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
+              <div key={item.cartItemId} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-center">
                 <img src={item.imageUrl} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-black text-sm">{item.name}</h4>
+                  {item.variationLabel && <p className="text-[10px] text-gray-400 font-bold uppercase">{item.variationLabel}</p>}
                   <p className="text-green-600 font-bold text-xs">R$ {Number(item.price).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-3 bg-gray-50 p-1 rounded-xl">
-                  <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={14} /></button>
+                  <button onClick={() => updateQty(item.cartItemId, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={14} /></button>
                   <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
-                  <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Plus size={14} /></button>
+                  <button onClick={() => updateQty(item.cartItemId, 1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Plus size={14} /></button>
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 transition p-2"><Trash2 size={18} /></button>
+                <button onClick={() => removeFromCart(item.cartItemId)} className="text-red-400 hover:text-red-600 transition p-2"><Trash2 size={18} /></button>
               </div>
             ))}
           </div>
 
           {cart.length > 0 && (
             <div className="mt-8 bg-white p-6 rounded-3xl shadow-xl space-y-4">
-              <div className="flex justify-between items-center text-gray-500 font-bold uppercase text-[10px] tracking-widest">
-                <span>Subtotal</span>
-                <span>R$ {cartTotal.toFixed(2)}</span>
+              <div className="space-y-2 border-b pb-4">
+                <div className="flex justify-between items-center text-gray-500 font-bold uppercase text-[10px] tracking-widest">
+                  <span>Subtotal</span>
+                  <span>R$ {cartSubtotal.toFixed(2)}</span>
+                </div>
+                {deliveryMethod === "DELIVERY" && (
+                  <div className="flex justify-between items-center text-blue-600 font-bold uppercase text-[10px] tracking-widest">
+                    <span className="flex items-center gap-1"><Truck size={12} /> Frete</span>
+                    <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : "Grátis"}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between items-center text-gray-900 font-black text-xl border-t pt-4">
+              <div className="flex justify-between items-center text-gray-900 font-black text-xl pt-2">
                 <span>Total</span>
                 <span>R$ {cartTotal.toFixed(2)}</span>
               </div>
@@ -522,6 +574,35 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               )}
 
               <div className="mt-8 space-y-4">
+                {/* VARIAÇÕES */}
+                {Array.isArray(selectedProduct.variations) && selectedProduct.variations.length > 0 && (
+                  <div className="space-y-4 mb-6">
+                    {selectedProduct.variations.map((v: any, i: number) => (
+                      <div key={i}>
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-2">{v.name}</label>
+                        <div className="flex flex-wrap gap-2">
+                          {v.options.map((opt: string) => {
+                            const isActive = selectedVariations[v.name] === opt;
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => setSelectedVariations({ ...selectedVariations, [v.name]: opt })}
+                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${
+                                  isActive 
+                                    ? "border-violet-600 bg-violet-600 text-white shadow-lg" 
+                                    : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-2xl">
                   <span className="font-black text-sm text-gray-400 uppercase tracking-widest">Quantidade</span>
                   <div className="flex items-center gap-4">
