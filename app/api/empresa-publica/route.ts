@@ -23,6 +23,17 @@ export async function GET(req: Request) {
           include: {
             services: true // Inclui os serviços vinculados para o filtro na tela de agendamento funcionar
           }
+        },
+        products: {
+          where: { showInVitrine: true },
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+            imageUrl: true,
+          }
         }
       }
     });

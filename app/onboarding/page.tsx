@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, CheckCircle2, ChevronRight, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +10,38 @@ export default function OnboardingPage() {
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [verificando, setVerificando] = useState(true);
+
+    useEffect(() => {
+        async function checkAccess() {
+            try {
+                const res = await fetch('/api/checkout');
+                const data = await res.json();
+
+                if (!data.active) {
+                    toast.error("Você precisa de uma assinatura ativa para acessar o onboarding.");
+                    router.push('/#planos');
+                    return;
+                }
+
+                if (!data.companyId) {
+                    router.push('/novo-negocio');
+                    return;
+                }
+
+                if (data.onboardingCompleted) {
+                    router.push('/painel/dashboard');
+                    return;
+                }
+
+                setVerificando(false);
+            } catch (error) {
+                console.error("Erro ao verificar acesso:", error);
+                router.push('/');
+            }
+        }
+        checkAccess();
+    }, [router]);
 
     // Step 1: Servico
     const [servicoName, setServicoName] = useState("");
@@ -143,14 +175,23 @@ export default function OnboardingPage() {
         "Outros"
     ];
 
+    if (verificando) {
+        return (
+            <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <Loader2 className="animate-spin text-blue-600 mb-4" size={40} />
+                <p className="text-gray-500 font-bold animate-pulse text-sm">Verificando seu acesso...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-white flex w-full flex-col md:flex-row font-sans">
             {/* Esquerda - Formulários */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center px-10 md:px-24 py-12 h-screen overflow-y-auto">
-                <div className="mb-10">
+            <div className="w-full md:w-1/2 flex flex-col justify-center px-6 md:px-16 py-8 min-h-screen overflow-y-auto">
+                <div className="mb-6">
                     {/* Logo provisória ou ícone da marca */}
-                    <Image src="/nohud-logo.png" alt="Logo" width={140} height={40} className="mb-12 dark:invert-0 brightness-0" />
-                    <div className="flex gap-2 mb-8">
+                    <Image src="/nohud-logo.png" alt="Logo" width={120} height={34} className="mb-8 dark:invert-0 brightness-0" />
+                    <div className="flex gap-2 mb-6">
                         {[1, 2, 3].map((st) => (
                             <div key={st} className={`h-2 w-2 rounded-full ${step >= st ? `bg-[${cor}]` : 'bg-gray-200'} transition-all duration-300 ${step === st ? 'w-4' : ''}`} style={{ backgroundColor: step >= st ? cor : '#e5e7eb' }} />
                         ))}
@@ -158,15 +199,15 @@ export default function OnboardingPage() {
 
                     {step === 1 && (
                         <div className="animate-in fade-in slide-in-from-left-4 duration-500">
-                            <h1 className="text-4xl font-bold mb-3 text-gray-900">Vamos começar!</h1>
-                            <p className="text-gray-500 mb-8 font-medium">Adicione seu primeiro serviço</p>
+                            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Vamos começar!</h1>
+                            <p className="text-gray-500 mb-6 font-medium text-sm">Adicione seu primeiro serviço</p>
 
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-semibold text-gray-400 uppercase">Nome do serviço</label>
                                         <input
-                                            className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800"
+                                            className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800 text-sm"
                                             placeholder="Ex: Digite o serviço"
                                             value={servicoName}
                                             onChange={(e) => setServicoName(e.target.value)}
@@ -175,7 +216,7 @@ export default function OnboardingPage() {
                                     <div className="space-y-2">
                                         <label className="text-xs font-semibold text-gray-400 uppercase">Duração do serviço</label>
                                         <select
-                                            className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 bg-white font-medium text-gray-800"
+                                            className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 bg-white font-medium text-gray-800 text-sm"
                                             value={servicoDuracao}
                                             onChange={(e) => setServicoDuracao(e.target.value)}
                                         >
@@ -192,7 +233,7 @@ export default function OnboardingPage() {
                                 <div className="space-y-2 w-full md:w-1/2">
                                     <label className="text-xs font-semibold text-gray-400 uppercase">Valor do serviço</label>
                                     <input
-                                        className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800"
+                                        className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 transition-colors font-medium text-gray-800 text-sm"
                                         placeholder="Ex: R$ 150,00"
                                         value={servicoPreco}
                                         onChange={(e) => {
@@ -209,12 +250,12 @@ export default function OnboardingPage() {
                                     />
                                 </div>
 
-                                <div className="mt-8 border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden">
+                                <div className="mt-4 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden">
                                      {servicoImagemObj ? (
                                         <div className="text-sm font-semibold text-blue-600 mb-2">{servicoImagemObj.name}</div>
                                      ): (
                                         <>
-                                            <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-3">
+                                            <div className="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-2">
                                                 <Upload size={20} />
                                             </div>
                                             <span className="text-sm font-semibold text-gray-500">Upload da imagem de serviço (Opcional)</span>
@@ -235,9 +276,9 @@ export default function OnboardingPage() {
                                 <button
                                     onClick={handleNext}
                                     style={{ backgroundColor: cor }}
-                                    className="px-8 py-3.5 mt-8 rounded-2xl font-bold text-white shadow-lg hover:opacity-90 transition-all flex items-center gap-2"
+                                    className="px-6 py-3 mt-4 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-all flex items-center gap-2 text-sm"
                                 >
-                                    <CheckCircle2 size={20} /> Salvar serviço
+                                    <CheckCircle2 size={18} /> Salvar serviço
                                 </button>
                             </div>
                         </div>
@@ -245,16 +286,16 @@ export default function OnboardingPage() {
 
                     {step === 2 && (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                            <h1 className="text-4xl font-bold mb-3 text-gray-900">Defina seu horário de trabalho</h1>
-                            <p className="text-gray-500 mb-8 font-medium max-w-sm">
-                                Estas serão suas horas de trabalho padrão. Você poderá personalizar as horas de trabalho para cada profissional ou serviço no aplicativo.
+                            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Defina seu horário de trabalho</h1>
+                            <p className="text-gray-500 mb-6 font-medium max-w-sm text-sm">
+                                Estas serão suas horas de trabalho padrão. Você poderá personalizar por profissional no aplicativo.
                             </p>
 
-                            <div className="space-y-2 mb-8 border-t border-b border-gray-100 py-4 max-h-[40vh] overflow-y-auto pr-4">
+                            <div className="space-y-1 mb-6 border-t border-b border-gray-100 py-3 max-h-[35vh] overflow-y-auto pr-4">
                                 {diasSemana.map((dia) => {
                                     const isOn = dias.includes(dia.id);
                                     return (
-                                        <div key={dia.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-xl transition">
+                                        <div key={dia.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-xl transition">
                                             <div className="flex items-center gap-3">
                                                 <button
                                                     onClick={() => toggleDia(dia.id)}
@@ -289,24 +330,24 @@ export default function OnboardingPage() {
                             <button
                                 onClick={handleNext}
                                 style={{ backgroundColor: cor }}
-                                className="px-8 py-3.5 rounded-2xl font-bold text-white shadow-lg  hover:opacity-90 transition-all flex items-center gap-2"
+                                className="px-6 py-3 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-all flex items-center gap-2 text-sm"
                             >
-                                Próximo <ChevronRight size={20} />
+                                Próximo <ChevronRight size={18} />
                             </button>
                         </div>
                     )}
 
                     {step === 3 && (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                            <h1 className="text-4xl font-bold mb-3 text-gray-900">Detalhes finais</h1>
-                            <p className="text-gray-500 mb-8 font-medium">Personalize a cara do seu agendador</p>
+                            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Detalhes finais</h1>
+                            <p className="text-gray-500 mb-6 font-medium text-sm">Personalize a cara do seu agendador</p>
 
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-xs font-semibold text-gray-400 uppercase">Qual é o seu ramo?</label>
                                         <select
-                                            className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 focus:outline-none focus:border-blue-500 bg-white font-medium text-gray-800"
+                                            className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 bg-white font-medium text-gray-800 text-sm"
                                             value={ramo}
                                             onChange={(e) => setRamo(e.target.value)}
                                         >
@@ -316,7 +357,7 @@ export default function OnboardingPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-xs font-semibold text-gray-400 uppercase">Cor do seu site</label>
-                                        <div className="w-full border-2 border-gray-100 rounded-2xl px-4 py-3 flex items-center gap-2 cursor-pointer focus-within:border-blue-500">
+                                        <div className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 flex items-center gap-2 cursor-pointer focus-within:border-blue-500">
                                             <input 
                                                 type="color" 
                                                 className="w-8 h-8 rounded-full border-none cursor-pointer p-0 bg-transparent" 
@@ -328,12 +369,12 @@ export default function OnboardingPage() {
                                     </div>
                                 </div>
 
-                                <div className="mt-8 border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden">
+                                <div className="mt-4 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden">
                                      {logoObj ? (
                                         <div className="text-sm font-semibold text-blue-600 mb-2">{logoObj.name}</div>
                                      ): (
                                         <>
-                                            <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-3">
+                                            <div className="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-2">
                                                 <Image src="/file.svg" alt="Upload" width={20} height={20} className="opacity-50" />
                                             </div>
                                             <span className="text-sm font-semibold text-gray-500">Inserir Logotipo</span>
@@ -355,7 +396,7 @@ export default function OnboardingPage() {
                                     onClick={handleFinish}
                                     disabled={loading}
                                     style={{ backgroundColor: cor }}
-                                    className="w-full py-4 rounded-2xl font-bold text-white shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg flex items-center justify-center gap-2"
+                                    className="w-full py-3.5 rounded-xl font-bold text-white shadow-xl hover:opacity-90 active:scale-95 transition-all text-base flex items-center justify-center gap-2"
                                 >
                                     {loading ? <Loader2 className="animate-spin" size={24} /> : "Finalizar Configuração"}
                                 </button>

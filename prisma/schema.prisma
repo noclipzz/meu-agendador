@@ -341,6 +341,10 @@ model Attachment {
 model Product {
   id               String            @id @default(cuid())
   name             String
+  description      String?           @db.Text
+  price            Decimal?          @default(0)
+  imageUrl         String?
+  showInVitrine    Boolean           @default(false)
   quantity         Decimal           @default(0)
   unit             String            @default("UN")
   minStock         Decimal           @default(5)

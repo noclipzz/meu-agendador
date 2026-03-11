@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Bot,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -379,6 +379,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={18} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={18} /> },
+        { key: 'vitrine', name: "Vitrine", path: "/painel/vitrine", icon: <Store size={18} /> },
         { key: 'fichas-tecnicas', name: "Fichas Técnicas", path: "/painel/fichas-tecnicas", icon: <ClipboardList size={18} /> },
     ];
 
@@ -403,11 +404,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
         if (!hasTrackingModule && item.key === 'rastreamento') return false;
         if (userPlan === "PREMIUM") {
-            if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
+            if (["fichas-tecnicas", "estoque", "vitrine", "whatsapp"].includes(item.key)) return false;
         }
 
         if (item.key === 'whatsapp' && !isOwner) return false;
