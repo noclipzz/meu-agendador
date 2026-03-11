@@ -5,11 +5,12 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle } from "lucide-react";
+import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle, ShoppingBag, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from 'next/image';
 import { formatarTelefone } from "@/lib/validators";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
-// --- HELPER OBSELETO REMOVIDO EM FAVOR DO @/lib/validators ---
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 // --- FUNÇÃO AVANÇADA DE HORÁRIOS ---
 function gerarHorarios(
@@ -31,7 +32,6 @@ function gerarHorarios(
 
   let slotAtualMin = inicioMin;
 
-  // Lógica para não permitir horários passados HOJE
   const agora = new Date();
   const isHoje = format(dataSelecionada, 'yyyy-MM-dd') === format(agora, 'yyyy-MM-dd');
   const minutosAgora = isHoje ? (agora.getHours() * 60 + agora.getMinutes()) : -1;
@@ -46,11 +46,8 @@ function gerarHorarios(
     const fimSlotAtualMin = slotAtualMin + duracaoServico;
     const conflitoAlmoco = slotAtualMin < fimPausaMin && fimSlotAtualMin > inicioPausaMin;
 
-    // Na lógica de "Qualquer Profissional", o horário só está ocupado se TODOS os profissionais estiverem ocupados
     const profissionaisOcupados = blocosOcupados.filter(bloco => slotAtualMin < bloco.fim && fimSlotAtualMin > bloco.inicio).length;
     const conflitoAgendamento = profissionaisOcupados >= totalProfessionals;
-
-    // Além de conflitos, verifica se o horário já passou (com margem de 10 min)
     const jaPassou = isHoje && slotAtualMin <= minutosAgora + 10;
 
     if (!conflitoAlmoco && !conflitoAgendamento && !jaPassou) {
@@ -67,7 +64,11 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   const [empresa, setEmpresa] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
   const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [vitrineProducts, setVitrineProducts] = useState<any[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const searchParams = useSearchParams();
 
   const [servicoSelecionado, setServicoSelecionado] = useState<any>(null);
   const [profissionalSelecionado, setProfissionalSelecionado] = useState<any>(null);
@@ -99,13 +100,26 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         setEmpresa(data);
         setServices(data.services || []);
         setProfissionais(data.professionals || []);
+        setVitrineProducts(data.products || []);
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     }
     carregarDados();
   }, [params.slug]);
 
-  // 2. Busca ocupados
+  // Efeito para avisos de pagamento
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (payment === 'success') {
+      toast.success("Pagamento realizado com sucesso! Em breve você receberá atualizações.");
+    } else if (payment === 'failure') {
+      toast.error("Ocorreu um erro no seu pagamento. Tente novamente.");
+    } else if (payment === 'pending') {
+      toast.info("Seu pagamento está em análise.");
+    }
+  }, [searchParams]);
+
+  // 2. Busca agendamentos do dia
   useEffect(() => {
     async function verificarOcupados() {
       if (!empresa || !profissionalSelecionado || !servicoSelecionado) return;
@@ -126,6 +140,37 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
     }
     verificarOcupados();
   }, [dataSelecionada, profissionalSelecionado, servicoSelecionado, empresa]);
+
+  async function handleCheckout(product: any) {
+    if (!empresa?.mercadopagoPublicKey) {
+      return toast.error("Este estabelecimento ainda não aceita pagamentos online.");
+    }
+    
+    setCheckingOut(true);
+    try {
+      const res = await fetch('/api/checkout/preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          productId: product.id, 
+          companyId: empresa.id,
+          slug: params.slug
+        })
+      });
+      const data = await res.json();
+      
+      if (data.id) {
+        window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.id}`;
+      } else {
+        toast.error(data.error || "Erro ao gerar link de pagamento.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao processar pagamento.");
+    } finally {
+      setCheckingOut(false);
+    }
+  }
 
   // 3. Gera os horários livres
   useEffect(() => {
@@ -249,7 +294,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   useEffect(() => {
     async function buscarAgendamentos() {
-      // Começa a buscar a partir de 14 caracteres (ex: (11) 9999-9999 ou (11) 99999-9999)
       if (telefoneCliente.length >= 14 && empresa?.id) {
         try {
           const res = await fetch(`/api/portal/agendamentos?phone=${encodeURIComponent(telefoneCliente)}&companyId=${empresa.id}`);
@@ -261,7 +305,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           console.error("Erro ao buscar agendamentos:", e);
         }
       } else if (telefoneCliente.length < 10) {
-        // Limpa se o usuário apagar o campo
         setAgendamentosExistentes([]);
       }
     }
@@ -287,7 +330,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         body: JSON.stringify({ id: modalConfirmacao.id, action: 'CANCELAR' })
       });
       if (res.ok) {
-        // Remove apenas o agendamento cancelado da lista, mantendo os outros visíveis
         setAgendamentosExistentes(prev => prev.filter(ag => ag.id !== modalConfirmacao.id));
         setModalConfirmacao({ isOpen: false, id: null });
       } else {
@@ -340,7 +382,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">{empresa.name}</h1>
         <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Agendamento Online</p>
 
-        {/* --- BOTÕES DE REDES SOCIAIS --- */}
         <div className="flex justify-center gap-3 mt-6">
           {empresa.instagramUrl && (
             <a
@@ -366,7 +407,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           )}
         </div>
 
-        {/* --- ENDEREÇO COMERCIAL --- */}
         {(empresa.address || empresa.city) && (
           <div className="mt-8 flex flex-col items-center animate-in fade-in duration-1000 delay-300">
             <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-[1.5rem] shadow-sm group hover:shadow-md transition-all">
@@ -394,16 +434,12 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* CHAMADA PARA AÇÃO */}
         <h3 className="mt-8 text-sm font-black text-gray-900 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 delay-500 flex items-center gap-2 mb-2">
           👇 Realize seu agendamento:
         </h3>
       </div>
 
-      {/* FLUXO DE AGENDAMENTO */}
       <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all">
-
-        {/* PASSO 1: IDENTIFICAÇÃO (NOME E TELEFONE) */}
         {!isIdentified && (
           <div className="p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
@@ -420,7 +456,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
               </div>
 
-              {/* ALERTA DE AGENDAMENTO EXISTENTE */}
               {agendamentosExistentes.length > 0 && (
                 <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2">
                   <p className="text-xs font-black text-yellow-800 uppercase tracking-tighter text-center">⚠️ Você já possui um horário agendado!</p>
@@ -463,7 +498,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* PASSO 2: SERVIÇOS */}
         {isIdentified && !servicoSelecionado && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <button onClick={() => setIsIdentified(false)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
@@ -486,13 +520,11 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* PASSO 3: PROFISSIONAL */}
         {isIdentified && servicoSelecionado && !profissionalSelecionado && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <button onClick={() => setServicoSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
             <h2 className="text-xl font-black text-gray-900 mb-6">Com quem você deseja agendar?</h2>
             <div className="grid grid-cols-1 gap-4">
-              {/* Opção Qualquer Profissional */}
               <button
                 onClick={() => setProfissionalSelecionado({ id: 'ANY', name: 'Qualquer Profissional' })}
                 className="w-full text-left bg-blue-50 p-5 rounded-[2rem] border-2 border-transparent hover:border-blue-500/50 flex items-center gap-5 transition-all group"
@@ -521,7 +553,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           </div>
         )}
 
-        {/* PASSO 4: CALENDÁRIO E HORÁRIOS */}
         {isIdentified && servicoSelecionado && profissionalSelecionado && (
           <div className="p-8 animate-in fade-in slide-in-from-right-4 duration-500">
             <button onClick={() => setProfissionalSelecionado(null)} className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6 hover:text-gray-900 transition flex items-center gap-1">← Voltar</button>
@@ -598,7 +629,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
               );
             })()}
 
-            {/* FORMULÁRIO FINAL */}
             {horarioSelecionado && (
               <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 border-t pt-8">
                 <button
@@ -621,7 +651,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         )}
       </div>
 
-      {/* MODAL LISTA DE ESPERA */}
       {showWaitingList && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 animate-in zoom-in duration-300 relative">
@@ -674,7 +703,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         </div>
       )}
 
-      {/* MODAL DE ERRO */}
       {errorModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl p-8 text-center animate-in zoom-in duration-300 border-2 border-red-50 relative">
@@ -701,7 +729,6 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         </div>
       )}
 
-      {/* MODAL DE CONFIRMAÇÃO */}
       <ConfirmationModal
         isOpen={modalConfirmacao.isOpen}
         onClose={() => setModalConfirmacao({ isOpen: false, id: null })}
@@ -713,6 +740,122 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         variant="danger"
         isLoading={cancelando}
       />
+
+      {/* --- SEÇÃO VITRINE DE PRODUTOS --- */}
+      {vitrineProducts.length > 0 && (
+        <div className="w-full max-w-lg mt-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-lg mb-3">
+              <ShoppingBag size={14} /> Nossos Produtos
+            </div>
+            <p className="text-gray-500 text-sm font-medium">Conheça nossos produtos disponíveis</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {vitrineProducts.map((product: any) => (
+              <button
+                key={product.id}
+                onClick={() => setSelectedProduct(product)}
+                className="bg-white rounded-[1.5rem] shadow-md border border-gray-100 overflow-hidden text-left hover:shadow-xl hover:scale-[1.02] transition-all group"
+              >
+                <div className="relative h-36 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <ShoppingBag size={32} />
+                    </div>
+                  )}
+                  {product.price && Number(product.price) > 0 && (
+                    <div className="absolute bottom-2 right-2">
+                      <span className="bg-white/95 backdrop-blur-sm text-green-600 text-[11px] font-black px-2.5 py-1 rounded-lg shadow flex items-center gap-1">
+                        <Tag size={10} /> R$ {Number(product.price).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3">
+                  <h4 className="font-black text-gray-900 text-sm truncate group-hover:text-violet-600 transition">{product.name}</h4>
+                  {product.description && (
+                    <p className="text-gray-400 text-[11px] font-medium mt-0.5 line-clamp-1">{product.description}</p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALHE DO PRODUTO */}
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
+          <div
+            className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setSelectedProduct(null)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-gray-500 hover:text-red-500 transition"
+            >
+              <X size={20} />
+            </button>
+
+            {selectedProduct.imageUrl ? (
+              <div className="relative h-64 bg-gray-100">
+                <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                {Number(selectedProduct.price) > 0 && (
+                  <div className="absolute bottom-4 left-4">
+                    <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
+                      <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="h-40 bg-gradient-to-br from-violet-100 to-pink-100 flex items-center justify-center">
+                <ShoppingBag size={48} className="text-violet-300" />
+              </div>
+            )}
+
+            <div className="p-8">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">{selectedProduct.name}</h3>
+
+              {!selectedProduct.imageUrl && Number(selectedProduct.price) > 0 && (
+                <div className="mt-3">
+                  <span className="bg-green-50 text-green-600 text-lg font-black px-4 py-2 rounded-2xl inline-flex items-center gap-2">
+                    <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {selectedProduct.description && (
+                <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
+              )}
+
+              {Number(selectedProduct.price) > 0 && (
+                <button
+                  onClick={() => handleCheckout(selectedProduct)}
+                  disabled={checkingOut}
+                  className="w-full mt-8 bg-gradient-to-r from-blue-600 to-violet-600 text-white font-black py-4 rounded-2xl hover:opacity-90 transition shadow-xl active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {checkingOut ? <Loader2 className="animate-spin" /> : <>Comprar Agora <ChevronRight size={18} /></>}
+                </button>
+              )}
+
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="w-full mt-3 bg-gray-100 text-gray-500 font-bold py-3 rounded-2xl hover:bg-gray-200 transition"
+              >
+                Talvez depois
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="mt-12 text-gray-400 text-center">
         <p className="text-[10px] font-black uppercase tracking-widest">Plataforma de Gestão NOHUD</p>

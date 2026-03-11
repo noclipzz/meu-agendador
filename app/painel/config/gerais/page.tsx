@@ -49,6 +49,8 @@ export default function ConfigGerais() {
     });
     const [editandoHorario, setEditandoHorario] = useState<number | null>(null);
     const [monthlyGoal, setMonthlyGoal] = useState("5000");
+    const [mercadopagoAccessToken, setMercadopagoAccessToken] = useState("");
+    const [mercadopagoPublicKey, setMercadopagoPublicKey] = useState("");
     const [clerkUserId, setClerkUserId] = useState("");
 
     // --- ENDEREÇO E CONTATO ---
@@ -114,6 +116,8 @@ export default function ConfigGerais() {
                 setNeighborhood(dataConfig.neighborhood || "");
                 setCity(dataConfig.city || "");
                 setState(dataConfig.state || "");
+                setMercadopagoAccessToken(dataConfig.mercadopagoAccessToken || "");
+                setMercadopagoPublicKey(dataConfig.mercadopagoPublicKey || "");
             }
         } catch (e) { console.error(e) }
         finally { setLoading(false); }
@@ -219,7 +223,8 @@ export default function ConfigGerais() {
                 body: JSON.stringify({
                     name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, legalRepresentative,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), customSchedule,
-                    cnpj, phone, cep, address, number, complement, neighborhood, city, state
+                    cnpj, phone, cep, address, number, complement, neighborhood, city, state,
+                    mercadopagoAccessToken, mercadopagoPublicKey
                 })
             });
 
@@ -407,6 +412,35 @@ export default function ConfigGerais() {
                                         <p className="text-[9px] text-gray-400 mt-2">Use um arquivo PNG transparente.</p>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t dark:border-gray-700">
+                        <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+                             💳 Mercado Pago (Pagamentos Vitrine)
+                        </h2>
+                        <p className="text-xs text-gray-500 mb-4 font-medium italic">Obtenha suas credenciais no painel de desenvolvedores do Mercado Pago.</p>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Access Token (Prod ou Teste)</label>
+                                <input
+                                    type="password"
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    placeholder="APP_USR-..."
+                                    value={mercadopagoAccessToken}
+                                    onChange={e => setMercadopagoAccessToken(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Public Key</label>
+                                <input
+                                    className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:border-gray-800 outline-none focus:ring-2 ring-blue-500 font-bold dark:text-white"
+                                    placeholder="APP_USR-..."
+                                    value={mercadopagoPublicKey}
+                                    onChange={e => setMercadopagoPublicKey(e.target.value)}
+                                />
                             </div>
                         </div>
                     </div>

@@ -114,6 +114,10 @@ model Company {
   onboardingCompleted Boolean? @default(false)
   siteColor           String?  @default("#3b82f6")
   businessBranch      String?
+
+  // Mercado Pago
+  mercadopagoAccessToken String?
+  mercadopagoPublicKey   String?
 }
 
 model OrganizationPost {

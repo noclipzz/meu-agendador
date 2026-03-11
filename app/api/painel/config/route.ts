@@ -150,7 +150,7 @@ export async function POST(req: Request) {
       "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
       "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
       "cnae", "fiscalPadraoDesc", "itemListaServico",
-      "codigoTributacao", "codigoNbs"
+      "codigoTributacao", "codigoNbs", "mercadopagoAccessToken", "mercadopagoPublicKey"
     ];
 
     for (const field of stringFields) {
