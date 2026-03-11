@@ -104,6 +104,20 @@ export const aiTools: any[] = [
                 required: ["motivo"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "consultar_debitos_cliente",
+            description: "Verifica se o cliente possui faturas ou débitos em aberto (pendentes ou vencidos).",
+            parameters: {
+                type: "object",
+                properties: {
+                    telefoneCliente: { type: "string", description: "O telefone do cliente com 13 dígitos apenas números" }
+                },
+                required: ["telefoneCliente"]
+            }
+        }
     }
 ];
 
@@ -409,6 +423,52 @@ export async function executeAiFunction(functionName: string, args: any, company
         } catch (error: any) {
             console.error("[IA ERRO alterar_status_agendamento]", error);
             return JSON.stringify({ error: "Erro interno no banco de dados ao alterar status." });
+        }
+    }
+
+    if (functionName === "consultar_debitos_cliente") {
+        try {
+            const { telefoneCliente } = args;
+            const cleanPhone = telefoneCliente.replace(/\D/g, '');
+            const last8 = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+
+            // Busca o cliente pelo telefone
+            const client = await db.client.findFirst({
+                where: {
+                    companyId,
+                    phone: { contains: last8 }
+                }
+            });
+
+            if (!client) {
+                return JSON.stringify({ debitos: [], mensagem: "Cliente não encontrado no sistema. Diga que não conseguiu localizar os débitos para esse número." });
+            }
+
+            // Busca as faturas do cliente que estão PENDENTE ou VENCIDA
+            const invoices = await db.invoice.findMany({
+                where: {
+                    companyId,
+                    clientId: client.id,
+                    status: { in: ["PENDENTE", "VENCIDA"] }
+                },
+                orderBy: { dueDate: 'asc' }
+            });
+
+            if (invoices.length === 0) {
+                return JSON.stringify({ debitos: [], mensagem: "Verifiquei aqui e o cliente NÃO possui nenhum débito ou fatura em aberto no sistema neste momento. Ele está em dia com os pagamentos." });
+            }
+
+            const listStr = invoices.map((b: any) => 
+                `- Fatura: ${b.description}\n  Valor: R$ ${Number(b.value).toFixed(2)}\n  Vencimento: ${formatarDiaExtenso(b.dueDate)}\n  Momento: ${b.status}`
+            );
+
+            return JSON.stringify({
+                debitosEmAberto: listStr,
+                mensagem: "Responda de forma educada e prestativa informando apenas a lista de faturas em aberto. NÃO ofereça enviar código PIX ou boleto, apenas passe a informação financeira de forma passiva."
+            });
+        } catch (error: any) {
+            console.error("[IA ERRO consultar_debitos_cliente]", error);
+            return JSON.stringify({ error: "Erro interno ao buscar débitos do cliente." });
         }
     }
 
