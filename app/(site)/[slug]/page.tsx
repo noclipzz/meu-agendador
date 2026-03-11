@@ -101,7 +101,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         setEmpresa(data);
         setServices(data.services || []);
         setProfissionais(data.professionals || []);
-        setVitrineProducts(data.products || []);
+        setVitrineProducts(data.vitrineProducts || []);
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     }
@@ -153,7 +153,16 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          productId: product.id, 
+          items: [{
+            id: product.id,
+            quantity: 1,
+            price: product.price
+          }], 
+          customerInfo: {
+            name: nomeCliente,
+            phone: telefoneCliente
+          },
+          deliveryMethod: "PICKUP",
           companyId: empresa.id,
           slug: params.slug
         })

@@ -112,7 +112,7 @@ export async function POST(req: Request) {
         const body = await req.json();
 
         const result = await prisma.$transaction(async (tx) => {
-            const product = await tx.product.create({
+            const product = await (tx as any).product.create({
                 data: {
                     name: body.name,
                     quantity: body.quantity || 0,
@@ -120,14 +120,8 @@ export async function POST(req: Request) {
                     minStock: body.minStock || 5,
                     costPrice: body.costPrice ? Number(body.costPrice) : 0,
                     price: body.price ? Number(body.price) : 0,
-                    unitValue: body.unitValue ? Number(body.unitValue) : 1,
                     description: body.description || null,
                     imageUrl: body.imageUrl || null,
-                    showInVitrine: body.showInVitrine ?? false,
-                    showStock: body.showStock ?? false,
-                    deliveryDeadline: body.deliveryDeadline || null,
-                    shippingCost: body.shippingCost ? Number(body.shippingCost) : 0,
-                    variations: body.variations || [],
                     companyId: company.id,
                 }
             });
@@ -190,21 +184,15 @@ export async function PUT(req: Request) {
 
         // 1. Edição Simples (Nome/Mínimo/Preço Custo)
         if (!operation) {
-            const updated = await prisma.product.update({
+            const updated = await (prisma as any).product.update({
                 where: { id },
                 data: { 
                     name, 
                     minStock: Number(minStock), 
                     costPrice: costPrice ? Number(costPrice) : null,
                     price: body.price !== undefined ? Number(body.price) : undefined,
-                    unitValue: body.unitValue !== undefined ? Number(body.unitValue) : undefined,
                     description: body.description ?? undefined,
                     imageUrl: body.imageUrl ?? undefined,
-                    showInVitrine: body.showInVitrine ?? undefined,
-                    showStock: body.showStock ?? undefined,
-                    deliveryDeadline: body.deliveryDeadline ?? undefined,
-                    shippingCost: body.shippingCost !== undefined ? Number(body.shippingCost) : undefined,
-                    variations: body.variations ?? undefined
                 }
             });
             return NextResponse.json(updated);

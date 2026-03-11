@@ -39,7 +39,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         if (!res.ok) { setLoading(false); return; }
         const data = await res.json();
         setEmpresa(data);
-        setVitrineProducts(data.products || []);
+        setVitrineProducts(data.vitrineProducts || []);
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     }

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Busca a empresa
-    const company = await db.company.findUnique({
+    const company = await (db as any).company.findUnique({
       where: { id: companyId }
     });
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     // Verifica módulo MP
-    const subscription = await db.subscription.findUnique({
+    const subscription = await (db as any).subscription.findUnique({
       where: { userId: company.ownerId }
     });
 
@@ -38,12 +38,12 @@ export async function POST(req: Request) {
     
     // Busca os produtos no BD para garantir o preço correto
     const productIds = items.map((i: any) => i.id);
-    const dbProducts = await db.product.findMany({
+    const dbProducts = await (db as any).vitrineProduct.findMany({
       where: { id: { in: productIds } }
     });
 
     for (const item of items) {
-      const p = dbProducts.find(dbP => dbP.id === item.id);
+      const p = dbProducts.find((dbP: any) => dbP.id === item.id);
       if (!p) continue;
       
       const price = Number(p.price || 0);
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Cria o Pedido no Banco de Dados (PENDENTE)
-    const order = await db.order.create({
+    const order = await (db as any).order.create({
       data: {
         companyId: company.id,
         customerName: customerInfo.name,
@@ -74,9 +74,9 @@ export async function POST(req: Request) {
         status: "PENDING",
         items: {
           create: items.map((i: any) => {
-            const p = dbProducts.find(dbP => dbP.id === i.id);
+            const p = dbProducts.find((dbP: any) => dbP.id === i.id);
             return {
-              productId: i.id,
+              vitrineProductId: i.id,
               quantity: Number(i.quantity || 1),
               price: Number(p?.price || 0),
               variation: i.variation || null

@@ -38,12 +38,7 @@ export default function EstoquePage() {
         costPrice: "", 
         price: "", 
         description: "", 
-        showInVitrine: false,
         imageUrl: "",
-        showStock: false,
-        deliveryDeadline: "",
-        shippingCost: "",
-        variations: [] as any[]
     });
 
     useEffect(() => {
@@ -95,12 +90,7 @@ export default function EstoquePage() {
             costPrice: produto.costPrice ? formatarMoeda(produto.costPrice) : "",
             price: produto.price ? formatarMoeda(produto.price) : "",
             description: produto.description || "",
-            showInVitrine: !!produto.showInVitrine,
             imageUrl: produto.imageUrl || "",
-            showStock: !!produto.showStock,
-            deliveryDeadline: produto.deliveryDeadline || "",
-            shippingCost: produto.shippingCost ? formatarMoeda(produto.shippingCost) : "0",
-            variations: Array.isArray(produto.variations) ? produto.variations : []
         });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
@@ -121,12 +111,7 @@ export default function EstoquePage() {
             costPrice: "", 
             price: "", 
             description: "", 
-            showInVitrine: false,
             imageUrl: "",
-            showStock: false,
-            deliveryDeadline: "",
-            shippingCost: "0",
-            variations: []
         });
         setQtdInput("");
         setValidadeInput("");
@@ -155,12 +140,7 @@ export default function EstoquePage() {
                         costPrice: unitCost,
                         price: desformatarMoeda(formBasico.price),
                         description: formBasico.description,
-                        showInVitrine: formBasico.showInVitrine,
                         imageUrl: formBasico.imageUrl,
-                        showStock: formBasico.showStock,
-                        deliveryDeadline: formBasico.deliveryDeadline,
-                        shippingCost: desformatarMoeda(formBasico.shippingCost),
-                        variations: formBasico.variations,
                         quantity: qtdInput,
                         expiryDate: validadeInput,
                         supplierId: selectedSupplierId
@@ -215,12 +195,7 @@ export default function EstoquePage() {
                 costPrice: desformatarMoeda(formBasico.costPrice),
                 price: desformatarMoeda(formBasico.price),
                 description: formBasico.description,
-                showInVitrine: formBasico.showInVitrine,
                 imageUrl: formBasico.imageUrl,
-                showStock: formBasico.showStock,
-                deliveryDeadline: formBasico.deliveryDeadline,
-                shippingCost: desformatarMoeda(formBasico.shippingCost),
-                variations: formBasico.variations
             })
         });
         if (res.ok) {
@@ -548,67 +523,23 @@ export default function EstoquePage() {
                                         </div>
 
                                         <div className="pt-4 border-t dark:border-gray-800">
-                                            <h4 className="text-sm font-black dark:text-white flex items-center gap-2 mb-4"><Store size={18} className="text-violet-500" /> Configurações de Vitrine</h4>
+                                            <h4 className="text-sm font-black dark:text-white flex items-center gap-2 mb-4"><DollarSign size={18} className="text-green-500" /> Preço de Venda</h4>
                                             
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-4">
                                                 <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase">Preço de Venda (Clientes)</label>
+                                                    <label className="text-xs font-bold text-gray-400 uppercase">Preço para Venda Manual (R$)</label>
                                                     <div className="relative">
                                                         <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                                         <input type="text" className="w-full p-3 pl-10 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" placeholder="R$ 0,00" value={formBasico.price} onChange={e => setFormBasico({ ...formBasico, price: formatarMoeda(e.target.value) })} />
                                                     </div>
                                                 </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase">Status na Vitrine</label>
-                                                    <div className="flex gap-2">
-                                                        <button 
-                                                            onClick={() => setFormBasico({ ...formBasico, showInVitrine: !formBasico.showInVitrine })}
-                                                            className={`flex-1 p-3 rounded-xl border font-black uppercase text-[10px] flex items-center justify-center gap-2 transition ${formBasico.showInVitrine ? "bg-green-50 border-green-200 text-green-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
-                                                        >
-                                                            {formBasico.showInVitrine ? <><Eye size={14} /> Visível</> : <><EyeOff size={14} /> Oculto</>}
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => setFormBasico({ ...formBasico, showStock: !formBasico.showStock })}
-                                                            className={`flex-1 p-3 rounded-xl border font-black uppercase text-[10px] flex items-center justify-center gap-2 transition ${formBasico.showStock ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-gray-50 dark:bg-gray-800 text-gray-400"}`}
-                                                            title="Mostrar quantidade disponível para o cliente"
-                                                        >
-                                                            {formBasico.showStock ? <><Package size={14} /> Com Estoque</> : <><Package size={14} /> Sem Estoque</>}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase">Prazo de Entrega</label>
-                                                    <input 
-                                                        type="text" 
-                                                        className="w-full p-3 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" 
-                                                        placeholder="Ex: 2 dias úteis" 
-                                                        value={formBasico.deliveryDeadline} 
-                                                        onChange={e => setFormBasico({ ...formBasico, deliveryDeadline: e.target.value })} 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400 uppercase">Custo de Envio (Frete)</label>
-                                                    <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">R$</span>
-                                                        <input 
-                                                            type="text" 
-                                                            className="w-full p-3 pl-10 rounded-xl border font-bold dark:bg-gray-800 dark:text-white" 
-                                                            placeholder="0,00" 
-                                                            value={formBasico.shippingCost} 
-                                                            onChange={e => setFormBasico({ ...formBasico, shippingCost: formatarMoeda(e.target.value) })} 
-                                                        />
-                                                    </div>
-                                                </div>
                                             </div>
 
                                             <div className="mt-4">
-                                                <label className="text-xs font-bold text-gray-400 uppercase">Descrição para Clientes</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Observações Internas</label>
                                                 <textarea 
                                                     className="w-full p-3 rounded-xl border font-medium dark:bg-gray-800 dark:text-white resize-none h-20" 
-                                                    placeholder="Descreva o produto..."
+                                                    placeholder="Notas sobre o produto..."
                                                     value={formBasico.description}
                                                     onChange={e => setFormBasico({ ...formBasico, description: e.target.value })}
                                                 />

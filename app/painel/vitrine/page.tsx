@@ -48,6 +48,7 @@ export default function VitrinePage() {
         deliveryDeadline: "",
         shippingCost: "",
         variations: [] as { name: string, options: string[] }[],
+        quantity: "0",
     });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +83,7 @@ export default function VitrinePage() {
             deliveryDeadline: "Pronta entrega",
             shippingCost: "0",
             variations: [],
+            quantity: "0",
         });
         setIsModalOpen(true);
     }
@@ -99,6 +101,7 @@ export default function VitrinePage() {
             deliveryDeadline: product.deliveryDeadline || "",
             shippingCost: product.shippingCost ? String(product.shippingCost) : "0",
             variations: Array.isArray(product.variations) ? product.variations : [],
+            quantity: product.quantity ? String(product.quantity) : "0",
         });
         setIsModalOpen(true);
     }
@@ -152,6 +155,7 @@ export default function VitrinePage() {
                 deliveryDeadline: form.deliveryDeadline,
                 shippingCost: form.shippingCost ? Number(form.shippingCost) : 0,
                 variations: form.variations,
+                quantity: form.quantity ? Number(form.quantity) : 0,
             };
 
             const res = await fetch("/api/painel/vitrine", {
@@ -379,6 +383,12 @@ export default function VitrinePage() {
                                     <p className="text-gray-500 text-sm mt-1 line-clamp-2 font-medium">{product.description}</p>
                                 )}
 
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase shadow-sm ${Number(product.quantity || 0) <= 5 ? "bg-red-100 text-red-600" : "bg-blue-50 text-blue-600"}`}>
+                                        Estoque: {product.quantity || 0}
+                                    </span>
+                                </div>
+
                                 {/* ACTIONS */}
                                 <div className="flex items-center gap-2 mt-4 pt-4 border-t dark:border-gray-700">
                                     <button
@@ -514,7 +524,7 @@ export default function VitrinePage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Unidades</label>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">R$ Unitário / Pacote</label>
                                     <input
                                         type="number"
                                         min="1"
@@ -522,6 +532,23 @@ export default function VitrinePage() {
                                         placeholder="1"
                                         value={form.unitValue}
                                         onChange={e => setForm(prev => ({ ...prev, unitValue: e.target.value }))}
+                                    />
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 ml-2">Ex: 10 p/ vender pacote</p>
+                                </div>
+                            </div>
+
+                            {/* STOCK QUANTITY */}
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Estoque em Mãos (Qtd)</label>
+                                <div className="relative">
+                                    <Package size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                        placeholder="0"
+                                        value={form.quantity}
+                                        onChange={e => setForm(prev => ({ ...prev, quantity: e.target.value }))}
                                     />
                                 </div>
                             </div>

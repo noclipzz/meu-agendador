@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
         if (!companyId) return new NextResponse("Empresa não encontrada", { status: 404 });
 
-        const products = await prisma.product.findMany({
+        const products = await prisma.vitrineProduct.findMany({
             where: { companyId },
             orderBy: { updatedAt: 'desc' },
         });
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
         const body = await req.json();
 
-        const product = await prisma.product.create({
+        const product = await prisma.vitrineProduct.create({
             data: {
                 name: body.name,
                 description: body.description || null,
@@ -69,9 +69,6 @@ export async function POST(req: Request) {
                 shippingCost: body.shippingCost ? Number(body.shippingCost) : 0,
                 variations: body.variations || [],
                 quantity: body.quantity ? Number(body.quantity) : 0,
-                unit: body.unit || "UN",
-                minStock: body.minStock ? Number(body.minStock) : 0,
-                costPrice: body.costPrice ? Number(body.costPrice) : 0,
                 companyId: company.id,
             }
         });
@@ -92,7 +89,7 @@ export async function PUT(req: Request) {
         const body = await req.json();
         const { id, ...data } = body;
 
-        const updated = await prisma.product.update({
+        const updated = await prisma.vitrineProduct.update({
             where: { id },
             data: {
                 name: data.name,
@@ -105,6 +102,7 @@ export async function PUT(req: Request) {
                 deliveryDeadline: data.deliveryDeadline,
                 shippingCost: data.shippingCost !== undefined ? Number(data.shippingCost) : undefined,
                 variations: data.variations,
+                quantity: data.quantity !== undefined ? Number(data.quantity) : undefined,
             }
         });
 
@@ -122,7 +120,7 @@ export async function DELETE(req: Request) {
         if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
         const body = await req.json();
-        await prisma.product.delete({ where: { id: body.id } });
+        await prisma.vitrineProduct.delete({ where: { id: body.id } });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("ERRO_EXCLUIR_VITRINE:", error);

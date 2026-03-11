@@ -15,16 +15,16 @@ export async function GET(req: Request) {
     }
 
     // Busca a empresa pelo link (slug)
-    const empresa = await prisma.company.findUnique({
+    const empresa = await (prisma as any).company.findUnique({
       where: { slug: slug },
       include: {
         services: true,
         professionals: {
           include: {
-            services: true // Inclui os serviços vinculados para o filtro na tela de agendamento funcionar
+            services: true 
           }
         },
-        products: {
+        vitrineProducts: {
           where: { showInVitrine: true },
           orderBy: { updatedAt: 'desc' },
           select: {
@@ -49,8 +49,8 @@ export async function GET(req: Request) {
     }
 
     // Busca a assinatura do dono
-    const subscription = await prisma.subscription.findUnique({
-      where: { userId: empresa.ownerId }
+    const subscription = await (prisma as any).subscription.findUnique({
+      where: { userId: (empresa as any).ownerId }
     });
 
     const hasMercadoPagoModule = subscription?.hasMercadoPagoModule || empresa.ownerId === "user_39S9qNrKwwgObMZffifdZyNKUKm";
