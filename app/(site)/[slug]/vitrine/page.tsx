@@ -108,12 +108,28 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           )}
         </div>
 
-        {empresa.address && (
+        {(empresa.address || empresa.city) && (
           <div className="mt-8 flex flex-col items-center">
              <div className="flex items-center gap-3 px-6 py-3 bg-white border border-gray-100 rounded-[1.5rem] shadow-sm">
                 <MapPin size={18} className="text-blue-600" />
-                <p className="text-[11px] font-black text-gray-900">{empresa.address}, {empresa.city}</p>
+                <div className="text-left">
+                  <p className="text-[11px] font-black text-gray-900 leading-tight">
+                    {empresa.address ? `${empresa.address}${empresa.number ? `, ${empresa.number}` : ""}` : empresa.city}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                    {empresa.address ? (
+                      <>{empresa.neighborhood && `${empresa.neighborhood}, `}{empresa.city}{empresa.state ? ` - ${empresa.state}` : ""}</>
+                    ) : (
+                      <>{empresa.state ? `Estado de ${empresa.state}` : "Localização da Empresa"}</>
+                    )}
+                  </p>
+                </div>
              </div>
+             {empresa.phone && (
+              <div className="mt-3 flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
+                <Phone size={10} /> {formatarTelefone(empresa.phone)}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -156,13 +172,16 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                       <ShoppingBag size={40} />
                     </div>
                   )}
-                  {product.price && Number(product.price) > 0 && (
-                    <div className="absolute bottom-3 right-3">
+                    <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
+                      {product.unitValue > 1 && (
+                        <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
+                          {product.unitValue} UNIDADES
+                        </span>
+                      )}
                       <span className="bg-white/95 backdrop-blur-sm text-green-600 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1">
                         <Tag size={12} /> R$ {Number(product.price).toFixed(2)}
                       </span>
                     </div>
-                  )}
                 </div>
                 <div className="p-4">
                   <h4 className="font-black text-gray-900 text-sm truncate">{product.name}</h4>
@@ -192,7 +211,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               <div className="relative h-64 bg-gray-100">
                 <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
                 {selectedProduct.price && Number(selectedProduct.price) > 0 && (
-                  <div className="absolute bottom-4 left-4">
+                  <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
+                    {selectedProduct.unitValue > 1 && (
+                      <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">
+                        {selectedProduct.unitValue} UNIDADES
+                      </span>
+                    )}
                     <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
                       <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
                     </span>

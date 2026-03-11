@@ -32,7 +32,13 @@ export async function GET(req: Request) {
             name: true,
             description: true,
             price: true,
+            unitValue: true,
             imageUrl: true,
+            quantity: true,
+            showStock: true,
+            deliveryDeadline: true,
+            shippingCost: true,
+            variations: true,
           }
         }
       }

@@ -39,7 +39,11 @@ export default function EstoquePage() {
         price: "", 
         description: "", 
         showInVitrine: false,
-        imageUrl: ""
+        imageUrl: "",
+        showStock: false,
+        deliveryDeadline: "",
+        shippingCost: "",
+        variations: [] as any[]
     });
 
     useEffect(() => {
@@ -92,7 +96,11 @@ export default function EstoquePage() {
             price: produto.price ? formatarMoeda(produto.price) : "",
             description: produto.description || "",
             showInVitrine: !!produto.showInVitrine,
-            imageUrl: produto.imageUrl || ""
+            imageUrl: produto.imageUrl || "",
+            showStock: !!produto.showStock,
+            deliveryDeadline: produto.deliveryDeadline || "",
+            shippingCost: produto.shippingCost ? formatarMoeda(produto.shippingCost) : "0",
+            variations: Array.isArray(produto.variations) ? produto.variations : []
         });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
@@ -145,6 +153,10 @@ export default function EstoquePage() {
                         description: formBasico.description,
                         showInVitrine: formBasico.showInVitrine,
                         imageUrl: formBasico.imageUrl,
+                        showStock: formBasico.showStock,
+                        deliveryDeadline: formBasico.deliveryDeadline,
+                        shippingCost: desformatarMoeda(formBasico.shippingCost),
+                        variations: formBasico.variations,
                         quantity: qtdInput,
                         expiryDate: validadeInput,
                         supplierId: selectedSupplierId

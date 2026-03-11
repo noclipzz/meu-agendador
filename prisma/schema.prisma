@@ -348,8 +348,13 @@ model Product {
   name             String
   description      String?           @db.Text
   price            Decimal?          @default(0)
+  unitValue        Int               @default(1)
   imageUrl         String?
   showInVitrine    Boolean           @default(false)
+  showStock        Boolean           @default(false)
+  deliveryDeadline String?
+  shippingCost     Decimal?          @default(0)
+  variations       Json?             @default("[]")
   quantity         Decimal           @default(0)
   unit             String            @default("UN")
   minStock         Decimal           @default(5)

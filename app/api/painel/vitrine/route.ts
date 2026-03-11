@@ -61,8 +61,13 @@ export async function POST(req: Request) {
                 name: body.name,
                 description: body.description || null,
                 price: body.price ? Number(body.price) : 0,
+                unitValue: body.unitValue ? Number(body.unitValue) : 1,
                 imageUrl: body.imageUrl || null,
                 showInVitrine: body.showInVitrine ?? true,
+                showStock: body.showStock ?? false,
+                deliveryDeadline: body.deliveryDeadline || null,
+                shippingCost: body.shippingCost ? Number(body.shippingCost) : 0,
+                variations: body.variations || [],
                 quantity: body.quantity ? Number(body.quantity) : 0,
                 unit: body.unit || "UN",
                 minStock: body.minStock ? Number(body.minStock) : 0,
@@ -93,8 +98,13 @@ export async function PUT(req: Request) {
                 name: data.name,
                 description: data.description || null,
                 price: data.price !== undefined ? Number(data.price) : undefined,
+                unitValue: data.unitValue !== undefined ? Number(data.unitValue) : undefined,
                 imageUrl: data.imageUrl || null,
                 showInVitrine: data.showInVitrine,
+                showStock: data.showStock,
+                deliveryDeadline: data.deliveryDeadline,
+                shippingCost: data.shippingCost !== undefined ? Number(data.shippingCost) : undefined,
+                variations: data.variations,
             }
         });
 
