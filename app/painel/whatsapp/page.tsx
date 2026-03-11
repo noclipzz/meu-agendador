@@ -11,7 +11,7 @@ export default function WhatsappPage() {
     const [configured, setConfigured] = useState(false);
     const [status, setStatus] = useState("DISCONNECTED");
     const [qrCode, setQrCode] = useState("");
-    
+
     // Configurações da Inteligência Artificial
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiBotName, setAiBotName] = useState("Noclip");
@@ -284,7 +284,7 @@ export default function WhatsappPage() {
                                         onChange={(e) => setAiSystemPrompt(e.target.value)}
                                         className="w-full bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-xl p-4 text-sm outline-none focus:ring-2 ring-purple-500 transition-all resize-none shadow-sm font-medium"
                                     />
-                                    <p className="text-[10px] text-gray-400 mt-2 font-medium">Use isso para dar uma "personalidade" ou instrução única que quebra a regra geral (Ex: Cobre 50% de sinal antes).</p>
+                                    <p className="text-[10px] text-gray-400 mt-2 font-medium">Use isso para dar uma "personalidade" ou instrução única que quebra a regra geral.</p>
                                 </div>
 
                                 <div className="p-1 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-md">

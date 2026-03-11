@@ -83,10 +83,47 @@ export async function POST(req: Request) {
         if ((event === 'MESSAGES_UPSERT' || event === 'messages.upsert') && !body.data?.key?.fromMe && canUseWhatsapp) {
             const messageData = body.data;
             const remoteJid = messageData?.key?.remoteJid;
-            const messageBody = messageData?.message?.conversation
+            let messageBody = messageData?.message?.conversation
                 || messageData?.message?.extendedTextMessage?.text
                 || messageData?.message?.audioMessage?.transcription // Transcrição automática da Evolution API
                 || "";
+
+            // Transcrição manual do áudio caso a Evolution não traga a transcrição pronta
+            const isAudio = !!messageData?.message?.audioMessage;
+            if (isAudio && !messageBody && company.aiEnabled && process.env.OPENAI_API_KEY) {
+                try {
+                    const baseUrl = company.evolutionServerUrl?.replace(/\/$/, "");
+                    if (baseUrl && company.evolutionApiKey) {
+                        const url = `${baseUrl}/chat/getBase64FromMediaMessage/${instanceName}`;
+                        const b64Res = await fetch(url, {
+                            method: "POST",
+                            headers: { "apikey": company.evolutionApiKey, "Content-Type": "application/json" },
+                            body: JSON.stringify({ message: messageData })
+                        });
+
+                        if (b64Res.ok) {
+                            const b64Data = await b64Res.json();
+                            if (b64Data && b64Data.base64) {
+                                const { OpenAI, toFile } = await import("openai");
+                                const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                                const buffer = Buffer.from(b64Data.base64, "base64");
+                                const file = await toFile(buffer, "audio.ogg", { type: "audio/ogg" });
+                                const transcription = await openai.audio.transcriptions.create({
+                                    file,
+                                    model: "whisper-1",
+                                    language: "pt"
+                                });
+                                messageBody = transcription.text;
+                                console.log("[VA] Áudio transcrito manualmente via OpenAI:", messageBody);
+                            }
+                        } else {
+                            console.error("[VA] Erro ao buscar áudio da Evolution API:", await b64Res.text());
+                        }
+                    }
+                } catch (err) {
+                    console.error("[VA] Erro na transcrição manual do áudio:", err);
+                }
+            }
 
             const cleanMessage = messageBody.trim().toLowerCase();
             // Split by : to remove multi-device suffix before cleaning digits

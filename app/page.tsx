@@ -400,7 +400,7 @@ function PlanosSection({ billingCycle, setBillingCycle }: { billingCycle: 'month
             badgeColor="bg-gradient-to-r from-amber-500 to-yellow-500"
             iconBg="bg-amber-500/10"
             iconColor="text-amber-400"
-            features={["Até 10 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Bot Whatsapp automático", "Maior banco de dados", "Tudo do Individual/Premium"]}
+            features={["Até 10 Profissionais", "Múltiplas Agendas", "Relatórios Avançados", "Suporte Prioritário", "Gestão de Estoque", "Bot de Whatsapp automático", "Maior banco de dados", "Assistente IA", "Tudo do Individual/Premium"]}
           />
 
           <div className="relative flex flex-col p-6 rounded-[1.5rem] bg-white text-gray-800 border border-gray-100 shadow-lg transition-all hover:shadow-xl">
