@@ -32,6 +32,7 @@ export async function POST(req: Request) {
                     name: service.name,
                     price: service.price,
                     duration: service.duration,
+                    imageUrl: service.imageUrl,
                     companyId: company.id
                 }
             });
@@ -42,8 +43,7 @@ export async function POST(req: Request) {
             where: { id: company.id },
             data: {
                 workDays: schedule.workDays,
-                openTime: schedule.openTime,
-                closeTime: schedule.closeTime,
+                customSchedule: schedule.customSchedule,
                 businessBranch: details.businessBranch,
                 siteColor: details.siteColor,
                 onboardingCompleted: true

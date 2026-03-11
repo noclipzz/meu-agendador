@@ -38,6 +38,16 @@ export default function ConfigGerais() {
     const [lunchEnd, setLunchEnd] = useState("13:00");
     const [interval, setInterval] = useState(30);
     const [workDays, setWorkDays] = useState<string[]>([]);
+    const [customSchedule, setCustomSchedule] = useState<Record<number, { openTime: string, closeTime: string }>>({
+        0: { openTime: "08:00", closeTime: "17:00" },
+        1: { openTime: "08:00", closeTime: "17:00" },
+        2: { openTime: "08:00", closeTime: "17:00" },
+        3: { openTime: "08:00", closeTime: "17:00" },
+        4: { openTime: "08:00", closeTime: "17:00" },
+        5: { openTime: "08:00", closeTime: "17:00" },
+        6: { openTime: "08:00", closeTime: "17:00" },
+    });
+    const [editandoHorario, setEditandoHorario] = useState<number | null>(null);
     const [monthlyGoal, setMonthlyGoal] = useState("5000");
     const [clerkUserId, setClerkUserId] = useState("");
 
@@ -85,6 +95,15 @@ export default function ConfigGerais() {
                 setInterval(dataConfig.interval || 30);
                 setMonthlyGoal(dataConfig.monthlyGoal || "5000");
                 if (dataConfig.workDays) setWorkDays(dataConfig.workDays.split(','));
+                
+                if (dataConfig.customSchedule) {
+                    try {
+                        const parsed = typeof dataConfig.customSchedule === 'string' ? JSON.parse(dataConfig.customSchedule) : dataConfig.customSchedule;
+                        if (Object.keys(parsed).length > 0) {
+                            setCustomSchedule(parsed);
+                        }
+                    } catch(e) {}
+                }
 
                 setCnpj(formatarCpfCnpj(dataConfig.cnpj || ""));
                 setPhone(formatarTelefone(dataConfig.phone || ""));
@@ -199,7 +218,7 @@ export default function ConfigGerais() {
                 method: 'POST',
                 body: JSON.stringify({
                     name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, legalRepresentative,
-                    monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval),
+                    monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), customSchedule,
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state
                 })
             });
@@ -401,12 +420,43 @@ export default function ConfigGerais() {
 
                     <div className="mt-6">
                         <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Dias de Funcionamento</label>
-                        <div className="flex gap-2 flex-wrap">
-                            {diasSemana.map(dia => (
-                                <button key={dia.id} onClick={() => toggleDay(dia.id)} className={`w-10 h-10 rounded-xl font-bold text-xs border transition ${workDays.includes(dia.id) ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700"}`}>
-                                    {dia.label}
-                                </button>
-                            ))}
+                        <div className="flex flex-col gap-3">
+                            {diasSemana.map(dia => {
+                                const diaNum = Number(dia.id);
+                                const isOn = workDays.includes(dia.id);
+                                return (
+                                <div key={dia.id} className="flex items-center justify-between p-3 border rounded-2xl dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/10 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition">
+                                    <div className="flex items-center gap-3">
+                                        {/* Toggle */}
+                                        <button
+                                            onClick={() => toggleDay(dia.id)}
+                                            className={`w-11 h-6 rounded-full flex items-center p-1 transition-colors ${isOn ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${isOn ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        </button>
+                                        <span className={`font-semibold ${isOn ? 'text-gray-800 dark:text-gray-200' : 'text-gray-400'}`}>
+                                            {dia.label}
+                                        </span>
+                                    </div>
+                                    
+                                    {isOn && (
+                                        <div className="flex items-center gap-2">
+                                            {editandoHorario === diaNum ? (
+                                                <div className="flex gap-1 items-center bg-white dark:bg-gray-700 p-1 px-2 rounded-lg border dark:border-gray-600">
+                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum].openTime} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...customSchedule[diaNum], openTime: e.target.value}})} />
+                                                    <span className="text-gray-400">-</span>
+                                                    <input type="time" className="bg-transparent text-sm font-bold text-gray-800 dark:text-gray-200 outline-none w-20" value={customSchedule[diaNum].closeTime} onChange={(e) => setCustomSchedule({...customSchedule, [diaNum]: {...customSchedule[diaNum], closeTime: e.target.value}})} />
+                                                    <button onClick={() => setEditandoHorario(null)} className="ml-2 text-green-600 font-bold text-xs bg-green-50 dark:bg-green-900/40 px-2 py-1 rounded-md">OK</button>
+                                                </div>
+                                            ) : (
+                                                <div onClick={() => setEditandoHorario(diaNum)} className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400 cursor-pointer px-2 py-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">
+                                                    {customSchedule[diaNum].openTime}-{customSchedule[diaNum].closeTime} <span className="text-xs">✏️</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )})}
                         </div>
                     </div>
                 </fieldset>

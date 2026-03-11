@@ -159,6 +159,10 @@ export async function POST(req: Request) {
       }
     }
 
+    if (body.customSchedule !== undefined) {
+      dataToSave.customSchedule = body.customSchedule;
+    }
+
     // Processar campos tipo Number
     const numberFields = [
       "monthlyGoal", "interval", "regimeTributario", "naturezaOperacao",

@@ -18,8 +18,19 @@ export default function OnboardingPage() {
 
     // Step 2: Horarios
     const [dias, setDias] = useState<number[]>([1, 2, 3, 4, 5]); // Seg a Sex
-    const [horaAbre, setHoraAbre] = useState("08:00");
-    const [horaFecha, setHoraFecha] = useState("17:00");
+    const [horariosPorDia, setHorariosPorDia] = useState<Record<number, { openTime: string, closeTime: string }>>({
+        0: { openTime: "08:00", closeTime: "17:00" },
+        1: { openTime: "08:00", closeTime: "17:00" },
+        2: { openTime: "08:00", closeTime: "17:00" },
+        3: { openTime: "08:00", closeTime: "17:00" },
+        4: { openTime: "08:00", closeTime: "17:00" },
+        5: { openTime: "08:00", closeTime: "17:00" },
+        6: { openTime: "08:00", closeTime: "17:00" },
+    });
+    const [editandoHorario, setEditandoHorario] = useState<number | null>(null);
+
+    // Servico Imagem
+    const [servicoImagemObj, setServicoImagemObj] = useState<File | null>(null);
 
     // Step 3: Detalhes
     const [ramo, setRamo] = useState("");
@@ -48,18 +59,35 @@ export default function OnboardingPage() {
 
         try {
             // First we can upload logo if exists (Optional - will be standard base64 or upload API)
-            // Para simplicidade, assumindo que a API aceita JSON e fazemos o Logo num upload separado se precisar.
+            let uploadedServiceUrl = "";
+
+            if (servicoImagemObj) {
+                const formData = new FormData();
+                formData.append("file", servicoImagemObj);
+                try {
+                    const uploadRes = await fetch(`/api/upload?filename=${encodeURIComponent(servicoImagemObj.name)}`, {
+                        method: "POST",
+                        body: servicoImagemObj,
+                    });
+                    if (uploadRes.ok) {
+                        const uploadData = await uploadRes.json();
+                        uploadedServiceUrl = uploadData.url;
+                    }
+                } catch (e) {
+                    console.error("Subida da imagem falhou", e);
+                }
+            }
             
             const payload = {
                 service: {
                     name: servicoName,
                     price: parseFloat(servicoPreco.replace(/\D/g, '')) / 100,
-                    duration: parseInt(servicoDuracao, 10)
+                    duration: parseInt(servicoDuracao, 10),
+                    imageUrl: uploadedServiceUrl || undefined
                 },
                 schedule: {
                     workDays: dias.join(","),
-                    openTime: horaAbre,
-                    closeTime: horaFecha
+                    customSchedule: horariosPorDia // Send the entire customized schedule object
                 },
                 details: {
                     businessBranch: ramo,
@@ -181,11 +209,27 @@ export default function OnboardingPage() {
                                     />
                                 </div>
 
-                                <div className="mt-8 border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 transition">
-                                    <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-3">
-                                        <Upload size={20} />
-                                    </div>
-                                    <span className="text-sm font-semibold text-gray-500">Upload da imagem de serviço (Opcional)</span>
+                                <div className="mt-8 border-2 border-dashed border-gray-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden">
+                                     {servicoImagemObj ? (
+                                        <div className="text-sm font-semibold text-blue-600 mb-2">{servicoImagemObj.name}</div>
+                                     ): (
+                                        <>
+                                            <div className="w-12 h-12 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-3">
+                                                <Upload size={20} />
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-500">Upload da imagem de serviço (Opcional)</span>
+                                        </>
+                                     )}
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                setServicoImagemObj(e.target.files[0]);
+                                            }
+                                        }}
+                                    />
                                 </div>
 
                                 <button
@@ -222,8 +266,19 @@ export default function OnboardingPage() {
                                                 <span className={`font-semibold ${isOn ? 'text-gray-800' : 'text-gray-400'}`}>{dia.name}</span>
                                             </div>
                                             {isOn && (
-                                                <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 cursor-pointer" style={{ color: cor }}>
-                                                    {horaAbre}-{horaFecha} <span className="text-xs" title="Editar">✏️</span>
+                                                <div className="flex items-center gap-2">
+                                                    {editandoHorario === dia.id ? (
+                                                        <div className="flex gap-1 items-center bg-gray-100 p-1 px-2 rounded-lg">
+                                                            <input type="time" className="bg-transparent text-sm font-bold text-gray-800 outline-none w-20" value={horariosPorDia[dia.id].openTime} onChange={(e) => setHorariosPorDia({...horariosPorDia, [dia.id]: {...horariosPorDia[dia.id], openTime: e.target.value}})} />
+                                                            <span className="text-gray-400">-</span>
+                                                            <input type="time" className="bg-transparent text-sm font-bold text-gray-800 outline-none w-20" value={horariosPorDia[dia.id].closeTime} onChange={(e) => setHorariosPorDia({...horariosPorDia, [dia.id]: {...horariosPorDia[dia.id], closeTime: e.target.value}})} />
+                                                            <button onClick={() => setEditandoHorario(null)} className="ml-2 text-green-600 font-bold text-xs bg-green-100 px-2 py-1 rounded-md">OK</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div onClick={() => setEditandoHorario(dia.id)} className="flex items-center gap-2 text-sm font-semibold text-blue-600 cursor-pointer px-2 py-1 rounded-md hover:bg-blue-50 transition" style={{ color: cor }}>
+                                                            {horariosPorDia[dia.id].openTime}-{horariosPorDia[dia.id].closeTime} <span className="text-xs">✏️</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

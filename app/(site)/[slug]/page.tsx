@@ -139,9 +139,24 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
       const aptos = profissionais.filter((p: any) => !p.services || p.services.length === 0 || p.services.some((s: any) => s.id === servicoSelecionado?.id));
 
+      let openTime = empresa.openTime;
+      let closeTime = empresa.closeTime;
+
+      if (empresa.customSchedule) {
+        try {
+            const parsedSchedule = typeof empresa.customSchedule === 'string' ? JSON.parse(empresa.customSchedule) : empresa.customSchedule;
+            if (parsedSchedule[diaSemana]) {
+                openTime = parsedSchedule[diaSemana].openTime || openTime;
+                closeTime = parsedSchedule[diaSemana].closeTime || closeTime;
+            }
+        } catch (e) {
+            console.error("Erro ao fazer parse do customSchedule", e);
+        }
+      }
+
       const slots = gerarHorarios(
-        empresa.openTime,
-        empresa.closeTime,
+        openTime,
+        closeTime,
         empresa.lunchStart || "12:00",
         empresa.lunchEnd || "13:00",
         empresa.interval || 30,
