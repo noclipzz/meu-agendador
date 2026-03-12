@@ -21,7 +21,7 @@ const statusConfig: any = {
 };
 
 const formatPaymentMethod = (method: string) => {
-    if (!method) return "";
+    if (!method) return "Aguardando...";
     const m = method.toLowerCase();
     if (m === 'pix') return 'Pix';
     if (m === 'account_money' || m === 'wallet') return 'Saldo Mercado Pago';
@@ -29,6 +29,18 @@ const formatPaymentMethod = (method: string) => {
     if (m.includes('debit_card') || m.includes('debito')) return 'Cartão de Débito';
     if (m.includes('boleto')) return 'Boleto';
     return m.toUpperCase();
+};
+
+const formatPhone = (phone: string) => {
+    if (!phone) return "";
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length === 11) {
+        return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+    }
+    if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
 };
 
 export default function PedidosVitrine() {
@@ -213,7 +225,7 @@ export default function PedidosVitrine() {
                                             </h4>
                                             <div className="space-y-2">
                                                 <p className="flex items-center gap-3 text-sm font-bold dark:text-gray-200">
-                                                    <Phone size={16} className="text-blue-500" /> {pedido.customerPhone}
+                                                    <Phone size={16} className="text-blue-500" /> {formatPhone(pedido.customerPhone)}
                                                 </p>
                                                 {pedido.customerEmail && (
                                                     <p className="flex items-center gap-3 text-sm font-bold dark:text-gray-200">
@@ -248,16 +260,16 @@ export default function PedidosVitrine() {
                                                 </div>
                                             )}
 
-                                            {pedido.paymentMethod && (
-                                                <>
-                                                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 pt-2">
-                                                        <CreditCard size={14} /> Forma de Pagamento
-                                                    </h4>
-                                                    <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl font-black text-sm uppercase">
-                                                        {formatPaymentMethod(pedido.paymentMethod)}
-                                                    </div>
-                                                </>
-                                            )}
+                                            <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 pt-2">
+                                                <CreditCard size={14} /> Forma de Pagamento
+                                            </h4>
+                                            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm uppercase ${
+                                                pedido.paymentMethod 
+                                                    ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
+                                                    : "bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500"
+                                            }`}>
+                                                {formatPaymentMethod(pedido.paymentMethod)}
+                                            </div>
                                         </div>
 
                                         {/* Col 2: Itens do Pedido */}
