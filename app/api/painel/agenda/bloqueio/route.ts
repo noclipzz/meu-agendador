@@ -47,8 +47,8 @@ export async function POST(req: Request) {
 
         if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-        // Normaliza a data para meia-noite
-        const normalizedDate = startOfDay(new Date(date));
+        // Normaliza a data para meia-noite (espera string YYYY-MM-DD)
+        const normalizedDate = new Date(date + "T00:00:00Z"); // Guardamos sempre em UTC-0 para consistência isolada de dia
 
         const blocked = await prisma.blockedDate.upsert({
             where: {

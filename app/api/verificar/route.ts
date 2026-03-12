@@ -31,12 +31,16 @@ export async function POST(req: Request) {
 
     const agendamentos = await prisma.booking.findMany({
       where: {
-        ...filterProfessional,
+        companyId: companyId,
         date: {
           gte: startOfDay(dataBusca),
           lte: endOfDay(dataBusca)
         },
-        status: { not: "CANCELADO" }
+        status: { not: "CANCELADO" },
+        OR: [
+          professionalId !== 'ANY' ? { professionalId: professionalId } : { professionalId: filterProfessional.professionalId },
+          { professionalId: null }
+        ]
       },
       include: {
         service: true

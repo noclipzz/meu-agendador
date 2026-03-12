@@ -598,7 +598,10 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 minDate={new Date()}
                 locale="pt-BR"
                 className="w-full border-none !bg-transparent custom-calendar font-bold"
-                tileDisabled={({ date }) => empresa.blockedDates?.some((b: any) => isSameDay(new Date(b.date), date))}
+                tileDisabled={({ date }) => empresa.blockedDates?.some((b: any) => {
+                  const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+                  return bDate === format(date, 'yyyy-MM-dd');
+                })}
               />
             </div>
 
@@ -606,7 +609,10 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
               const diaSemana = dataSelecionada.getDay().toString();
               const diasTrabalho = empresa?.workDays ? empresa.workDays.split(',') : [];
               const isDiaDeTrabalho = diasTrabalho.includes(diaSemana);
-              const isBlocked = empresa.blockedDates?.some((b: any) => isSameDay(new Date(b.date), dataSelecionada));
+              const isBlocked = empresa.blockedDates?.some((b: any) => {
+                const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+                return bDate === format(dataSelecionada, 'yyyy-MM-dd');
+              });
 
               if (isBlocked) {
                 return (

@@ -277,6 +277,39 @@ export default function PainelDashboard() {
         return matchTexto && matchProfissional;
     });
 
+    async function bloquearHorario(data: Date) {
+        const motivo = prompt("Motivo do bloqueio (opcional):", "Bloqueio manual");
+        if (motivo === null) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/agendar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: motivo || "Bloqueio de Horário",
+                    date: data.toISOString(),
+                    type: "EVENTO",
+                    category: "BLOQUEIO",
+                    companyId: companyId,
+                    professionalId: null, // Bloqueio global
+                    notificarGeral: true
+                })
+            });
+
+            if (res.ok) {
+                toast.success("Horário bloqueado!");
+                await carregarDados();
+            } else {
+                toast.error("Erro ao bloquear horário");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão");
+        } finally {
+            setLoading(false);
+        }
+    }
+
     const navegar = (direcao: number) => {
         if (view === 'month') setDataAtual(addMonths(dataAtual, direcao));
         else if (view === 'week') setDataAtual(addDays(dataAtual, direcao * 7));
@@ -284,7 +317,10 @@ export default function PainelDashboard() {
     };
 
     async function toggleBloqueio(dia: Date) {
-        const bloqueio = blockedDates.find(b => isSameDay(new Date(b.date), dia));
+        const bloqueio = blockedDates.find(b => {
+            const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+            return bDate === format(dia, 'yyyy-MM-dd');
+        });
         
         try {
             if (bloqueio) {
@@ -299,7 +335,7 @@ export default function PainelDashboard() {
                 const res = await fetch("/api/painel/agenda/bloqueio", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ date: dia.toISOString() })
+                    body: JSON.stringify({ date: format(dia, 'yyyy-MM-dd') })
                 });
                 if (res.ok) {
                     const novo = await res.json();
@@ -339,7 +375,10 @@ export default function PainelDashboard() {
                             .reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
 
                         const ehMes = isSameMonth(dia, dataAtual);
-                        const isBlocked = blockedDates.some(b => isSameDay(new Date(b.date), dia));
+                        const isBlocked = blockedDates.some(b => {
+                            const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+                            return bDate === format(dia, 'yyyy-MM-dd');
+                        });
 
                         return (
                             <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 min-h-[80px] h-full flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'} ${isBlocked ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
@@ -397,7 +436,10 @@ export default function PainelDashboard() {
         const horas = Array.from({ length: 24 }, (_, i) => i);
         const PIXELS_POR_HORA = 90;
         const agsDoDia = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dataAtual));
-        const isBlocked = blockedDates.some(b => isSameDay(new Date(b.date), dataAtual));
+        const isBlocked = blockedDates.some(b => {
+            const bDate = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+            return bDate === format(dataAtual, 'yyyy-MM-dd');
+        });
         const agsProcessados = calcularLayoutVisual(agsDoDia);
         const isToday = isSameDay(dataAtual, new Date());
         
@@ -418,7 +460,19 @@ export default function PainelDashboard() {
                     {horas.map(h => (
                         <div key={h} className="flex border-b dark:border-gray-700 h-[var(--hour-h)]">
                             <div className="w-16 text-xs text-gray-400 text-right pr-4 pt-2 -mt-2.5 sticky left-0 z-[5]">{h.toString().padStart(2, '0')}:00</div>
-                            <div className="flex-1 border-r dark:border-gray-700 relative"><div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div></div>
+                            <div className="flex-1 border-r dark:border-gray-700 relative group">
+                                <button
+                                    onClick={() => {
+                                        const d = new Date(dataAtual);
+                                        d.setHours(h, 0, 0, 0);
+                                        bloquearHorario(d);
+                                    }}
+                                    className="absolute inset-x-0 top-0 h-full w-full bg-red-500/0 hover:bg-red-500/5 text-transparent hover:text-red-600/40 text-[10px] items-center justify-center font-black uppercase transition-all z-10 flex gap-2"
+                                >
+                                    <PlusCircle size={14} /> Bloquear {h}:00
+                                </button>
+                                <div className="absolute top-1/2 left-0 right-0 border-t border-dashed dark:border-gray-800 opacity-30"></div>
+                            </div>
                         </div>
                     ))}
 
