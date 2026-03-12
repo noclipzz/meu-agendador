@@ -20,6 +20,17 @@ const statusConfig: any = {
     CANCELED: { label: "Cancelado", color: "bg-red-100 text-red-700 border-red-200", icon: <XCircle size={16} /> },
 };
 
+const formatPaymentMethod = (method: string) => {
+    if (!method) return "";
+    const m = method.toLowerCase();
+    if (m === 'pix') return 'Pix';
+    if (m === 'account_money' || m === 'wallet') return 'Saldo Mercado Pago';
+    if (m.includes('credit_card') || m.includes('visa') || m.includes('master') || m.includes('amex') || m.includes('elo') || m.includes('hipercard')) return 'Cartão de Crédito';
+    if (m.includes('debit_card') || m.includes('debito')) return 'Cartão de Débito';
+    if (m.includes('boleto')) return 'Boleto';
+    return m.toUpperCase();
+};
+
 export default function PedidosVitrine() {
     const [pedidos, setPedidos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -243,7 +254,7 @@ export default function PedidosVitrine() {
                                                         <CreditCard size={14} /> Forma de Pagamento
                                                     </h4>
                                                     <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl font-black text-sm uppercase">
-                                                        {pedido.paymentMethod.replace('_', ' ')}
+                                                        {formatPaymentMethod(pedido.paymentMethod)}
                                                     </div>
                                                 </>
                                             )}
