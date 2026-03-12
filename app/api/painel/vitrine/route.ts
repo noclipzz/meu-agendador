@@ -68,6 +68,7 @@ export async function POST(req: Request) {
                 deliveryDeadline: body.deliveryDeadline || null,
                 shippingCost: body.shippingCost ? Number(body.shippingCost) : 0,
                 variations: body.variations || [],
+                category: body.category || null,
                 quantity: body.quantity ? Number(body.quantity) : 0,
                 companyId: company.id,
             }
@@ -102,6 +103,7 @@ export async function PUT(req: Request) {
                 deliveryDeadline: data.deliveryDeadline,
                 shippingCost: data.shippingCost !== undefined ? Number(data.shippingCost) : undefined,
                 variations: data.variations,
+                category: data.category !== undefined ? data.category : undefined,
                 quantity: data.quantity !== undefined ? Number(data.quantity) : undefined,
             }
         });

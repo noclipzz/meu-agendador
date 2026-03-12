@@ -618,6 +618,7 @@ model VitrineProduct {
   deliveryDeadline String?
   shippingCost     Decimal?    @default(0)
   variations       Json?       @default("[]")
+  category         String?
   quantity         Decimal     @default(0)
   companyId        String
   createdAt        DateTime    @default(now())

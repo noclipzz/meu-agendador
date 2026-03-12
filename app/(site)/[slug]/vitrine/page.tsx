@@ -21,6 +21,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   const [cart, setCart] = useState<any[]>([]);
   const [selectedQty, setSelectedQty] = useState(1);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, string>>({});
+  const [selectedCategory, setSelectedCategory] = useState<string>("Tudo");
 
   // Informações do Cliente
   const [customerInfo, setCustomerInfo] = useState({
@@ -202,6 +203,13 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   if (!empresa) return <div className="h-screen flex items-center justify-center text-red-500 font-bold">Empresa não encontrada.</div>;
 
+  // Categorias únicas
+  const categories = ["Tudo", ...Array.from(new Set(vitrineProducts.map(p => p.category).filter(Boolean)))];
+
+  const filteredProducts = selectedCategory === "Tudo" 
+    ? vitrineProducts 
+    : vitrineProducts.filter(p => p.category === selectedCategory);
+
   // TELA DE SUCESSO
   if (step === "SUCCESS") {
     const hasProntaEntrega = cart.some(item => item.deliveryDeadline?.toLowerCase().includes("pronta entrega"));
@@ -286,14 +294,29 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           </div>
 
           <div className="w-full max-w-lg">
-            {vitrineProducts.length === 0 ? (
+            {/* FILTRO DE CATEGORIAS */}
+            {categories.length > 1 && (
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all shadow-sm ${selectedCategory === cat ? "bg-violet-600 text-white shadow-violet-200" : "bg-white text-gray-400 hover:bg-gray-100 border border-gray-100"}`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+ 
+            {filteredProducts.length === 0 ? (
               <div className="text-center py-20 bg-white rounded-[2.5rem] shadow-xl">
                  <ShoppingBag size={48} className="mx-auto text-gray-200 mb-4" />
-                 <p className="text-gray-500 font-bold">Nenhum produto na vitrine no momento.</p>
+                 <p className="text-gray-500 font-bold">Nenhum produto encontrado nesta categoria.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
-                {vitrineProducts.map((product: any) => (
+                {filteredProducts.map((product: any) => (
                   <button
                     key={product.id}
                     onClick={() => { 
@@ -420,8 +443,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               <input 
                 placeholder="WhatsApp" 
                 className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
-                value={customerInfo.phone}
-                onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                value={formatarTelefone(customerInfo.phone)}
+                maxLength={15}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, "").substring(0, 11);
+                  setCustomerInfo({...customerInfo, phone: val});
+                }}
               />
             </div>
 

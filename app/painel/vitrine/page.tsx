@@ -21,6 +21,7 @@ interface Product {
     showStock: boolean;
     deliveryDeadline?: string | null;
     shippingCost?: number | null;
+    category?: string | null;
     variations?: any;
     quantity?: number;
     createdAt: string;
@@ -47,6 +48,7 @@ export default function VitrinePage() {
         showStock: false,
         deliveryDeadline: "",
         shippingCost: "",
+        category: "",
         variations: [] as { name: string, options: string[] }[],
         quantity: "0",
     });
@@ -82,6 +84,7 @@ export default function VitrinePage() {
             showStock: false,
             deliveryDeadline: "Pronta entrega",
             shippingCost: "0",
+            category: "",
             variations: [],
             quantity: "0",
         });
@@ -100,6 +103,7 @@ export default function VitrinePage() {
             showStock: product.showStock || false,
             deliveryDeadline: product.deliveryDeadline || "",
             shippingCost: product.shippingCost ? String(product.shippingCost) : "0",
+            category: product.category || "",
             variations: Array.isArray(product.variations) ? product.variations : [],
             quantity: product.quantity ? String(product.quantity) : "0",
         });
@@ -154,6 +158,7 @@ export default function VitrinePage() {
                 showStock: form.showStock,
                 deliveryDeadline: form.deliveryDeadline,
                 shippingCost: form.shippingCost ? Number(form.shippingCost) : 0,
+                category: form.category,
                 variations: form.variations,
                 quantity: form.quantity ? Number(form.quantity) : 0,
             };
@@ -423,8 +428,8 @@ export default function VitrinePage() {
             {/* MODAL CRIAR/EDITAR */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-md relative shadow-2xl border dark:border-gray-800 flex flex-col max-h-[95vh]">
-                        <div className="p-6 pb-0 shrink-0">
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] w-full max-w-4xl relative shadow-2xl border dark:border-gray-800 flex flex-col max-h-[95vh]">
+                        <div className="p-6 pb-4 shrink-0 border-b dark:border-gray-800">
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="absolute top-6 right-6 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all z-10"
@@ -440,270 +445,217 @@ export default function VitrinePage() {
                             </p>
                         </div>
 
-                        <div className="p-6 overflow-y-auto custom-scrollbar space-y-5">
-                            {/* IMAGE UPLOAD */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-2">Foto do Produto</label>
-                                <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="relative w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-all overflow-hidden group"
-                                >
-                                    {uploading ? (
-                                        <Loader2 size={32} className="animate-spin text-violet-500" />
-                                    ) : form.imageUrl ? (
-                                        <>
-                                            <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <p className="text-white text-sm font-black flex items-center gap-2">
-                                                    <Upload size={16} /> Trocar Imagem
-                                                </p>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <ImagePlus size={32} className="text-gray-400" />
-                                            <p className="text-xs font-bold text-gray-400 mt-2">Clique para enviar</p>
-                                            <p className="text-[10px] text-gray-400 mt-1">JPG, PNG ou WebP (máx. 10MB)</p>
-                                        </>
-                                    )}
-                                </div>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleUploadImage}
-                                />
-                                {form.imageUrl && (
-                                    <button
-                                        onClick={() => setForm(prev => ({ ...prev, imageUrl: "" }))}
-                                        className="text-xs text-red-500 font-bold mt-2 hover:underline"
-                                    >
-                                        Remover imagem
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* NAME */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Nome do Produto *</label>
-                                <input
-                                    className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                    placeholder="Ex: Kit Hidratação Profunda"
-                                    value={form.name}
-                                    onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-                                />
-                            </div>
-
-                            {/* DESCRIPTION */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Descrição</label>
-                                <textarea
-                                    className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm resize-none"
-                                    placeholder="Descreva o produto para seus clientes..."
-                                    rows={3}
-                                    value={form.description}
-                                    onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Preço (R$)</label>
-                                    <div className="relative">
-                                        <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* COLUNA ESQUERDA: IMAGEM E CATEGORIA */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-2">Foto do Produto</label>
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="relative w-full h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-all overflow-hidden group"
+                                        >
+                                            {uploading ? (
+                                                <Loader2 size={32} className="animate-spin text-violet-500" />
+                                            ) : form.imageUrl ? (
+                                                <>
+                                                    <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <p className="text-white text-sm font-black flex items-center gap-2">
+                                                            <Upload size={16} /> Trocar Imagem
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ImagePlus size={32} className="text-gray-400" />
+                                                    <p className="text-xs font-bold text-gray-400 mt-2">Clique para enviar</p>
+                                                    <p className="text-[10px] text-gray-400 mt-1">JPG, PNG ou WebP (máx. 10MB)</p>
+                                                </>
+                                            )}
+                                        </div>
                                         <input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                            placeholder="0.00"
-                                            value={form.price}
-                                            onChange={e => setForm(prev => ({ ...prev, price: e.target.value }))}
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleUploadImage}
+                                        />
+                                        {form.imageUrl && (
+                                            <button
+                                                onClick={() => setForm(prev => ({ ...prev, imageUrl: "" }))}
+                                                className="text-xs text-red-500 font-bold mt-2 hover:underline"
+                                            >
+                                                Remover imagem
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Grupo / Categoria</label>
+                                        <input
+                                            className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                            placeholder="Ex: Bebidas, Sobremesas, Kits..."
+                                            value={form.category}
+                                            onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
+                                        />
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 ml-2">Agrupa produtos no site</p>
+                                    </div>
+
+                                    {/* SHOW IN VITRINE & STOCK TOGGLES */}
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${form.showInVitrine ? "bg-green-100 dark:bg-green-900/30" : "bg-gray-200 dark:bg-gray-700"}`}>
+                                                    {form.showInVitrine ? <Eye size={20} className="text-green-600" /> : <EyeOff size={20} className="text-gray-400" />}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-black dark:text-white">Na Vitrine</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setForm(prev => ({ ...prev, showInVitrine: !prev.showInVitrine }))}
+                                                className={`w-12 h-7 rounded-full transition-all ${form.showInVitrine ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
+                                            >
+                                                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.showInVitrine ? "translate-x-6" : "translate-x-1"}`} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${form.showStock ? "bg-blue-100 dark:bg-blue-900/30" : "bg-gray-200 dark:bg-gray-700"}`}>
+                                                    <Package size={20} className={form.showStock ? "text-blue-600" : "text-gray-400"} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-black dark:text-white">Exibir Qtd</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setForm(prev => ({ ...prev, showStock: !prev.showStock }))}
+                                                className={`w-12 h-7 rounded-full transition-all ${form.showStock ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"}`}
+                                            >
+                                                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.showStock ? "translate-x-6" : "translate-x-1"}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* COLUNA DIREITA: INFO, PREÇO, VARIAÇÕES */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Nome do Produto *</label>
+                                        <input
+                                            className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                            placeholder="Ex: Coca-Cola 350ml"
+                                            value={form.name}
+                                            onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                                         />
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">R$ Unitário / Pacote</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                        placeholder="1"
-                                        value={form.unitValue}
-                                        onChange={e => setForm(prev => ({ ...prev, unitValue: e.target.value }))}
-                                    />
-                                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 ml-2">Ex: 10 p/ vender pacote</p>
-                                </div>
-                            </div>
 
-                            {/* STOCK QUANTITY */}
-                            <div>
-                                <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Estoque em Mãos (Qtd)</label>
-                                <div className="relative">
-                                    <Package size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                        placeholder="0"
-                                        value={form.quantity}
-                                        onChange={e => setForm(prev => ({ ...prev, quantity: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* SHOW IN VITRINE */}
-                            <div className="grid grid-cols-1 gap-3">
-                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${form.showInVitrine ? "bg-green-100 dark:bg-green-900/30" : "bg-gray-200 dark:bg-gray-700"}`}>
-                                            {form.showInVitrine ? <Eye size={20} className="text-green-600" /> : <EyeOff size={20} className="text-gray-400" />}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black dark:text-white">Exibir na Vitrine</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase">Visível no site</p>
-                                        </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Descrição</label>
+                                        <textarea
+                                            className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm resize-none"
+                                            placeholder="Descreva o produto..."
+                                            rows={2}
+                                            value={form.description}
+                                            onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+                                        />
                                     </div>
-                                    <button
-                                        onClick={() => setForm(prev => ({ ...prev, showInVitrine: !prev.showInVitrine }))}
-                                        className={`w-12 h-7 rounded-full transition-all ${form.showInVitrine ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600"}`}
-                                    >
-                                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.showInVitrine ? "translate-x-6" : "translate-x-1"}`} />
-                                    </button>
-                                </div>
 
-                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${form.showStock ? "bg-blue-100 dark:bg-blue-900/30" : "bg-gray-200 dark:bg-gray-700"}`}>
-                                            <Package size={20} className={form.showStock ? "text-blue-600" : "text-gray-400"} />
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <p className="text-sm font-black dark:text-white">Exibir Quantidade</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase">Mostra estoque disponível</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setForm(prev => ({ ...prev, showStock: !prev.showStock }))}
-                                        className={`w-12 h-7 rounded-full transition-all ${form.showStock ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"}`}
-                                    >
-                                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.showStock ? "translate-x-6" : "translate-x-1"}`} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* DELIVERY & SHIPPING */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Prazo de Entrega</label>
-                                    <input
-                                        className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                        placeholder="Ex: Pronta entrega"
-                                        value={form.deliveryDeadline}
-                                        onChange={e => setForm(prev => ({ ...prev, deliveryDeadline: e.target.value }))}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Valor do Frete</label>
-                                    <input
-                                        type="number"
-                                        className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                        placeholder="0.00"
-                                        value={form.shippingCost}
-                                        onChange={e => setForm(prev => ({ ...prev, shippingCost: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* VARIATIONS */}
-                            <div className="pt-4 border-t dark:border-gray-800">
-                                <div className="flex items-center justify-between mb-4">
-                                    <label className="text-sm font-black dark:text-white flex items-center gap-2">
-                                        <Tag size={18} className="text-violet-500" /> Variações
-                                    </label>
-                                    <button 
-                                        onClick={() => setForm(prev => ({ ...prev, variations: [...prev.variations, { name: "", options: [] }] }))}
-                                        className="text-xs font-black text-violet-600 uppercase hover:underline"
-                                    >
-                                        + Adicionar Tipo
-                                    </button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {form.variations.map((v, i) => (
-                                        <div key={i} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 relative">
-                                            <button 
-                                                onClick={() => {
-                                                    const newV = [...form.variations];
-                                                    newV.splice(i, 1);
-                                                    setForm(prev => ({ ...prev, variations: newV }));
-                                                }}
-                                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition"
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                            <input 
-                                                className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-3 font-black text-sm outline-none focus:border-violet-500 dark:text-white"
-                                                placeholder="Nome (ex: Tamanho, Cor...)"
-                                                value={v.name}
-                                                onChange={e => {
-                                                    const newV = [...form.variations];
-                                                    newV[i].name = e.target.value;
-                                                    setForm(prev => ({ ...prev, variations: newV }));
-                                                }}
-                                            />
-                                            <div className="flex flex-wrap gap-2">
-                                                {v.options.map((opt, optIndex) => (
-                                                    <span key={optIndex} className="bg-white dark:bg-gray-700 px-3 py-1 rounded-lg text-xs font-bold border dark:border-gray-600 flex items-center gap-1 dark:text-gray-300">
-                                                        {opt}
-                                                        <button 
-                                                            onClick={() => {
-                                                                const newV = [...form.variations];
-                                                                newV[i].options.splice(optIndex, 1);
-                                                                setForm(prev => ({ ...prev, variations: newV }));
-                                                            }}
-                                                            className="text-gray-400 hover:text-red-500"
-                                                        >
-                                                            <X size={10} />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                                <input 
-                                                    className="bg-white dark:bg-gray-700 px-3 py-1 rounded-lg text-xs font-bold border-2 border-dashed border-gray-200 dark:border-gray-600 w-24 outline-none focus:border-violet-400 dark:text-white"
-                                                    placeholder="+ Opção"
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') {
-                                                            const val = e.currentTarget.value.trim();
-                                                            if (val) {
-                                                                const newV = [...form.variations];
-                                                                newV[i].options.push(val);
-                                                                setForm(prev => ({ ...prev, variations: newV }));
-                                                                e.currentTarget.value = "";
-                                                            }
-                                                        }
-                                                    }}
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Preço (R$)</label>
+                                            <div className="relative">
+                                                <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    className="w-full border dark:border-gray-700 p-3.5 pl-11 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                    placeholder="0.00"
+                                                    value={form.price}
+                                                    onChange={e => setForm(prev => ({ ...prev, price: e.target.value }))}
                                                 />
                                             </div>
                                         </div>
-                                    ))}
-                                    {form.variations.length === 0 && (
-                                        <p className="text-center text-[10px] text-gray-400 font-bold uppercase py-2">Nenhuma variação cadastrada</p>
-                                    )}
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Estoque (Qtd)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                placeholder="0"
+                                                value={form.quantity}
+                                                onChange={e => setForm(prev => ({ ...prev, quantity: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Prazo de Entrega</label>
+                                            <input
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                placeholder="Pronta entrega"
+                                                value={form.deliveryDeadline}
+                                                onChange={e => setForm(prev => ({ ...prev, deliveryDeadline: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Frete (R$)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                placeholder="0.00"
+                                                value={form.shippingCost}
+                                                onChange={e => setForm(prev => ({ ...prev, shippingCost: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <label className="text-sm font-black dark:text-white flex items-center gap-2">
+                                                <Tag size={18} className="text-violet-500" /> Variações
+                                            </label>
+                                            <button 
+                                                onClick={() => setForm(prev => ({ ...prev, variations: [...prev.variations, { name: "", options: [] }] }))}
+                                                className="text-xs font-black text-violet-600 uppercase hover:underline"
+                                            >
+                                                + Novo Tipo
+                                            </button>
+                                        </div>
+                                        <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                            {form.variations.map((v, i) => (
+                                                <div key={i} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-2xl border dark:border-gray-700 relative">
+                                                    <button onClick={() => { const n = [...form.variations]; n.splice(i,1); setForm(p=>({...p, variations: n})) }} className="absolute top-2 right-2 text-gray-400 hover:text-red-500"><X size={14} /></button>
+                                                    <input className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-2 font-black text-xs outline-none dark:text-white" placeholder="Ex: Sabor" value={v.name} onChange={e=>{const n=[...form.variations]; n[i]={...n[i], name: e.target.value}; setForm(p=>({...p, variations: n}))}} />
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {v.options.map((opt, oi) => (
+                                                            <span key={oi} className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1">
+                                                                {opt}
+                                                                <button onClick={()=>{const n=[...form.variations]; const no=[...n[i].options]; no.splice(oi,1); n[i]={...n[i], options: no}; setForm(p=>({...p, variations: n}))}}><X size={8}/></button>
+                                                            </span>
+                                                        ))}
+                                                        <input className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border-2 border-dashed w-20 outline-none" placeholder="+ Opção" onKeyDown={e=>{if(e.key==='Enter'){const val=e.currentTarget.value.trim(); if(val){const n=[...form.variations]; n[i]={...n[i], options: [...n[i].options, ...val.split(',').map(x=>x.trim())]}; setForm(p=>({...p, variations: n})); e.currentTarget.value=""}}}} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* SAVE BUTTON */}
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                            >
-                                {saving ? (
-                                    <><Loader2 size={20} className="animate-spin" /> Salvando...</>
-                                ) : (
-                                    <><Save size={20} /> {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}</>
-                                )}
-                            </button>
+                            <div className="mt-8 pt-6 border-t dark:border-gray-800">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {saving ? <><Loader2 size={20} className="animate-spin" /> Salvando...</> : <><Save size={20} /> {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
