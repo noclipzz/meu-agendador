@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { MercadoPagoConfig, Preference } from "mercadopago";
+import { sendPushNotification } from "@/lib/push-server";
 
 export async function POST(req: Request) {
   try {
@@ -100,6 +101,18 @@ export async function POST(req: Request) {
         }
       }
     });
+
+    // 3.5 Notifica o dono (Push)
+    try {
+      await sendPushNotification(
+        company.ownerId,
+        "📦 Novo Pedido na Vitrine",
+        `${customerInfo.name} realizou um pedido de R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        "/painel/vitrine/pedidos"
+      );
+    } catch (e) {
+      console.error("Erro ao enviar push:", e);
+    }
 
     // 4. Configura o Mercado Pago
     const client = new MercadoPagoConfig({

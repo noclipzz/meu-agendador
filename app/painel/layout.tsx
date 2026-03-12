@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Bot,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -379,8 +379,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'fornecedores', name: "Fornecedores", path: "/painel/fornecedores", icon: <Truck size={18} /> },
         { key: 'servicos', name: "Serviços", path: "/painel/servicos", icon: <Briefcase size={18} /> },
         { key: 'estoque', name: "Estoque", path: "/painel/estoque", icon: <Package size={18} /> },
-        { key: 'vitrine', name: "Vitrine", path: "/painel/vitrine", icon: <Store size={18} /> },
         { key: 'fichas-tecnicas', name: "Fichas Técnicas", path: "/painel/fichas-tecnicas", icon: <ClipboardList size={18} /> },
+    ];
+
+    const vitrineItems = [
+        { key: 'vitrine_produtos', name: "Produtos", path: "/painel/vitrine", icon: <Store size={18} /> },
+        { key: 'vitrine_pedidos', name: "Pedidos", path: "/painel/vitrine/pedidos", icon: <ShoppingBag size={18} /> },
     ];
 
     const financeiroItems = [
@@ -404,11 +408,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
         if (!hasTrackingModule && item.key === 'rastreamento') return false;
         if (userPlan === "PREMIUM") {
-            if (["fichas-tecnicas", "estoque", "vitrine", "whatsapp"].includes(item.key)) return false;
+            if (["fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "whatsapp"].includes(item.key)) return false;
         }
 
         if (item.key === 'whatsapp' && !isOwner) return false;
@@ -422,6 +426,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const visibleItems = filterMenu(allItems);
     const visibleCadastros = filterMenu(cadastrosItems);
+    const visibleVitrine = filterMenu(vitrineItems);
     const visibleFinanceiro = filterMenu(financeiroItems);
     const visibleConfig = configItems.filter(item => {
         const canView = isOwner || userPermissions?.config;
@@ -529,6 +534,39 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             {openMenus.includes("cadastros") && (
                                 <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
                                     {visibleCadastros.map(sub => (
+                                        <Link
+                                            key={sub.path}
+                                            href={sub.path}
+                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+                                        >
+                                            {sub.icon}
+                                            {sub.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* GRUPO: VITRINE */}
+                    {visibleVitrine.length > 0 && (
+                        <div className="pt-2">
+                            <button
+                                onClick={() => toggleMenu("vitrine_group")}
+                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
+                            >
+                                <div className="flex items-center gap-4 md:gap-3">
+                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                        <Store size={20} />
+                                    </div>
+                                    <span className="text-base md:text-[14px]">Vitrine</span>
+                                </div>
+                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("vitrine_group") ? "" : "-rotate-90"}`} />
+                            </button>
+
+                            {openMenus.includes("vitrine_group") && (
+                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
+                                    {visibleVitrine.map(sub => (
                                         <Link
                                             key={sub.path}
                                             href={sub.path}
