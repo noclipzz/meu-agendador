@@ -5,7 +5,7 @@ import {
     ShoppingBag, Package, Truck, CheckCircle2, Clock, XCircle, 
     Search, User, Phone, MapPin, Mail, Calendar, ExternalLink,
     ChevronDown, ChevronUp, Loader2, RefreshCw, MoreVertical,
-    CheckCircle, AlertCircle
+    CheckCircle, AlertCircle, CreditCard
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -235,6 +235,17 @@ export default function PedidosVitrine() {
                                                         </div>
                                                     </div>
                                                 </div>
+                                            )}
+
+                                            {pedido.paymentMethod && (
+                                                <>
+                                                    <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 pt-2">
+                                                        <CreditCard size={14} /> Forma de Pagamento
+                                                    </h4>
+                                                    <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl font-black text-sm uppercase">
+                                                        {pedido.paymentMethod.replace('_', ' ')}
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
 
