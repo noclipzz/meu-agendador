@@ -73,7 +73,7 @@ export async function PATCH(req: Request) {
         const isConnected = company.whatsappStatus === 'CONNECTED';
 
         if (isMaster && isConnected && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && updatedOrder.customerPhone) {
-          const messageText = `Olá ${updatedOrder.customerName}! ✨\n\nSeu pedido *#${updatedOrder.id.slice(-6).toUpperCase()}* acaba de entrar em preparo! 👩‍🍳🏡\n\nAvisaremos você assim que ele for enviado.`;
+          const messageText = `Olá ${updatedOrder.customerName}! ✨\n\nSeu pedido *#${updatedOrder.id.slice(-6).toUpperCase()}* acaba de entrar em preparo! 📦\n\nAvisaremos você assim que ele for enviado.`;
 
           await sendEvolutionMessage(
             company.evolutionServerUrl,
