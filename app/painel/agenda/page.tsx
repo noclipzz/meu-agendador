@@ -56,7 +56,7 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
 
 export default function PainelDashboard() {
     const { user } = useUser();
-    const { refreshKey } = useAgenda();
+    const { refreshKey, companyId } = useAgenda();
     const router = useRouter();
 
     const [view, setView] = useState<'month' | 'week' | 'day'>('day');
