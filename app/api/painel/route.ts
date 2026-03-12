@@ -19,12 +19,18 @@ export async function GET() {
 
     if (companyAsOwner) {
       // É ADMIN: Busca todos os agendamentos da empresa dele
-      const bookings = await prisma.booking.findMany({
-        where: { companyId: companyAsOwner.id },
-        include: { service: true, professional: true },
-        orderBy: { date: 'asc' }
-      });
-      return NextResponse.json(bookings);
+      const [bookings, blockedDates] = await Promise.all([
+        prisma.booking.findMany({
+          where: { companyId: companyAsOwner.id },
+          include: { service: true, professional: true },
+          orderBy: { date: 'asc' }
+        }),
+        prisma.blockedDate.findMany({
+          where: { companyId: companyAsOwner.id },
+          orderBy: { date: 'asc' }
+        })
+      ]);
+      return NextResponse.json({ bookings, blockedDates });
     }
 
     // 2. Se não é dono, verifica se é um PROFISSIONAL vinculado
@@ -34,22 +40,28 @@ export async function GET() {
 
     if (professionalAccount) {
       // É PROFISSIONAL: Busca apenas os agendamentos vinculados ao ID dele ou GERAL
-      const bookings = await prisma.booking.findMany({
-        where: {
-          companyId: professionalAccount.companyId,
-          OR: [
-            { professionalId: professionalAccount.id },
-            { professionalId: null }
-          ]
-        },
-        include: { service: true, professional: true },
-        orderBy: { date: 'asc' }
-      });
-      return NextResponse.json(bookings);
+      const [bookings, blockedDates] = await Promise.all([
+        prisma.booking.findMany({
+          where: {
+            companyId: professionalAccount.companyId,
+            OR: [
+              { professionalId: professionalAccount.id },
+              { professionalId: null }
+            ]
+          },
+          include: { service: true, professional: true },
+          orderBy: { date: 'asc' }
+        }),
+        prisma.blockedDate.findMany({
+          where: { companyId: professionalAccount.companyId },
+          orderBy: { date: 'asc' }
+        })
+      ]);
+      return NextResponse.json({ bookings, blockedDates });
     }
 
     // Se o usuário não tem empresa nem é profissional cadastrado, retorna vazio
-    return NextResponse.json([]);
+    return NextResponse.json({ bookings: [], blockedDates: [] });
   } catch (error) {
     console.error("ERRO_GET_PAINEL:", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });

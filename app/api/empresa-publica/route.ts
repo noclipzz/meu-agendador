@@ -40,7 +40,8 @@ export async function GET(req: Request) {
             shippingCost: true,
             variations: true,
           }
-        }
+        },
+        blockedDates: true
       }
     });
 

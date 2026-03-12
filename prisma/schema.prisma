@@ -105,6 +105,7 @@ model Company {
   chatSessions          WhatsAppChatSession[]
   orders                Order[]
   vitrineProducts       VitrineProduct[]
+  blockedDates          BlockedDate[]
 
   // AI Reception Settings
   aiEnabled      Boolean? @default(false)
@@ -277,6 +278,16 @@ model Booking {
   professional   Professional? @relation(fields: [professionalId], references: [id])
   service        Service?      @relation(fields: [serviceId], references: [id])
   invoice        Invoice?
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  date      DateTime
+  reason    String?
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
 }
 
 model Subscription {

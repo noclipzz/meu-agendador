@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { format, parse } from "date-fns";
+import { format, parse, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { User, Loader2, X, Phone, Building2, Instagram, Facebook, Clock, MapPin, AlertTriangle, ShoppingBag, Tag, ChevronLeft, ChevronRight, Store, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
@@ -598,6 +598,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 minDate={new Date()}
                 locale="pt-BR"
                 className="w-full border-none !bg-transparent custom-calendar font-bold"
+                tileDisabled={({ date }) => empresa.blockedDates?.some((b: any) => isSameDay(new Date(b.date), date))}
               />
             </div>
 
@@ -605,6 +606,21 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
               const diaSemana = dataSelecionada.getDay().toString();
               const diasTrabalho = empresa?.workDays ? empresa.workDays.split(',') : [];
               const isDiaDeTrabalho = diasTrabalho.includes(diaSemana);
+              const isBlocked = empresa.blockedDates?.some((b: any) => isSameDay(new Date(b.date), dataSelecionada));
+
+              if (isBlocked) {
+                return (
+                  <div className="text-center py-10 bg-red-50 rounded-[2rem] border-2 border-red-100 mb-8 px-8 animate-in zoom-in duration-500">
+                    <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-white shadow-sm">
+                      <AlertTriangle size={24} />
+                    </div>
+                    <h3 className="text-red-900 font-black uppercase text-sm tracking-tighter mb-2">Dia Indisponível</h3>
+                    <p className="text-red-700 text-xs font-bold leading-relaxed">
+                      Infelizmente não há horários disponíveis para agendamento online neste dia.
+                    </p>
+                  </div>
+                );
+              }
 
               if (!isDiaDeTrabalho) {
                 return (

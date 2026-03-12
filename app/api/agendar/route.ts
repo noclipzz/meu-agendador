@@ -68,6 +68,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
         }
 
+        // 1.5. Verifica se a data está bloqueada
+        const isBlocked = await prisma.blockedDate.findUnique({
+            where: {
+                companyId_date: {
+                    companyId: companyId,
+                    date: startOfDay(dataAgendamento)
+                }
+            }
+        });
+
+        if (isBlocked) {
+            return NextResponse.json({ error: "Desculpe, a agenda online para este dia está bloqueada pelo estabelecimento." }, { status: 403 });
+        }
+
         // 2. Busca dados da empresa e serviço (Necessário para checks seguintes)
         const [service, company] = await Promise.all([
             serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,

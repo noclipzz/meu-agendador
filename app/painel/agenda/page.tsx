@@ -61,6 +61,7 @@ export default function PainelDashboard() {
 
     const [view, setView] = useState<'month' | 'week' | 'day'>('day');
     const [agendamentos, setAgendamentos] = useState<any[]>([]);
+    const [blockedDates, setBlockedDates] = useState<any[]>([]);
     const [profissionais, setProfissionais] = useState<any[]>([]);
     const [servicosDisponiveis, setServicosDisponiveis] = useState<any[]>([]);
     const [empresaInfo, setEmpresaInfo] = useState({ name: "...", logo: "" });
@@ -99,7 +100,8 @@ export default function PainelDashboard() {
                 fetch('/api/painel'), fetch('/api/painel/config'), fetch('/api/painel/profissionais'), fetch('/api/painel/servicos')
             ]);
             const dadosAgenda = await resAgenda.json();
-            if (Array.isArray(dadosAgenda)) setAgendamentos(dadosAgenda);
+            if (dadosAgenda.bookings) setAgendamentos(dadosAgenda.bookings);
+            if (dadosAgenda.blockedDates) setBlockedDates(dadosAgenda.blockedDates);
             const dadosConfig = await resConfig.json();
             if (dadosConfig) {
                 setMetaMensal(Number(dadosConfig.monthlyGoal) || 5000);
@@ -281,6 +283,35 @@ export default function PainelDashboard() {
         else setDataAtual(addDays(dataAtual, direcao));
     };
 
+    async function toggleBloqueio(dia: Date) {
+        const bloqueio = blockedDates.find(b => isSameDay(new Date(b.date), dia));
+        
+        try {
+            if (bloqueio) {
+                // Remover bloqueio
+                const res = await fetch(`/api/painel/agenda/bloqueio?id=${bloqueio.id}`, { method: "DELETE" });
+                if (res.ok) {
+                    setBlockedDates(prev => prev.filter(b => b.id !== bloqueio.id));
+                    toast.success("Dia desbloqueado!");
+                }
+            } else {
+                // Adicionar bloqueio
+                const res = await fetch("/api/painel/agenda/bloqueio", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: dia.toISOString() })
+                });
+                if (res.ok) {
+                    const novo = await res.json();
+                    setBlockedDates(prev => [...prev, novo]);
+                    toast.warning("Dia bloqueado para novos agendamentos!");
+                }
+            }
+        } catch (e) {
+            toast.error("Erro ao alterar bloqueio.");
+        }
+    }
+
     const faturamentoTotal = agendamentosFiltrados
         .filter(a => isSameMonth(new Date(a.date), dataAtual) && a.status !== "CANCELADO")
         .reduce((acc, item) => acc + Number(item.service?.price || 0), 0);
@@ -308,11 +339,13 @@ export default function PainelDashboard() {
                             .reduce((acc, i) => acc + Number(i.service?.price || 0), 0);
 
                         const ehMes = isSameMonth(dia, dataAtual);
+                        const isBlocked = blockedDates.some(b => isSameDay(new Date(b.date), dia));
 
                         return (
-                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 min-h-[80px] h-full flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'}`}>
+                            <div key={dia.toString()} onClick={() => { setDataAtual(dia); setView('day'); }} className={`bg-white dark:bg-gray-800 p-1 md:p-2 min-h-[80px] h-full flex flex-col cursor-pointer hover:bg-gray-50 transition border-r border-b dark:border-gray-700 ${!ehMes && 'opacity-30'} ${isBlocked ? 'bg-red-50 dark:bg-red-900/10' : ''}`}>
                                 <div className="flex justify-between items-start mb-1 shrink-0">
-                                    <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
+                                    <span className={`text-xs md:text-sm font-bold flex items-center justify-center rounded-lg w-6 h-6 md:w-8 md:h-8 ${isSameDay(dia, new Date()) ? 'bg-blue-600 text-white shadow-lg' : isBlocked ? 'bg-red-500 text-white' : 'text-gray-700 dark:text-gray-200'}`}>{format(dia, 'd')}</span>
+                                    {isBlocked && <span className="text-[8px] font-black text-red-600 uppercase">Bloqueado</span>}
                                     {faturamentoDia > 0 && <span className="text-[8px] md:text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/20 px-1 rounded">R$ {faturamentoDia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
                                 </div>
                                 <div className="flex-1 overflow-y-auto space-y-0.5 custom-scrollbar">
@@ -364,13 +397,23 @@ export default function PainelDashboard() {
         const horas = Array.from({ length: 24 }, (_, i) => i);
         const PIXELS_POR_HORA = 90;
         const agsDoDia = agendamentosFiltrados.filter(a => isSameDay(new Date(a.date), dataAtual));
+        const isBlocked = blockedDates.some(b => isSameDay(new Date(b.date), dataAtual));
         const agsProcessados = calcularLayoutVisual(agsDoDia);
         const isToday = isSameDay(dataAtual, new Date());
+        
         // Cálculo corrigido da linha do tempo
         const topLinha = (getHours(agora) * 60 + getMinutes(agora)) / 60 * PIXELS_POR_HORA;
 
         return (
-            <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-gray-800 font-sans relative [--hour-h:90px] md:[--hour-h:55px]">
+            <div className={`flex flex-col h-full overflow-hidden font-sans relative [--hour-h:90px] md:[--hour-h:55px] ${isBlocked ? 'bg-red-50/50 dark:bg-red-950/20' : 'bg-white dark:bg-gray-800'}`}>
+                {isBlocked && (
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none bg-red-50/10 backdrop-blur-[1px]">
+                        <div className="bg-red-600 text-white px-8 py-3 rounded-full font-black uppercase text-xl shadow-2xl flex items-center gap-3">
+                            <X size={24} strokeWidth={3} /> Agenda Bloqueada
+                        </div>
+                        <p className="text-red-500 font-bold mt-2 text-sm">Nenhum agendamento online será permitido neste dia.</p>
+                    </div>
+                )}
                 <div className="flex-1 overflow-y-auto relative custom-scrollbar">
                     {horas.map(h => (
                         <div key={h} className="flex border-b dark:border-gray-700 h-[var(--hour-h)]">
@@ -547,6 +590,21 @@ export default function PainelDashboard() {
                         <span className="text-[11px] font-black uppercase tracking-tighter w-32 text-center">{tituloCalendario}</span>
                         <button onClick={() => navegar(1)} className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md transition"><ChevronRight size={16} /></button>
                     </div>
+                    {view === 'day' && (
+                        <button
+                            onClick={() => toggleBloqueio(dataAtual)}
+                            className={`mr-4 flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${blockedDates.some(b => isSameDay(new Date(b.date), dataAtual))
+                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                                }`}
+                        >
+                            {blockedDates.some(b => isSameDay(new Date(b.date), dataAtual)) ? (
+                                <><CheckCircle2 size={14} /> Desbloquear Dia</>
+                            ) : (
+                                <><X size={14} /> Bloquear Agenda</>
+                            )}
+                        </button>
+                    )}
                 </div>
             </div>
 
