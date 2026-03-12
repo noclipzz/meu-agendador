@@ -64,7 +64,30 @@ export async function POST(req: Request) {
         const dataAgendamento = new Date(date);
         const agora = new Date();
 
-        if (dataAgendamento < new Date(agora.getTime() - 60000)) {
+        // 1.5. Busca dados da empresa (Necessário para checks de usuário interno)
+        const company = await prisma.company.findUnique({ where: { id: companyId } });
+        if (!company) {
+            return new NextResponse("Empresa não encontrada", { status: 404 });
+        }
+
+        const { userId } = await auth();
+        let isInternalUser = false;
+        if (userId) {
+            if (company.ownerId === userId) {
+                isInternalUser = true;
+            } else {
+                const teamMember = await prisma.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
+                if (teamMember) isInternalUser = true;
+                if (!isInternalUser) {
+                    const prof = await prisma.professional.findFirst({ where: { userId, companyId } });
+                    if (prof) isInternalUser = true;
+                }
+            }
+        }
+
+        const isEventoFull = type === "EVENTO";
+
+        if (!isInternalUser && !isEventoFull && dataAgendamento < new Date(agora.getTime() - 60000)) {
             return NextResponse.json({ error: "Não é possível agendar um horário que já passou." }, { status: 400 });
         }
 
@@ -82,32 +105,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Desculpe, a agenda online para este dia está bloqueada pelo estabelecimento." }, { status: 403 });
         }
 
-        // 2. Busca dados da empresa e serviço (Necessário para checks seguintes)
-        const [service, company] = await Promise.all([
-            serviceId ? prisma.service.findUnique({ where: { id: serviceId } }) : null,
-            prisma.company.findUnique({ where: { id: companyId } })
-        ]);
-
-        if (!company) {
-            return new NextResponse("Empresa não encontrada", { status: 404 });
-        }
-
-        // 3. Verifica se o usuário está logado e se é equipe interna
-        const { userId } = await auth();
-        let isInternalUser = false;
-        if (userId) {
-            if (company.ownerId === userId) {
-                isInternalUser = true;
-            } else {
-                const teamMember = await prisma.teamMember.findFirst({ where: { clerkUserId: userId, companyId } });
-                if (teamMember) isInternalUser = true;
-
-                if (!isInternalUser) {
-                    const prof = await prisma.professional.findFirst({ where: { userId, companyId } });
-                    if (prof) isInternalUser = true;
-                }
-            }
-        }
+        // 2. Busca dados do serviço (empresa e isInternalUser já foram processados)
+        const service = serviceId ? await prisma.service.findUnique({ where: { id: serviceId } }) : null;
 
         const phoneClean = phone?.replace(/\D/g, "") || "";
 

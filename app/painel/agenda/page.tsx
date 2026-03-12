@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek, isSameDay, addDays, subDays, getHours, getMinutes, isBefore, addMinutes, areIntervalsOverlapping } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
-import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Zap, ExternalLink, PlusCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Building2, X, Phone, Calendar, Search, Filter, Pencil, Save, Clock, User as UserIcon, UserCircle, CheckCheck, CreditCard, Banknote, QrCode, CheckCircle2, Trash2, Loader2, UserPlus, FileText, Zap, ExternalLink, PlusCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useAgenda } from "../../../contexts/AgendaContext";
 
@@ -73,6 +73,10 @@ export default function PainelDashboard() {
     const [isEditing, setIsEditing] = useState(false);
     const [modalCheckout, setModalCheckout] = useState(false);
     const [editForm, setEditForm] = useState<any>(null);
+
+    // ESTADO DO BLOQUEIO DE HORÁRIO
+    const [modalBloqueio, setModalBloqueio] = useState<{ isOpen: boolean, date: Date | null }>({ isOpen: false, date: null });
+    const [motivoBloqueio, setMotivoBloqueio] = useState("Bloqueio manual");
 
     // ESTADO DO CHECKOUT
     const [checkoutData, setCheckoutData] = useState({
@@ -277,18 +281,16 @@ export default function PainelDashboard() {
         return matchTexto && matchProfissional;
     });
 
-    async function bloquearHorario(data: Date) {
-        const motivo = prompt("Motivo do bloqueio (opcional):", "Bloqueio manual");
-        if (motivo === null) return;
-
+    async function confirmarBloqueio() {
+        if (!modalBloqueio.date) return;
         setLoading(true);
         try {
             const res = await fetch('/api/agendar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name: motivo || "Bloqueio de Horário",
-                    date: data.toISOString(),
+                    name: motivoBloqueio || "Bloqueio de Horário",
+                    date: modalBloqueio.date.toISOString(),
                     type: "EVENTO",
                     category: "BLOQUEIO",
                     companyId: companyId,
@@ -299,15 +301,22 @@ export default function PainelDashboard() {
 
             if (res.ok) {
                 toast.success("Horário bloqueado!");
+                setModalBloqueio({ isOpen: false, date: null });
                 await carregarDados();
             } else {
-                toast.error("Erro ao bloquear horário");
+                const errData = await res.json();
+                toast.error(errData.error || "Erro ao bloquear horário");
             }
         } catch (e) {
             toast.error("Erro de conexão");
         } finally {
             setLoading(false);
         }
+    }
+
+    async function bloquearHorario(data: Date) {
+        setModalBloqueio({ isOpen: true, date: data });
+        setMotivoBloqueio("Bloqueio manual");
     }
 
     const navegar = (direcao: number) => {
@@ -647,15 +656,15 @@ export default function PainelDashboard() {
                     {view === 'day' && (
                         <button
                             onClick={() => toggleBloqueio(dataAtual)}
-                            className={`mr-4 flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${blockedDates.some(b => isSameDay(new Date(b.date), dataAtual))
-                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                    : 'bg-red-50 text-red-600 hover:bg-red-100'
+                            className={`mr-4 flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all shadow-sm ${blockedDates.some(b => (b.date.includes('T') ? b.date.split('T')[0] : b.date) === format(dataAtual, 'yyyy-MM-dd'))
+                                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-green-500/20'
+                                    : 'bg-red-600 text-white hover:bg-red-700 shadow-red-500/20'
                                 }`}
                         >
-                            {blockedDates.some(b => isSameDay(new Date(b.date), dataAtual)) ? (
-                                <><CheckCircle2 size={14} /> Desbloquear Dia</>
+                            {blockedDates.some(b => (b.date.includes('T') ? b.date.split('T')[0] : b.date) === format(dataAtual, 'yyyy-MM-dd')) ? (
+                                <><CheckCircle2 size={16} /> Desbloquear Agenda</>
                             ) : (
-                                <><X size={14} /> Bloquear Agenda</>
+                                <><X size={16} /> Bloquear Agenda</>
                             )}
                         </button>
                     )}
@@ -886,6 +895,84 @@ export default function PainelDashboard() {
                     </div></ModalPortal>
                 )
             }
+
+            {/* MODAL BONITO PARA BLOQUEIO DE HORÁRIO */}
+            {modalBloqueio.isOpen && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[110] p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+                            <div className="bg-red-600 p-6 text-white flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-white/20 p-2 rounded-xl">
+                                        <X size={24} strokeWidth={3} />
+                                    </div>
+                                    <h3 className="text-xl font-black uppercase tracking-tight">Bloquear Horário</h3>
+                                </div>
+                                <button onClick={() => setModalBloqueio({ isOpen: false, date: null })} className="p-2 hover:bg-white/20 rounded-full transition">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            
+                            <div className="p-8 space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Clock size={14} /> Horário Selecionado
+                                    </label>
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700">
+                                        <p className="font-black text-lg dark:text-white uppercase">
+                                            {modalBloqueio.date && format(modalBloqueio.date, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <AlertTriangle size={14} /> Motivo do Bloqueio
+                                    </label>
+                                    <textarea 
+                                        className="w-full h-32 p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold dark:text-white transition-all resize-none"
+                                        placeholder="Ex: Pausa para almoço, Folga, Reunião interna..."
+                                        value={motivoBloqueio}
+                                        onChange={(e) => setMotivoBloqueio(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <button 
+                                        onClick={() => setModalBloqueio({ isOpen: false, date: null })}
+                                        className="py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 transition-all active:scale-95"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button 
+                                        onClick={confirmarBloqueio}
+                                        disabled={loading}
+                                        className="py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest bg-red-600 text-white shadow-xl shadow-red-500/20 hover:bg-red-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        {loading ? <Loader2 className="animate-spin" size={16} /> : <><CheckCircle2 size={16} /> Confirmar</>}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
+
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(0,0,0,0.1);
+                    border-radius: 10px;
+                }
+                .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.1);
+                }
+            `}</style>
         </div>
     );
 }
