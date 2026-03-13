@@ -39,9 +39,13 @@ export async function GET(req: Request) {
         });
 
         return NextResponse.json(products);
-    } catch (error) {
+    } catch (error: any) {
         console.error("ERRO_GET_VITRINE:", error);
-        return NextResponse.json({ error: "Erro ao buscar produtos da vitrine", debug: String(error) }, { status: 500 });
+        return NextResponse.json({ 
+            error: "Erro ao buscar produtos da vitrine", 
+            debug: error.message || String(error),
+            stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+        }, { status: 500 });
     }
 }
 
@@ -56,7 +60,7 @@ export async function POST(req: Request) {
 
         const body = await req.json();
 
-        const product = await prisma.vitrineProduct.create({
+        const product = await (prisma.vitrineProduct as any).create({
             data: {
                 name: body.name,
                 description: body.description || null,
@@ -75,9 +79,9 @@ export async function POST(req: Request) {
         });
 
         return NextResponse.json(product);
-    } catch (error) {
+    } catch (error: any) {
         console.error("ERRO_CRIAR_PRODUTO_VITRINE:", error);
-        return NextResponse.json({ error: "Erro ao criar produto", debug: String(error) }, { status: 500 });
+        return NextResponse.json({ error: "Erro ao criar produto", debug: error.message || String(error) }, { status: 500 });
     }
 }
 
@@ -90,7 +94,7 @@ export async function PUT(req: Request) {
         const body = await req.json();
         const { id, ...data } = body;
 
-        const updated = await prisma.vitrineProduct.update({
+        const updated = await (prisma.vitrineProduct as any).update({
             where: { id },
             data: {
                 name: data.name,
@@ -109,9 +113,9 @@ export async function PUT(req: Request) {
         });
 
         return NextResponse.json(updated);
-    } catch (error) {
+    } catch (error: any) {
         console.error("ERRO_ATUALIZAR_VITRINE:", error);
-        return NextResponse.json({ error: "Erro ao atualizar produto", debug: String(error) }, { status: 500 });
+        return NextResponse.json({ error: "Erro ao atualizar produto", debug: error.message || String(error) }, { status: 500 });
     }
 }
 
