@@ -147,6 +147,10 @@ export async function POST(req: Request) {
         });
     }
 
+    const host = req.headers.get("host");
+    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
     const result = await preference.create({
       body: {
         items: mpItems,
@@ -158,9 +162,9 @@ export async function POST(req: Request) {
           name: customerInfo.name,
         },
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=success&orderId=${order.id}`,
-          failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=failure`,
-          pending: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=pending`,
+          success: `${baseUrl}/${slug}/vitrine?payment=success&orderId=${order.id}`,
+          failure: `${baseUrl}/${slug}/vitrine?payment=failure`,
+          pending: `${baseUrl}/${slug}/vitrine?payment=pending`,
         },
         auto_return: "approved",
         external_reference: order.id,
