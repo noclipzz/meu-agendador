@@ -39,7 +39,11 @@ export default clerkMiddleware((auth, req) => {
     slug = hostname.replace(".localhost:3000", "");
   }
 
-  const reserved = ["www", "app", "painel", "master", "api", "admin", "blog", "static"];
+  const reserved = [
+    "www", "app", "painel", "master", "api", "admin", "blog", "static", 
+    "checkout", "login", "register", "dashboard", "suporte", "ajuda",
+    "auth", "clerk", "stripe", "billing", "financeiro", "agenda", "nohud"
+  ];
 
   if (slug && !reserved.includes(slug)) {
     // Se o usuário acessa docegraca.nohud.com.br/vitrine,

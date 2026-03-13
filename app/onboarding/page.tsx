@@ -116,18 +116,13 @@ export default function OnboardingPage() {
                     return;
                 }
 
-                if (!data.companyId) {
-                    router.push('/novo-negocio');
-                    return;
-                }
-
                 if (data.onboardingCompleted) {
                     router.push('/painel/dashboard');
                     return;
                 }
 
                 setIsAdmin(data.role === "ADMIN");
-                setCompanyId(data.companyId);
+                setCompanyId(data.companyId || "");
                 setCompanyName(data.companyName || "");
                 setSlug(data.slug || "");
                 setPlan(data.plan || "FREE");
@@ -166,11 +161,35 @@ export default function OnboardingPage() {
     }, [slug, companyId]);
 
     // --- HANDLERS ---
-    const handleNext = () => {
+    const handleNext = async () => {
         if (step === 1) {
             if (!companyName || !slug) return toast.error("Preencha o nome e escolha seu link.");
             if (isSlugAvailable === false) return toast.error("Este link já está sendo usado.");
-            setStep(2);
+            
+            // Se não tem empresa ainda, cria agora
+            if (!companyId) {
+                setLoading(true);
+                try {
+                    const res = await fetch('/api/painel/config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: companyName, slug: slug })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        setCompanyId(data.id);
+                        setStep(2);
+                    } else {
+                        toast.error(data.error || "Erro ao criar empresa.");
+                    }
+                } catch (e) {
+                    toast.error("Erro de conexão.");
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setStep(2);
+            }
         } else if (step === 2) {
             setStep(3);
         } else if (step === 3) {
@@ -665,10 +684,11 @@ export default function OnboardingPage() {
                         {step < steps.length ? (
                             <button 
                                 onClick={handleNext} 
-                                className="bg-black text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group"
+                                disabled={loading}
+                                className="bg-black text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group disabled:bg-gray-400"
                                 style={{ backgroundColor: cor }}
                             >
-                                Próximo <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                                {loading && step === 1 ? <Loader2 className="animate-spin text-white" /> : "Próximo"} <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         ) : (
                             <button 

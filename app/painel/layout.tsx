@@ -8,7 +8,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { usePathname, useRouter } from "next/navigation";
 import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
-    Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase,
+    Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase, HelpCircle,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Bot,
     ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag
 } from "lucide-react";
@@ -374,6 +374,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
+        { key: 'suporte', name: "Suporte", path: "/painel/suporte", icon: <HelpCircle size={20} className="text-blue-500" /> },
         { key: 'config', name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
     ];
 
