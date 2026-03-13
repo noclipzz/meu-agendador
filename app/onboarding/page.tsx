@@ -169,7 +169,7 @@ export default function OnboardingPage() {
         "Tatuagem",
         "Pet Shop",
         "Fotografia",
-        "Restaurente/Alimentos"
+        "Restaurente/Alimentos",
         "Outros"
     ];
 
