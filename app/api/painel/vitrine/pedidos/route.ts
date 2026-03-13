@@ -57,9 +57,16 @@ export async function PATCH(req: Request) {
 
     if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
-    const updatedOrder = await db.order.update({
+    const updatedOrder = await (db as any).order.update({
       where: { id, companyId: company.id },
-      data: { status }
+      data: { status },
+      include: {
+        items: {
+          include: {
+            vitrineProduct: true
+          }
+        }
+      }
     });
 
     // Notificação WhatsApp (Apenas se for PREPARING)
@@ -73,7 +80,25 @@ export async function PATCH(req: Request) {
         const isConnected = company.whatsappStatus === 'CONNECTED';
 
         if (isMaster && isConnected && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId && updatedOrder.customerPhone) {
-          const messageText = `Olá ${updatedOrder.customerName}! ✨\n\nSeu pedido *#${updatedOrder.id.slice(-6).toUpperCase()}* acaba de entrar em preparo! 📦\n\nAvisaremos você assim que ele for enviado.`;
+          const itemsList = updatedOrder.items.map((item: any) => {
+            let variation = "";
+            if (item.variation) {
+               // Converte "Chave: Valor, Chave2: Valor2" em lista com quebra de linha
+               variation = "\n" + item.variation.split(", ").join("\n");
+            }
+            return `${item.quantity}x - ${item.vitrineProduct.name}${variation}`;
+          }).join("\n\n");
+
+          let messageText = `Olá ${updatedOrder.customerName}! ✨\n\nSeu pedido acaba de entrar em preparo! 📦\n\n*Detalhes do Pedido:* \n${itemsList}\n\n*Valor total: R$ ${Number(updatedOrder.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*`;
+
+          if (updatedOrder.deliveryMethod === "DELIVERY" && updatedOrder.addressInfo) {
+            const addr = updatedOrder.addressInfo as any;
+            messageText += `\n\n🚚 *Entrega em:* \n${addr.address}, ${addr.number} - ${addr.neighborhood}\n${addr.city} - ${addr.state}`;
+          } else {
+            messageText += `\n\n🏪 *Retirada no Local*`;
+          }
+
+          messageText += `\n\nAvisaremos você assim que ele for enviado.`;
 
           await sendEvolutionMessage(
             company.evolutionServerUrl,

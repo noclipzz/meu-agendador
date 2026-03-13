@@ -248,11 +248,11 @@ export default function PedidosVitrine() {
                                                         <MapPin size={18} className="text-red-500 shrink-0 mt-0.5" />
                                                         <div className="font-medium dark:text-gray-300">
                                                             <p className="font-black text-gray-900 dark:text-white">
-                                                                {(pedido.addressInfo as any).street}, {(pedido.addressInfo as any).number}
+                                                                {(pedido.addressInfo as any).address}, {(pedido.addressInfo as any).number}
                                                             </p>
                                                             <p>{(pedido.addressInfo as any).neighborhood}</p>
                                                             <p>{(pedido.addressInfo as any).city} - {(pedido.addressInfo as any).state}</p>
-                                                            <p className="opacity-60 text-xs">CEP: {(pedido.addressInfo as any).zipCode}</p>
+                                                            <p className="opacity-60 text-xs">CEP: {(pedido.addressInfo as any).cep}</p>
                                                             {(pedido.addressInfo as any).complement && (
                                                                 <p className="mt-2 text-blue-600 dark:text-blue-400 italic">Comp: {(pedido.addressInfo as any).complement}</p>
                                                             )}

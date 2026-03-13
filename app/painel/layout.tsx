@@ -385,6 +385,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const vitrineItems = [
         { key: 'vitrine_produtos', name: "Produtos", path: "/painel/vitrine", icon: <Store size={18} /> },
         { key: 'vitrine_pedidos', name: "Pedidos", path: "/painel/vitrine/pedidos", icon: <ShoppingBag size={18} /> },
+        { key: 'vitrine_config', name: "Configurações", path: "/painel/vitrine/config", icon: <Settings2 size={18} /> },
     ];
 
     const financeiroItems = [
@@ -408,11 +409,11 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "vitrine_config", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
         if (!hasTrackingModule && item.key === 'rastreamento') return false;
         if (userPlan === "PREMIUM") {
-            if (["fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "whatsapp"].includes(item.key)) return false;
+            if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
         }
 
         if (item.key === 'whatsapp' && !isOwner) return false;
@@ -420,7 +421,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         if (userRole === "ADMIN") return true;
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
-        const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key) ? "financeiro" : item.key;
+        const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key) ? "financeiro" : 
+                        ["vitrine_produtos", "vitrine_pedidos", "vitrine_config"].includes(item.key) ? "vitrine" : 
+                        item.key;
         return userPermissions[permKey as keyof typeof userPermissions];
     });
 
