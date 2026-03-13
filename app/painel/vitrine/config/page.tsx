@@ -177,12 +177,6 @@ export default function VitrineConfig() {
                         <p className="text-blue-100 font-medium">Pagamentos aprovados pelo site são identificados e registrados no financeiro automaticamente.</p>
                     </div>
                 </div>
-                <button 
-                    onClick={handleSave}
-                    className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-50 transition active:scale-95"
-                >
-                    Salvar Tudo
-                </button>
             </div>
         </div>
     );
