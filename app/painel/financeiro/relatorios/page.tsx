@@ -54,23 +54,6 @@ export default function RelatoriosPage() {
                 ))}
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-10 rounded-[3rem] border border-blue-100 dark:border-blue-800 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="space-y-2">
-                    <h4 className="text-xl font-black text-blue-900 dark:text-blue-300 uppercase tracking-tight">Precisa de um relatório personalizado?</h4>
-                    <p className="text-blue-700 dark:text-blue-400 font-medium max-w-md">Em breve teremos filtros avançados por categorias, centros de custo e profissionais na nossa área de busca global.</p>
-                </div>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-blue-400">
-                        <Search size={20} />
-                    </div>
-                    <input 
-                        type="text" 
-                        disabled 
-                        placeholder="Pesquisar transações..." 
-                        className="bg-white dark:bg-gray-800 pl-12 pr-6 py-4 rounded-2xl w-full md:w-64 text-sm font-bold border border-blue-200 dark:border-blue-700 outline-none opacity-50 cursor-not-allowed"
-                    />
-                </div>
-            </div>
         </div>
     );
 }
