@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { db } from "@/lib/db";
 import { sendEvolutionMessage } from "@/lib/whatsapp";
 import { aiTools, executeAiFunction } from "./functions";
+import { logIntegration } from "@/lib/integration-logger";
 
 export async function processIncomingMessage(
     company: any,
@@ -11,7 +12,12 @@ export async function processIncomingMessage(
     const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY || "dummy",
     });
-    if (!company.aiEnabled) return;
+    if (!company.aiEnabled) {
+        console.log(`[AI IGNORED] IA desativada para empresa ${company.name}`);
+        return;
+    }
+
+    console.log(`[AI PROCESSING] Iniciando para ${remoteJid}: "${messageBody}"`);
 
     try {
         let session = await db.whatsAppChatSession.findFirst({
@@ -256,7 +262,14 @@ Regras Gerais:
             );
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("[WHATSAPP AI] Error processing message:", error);
+        await logIntegration({
+            companyId: company.id,
+            service: "EVOLUTION",
+            type: "WEBHOOK",
+            status: "ERROR",
+            errorMessage: error.message || "Erro fatal no processamento da IA"
+        });
     }
 }

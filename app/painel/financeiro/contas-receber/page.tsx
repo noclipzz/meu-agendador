@@ -177,6 +177,15 @@ export default function ContasReceberPage() {
     }, [filters.start, filters.end, filters.status, filtroStatus, busca]);
 
     const [contasBancarias, setContasBancarias] = useState<any[]>([]);
+    const [auxiliares, setAuxiliares] = useState<any>(null);
+
+    async function carregarAuxiliares() {
+        try {
+            const res = await fetch("/api/painel/financeiro/auxiliares");
+            const data = await res.json();
+            if (res.ok) setAuxiliares(data);
+        } catch (e) { console.error("Erro auxiliares", e); }
+    }
 
     async function carregarContas() {
         try {
@@ -189,6 +198,7 @@ export default function ContasReceberPage() {
     useEffect(() => {
         if (isModalOpen && clients.length === 0) carregarClientes();
         if (isModalOpen && contasBancarias.length === 0) carregarContas();
+        if (isModalOpen && !auxiliares) carregarAuxiliares();
     }, [isModalOpen]);
 
     const formatCurrency = (val: number) => {
@@ -895,25 +905,47 @@ export default function ContasReceberPage() {
                                             <option value="DINHEIRO">Dinheiro</option>
                                             <option value="CREDITO">Cartão Crédito</option>
                                             <option value="DEBITO">Cartão Débito</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                {contasBancarias.length > 0 && (
-                                    <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Fundo de Caixa/Banco</label>
-                                        <select
-                                            name="bankAccountId"
-                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
-                                            defaultValue={selectedInvoice?.bankAccountId || ""}
-                                            disabled={modalType === "view"}
-                                        >
-                                            <option value="">Não associar</option>
-                                            {contasBancarias.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                            {auxiliares?.pagamentos?.map((p: any) => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
                                     </div>
-                                )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {contasBancarias.length > 0 && (
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Fundo de Caixa/Banco</label>
+                                            <select
+                                                name="bankAccountId"
+                                                className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                                defaultValue={selectedInvoice?.bankAccountId || ""}
+                                                disabled={modalType === "view"}
+                                            >
+                                                <option value="">Não associar</option>
+                                                {contasBancarias.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name} (R$ {Number(c.balance).toFixed(2)})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Centro de Custo</label>
+                                        <select
+                                            name="costCenter"
+                                            className="w-full bg-gray-50 dark:bg-gray-800 border-2 dark:border-gray-700 p-4 rounded-2xl font-bold dark:text-white outline-none focus:border-emerald-500 transition"
+                                            defaultValue={selectedInvoice?.costCenter || "ADMINISTRATIVO"}
+                                            disabled={modalType === "view"}
+                                        >
+                                            <option value="ADMINISTRATIVO">Administrativo</option>
+                                            <option value="OPERACIONAL">Operacional</option>
+                                            <option value="COMERCIAL">Comercial</option>
+                                            <option value="FINANCEIRO">Financeiro</option>
+                                            {auxiliares?.centros?.map((cc: any) => (
+                                                <option key={cc.id} value={cc.id}>{cc.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             {modalType !== "view" && (

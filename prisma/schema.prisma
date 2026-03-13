@@ -251,6 +251,7 @@ model Invoice {
   nfeNumber   String?
   nfeUrl      String?
   nfeProtocol String?
+  costCenter  String?
 
   bankAccountId String?
 

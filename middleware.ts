@@ -45,7 +45,7 @@ export default clerkMiddleware((auth, req) => {
     "auth", "clerk", "stripe", "billing", "financeiro", "agenda", "nohud"
   ];
 
-  if (slug && !reserved.includes(slug)) {
+  if (slug && !reserved.includes(slug) && !url.pathname.startsWith('/api')) {
     // Se o usuário acessa docegraca.nohud.com.br/vitrine,
     // reescrevemos internamente para /docegraca/vitrine
     return NextResponse.rewrite(new URL(`/${slug}${url.pathname}${url.search}`, req.url));

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { clientId, companyId, description, value, dueDate, status, method, bookingId, emitirNfse } = body;
+        const { clientId, companyId, description, value, dueDate, status, method, bookingId, emitirNfse, costCenter } = body;
 
         // 1. Busca dados do cliente e da empresa
         const [cliente, empresa] = await Promise.all([
@@ -87,6 +87,7 @@ export async function POST(req: Request) {
                 status: status || "PENDENTE",
                 method: method || null,
                 bookingId: bookingId || null,
+                costCenter: costCenter || null,
                 paidAt: status === "PAGO" ? new Date() : null
             }
         });
@@ -433,7 +434,7 @@ export async function PUT(req: Request) {
         if (!userId) return new NextResponse("Não autorizado", { status: 401 });
 
         const body = await req.json();
-        const { id, status, value, description, dueDate, method } = body;
+        const { id, status, value, description, dueDate, method, costCenter } = body;
 
         const updatedInvoice = await prisma.invoice.update({
             where: { id },
@@ -443,6 +444,7 @@ export async function PUT(req: Request) {
                 description,
                 dueDate: dueDate ? new Date(`${dueDate.toString().split('T')[0]}T12:00:00`) : undefined,
                 method,
+                costCenter,
                 paidAt: status === "PAGO" ? new Date() : undefined
             }
         });

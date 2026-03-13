@@ -151,6 +151,8 @@ export default function ContasPagarPage() {
         frequency: "ONCE"
     });
 
+    const [auxiliares, setAuxiliares] = useState<any>(null);
+
     const [suppliers, setSuppliers] = useState<any[]>([]);
     const [contasBancarias, setContasBancarias] = useState<any[]>([]);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -161,8 +163,17 @@ export default function ContasPagarPage() {
         loadData();
         loadSuppliers();
         carregarContas();
+        loadAuxiliares();
         setSelectedIds([]);
     }, [filters.start, filters.end, filters.status, filters.category, filters.frequency]);
+
+    async function loadAuxiliares() {
+        try {
+            const res = await fetch("/api/painel/financeiro/auxiliares");
+            const data = await res.json();
+            if (res.ok) setAuxiliares(data);
+        } catch (e) { console.error("Erro auxiliares", e); }
+    }
 
     async function carregarContas() {
         try {
@@ -916,6 +927,9 @@ export default function ContasPagarPage() {
                                         <option value="CARTAO_DEBITO">Cartão de Débito</option>
                                         <option value="CARTAO_CREDITO">Cartão de Crédito</option>
                                         <option value="TRANSFERENCIA">Transferência</option>
+                                        {auxiliares?.pagamentos?.map((p: any) => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -948,6 +962,9 @@ export default function ContasPagarPage() {
                                         <option value="IMPOSTOS">Impostos</option>
                                         <option value="MARKETING">Marketing</option>
                                         <option value="MANUTENCAO">Manutenção</option>
+                                        {auxiliares?.categorias?.map((c: any) => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 {contasBancarias.length > 0 && (
@@ -994,6 +1011,23 @@ export default function ContasPagarPage() {
                                         <option value="ONCE">Única</option>
                                         <option value="MONTHLY">Mensal</option>
                                         <option value="YEARLY">Anual</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Centro de Custo</label>
+                                    <select
+                                        className="w-full p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border dark:border-gray-700 outline-none focus:ring-2 ring-red-500 font-bold shadow-inner"
+                                        disabled={isViewOnly}
+                                        value={form.costCenter || ""}
+                                        onChange={(e) => setForm({ ...form, costCenter: e.target.value })}
+                                    >
+                                        <option value="ADMINISTRATIVO">Administrativo</option>
+                                        <option value="OPERACIONAL">Operacional</option>
+                                        <option value="COMERCIAL">Comercial</option>
+                                        <option value="FINANCEIRO">Financeiro</option>
+                                        {auxiliares?.centros?.map((cc: any) => (
+                                            <option key={cc.id} value={cc.id}>{cc.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
