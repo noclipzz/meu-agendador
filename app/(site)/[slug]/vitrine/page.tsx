@@ -266,6 +266,32 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           )}
         </div>
         <h1 className="text-4xl font-black text-gray-900 tracking-tighter">{empresa.name}</h1>
+        <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Agendamento Online</p>
+        
+        <div className="flex justify-center gap-3 mt-6">
+          {empresa.instagramUrl && (
+            <a
+              href={empresa.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 text-white rounded-2xl hover:scale-110 active:scale-95 transition shadow-lg"
+              title="Visitar Instagram"
+            >
+              <Instagram size={20} />
+            </a>
+          )}
+          {empresa.facebookUrl && (
+            <a
+              href={empresa.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-blue-600 text-white rounded-2xl hover:scale-110 active:scale-95 transition shadow-lg"
+              title="Visitar Facebook"
+            >
+              <Facebook size={20} />
+            </a>
+          )}
+        </div>
         
         {(empresa.address || empresa.city) && (
           <div className="mt-8 flex flex-col items-center">
