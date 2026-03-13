@@ -7,9 +7,17 @@ import { toast } from "sonner";
 export default function VitrineConfig() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState({
+    
+    // Configurações da Vitrine (Salvas em vitrineSettings)
+    const [vitrineSettings, setVitrineSettings] = useState({
         acceptedMethods: ["pix", "credit_card"],
         acceptDeliveryPayment: false,
+    });
+
+    // Credenciais (Salvas na raiz do modelo Company)
+    const [credentials, setCredentials] = useState({
+        mercadopagoPublicKey: "",
+        mercadopagoAccessToken: "",
     });
 
     useEffect(() => {
@@ -17,9 +25,15 @@ export default function VitrineConfig() {
             try {
                 const res = await fetch("/api/painel/config");
                 const data = await res.json();
+                
                 if (data.vitrineSettings) {
-                    setSettings(prev => ({ ...prev, ...data.vitrineSettings }));
+                    setVitrineSettings(prev => ({ ...prev, ...data.vitrineSettings }));
                 }
+
+                setCredentials({
+                    mercadopagoPublicKey: data.mercadopagoPublicKey || "",
+                    mercadopagoAccessToken: data.mercadopagoAccessToken || "",
+                });
             } catch (error) {
                 console.error("Erro ao carregar configurações:", error);
                 toast.error("Erro ao carregar configurações");
@@ -37,14 +51,16 @@ export default function VitrineConfig() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    vitrineSettings: settings
+                    vitrineSettings,
+                    ...credentials
                 })
             });
 
             if (res.ok) {
                 toast.success("Configurações salvas com sucesso!");
             } else {
-                toast.error("Erro ao salvar configurações");
+                const err = await res.json();
+                toast.error(err.error || "Erro ao salvar configurações");
             }
         } catch (error) {
             toast.error("Erro de conexão");
@@ -54,7 +70,7 @@ export default function VitrineConfig() {
     };
 
     const toggleMethod = (method: string) => {
-        setSettings(prev => ({
+        setVitrineSettings(prev => ({
             ...prev,
             acceptedMethods: prev.acceptedMethods.includes(method)
                 ? prev.acceptedMethods.filter(m => m !== method)
@@ -118,7 +134,7 @@ export default function VitrineConfig() {
                                     <input 
                                         type="checkbox" 
                                         className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        checked={settings.acceptedMethods.includes(m.id)}
+                                        checked={vitrineSettings.acceptedMethods.includes(m.id)}
                                         onChange={() => toggleMethod(m.id)}
                                     />
                                 </label>
@@ -143,16 +159,16 @@ export default function VitrineConfig() {
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Permita que seus clientes finalizem o pedido para pagar somente quando receberem o produto.</p>
                         
                         <div 
-                            className={`p-6 rounded-3xl border-2 transition-all cursor-pointer ${settings.acceptDeliveryPayment ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-100 dark:border-gray-700 bg-gray-50/50'}`}
-                            onClick={() => setSettings(prev => ({ ...prev, acceptDeliveryPayment: !prev.acceptDeliveryPayment }))}
+                            className={`p-6 rounded-3xl border-2 transition-all cursor-pointer ${vitrineSettings.acceptDeliveryPayment ? 'border-emerald-500 bg-emerald-50/30' : 'border-gray-100 dark:border-gray-700 bg-gray-50/50'}`}
+                            onClick={() => setVitrineSettings((prev: any) => ({ ...prev, acceptDeliveryPayment: !prev.acceptDeliveryPayment }))}
                         >
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <p className="font-black text-gray-900 dark:text-white uppercase text-xs">Ativar Pagamento na Entrega</p>
                                     <p className="text-xs text-gray-500">O pedido será finalizado sem cobrança imediata.</p>
                                 </div>
-                                <div className={`w-12 h-6 rounded-full relative transition-all ${settings.acceptDeliveryPayment ? 'bg-emerald-500' : 'bg-gray-300'}`}>
-                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.acceptDeliveryPayment ? 'right-1' : 'left-1'}`} />
+                                <div className={`w-12 h-6 rounded-full relative transition-all ${vitrineSettings.acceptDeliveryPayment ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${vitrineSettings.acceptDeliveryPayment ? 'right-1' : 'left-1'}`} />
                                 </div>
                             </div>
                         </div>
@@ -164,6 +180,49 @@ export default function VitrineConfig() {
                             </p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Credenciais Mercado Pago */}
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 border dark:border-gray-700 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 border-b dark:border-gray-700 pb-4">
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600">
+                        <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                        <h3 className="font-black dark:text-white">Credenciais de Produção</h3>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Configuração do Mercado Pago</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Public Key</label>
+                        <input 
+                            type="text"
+                            placeholder="APP_USR-..."
+                            className="w-full p-4 rounded-2xl border-2 border-gray-50 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none focus:border-blue-200 focus:bg-white dark:focus:bg-gray-800 dark:text-white transition font-bold"
+                            value={credentials.mercadopagoPublicKey}
+                            onChange={(e) => setCredentials(prev => ({ ...prev, mercadopagoPublicKey: e.target.value }))}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Access Token</label>
+                        <input 
+                            type="password"
+                            placeholder="APP_USR-..."
+                            className="w-full p-4 rounded-2xl border-2 border-gray-50 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none focus:border-blue-200 focus:bg-white dark:focus:bg-gray-800 dark:text-white transition font-bold"
+                            value={credentials.mercadopagoAccessToken}
+                            onChange={(e) => setCredentials(prev => ({ ...prev, mercadopagoAccessToken: e.target.value }))}
+                        />
+                    </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-4 rounded-2xl flex gap-3">
+                    <Info size={20} className="text-blue-600 shrink-0" />
+                    <p className="text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
+                        Você encontra essas credenciais no <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" className="underline font-bold">Painel do Desenvolvedor</a> do Mercado Pago. Use as <strong>Credenciais de Produção</strong> para aceitar pagamentos reais.
+                    </p>
                 </div>
             </div>
 

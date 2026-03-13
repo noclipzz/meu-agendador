@@ -448,23 +448,24 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           👇 Realize seu agendamento:
         </h3>
 
-        {/* --- TABS DE NAVEGAÇÃO --- */}
-        {vitrineProducts.length > 0 && (
-          <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mx-auto mt-6 shadow-inner animate-in zoom-in duration-500">
-            <button 
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all bg-white text-blue-600 shadow-md"
-            >
-              <CalendarIcon size={18} /> Agendamento
-            </button>
-            <Link 
-              href={`/${params.slug}/vitrine`}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
-            >
-              <Store size={18} /> Vitrine
-            </Link>
-          </div>
-        )}
       </div>
+ 
+      {/* --- TABS DE NAVEGAÇÃO --- */}
+      {vitrineProducts.length > 0 && (
+        <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mx-auto mb-8 shadow-inner animate-in zoom-in duration-500">
+          <button 
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all bg-white text-blue-600 shadow-md"
+          >
+            <CalendarIcon size={18} /> Agendamento
+          </button>
+          <Link 
+            href={`/${params.slug}/vitrine`}
+            className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
+          >
+            <Store size={18} /> Vitrine
+          </Link>
+        </div>
+      )}
 
       <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden min-h-[500px] transition-all relative">
         {!isIdentified && (
