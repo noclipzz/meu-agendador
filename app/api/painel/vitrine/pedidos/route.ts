@@ -63,9 +63,20 @@ export async function PATCH(req: Request) {
 
     if (!company) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
 
+    const oldOrder = await db.order.findUnique({
+      where: { id, companyId: company.id }
+    });
+
+    if (!oldOrder) return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+
+    const isMarkingAsPaid = status === "PAID" && !(oldOrder as any).isPaid;
+
     const updatedOrder = await (db as any).order.update({
       where: { id, companyId: company.id },
-      data: { status },
+      data: { 
+        status,
+        ...(isMarkingAsPaid ? { isPaid: true } : {})
+      },
       include: {
         items: {
           include: {
@@ -121,6 +132,47 @@ export async function PATCH(req: Request) {
         }
       } catch (e) {
         console.error("❌ [WHATSAPP] Erro ao enviar notificação de preparo:", e);
+      }
+    }
+
+    // Abatimento de Estoque Manual (Se estiver marcando como PAGO agora)
+    if (isMarkingAsPaid) {
+      try {
+        for (const item of updatedOrder.items) {
+          await db.vitrineProduct.update({
+            where: { id: item.vitrineProductId },
+            data: {
+              quantity: { decrement: item.quantity }
+            }
+          });
+        }
+        console.log(`📦 [ESTOQUE] Estoque abatido manualmente para o pedido ${id}`);
+        
+        // Registrar no Financeiro (Se ainda não existir fatura)
+        const existingInvoice = await db.invoice.findFirst({
+          where: { bookingId: `ORDER_${id}` }
+        });
+
+        if (!existingInvoice) {
+          await db.invoice.create({
+            data: {
+              description: `Venda Vitrine (Manual): ${updatedOrder.customerName} (#${id.slice(-6).toUpperCase()})`,
+              value: updatedOrder.totalAmount,
+              netValue: updatedOrder.totalAmount,
+              cardTax: 0,
+              method: updatedOrder.paymentMethod || "DINHEIRO",
+              status: "PAGO",
+              dueDate: new Date(),
+              paidAt: new Date(),
+              companyId: company.id,
+              bookingId: `ORDER_${id}`,
+              clientId: null
+            }
+          });
+          console.log(`💰 [FINANCEIRO] Receita registrada manualmente para o pedido ${id}`);
+        }
+      } catch (e) {
+        console.error("❌ [ESTOQUE/FINANCEIRO] Erro no processamento manual:", e);
       }
     }
 

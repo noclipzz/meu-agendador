@@ -79,7 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         </head>
         <body>
           {children}
-          <Toaster richColors /> {/* <--- 2. Adicione aqui, antes de fechar o body */}
+          <Toaster richColors position="top-center" /> {/* <--- 2. Adicione aqui, antes de fechar o body */}
         </body>
       </html>
     </ClerkProvider>

@@ -50,15 +50,34 @@ export async function POST(req: Request) {
               console.log(`✅ [MP Webhook] Pedido Identificado: ${order.id}. Status MP: ${pData.status}`);
 
               // Se o pagamento foi aprovado
-              if (pData.status === "approved") {
-                await db.order.update({
+              if (pData.status === "approved" && !(order as any).isPaid) {
+                await (db as any).order.update({
                   where: { id: order.id },
                   data: { 
                     status: "PAID",
+                    isPaid: true,
                     paymentId: String(pData.id),
                     paymentMethod: pData.payment_method_id
                   }
                 });
+
+                // Abatimento Automático de Estoque
+                const orderWithItems = await db.order.findUnique({
+                  where: { id: order.id },
+                  include: { items: true }
+                });
+
+                if (orderWithItems) {
+                  for (const item of orderWithItems.items) {
+                    await db.vitrineProduct.update({
+                      where: { id: item.vitrineProductId },
+                      data: {
+                        quantity: { decrement: item.quantity }
+                      }
+                    });
+                  }
+                  console.log(`📦 [ESTOQUE] Estoque abatido para o pedido ${order.id}`);
+                }
 
                 const existingInvoice = await db.invoice.findFirst({
                   where: { bookingId: `ORDER_${order.id}` }

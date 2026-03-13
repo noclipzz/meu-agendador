@@ -650,6 +650,7 @@ model Order {
   deliveryMethod  String         // "PICKUP" or "DELIVERY"
   addressInfo     Json?          // CEP, Rua, Bairro, Cidade, Estado, etc (se for entrega)
   status          String         @default("PENDING") // PENDING, PAID, PREPARING, SHIPPED, DELIVERED, CANCELED
+  isPaid          Boolean        @default(false)
   totalAmount     Decimal
   paymentId       String?        @unique
   paymentMethod   String?

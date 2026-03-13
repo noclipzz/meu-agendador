@@ -704,7 +704,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
                   {selectedProduct.unitValue > 1 && (
                     <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg uppercase">
-                      Lote com {selectedProduct.unitValue} unidades
+                      {selectedProduct.unitValue} unidades
                     </span>
                   )}
                   <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
@@ -720,7 +720,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
             <div className="p-8">
               <h3 className="text-2xl font-black text-gray-900">{selectedProduct.name}</h3>
-              
+
               <div className="flex flex-wrap gap-2 mt-2">
                 {selectedProduct.showStock && selectedProduct.quantity !== undefined && (
                   <span className="bg-amber-100 text-amber-600 text-[10px] font-black px-2 py-1 rounded-lg uppercase">

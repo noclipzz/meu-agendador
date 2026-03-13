@@ -5,7 +5,7 @@ import {
     ShoppingBag, Package, Truck, CheckCircle2, Clock, XCircle, 
     Search, User, Phone, MapPin, Mail, Calendar, ExternalLink,
     ChevronDown, ChevronUp, Loader2, RefreshCw, MoreVertical,
-    CheckCircle, AlertCircle, CreditCard
+    CheckCircle, AlertCircle, CreditCard, Hash
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -201,12 +201,19 @@ export default function PedidosVitrine() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-1">
+                                <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2">
                                     <span className="text-2xl font-black text-blue-600">
                                         R$ {Number(pedido.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
-                                    <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border flex items-center gap-1.5 ${statusConfig[pedido.status].color}`}>
-                                        {statusConfig[pedido.status].icon} {statusConfig[pedido.status].label}
+                                    <div className="flex gap-2">
+                                        {pedido.isPaid && (
+                                            <div className="px-3 py-1 rounded-full text-[10px] font-black uppercase border flex items-center gap-1.5 bg-emerald-100 text-emerald-700 border-emerald-200">
+                                                <CheckCircle2 size={14} /> PAGO
+                                            </div>
+                                        )}
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border flex items-center gap-1.5 ${statusConfig[pedido.status].color}`}>
+                                            {statusConfig[pedido.status].icon} {statusConfig[pedido.status].label}
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -264,12 +271,24 @@ export default function PedidosVitrine() {
                                             <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 pt-2">
                                                 <CreditCard size={14} /> Forma de Pagamento
                                             </h4>
-                                            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm uppercase ${
-                                                pedido.paymentMethod 
-                                                    ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
-                                                    : "bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500"
-                                            }`}>
-                                                {formatPaymentMethod(pedido.paymentMethod)}
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm uppercase ${
+                                                    pedido.paymentMethod 
+                                                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400" 
+                                                        : "bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-500"
+                                                }`}>
+                                                    {formatPaymentMethod(pedido.paymentMethod)}
+                                                </div>
+                                                {pedido.isPaid && (
+                                                    <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase animate-in zoom-in duration-300">
+                                                        Pago
+                                                    </span>
+                                                )}
+                                                {pedido.paymentId && (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-[10px] font-bold border dark:border-gray-600">
+                                                        <Hash size={12} /> ID: {pedido.paymentId}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
