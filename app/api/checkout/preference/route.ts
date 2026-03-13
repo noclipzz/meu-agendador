@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { MercadoPagoConfig, Preference } from "mercadopago";
-import { sendPushNotification } from "@/lib/push-server";
+import { notifyAdminsOfCompany, sendPushNotification } from "@/lib/push-server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
@@ -94,14 +97,48 @@ export async function POST(req: Request) {
 
     // 3.5 Notifica o dono (Push)
     try {
-      await sendPushNotification(
-        company.ownerId,
+      await notifyAdminsOfCompany(
+        company.id,
         "📦 Novo Pedido na Vitrine",
         `${customerInfo.name} realizou um pedido de R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         "/painel/vitrine/pedidos"
       );
     } catch (e) {
       console.error("Erro ao enviar push:", e);
+    }
+
+    // 3.6 Notifica o dono (Email de Backup)
+    if (company.notificationEmail) {
+      try {
+        const itemsList = items.map((i: any) => {
+          const p = dbProducts.find((dbP: any) => dbP.id === i.id);
+          return `- ${i.quantity}x ${p?.name || 'Produto'} ${i.variationLabel ? `(${i.variationLabel})` : ''}`;
+        }).join('<br/>');
+
+        const deliveryText = deliveryMethod === "DELIVERY" 
+          ? `Entrega em: ${addressInfo?.address}, ${addressInfo?.number} - ${addressInfo?.neighborhood}` 
+          : "Retirada no Local";
+
+        await resend.emails.send({
+          from: "NOHUD Vitrine <vendas@nohud.com.br>",
+          to: company.notificationEmail,
+          subject: `📦 Novo Pedido: ${customerInfo.name}`,
+          html: `
+            <h3>Novo pedido recebido na Vitrine!</h3>
+            <p><strong>Cliente:</strong> ${customerInfo.name}</p>
+            <p><strong>WhatsApp:</strong> ${customerInfo.phone}</p>
+            <p><strong>Método:</strong> ${deliveryText}</p>
+            <p><strong>Total:</strong> R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+            <hr/>
+            <p><strong>Itens:</strong><br/>${itemsList}</p>
+            <br/>
+            <p><small>ID do Pedido: ${order.id}</small></p>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/painel/vitrine/pedidos" style="background:#6d28d9; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold;">Ver Pedido no Painel</a>
+          `
+        });
+      } catch (emailErr) {
+        console.error("Erro ao enviar email de backup:", emailErr);
+      }
     }
 
     // Se for pagamento na entrega, retorna sucesso direto

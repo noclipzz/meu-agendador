@@ -12,20 +12,22 @@ export async function GET(req: Request) {
       where: {
         OR: [
           { ownerId: userId },
-          { professionals: { some: { userId: userId } } }
+          { professionals: { some: { userId: userId } } },
+          { teamMembers: { some: { clerkUserId: userId } } }
         ]
       }
     });
 
-    if (!company) return NextResponse.json([], { status: 404 });
+    if (!company) {
+      console.log(`❌ [PEDIDOS] Empresa não encontrada para o usuário ${userId}`);
+      return NextResponse.json({ error: "Empresa não vinculada", userId }, { status: 404 });
+    }
+
+    console.log(`✅ [PEDIDOS] Buscando pedidos para a empresa ${company.name} (${company.id})`);
 
     const orders = await db.order.findMany({
       where: { 
-        companyId: company.id,
-        OR: [
-          { status: { not: "PENDING" } },
-          { paymentMethod: "PAGAMENTO_NA_ENTREGA" }
-        ]
+        companyId: company.id
       },
       include: {
         items: {

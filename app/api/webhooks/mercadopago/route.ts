@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { MercadoPagoConfig, Payment } from "mercadopago";
+import { notifyAdminsOfCompany } from "@/lib/push-server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
@@ -103,6 +107,34 @@ export async function POST(req: Request) {
                     }
                   });
                   console.log(`💰 [FINANCEIRO] Receita registrada para o pedido ${order.id}`);
+                }
+
+                // [NOTIFICAÇÃO] Enviar Push e Email de confirmação de pagamento
+                try {
+                  await notifyAdminsOfCompany(
+                    order.companyId,
+                    "💰 Pagamento Confirmado!",
+                    `${order.customerName} pagou R$ ${Number(order.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                    "/painel/vitrine/pedidos"
+                  );
+
+                  if (order.company.notificationEmail) {
+                    await resend.emails.send({
+                      from: "NOHUD Vitrine <vendas@nohud.com.br>",
+                      to: order.company.notificationEmail,
+                      subject: `✅ Pagamento Recebido: ${order.customerName}`,
+                      html: `
+                        <h3>Pagamento confirmado para o pedido #${order.id.slice(-6).toUpperCase()}</h3>
+                        <p><strong>Cliente:</strong> ${order.customerName}</p>
+                        <p><strong>Total:</strong> R$ ${Number(order.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p><strong>Status:</strong> Pago (MP)</p>
+                        <br/>
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/painel/vitrine/pedidos" style="background:#10b981; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold;">Ver Pedido no Painel</a>
+                      `
+                    });
+                  }
+                } catch (notifErr) {
+                  console.error("Erro ao enviar notificações de pagamento:", notifErr);
                 }
               } else if (pData.status === "cancelled" || pData.status === "rejected") {
                 await db.order.update({
