@@ -31,6 +31,7 @@ interface Product {
 export default function VitrinePage() {
     const { companyId } = useAgenda();
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,7 +58,20 @@ export default function VitrinePage() {
 
     useEffect(() => {
         loadProducts();
+        loadConfig();
     }, []);
+
+    async function loadConfig() {
+        try {
+            const res = await fetch("/api/painel/config");
+            const data = await res.json();
+            if (data.vitrineSettings?.categories) {
+                setCategories(data.vitrineSettings.categories);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar categorias:", error);
+        }
+    }
 
     async function loadProducts() {
         try {
@@ -498,12 +512,23 @@ export default function VitrinePage() {
 
                                     <div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Grupo / Categoria</label>
-                                        <input
-                                            className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                            placeholder="Ex: Bebidas, Sobremesas, Kits..."
-                                            value={form.category}
-                                            onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-                                        />
+                                        {categories.length > 0 ? (
+                                            <select
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm appearance-none"
+                                                value={form.category}
+                                                onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
+                                            >
+                                                <option value="">Nenhum grupo</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900 rounded-xl text-[10px] text-amber-700 dark:text-amber-400 font-bold flex items-center gap-2">
+                                                <AlertTriangle size={14} className="shrink-0" />
+                                                <span>Crie grupos nas configurações da vitrine primeiro.</span>
+                                            </div>
+                                        )}
                                         <p className="text-[9px] text-gray-400 font-bold uppercase mt-1 ml-2">Agrupa produtos no site</p>
                                     </div>
 

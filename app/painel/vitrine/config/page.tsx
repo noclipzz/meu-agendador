@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Settings2, Save, Loader2, CreditCard, Banknote, ShieldCheck, Info } from "lucide-react";
+import { Settings2, Save, Loader2, CreditCard, Banknote, ShieldCheck, Info, Tag, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VitrineConfig() {
@@ -12,7 +12,10 @@ export default function VitrineConfig() {
     const [vitrineSettings, setVitrineSettings] = useState({
         acceptedMethods: ["pix", "credit_card"],
         acceptDeliveryPayment: false,
+        categories: [] as string[],
     });
+
+    const [newCategory, setNewCategory] = useState("");
 
     // Credenciais (Salvas na raiz do modelo Company)
     const [credentials, setCredentials] = useState({
@@ -75,6 +78,25 @@ export default function VitrineConfig() {
             acceptedMethods: prev.acceptedMethods.includes(method)
                 ? prev.acceptedMethods.filter(m => m !== method)
                 : [...prev.acceptedMethods, method]
+        }));
+    };
+
+    const addCategory = () => {
+        if (!newCategory.trim()) return;
+        if (vitrineSettings.categories?.includes(newCategory.trim())) {
+            return toast.error("Este grupo já existe");
+        }
+        setVitrineSettings(prev => ({
+            ...prev,
+            categories: [...(prev.categories || []), newCategory.trim()]
+        }));
+        setNewCategory("");
+    };
+
+    const removeCategory = (cat: string) => {
+        setVitrineSettings(prev => ({
+            ...prev,
+            categories: prev.categories.filter(c => c !== cat)
         }));
     };
 
@@ -223,6 +245,62 @@ export default function VitrineConfig() {
                     <p className="text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
                         Você encontra essas credenciais no <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" className="underline font-bold">Painel do Desenvolvedor</a> do Mercado Pago. Use as <strong>Credenciais de Produção</strong> para aceitar pagamentos reais.
                     </p>
+                </div>
+            </div>
+
+            {/* Grupos de Produtos */}
+            <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 border dark:border-gray-700 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 border-b dark:border-gray-700 pb-4">
+                    <div className="p-2 bg-violet-50 dark:bg-violet-900/20 rounded-xl text-violet-600">
+                        <Tag size={24} />
+                    </div>
+                    <div>
+                        <h3 className="font-black dark:text-white">Grupos de Produtos</h3>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Categorização</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Crie grupos para organizar seus produtos na vitrine (ex: Doces, Bolos, Bebidas).</p>
+                    
+                    <div className="flex gap-2">
+                        <input 
+                            type="text"
+                            placeholder="Nome do grupo..."
+                            className="flex-1 p-3 rounded-xl border-2 border-gray-50 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 outline-none focus:border-violet-200 dark:focus:bg-gray-800 dark:text-white font-bold transition-all"
+                            value={newCategory}
+                            onChange={(e) => setNewCategory(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    addCategory();
+                                }
+                            }}
+                        />
+                        <button 
+                            onClick={addCategory}
+                            className="bg-violet-600 text-white px-4 rounded-xl font-black hover:bg-violet-700 transition active:scale-95 flex items-center justify-center"
+                        >
+                            <Plus size={20} />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-4">
+                        {vitrineSettings.categories?.map((cat, idx) => (
+                            <div key={idx} className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-xl flex items-center gap-2 group animate-in zoom-in duration-300">
+                                <span className="font-bold text-sm dark:text-gray-200">{cat}</span>
+                                <button 
+                                    onClick={() => removeCategory(cat)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        ))}
+                        {(!vitrineSettings.categories || vitrineSettings.categories.length === 0) && (
+                            <p className="text-xs text-gray-400 italic">Nenhum grupo criado ainda.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
