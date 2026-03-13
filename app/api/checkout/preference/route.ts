@@ -148,7 +148,7 @@ export async function POST(req: Request) {
     }
 
     const host = req.headers.get("host");
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const protocol = host?.includes("localhost") ? "http" : "https";
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
 
     const result = await preference.create({
