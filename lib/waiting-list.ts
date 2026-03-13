@@ -62,8 +62,7 @@ export async function checkWaitingList(booking: any) {
 
             // 2. Notifica Clientes via WhatsApp (Se for Master e tiver conectado)
             if (isMaster && company.whatsappStatus === "CONNECTED" && company.evolutionServerUrl && company.evolutionApiKey && company.whatsappInstanceId) {
-                const appUrl = (process.env.NEXT_PUBLIC_APP_URL || `https://www.nohud.com.br`).replace(/\/$/, "");
-                const publicLink = `${appUrl}/${company.slug}`;
+                const publicLink = `https://${company.slug}.nohud.com.br`;
 
                 console.log(`[WAITING_LIST] Iniciando disparos para ${interessados.length} clientes via WhatsApp...`);
 

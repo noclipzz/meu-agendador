@@ -61,6 +61,7 @@ export default function ConfigGerais() {
     const [neighborhood, setNeighborhood] = useState("");
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
+    const [slug, setSlug] = useState("");
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
 
@@ -119,6 +120,7 @@ export default function ConfigGerais() {
                 setNeighborhood(dataConfig.neighborhood || "");
                 setCity(dataConfig.city || "");
                 setState(dataConfig.state || "");
+                setSlug(dataConfig.slug || "");
             }
         } catch (error) {
             console.error("ERRO_AO_CARREGAR:", error);
@@ -268,6 +270,34 @@ export default function ConfigGerais() {
                 <h2 className="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
                     <Building2 className="text-blue-500" /> Dados do Negócio
                 </h2>
+
+                <div className="mb-8 p-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-lg relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                        <Instagram size={100} />
+                    </div>
+                    <div className="relative z-10">
+                        <span className="text-blue-100 font-black uppercase text-[10px] tracking-[0.2em] mb-2 block">Link de Agendamento Personalizado</span>
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                            <div className="bg-white/10 backdrop-blur-md px-5 py-4 rounded-2xl border border-white/20 flex-1 w-full overflow-hidden">
+                                <p className="text-white font-black text-lg md:text-xl truncate">
+                                    {slug ? `${slug}.nohud.com.br` : "Carregando..."}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`https://${slug}.nohud.com.br`);
+                                    toast.success("Link copiado!");
+                                }}
+                                className="bg-white text-blue-700 px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2"
+                            >
+                                <Save size={18} /> Copiar Link
+                            </button>
+                        </div>
+                        <p className="mt-4 text-blue-100/70 text-xs font-medium italic">
+                            💡 Divulgue este link no seu Instagram e WhatsApp para receber agendamentos.
+                        </p>
+                    </div>
+                </div>
 
                 <fieldset disabled={userRole !== "ADMIN"} className="border-none p-0 m-0 min-w-0 opacity-100 disabled:opacity-80">
                     <div className="mb-8 space-y-6">

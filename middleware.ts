@@ -12,6 +12,7 @@ const isProtectedRoute = createRouteMatcher([
 
 export default clerkMiddleware((auth, req) => {
   const url = req.nextUrl;
+  const hostname = req.headers.get("host") || "";
   const userAgent = req.headers.get("user-agent") || "";
 
   // 1. BYPASS TOTAL para o robô do Facebook/Instagram
@@ -23,6 +24,29 @@ export default clerkMiddleware((auth, req) => {
   if (url.pathname.startsWith('/api/marketing')) {
     return NextResponse.next();
   }
+
+  // --- LÓGICA DE SUBDOMÍNIO ---
+  const baseDomain = "nohud.com.br";
+  const publicDomains = [baseDomain, `www.${baseDomain}`, "localhost:3000", "meu-agendador-kappa.vercel.app"];
+  
+  let slug = "";
+  // No Vercel/Produção
+  if (hostname.includes(baseDomain) && !publicDomains.includes(hostname)) {
+    slug = hostname.split(".")[0];
+  } 
+  // No Localhost
+  else if (hostname.includes(".localhost:3000")) {
+    slug = hostname.replace(".localhost:3000", "");
+  }
+
+  const reserved = ["www", "app", "painel", "master", "api", "admin", "blog", "static"];
+
+  if (slug && !reserved.includes(slug)) {
+    // Se o usuário acessa docegraca.nohud.com.br/vitrine,
+    // reescrevemos internamente para /docegraca/vitrine
+    return NextResponse.rewrite(new URL(`/${slug}${url.pathname}${url.search}`, req.url));
+  }
+  // ---------------------------
 
   // LOG PARA DEBUG
   if (req.url.includes('/api/webhooks/stripe')) {

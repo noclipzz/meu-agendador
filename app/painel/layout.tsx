@@ -42,7 +42,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     const router = useRouter();
-    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole, setIsOwner, setHasTrackingModule, hasTrackingModule, isOwner } = useAgenda();
+    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole, setIsOwner, setHasTrackingModule, hasTrackingModule, isOwner, companySlug, setCompanySlug } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
@@ -183,6 +183,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         setUserPermissions(dadosSync.permissions || {});
                         setUserPlan(dadosSync.plan || null);
                         setIsOwner(!!dadosSync.isOwner);
+                        setCompanySlug(dadosSync.slug || null);
                         setHasAccess(true);
                         setVerificando(false);
                         return;
@@ -234,6 +235,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                 setIsTrial(!!dados.isTrial); // ✅ Salva se é trial
                 setHasTrackingModule(!!dados.hasTrackingModule);
                 setUserPermissions(dados.permissions || {}); // Garante objeto
+                setCompanySlug(dados.slug || null);
                 setCompanyId(dados.companyId);
                 setHasAccess(true); // Libera acesso total
                 setVerificando(false);
@@ -504,19 +506,23 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 <nav className="flex-1 p-4 md:px-3 md:py-4 space-y-1 overflow-y-auto custom-scrollbar">
                     {/* DASHBOARD, AGENDA E RASTREAMENTO */}
-                    {(visibleItems || []).slice(0, 3).map(item => item && (
-                        <Link
-                            key={item.path}
-                            id={`tour-nav-${item.key}`}
-                            href={item.path}
-                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                        >
-                            <div className="md:scale-100 scale-110 flex items-center justify-center">
-                                {item.icon}
-                            </div>
-                            {item.name}
-                        </Link>
-                    ))}
+                    {(visibleItems || []).slice(0, 3).map(item => {
+                        if (!item) return null;
+                        const isActive = pathname === item.path || pathname.startsWith(item.path + "/");
+                        return (
+                            <Link
+                                key={item.path}
+                                id={`tour-nav-${item.key}`}
+                                href={item.path}
+                                className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${isActive ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            >
+                                <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                    {item.icon}
+                                </div>
+                                {item.name}
+                            </Link>
+                        );
+                    })}
 
                     {/* GRUPO: CADASTROS (ABAIXO DE AGENDA) */}
                     {visibleCadastros.length > 0 && (
@@ -585,23 +591,38 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                     )}
 
                     {/* DEMAIS ITENS DE ALLITEMS */}
-                    {(visibleItems || []).slice(3).map(item => item && (
-                        <Link
-                            key={item.path}
-                            id={`tour-nav-${item.key}`}
-                            href={item.path}
-                            className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${pathname === item.path ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                        >
-                            <div className="md:scale-100 scale-110 flex items-center justify-center">
-                                {item.icon}
-                            </div>
-                            {item.name}
-                        </Link>
-                    ))}
+                    {(visibleItems || []).slice(3).map(item => {
+                        if (!item) return null;
+                        const isActive = pathname === item.path || pathname.startsWith(item.path + "/");
+                        return (
+                            <Link
+                                key={item.path}
+                                id={`tour-nav-${item.key}`}
+                                href={item.path}
+                                className={`flex items-center gap-4 md:gap-3 px-4 py-3 md:py-2.5 rounded-xl transition text-base md:text-[14px] ${isActive ? "bg-blue-600 text-white shadow-md font-bold" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
+                            >
+                                <div className="md:scale-100 scale-110 flex items-center justify-center">
+                                    {item.icon}
+                                </div>
+                                {item.name}
+                            </Link>
+                        );
+                    })}
 
-                    {/* FINANCEIRO REMOVED FROM GROUP - NOW IN ALLITEMS */}
-
-                    <div />
+                    {/* BOTÃO VER SITE (AGENDADOR) */}
+                    {companySlug && (
+                        <div className="pt-4 mt-4 border-t dark:border-gray-800">
+                            <a
+                                href={`https://${companySlug}.nohud.com.br`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 font-black text-[13px] hover:bg-blue-600 hover:text-white transition shadow-sm border border-blue-100 dark:border-blue-900/30 group"
+                            >
+                                <Bot size={18} className="group-hover:animate-bounce" />
+                                Ver Agendador
+                            </a>
+                        </div>
+                    )}
                 </nav>
 
                 <div className="p-4 md:p-3 space-y-4 md:space-y-2 shrink-0">
