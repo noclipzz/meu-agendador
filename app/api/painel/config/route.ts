@@ -23,7 +23,7 @@ function gerarSlug(text: string) {
   const RESERVED_SLUGS = [
     'painel', 'api', 'admin', 'dashboard', 'login', 'register', 'checkout',
     'master', 'trial', 'suporte', 'ajuda', 'blog', 'site', 'app', 'config',
-    'auth', 'clerk', 'stripe', 'billing', 'financeiro', 'agenda'
+    'auth', 'clerk', 'stripe', 'billing', 'financeiro', 'agenda', 'nohud'
   ];
 
   if (RESERVED_SLUGS.includes(slug)) {

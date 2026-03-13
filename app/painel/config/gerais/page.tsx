@@ -240,7 +240,8 @@ export default function ConfigGerais() {
                     context.refreshAgenda();
                 }
             } else {
-                toast.error("Erro ao salvar.");
+                const data = await res.json();
+                toast.error(data.error || "Erro ao salvar.");
             }
         } catch (error) {
             toast.error("Erro de conexão.");
