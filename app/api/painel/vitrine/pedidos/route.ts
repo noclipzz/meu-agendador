@@ -104,7 +104,11 @@ export async function PATCH(req: Request) {
             messageText += `\n\n🏪 *Retirada no Local*`;
           }
 
-          messageText += `\n\nAvisaremos você assim que ele for enviado.`;
+          const updateStatusText = updatedOrder.deliveryMethod === "PICKUP" 
+            ? "Avisaremos você assim que estiver tudo pronto!" 
+            : "Avisaremos você assim que ele for enviado.";
+          
+          messageText += `\n\n${updateStatusText}`;
 
           await sendEvolutionMessage(
             company.evolutionServerUrl,
