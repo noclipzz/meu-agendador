@@ -14,6 +14,7 @@ import { upload } from "@vercel/blob/client";
 import { useAgenda } from "../../../contexts/AgendaContext";
 import { formatarTelefone, formatarCPF, formatarCEP } from "@/lib/validators";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 
 // --- HELPER OBSELETO REMOVIDO EM FAVOR DO @/lib/validators ---
 
@@ -32,6 +33,23 @@ export default function GestaoEquipe() {
     const [novaObs, setNovaObs] = useState("");
     const [mostrarInputObs, setMostrarInputObs] = useState(false);
     const [editandoNota, setEditandoNota] = useState<{ index: number, text: string } | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        confirmText: string;
+        onConfirm: () => void;
+        variant: 'danger' | 'info' | 'success';
+        isLoading?: boolean;
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        confirmText: "Confirmar",
+        onConfirm: () => { },
+        variant: 'danger',
+        isLoading: false
+    });
 
     // FORMULÁRIO
     const [form, setForm] = useState({
@@ -265,19 +283,29 @@ export default function GestaoEquipe() {
     }
 
     async function deletarAnexoPro(id: string) {
-        if (!confirm("Deseja excluir este anexo?")) return;
-        const res = await fetch('/api/painel/profissionais/anexos', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
+        setConfirmModal({
+            isOpen: true,
+            title: "Remover Anexo?",
+            message: "Esta ação não poderá ser desfeita e o arquivo será apagado permanentemente.",
+            confirmText: "Sim, Excluir",
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isLoading: true }));
+                const res = await fetch('/api/painel/profissionais/anexos', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    setProSelecionado((prev: any) => ({ ...prev, attachments: prev.attachments.filter((a: any) => a.id !== id) }));
+                    setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, attachments: p.attachments.filter((a: any) => a.id !== id) } : p));
+                    toast.success("Anexo excluído com sucesso.");
+                } else {
+                    toast.error("Erro ao excluir anexo.");
+                }
+                setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            }
         });
-        if (res.ok) {
-            setProSelecionado({ ...proSelecionado, attachments: proSelecionado.attachments.filter((a: any) => a.id !== id) });
-            setProfissionais(prev => prev.map(p => p.id === proSelecionado.id ? { ...p, attachments: p.attachments.filter((a: any) => a.id !== id) } : p));
-            toast.success("Excluído com sucesso.");
-        } else {
-            toast.error("Erro ao excluir.");
-        }
     }
 
     async function salvarProfissional() {
@@ -311,20 +339,26 @@ export default function GestaoEquipe() {
     }
 
     async function deletar(id: string, nome: string) {
-        toast(`Remover ${nome} da equipe?`, {
-            action: {
-                label: "Confirmar",
-                onClick: async () => {
-                    const res = await fetch('/api/painel/profissionais', {
-                        method: 'DELETE',
-                        body: JSON.stringify({ id })
-                    });
-                    if (res.ok) {
-                        setProfissionais(prev => prev.filter(p => p.id !== id));
-                        toast.success("Removido com sucesso.");
-                        if (refreshAgenda) refreshAgenda();
-                    }
+        setConfirmModal({
+            isOpen: true,
+            title: "Remover Profissional?",
+            message: `Tem certeza que deseja remover ${nome} da equipe? Esta ação é definitiva.`,
+            confirmText: "Remover",
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isLoading: true }));
+                const res = await fetch('/api/painel/profissionais', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) {
+                    setProfissionais(prev => prev.filter(p => p.id !== id));
+                    toast.success(`${nome} removido(a) com sucesso.`);
+                    if (refreshAgenda) refreshAgenda();
+                } else {
+                    toast.error("Erro ao remover profissional.");
                 }
+                setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
             }
         });
     }
@@ -578,7 +612,7 @@ export default function GestaoEquipe() {
                                                     <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm"><label className="text-[9px] font-black text-gray-400 uppercase block mb-1">E-mail</label><p className="text-xs font-bold dark:text-white break-all">{proSelecionado.email || "---"}</p></div>
                                                 </div>
                                                 {userRole === "ADMIN" && (
-                                                    <button onClick={() => { if (confirm("Remover membro?")) deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
+                                                    <button onClick={() => { deletar(proSelecionado.id, proSelecionado.name); setProSelecionado(null); }} className="w-full mt-10 p-4 border-2 border-red-100 text-red-500 rounded-2xl text-xs font-black uppercase hover:bg-red-50 transition">Excluir Profissional</button>
                                                 )}
                                             </div>
                                         </div>
@@ -660,7 +694,19 @@ export default function GestaoEquipe() {
                                                                     <p className="flex-1 leading-relaxed italic">{n}</p>
                                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                                                                         <button onClick={() => setEditandoNota({ index: i, text: n })} className="text-blue-400"><Pencil size={12} /></button>
-                                                                        <button onClick={() => { if (confirm("Excluir nota?")) deletarNotaPro(i); }} className="text-red-400"><Trash2 size={12} /></button>
+                                                                        <button onClick={() => {
+                                                                            setConfirmModal({
+                                                                                isOpen: true,
+                                                                                title: "Excluir Nota?",
+                                                                                message: "Esta anotação será removida permanentemente da ficha do profissional.",
+                                                                                confirmText: "Excluir",
+                                                                                variant: 'danger',
+                                                                                onConfirm: () => {
+                                                                                    deletarNotaPro(i);
+                                                                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                                                                }
+                                                                            });
+                                                                        }} className="text-red-400"><Trash2 size={12} /></button>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -988,6 +1034,17 @@ export default function GestaoEquipe() {
                     </div>
                 </div></ModalPortal>
             )}
+            {/* MODAL DE CONFIRMAÇÃO GLOBAL */}
+            <ConfirmationModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => !confirmModal.isLoading && setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                isLoading={confirmModal.isLoading}
+                variant={confirmModal.variant}
+            />
         </div>
     );
 }
