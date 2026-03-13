@@ -388,10 +388,15 @@ export default function VitrinePage() {
                                     <p className="text-gray-500 text-sm mt-1 line-clamp-2 font-medium">{product.description}</p>
                                 )}
 
-                                <div className="mt-2 flex items-center gap-2">
+                                <div className="mt-2 flex flex-wrap gap-2">
                                     <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase shadow-sm ${Number(product.quantity || 0) <= 5 ? "bg-red-100 text-red-600" : "bg-blue-50 text-blue-600"}`}>
                                         Estoque: {product.quantity || 0}
                                     </span>
+                                    {Number(product.unitValue || 1) > 1 && (
+                                        <span className="text-[10px] font-black px-2 py-0.5 rounded-lg uppercase shadow-sm bg-violet-50 text-violet-600">
+                                            Valor por: {product.unitValue} un
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* ACTIONS */}
@@ -580,6 +585,20 @@ export default function VitrinePage() {
                                             </div>
                                         </div>
                                         <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Qtd por Preço (Ex: 50 un)</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                placeholder="1"
+                                                value={form.unitValue}
+                                                onChange={e => setForm(prev => ({ ...prev, unitValue: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Estoque (Qtd)</label>
                                             <input
                                                 type="number"
@@ -590,18 +609,6 @@ export default function VitrinePage() {
                                                 onChange={e => setForm(prev => ({ ...prev, quantity: e.target.value }))}
                                             />
                                         </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Prazo de Entrega</label>
-                                            <input
-                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                                placeholder="Pronta entrega"
-                                                value={form.deliveryDeadline}
-                                                onChange={e => setForm(prev => ({ ...prev, deliveryDeadline: e.target.value }))}
-                                            />
-                                        </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Frete (R$)</label>
                                             <input
@@ -610,6 +617,18 @@ export default function VitrinePage() {
                                                 placeholder="0.00"
                                                 value={form.shippingCost}
                                                 onChange={e => setForm(prev => ({ ...prev, shippingCost: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Prazo de Entrega</label>
+                                            <input
+                                                className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
+                                                placeholder="Pronta entrega"
+                                                value={form.deliveryDeadline}
+                                                onChange={e => setForm(prev => ({ ...prev, deliveryDeadline: e.target.value }))}
                                             />
                                         </div>
                                     </div>

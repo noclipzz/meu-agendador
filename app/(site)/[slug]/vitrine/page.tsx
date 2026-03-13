@@ -427,7 +427,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                       <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
                         {product.unitValue > 1 && (
                           <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
-                            {product.unitValue} UNIDADES
+                            Lote c/ {product.unitValue} un
                           </span>
                         )}
                         <span className="bg-white/95 backdrop-blur-sm text-green-600 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1">
@@ -460,8 +460,11 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 <img src={item.imageUrl} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-black text-sm">{item.name}</h4>
-                  {item.variationLabel && <p className="text-[10px] text-gray-400 font-bold uppercase">{item.variationLabel}</p>}
-                  <p className="text-green-600 font-bold text-xs">R$ {Number(item.price).toFixed(2)}</p>
+                  <div className="flex flex-wrap gap-x-2 mt-0.5">
+                    {item.variationLabel && <p className="text-[10px] text-gray-400 font-bold uppercase">{item.variationLabel}</p>}
+                    {item.unitValue > 1 && <p className="text-[10px] text-blue-500 font-bold uppercase">Pacote c/ {item.unitValue} un</p>}
+                  </div>
+                  <p className="text-green-600 font-black text-xs mt-1">R$ {Number(item.price).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-3 bg-gray-50 p-1 rounded-xl">
                   <button onClick={() => updateQty(item.cartItemId, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm"><Minus size={14} /></button>
@@ -695,8 +698,8 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
                 <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
                   {selectedProduct.unitValue > 1 && (
-                    <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg">
-                      {selectedProduct.unitValue} UNIDADES
+                    <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg uppercase">
+                      Lote com {selectedProduct.unitValue} unidades
                     </span>
                   )}
                   <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
