@@ -167,7 +167,7 @@ export async function POST(req: Request) {
           pending: `${baseUrl}/${slug}/vitrine?payment=pending`,
         },
         auto_return: "approved",
-        external_reference: order.id,
+        external_reference: `${company.id}__${order.id}`,
         notification_url: `${baseUrl}/api/webhooks/mercadopago`,
         metadata: {
             orderId: order.id,
