@@ -61,10 +61,25 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         }
 
         // PERSISTÊNCIA: Carregar dados do cliente
-        const saved = localStorage.getItem('nohud_customer_info');
-        if (saved) {
+        const savedInfo = localStorage.getItem('nohud_customer_info');
+        if (savedInfo) {
           try {
-            setCustomerInfo(prev => ({ ...prev, ...JSON.parse(saved) }));
+            setCustomerInfo(prev => ({ ...prev, ...JSON.parse(savedInfo) }));
+          } catch { /* ignora erro de parse */ }
+        }
+
+        const savedCart = localStorage.getItem(`nohud_cart_${params.slug}`);
+        if (savedCart) {
+          try {
+            setCart(JSON.parse(savedCart));
+          } catch { /* ignora erro de parse */ }
+        }
+        const savedPrefs = localStorage.getItem('nohud_checkout_prefs');
+        if (savedPrefs) {
+          try {
+            const { delivery, payment } = JSON.parse(savedPrefs);
+            if (delivery) setDeliveryMethod(delivery);
+            if (payment) setPaymentMode(payment);
           } catch { /* ignora erro de parse */ }
         }
       } catch (error) { console.error(error); }
@@ -78,11 +93,35 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     const orderId = searchParams.get('orderId');
     if (payment === 'success') {
       setStep("SUCCESS");
+      setCart([]);
+      localStorage.removeItem(`nohud_cart_${params.slug}`);
       toast.success("Pagamento realizado com sucesso!");
     } else if (payment === 'failure') {
       toast.error("Ocorreu um erro no seu pagamento.");
     }
-  }, [searchParams]);
+  }, [searchParams, params.slug]);
+
+  // Salvar carrinho sempre que mudar
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem(`nohud_cart_${params.slug}`, JSON.stringify(cart));
+    } else {
+      localStorage.removeItem(`nohud_cart_${params.slug}`);
+    }
+  }, [cart, params.slug]);
+
+  // Salvar informações do cliente sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('nohud_customer_info', JSON.stringify(customerInfo));
+  }, [customerInfo]);
+
+  // Salvar preferências de entrega e pagamento
+  useEffect(() => {
+    localStorage.setItem('nohud_checkout_prefs', JSON.stringify({
+      delivery: deliveryMethod,
+      payment: paymentMode
+    }));
+  }, [deliveryMethod, paymentMode]);
 
   function addToCart(product: any, qty: number) {
     const variationString = Object.entries(selectedVariations)
