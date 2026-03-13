@@ -426,8 +426,13 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                       )}
                       <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
                         {product.unitValue > 1 && (
-                          <span className="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
+                          <span className="bg-violet-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
                             {product.unitValue} un
+                          </span>
+                        )}
+                        {product.showStock && product.quantity !== undefined && (
+                          <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-sm">
+                            Estoque: {product.quantity}
                           </span>
                         )}
                         <span className="bg-white/95 backdrop-blur-sm text-green-600 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1">
@@ -715,6 +720,20 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
             <div className="p-8">
               <h3 className="text-2xl font-black text-gray-900">{selectedProduct.name}</h3>
+              
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedProduct.showStock && selectedProduct.quantity !== undefined && (
+                  <span className="bg-amber-100 text-amber-600 text-[10px] font-black px-2 py-1 rounded-lg uppercase">
+                    Estoque: {selectedProduct.quantity}
+                  </span>
+                )}
+                {selectedProduct.deliveryDeadline && (
+                  <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-1 rounded-lg uppercase">
+                    {selectedProduct.deliveryDeadline}
+                  </span>
+                )}
+              </div>
+
               {selectedProduct.description && (
                 <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
               )}
