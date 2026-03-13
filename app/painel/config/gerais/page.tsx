@@ -278,20 +278,10 @@ export default function ConfigGerais() {
                         <Instagram size={100} />
                     </div>
                     <div className="relative z-10">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-blue-100 font-black uppercase text-[10px] tracking-[0.2em] block">Link de Agendamento Personalizado</span>
-                            {userRole === "ADMIN" && (
-                                <button 
-                                    onClick={() => setEditandoSlug(!editandoSlug)}
-                                    className="text-blue-200 hover:text-white transition flex items-center gap-1 text-[10px] font-bold"
-                                >
-                                    {editandoSlug ? <X size={12} /> : <PenTool size={12} />}
-                                    {editandoSlug ? "CANCELAR" : "EDITAR LINK"}
-                                </button>
-                            )}
-                        </div>
-                        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                            <div className="bg-white/10 backdrop-blur-md p-1 rounded-2xl border border-white/20 flex-1 w-full overflow-hidden flex items-center">
+                        <span className="text-blue-100 font-black uppercase text-[10px] tracking-[0.2em] mb-3 block">Link de Agendamento Personalizado</span>
+                        
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+                            <div className="bg-white/10 backdrop-blur-md p-1 rounded-2xl border border-white/20 flex-1 w-full overflow-hidden flex items-center min-h-[64px]">
                                 {editandoSlug ? (
                                     <div className="flex items-center w-full px-4 py-3">
                                         <input 
@@ -312,30 +302,50 @@ export default function ConfigGerais() {
                                 )}
                             </div>
                             
-                            {!editandoSlug ? (
-                                <button 
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(`https://${slug}.nohud.com.br`);
-                                        toast.success("Link copiado!");
-                                    }}
-                                    className="bg-white text-blue-700 px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2"
-                                >
-                                    <Save size={18} /> Copiar Link
-                                </button>
-                            ) : (
-                                <button 
-                                    onClick={() => {
-                                        salvarConfig();
-                                        setEditandoSlug(false);
-                                    }}
-                                    className="bg-green-500 text-white px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2 border border-green-400"
-                                >
-                                    <Check size={18} /> Confirmar Alteração
-                                </button>
-                            )}
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {!editandoSlug ? (
+                                    <>
+                                        {userRole === "ADMIN" && (
+                                            <button 
+                                                onClick={() => setEditandoSlug(true)}
+                                                className="bg-blue-400/20 text-white border border-white/30 px-5 py-4 rounded-2xl font-black shadow-xl hover:bg-blue-400/40 transition active:scale-95 whitespace-nowrap flex items-center justify-center gap-2"
+                                            >
+                                                <PenTool size={18} /> Editar Link
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(`https://${slug}.nohud.com.br`);
+                                                toast.success("Link copiado!");
+                                            }}
+                                            className="bg-white text-blue-700 px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center justify-center gap-2"
+                                        >
+                                            <Save size={18} /> Copiar Link
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button 
+                                            onClick={() => setEditandoSlug(false)}
+                                            className="bg-red-500/80 text-white px-5 py-4 rounded-2xl font-black shadow-xl hover:bg-red-600 transition active:scale-95 whitespace-nowrap flex items-center justify-center gap-2 border border-red-400"
+                                        >
+                                            <X size={18} /> Cancelar
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                salvarConfig();
+                                                setEditandoSlug(false);
+                                            }}
+                                            className="bg-green-500 text-white px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center justify-center gap-2 border border-green-400"
+                                        >
+                                            <Check size={18} /> Confirmar Alteração
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                         <p className="mt-4 text-blue-100/70 text-xs font-medium italic">
-                            {editandoSlug ? "⚠️ Atenção: Ao mudar o link, o antigo deixará de funcionar imediatamente." : "💡 Divulgue este link no seu Instagram e WhatsApp para receber agendamentos."}
+                            {editandoSlug ? "⚠️ Atenção: Ao mudar o link (subdomínio), o link antigo deixará de funcionar imediatamente." : "💡 Divulgue este link no seu Instagram e WhatsApp para receber agendamentos."}
                         </p>
                     </div>
                 </div>
