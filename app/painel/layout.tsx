@@ -372,8 +372,6 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
         { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
-        { key: 'notas_fiscais', name: "Notas fiscais (NFS-e)", path: "/painel/financeiro/notas-fiscais", icon: <FileText size={20} /> },
-        { key: 'boletos', name: "Boletos", path: "/painel/financeiro/boletos", icon: <Barcode size={20} /> },
         { key: 'config', name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
     ];
 

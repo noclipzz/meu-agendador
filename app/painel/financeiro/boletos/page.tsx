@@ -111,37 +111,25 @@ export default function BoletosPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
-            {/* CABEÇALHO */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 md:p-8 rounded-[2rem] shadow-sm border dark:border-gray-700">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
-                            <ArrowLeft size={20} />
-                        </Link>
-                        <span className="bg-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                            Banking / Cora API
-                        </span>
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-black text-gray-800 dark:text-white tracking-tighter flex items-center gap-3">
-                        <Barcode className="text-blue-600 hidden md:block" size={36} />
-                        Boletos Bancários
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold text-sm mt-2">
-                        Acompanhe o status dos boletos e PIX gerados via Cora Bank.
-                    </p>
+            {/* AÇÕES RÁPIDAS */}
+            <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                    <span className="bg-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                        Banking / Cora API
+                    </span>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto">
+                <div className="flex gap-2">
                     <button
                         onClick={carregarDados}
-                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-200 transition shadow-sm active:scale-95 flex-1 md:flex-none justify-center whitespace-nowrap text-sm"
+                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-[11px] uppercase tracking-wider"
                     >
-                        <Clock size={20} /> Atualizar Status
+                        <Clock size={16} /> Atualizar Status
                     </button>
                     <Link
                         href="/painel/financeiro/contas-receber"
-                        className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 active:scale-95 flex-1 md:flex-none justify-center whitespace-nowrap text-sm"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-md shadow-blue-500/20 text-[11px] uppercase tracking-wider"
                     >
-                        Nova Cobrança
+                        <Barcode size={16} /> Nova Cobrança
                     </Link>
                 </div>
             </div>

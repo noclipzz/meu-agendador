@@ -14,17 +14,8 @@ export default function ConfigLayout({ children }: { children: React.ReactNode }
 
     const tabs = [
         { name: "GERAL", path: "/painel/config/gerais", icon: <Settings size={14} /> },
-        { name: "PLANO DE CONTAS", path: "/painel/financeiro/auxiliares?tab=categorias", icon: <Tag size={14} /> },
-        { name: "CONTAS CAIXA", path: "/painel/financeiro/contas-bancarias", icon: <Building2 size={14} /> },
-        { name: "OPERAÇÕES", path: "/painel/config/operacoes", icon: <Calculator size={14} /> },
-        { name: "FORMAS PGTO", path: "/painel/financeiro/auxiliares?tab=pagamentos", icon: <CreditCard size={14} /> },
         { name: "BOLETOS", path: "/painel/config/faturamento?tab=boletos", icon: <FileText size={14} /> },
-        { name: "COBRANÇAS", path: "/painel/config/faturamento?tab=cobrancas", icon: <ShieldCheck size={14} /> },
         { name: "FISCAL", path: "/painel/config/faturamento", icon: <FileText size={14} /> },
-        { name: "DADOS TRIBUTÁRIOS", path: "/painel/config/tributarios", icon: <Building2 size={14} /> },
-        { name: "CONTÁBIL", path: "/painel/config/contabil", icon: <Calculator size={14} /> },
-        { name: "USUÁRIOS", path: "/painel/profissionais", icon: <Users size={14} /> },
-        { name: "API", path: "/painel/config/api", icon: <Code size={14} /> },
         { name: "NOTIFICAÇÕES", path: "/painel/config/notificacoes", icon: <Bell size={14} /> },
         { name: "MEU PLANO", path: "/painel/config/plano", icon: <Star size={14} /> },
     ];

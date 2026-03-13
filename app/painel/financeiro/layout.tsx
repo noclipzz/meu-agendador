@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-    BarChart3, TrendingUp, TrendingDown, ClipboardList
+    BarChart3, TrendingUp, TrendingDown, ClipboardList, Barcode, FileText, Tag, Building2
 } from "lucide-react";
 
 export default function FinanceiroLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +14,10 @@ export default function FinanceiroLayout({ children }: { children: React.ReactNo
         { name: "VISÃO GERAL", path: "/painel/financeiro", icon: <BarChart3 size={14} /> },
         { name: "CONTAS A RECEBER", path: "/painel/financeiro/contas-receber", icon: <TrendingUp size={14} /> },
         { name: "CONTAS A PAGAR", path: "/painel/financeiro/contas-pagar", icon: <TrendingDown size={14} /> },
+        { name: "PLANO DE CONTAS", path: "/painel/financeiro/auxiliares?tab=categorias", icon: <Tag size={14} /> },
+        { name: "CONTAS CAIXA", path: "/painel/financeiro/contas-bancarias", icon: <Building2 size={14} /> },
+        { name: "BOLETOS", path: "/painel/financeiro/boletos", icon: <Barcode size={14} /> },
+        { name: "NOTA FISCAL", path: "/painel/financeiro/notas-fiscais", icon: <FileText size={14} /> },
         { name: "RELATÓRIOS", path: "/painel/financeiro/relatorios", icon: <ClipboardList size={14} /> },
     ];
 
