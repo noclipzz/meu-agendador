@@ -20,7 +20,13 @@ export async function GET(req: Request) {
     if (!company) return NextResponse.json([], { status: 404 });
 
     const orders = await db.order.findMany({
-      where: { companyId: company.id },
+      where: { 
+        companyId: company.id,
+        OR: [
+          { status: { not: "PENDING" } },
+          { paymentMethod: "PAGAMENTO_NA_ENTREGA" }
+        ]
+      },
       include: {
         items: {
           include: {
