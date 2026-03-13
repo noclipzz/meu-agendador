@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool, Lock } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool, Lock, Check } from "lucide-react";
 import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
@@ -62,6 +62,7 @@ export default function ConfigGerais() {
     const [city, setCity] = useState("");
     const [state, setState] = useState("");
     const [slug, setSlug] = useState("");
+    const [editandoSlug, setEditandoSlug] = useState(false);
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
 
@@ -229,7 +230,7 @@ export default function ConfigGerais() {
                 body: JSON.stringify({
                     name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, legalRepresentative,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), customSchedule,
-                    cnpj, phone, cep, address, number, complement, neighborhood, city, state,
+                    cnpj, phone, cep, address, number, complement, neighborhood, city, state, slug,
                 })
             });
 
@@ -276,25 +277,64 @@ export default function ConfigGerais() {
                         <Instagram size={100} />
                     </div>
                     <div className="relative z-10">
-                        <span className="text-blue-100 font-black uppercase text-[10px] tracking-[0.2em] mb-2 block">Link de Agendamento Personalizado</span>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-blue-100 font-black uppercase text-[10px] tracking-[0.2em] block">Link de Agendamento Personalizado</span>
+                            {userRole === "ADMIN" && (
+                                <button 
+                                    onClick={() => setEditandoSlug(!editandoSlug)}
+                                    className="text-blue-200 hover:text-white transition flex items-center gap-1 text-[10px] font-bold"
+                                >
+                                    {editandoSlug ? <X size={12} /> : <PenTool size={12} />}
+                                    {editandoSlug ? "CANCELAR" : "EDITAR LINK"}
+                                </button>
+                            )}
+                        </div>
                         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                            <div className="bg-white/10 backdrop-blur-md px-5 py-4 rounded-2xl border border-white/20 flex-1 w-full overflow-hidden">
-                                <p className="text-white font-black text-lg md:text-xl truncate">
-                                    {slug ? `${slug}.nohud.com.br` : "Carregando..."}
-                                </p>
+                            <div className="bg-white/10 backdrop-blur-md p-1 rounded-2xl border border-white/20 flex-1 w-full overflow-hidden flex items-center">
+                                {editandoSlug ? (
+                                    <div className="flex items-center w-full px-4 py-3">
+                                        <input 
+                                            autoFocus
+                                            className="bg-transparent text-white font-black text-lg md:text-xl outline-none w-full placeholder:text-blue-300/50"
+                                            value={slug}
+                                            onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''))}
+                                            placeholder="seu-subdominio"
+                                        />
+                                        <span className="text-blue-200 font-bold">.nohud.com.br</span>
+                                    </div>
+                                ) : (
+                                    <div className="px-5 py-3.5">
+                                        <p className="text-white font-black text-lg md:text-xl truncate">
+                                            {slug ? `${slug}.nohud.com.br` : "Carregando..."}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                            <button 
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`https://${slug}.nohud.com.br`);
-                                    toast.success("Link copiado!");
-                                }}
-                                className="bg-white text-blue-700 px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2"
-                            >
-                                <Save size={18} /> Copiar Link
-                            </button>
+                            
+                            {!editandoSlug ? (
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`https://${slug}.nohud.com.br`);
+                                        toast.success("Link copiado!");
+                                    }}
+                                    className="bg-white text-blue-700 px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2"
+                                >
+                                    <Save size={18} /> Copiar Link
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => {
+                                        salvarConfig();
+                                        setEditandoSlug(false);
+                                    }}
+                                    className="bg-green-500 text-white px-6 py-4 rounded-2xl font-black shadow-xl hover:scale-105 transition active:scale-95 whitespace-nowrap flex items-center gap-2 border border-green-400"
+                                >
+                                    <Check size={18} /> Confirmar Alteração
+                                </button>
+                            )}
                         </div>
                         <p className="mt-4 text-blue-100/70 text-xs font-medium italic">
-                            💡 Divulgue este link no seu Instagram e WhatsApp para receber agendamentos.
+                            {editandoSlug ? "⚠️ Atenção: Ao mudar o link, o antigo deixará de funcionar imediatamente." : "💡 Divulgue este link no seu Instagram e WhatsApp para receber agendamentos."}
                         </p>
                     </div>
                 </div>

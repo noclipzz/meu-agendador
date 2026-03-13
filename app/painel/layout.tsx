@@ -42,7 +42,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const { user, isLoaded } = useUser();
     const pathname = usePathname();
     const router = useRouter();
-    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole, setIsOwner, setHasTrackingModule, hasTrackingModule, isOwner, companySlug, setCompanySlug } = useAgenda();
+    const { refreshAgenda, companyId, setCompanyId, userRole, setUserRole, setIsOwner, setHasTrackingModule, hasTrackingModule, isOwner, companySlug, setCompanySlug, refreshKey } = useAgenda();
 
     const [verificando, setVerificando] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
@@ -246,7 +246,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             }
         }
         verificarStatus();
-    }, [router, user, isLoaded, setCompanyId, pathname]);
+    }, [router, user, isLoaded, setCompanyId, pathname, refreshKey]);
 
     useEffect(() => {
         if (isModalOpen && companyId) {

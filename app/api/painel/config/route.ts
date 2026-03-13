@@ -201,15 +201,29 @@ export async function POST(req: Request) {
     if (dataToSave.name === null) delete dataToSave.name; // name nunca pode ser nulo
     if (dataToSave.interval === null || isNaN(dataToSave.interval)) delete dataToSave.interval;
 
-    if (body.name) {
+    // --- LÓGICA DE SLUG (SUBDOMÍNIO) ---
+    if (body.slug) {
+      const slugSanitizado = gerarSlug(body.slug);
+      const empresaComMesmoSlug = await prisma.company.findUnique({
+        where: { slug: slugSanitizado }
+      });
+      
+      if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
+        return NextResponse.json({ error: "Este subdomínio já está em uso. Escolha outro." }, { status: 400 });
+      }
+      dataToSave.slug = slugSanitizado;
+    } else if (body.name && (!existingConfig || !existingConfig.slug)) {
+      // Só gera automático se for empresa nova ou não tiver slug ainda
       const slugDesejado = gerarSlug(body.name);
       const empresaComMesmoSlug = await prisma.company.findUnique({
         where: { slug: slugDesejado }
       });
       if (empresaComMesmoSlug && empresaComMesmoSlug.ownerId !== userId) {
-        return NextResponse.json({ error: "Este nome de empresa já está em uso. Escolha outro para o seu link." }, { status: 400 });
+        // Se houver conflito no automático, adiciona um sufixo
+        dataToSave.slug = `${slugDesejado}-${Math.floor(Math.random() * 1000)}`;
+      } else {
+        dataToSave.slug = slugDesejado;
       }
-      dataToSave.slug = slugDesejado;
     }
 
     if (existingConfig) {
