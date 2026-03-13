@@ -168,7 +168,7 @@ export async function POST(req: Request) {
         },
         auto_return: "approved",
         external_reference: order.id,
-        notification_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/api/webhooks/mercadopago`,
+        notification_url: `${baseUrl}/api/webhooks/mercadopago`,
         metadata: {
             orderId: order.id,
             companyId: company.id,
