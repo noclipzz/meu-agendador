@@ -156,8 +156,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   }
 
   async function handleProceedToPayment() {
-    if (!customerInfo.name || !customerInfo.phone) {
-      return toast.error("Por favor, preencha seu nome e telefone.");
+    if (!customerInfo.name || !customerInfo.phone || !customerInfo.email) {
+      return toast.error("Por favor, preencha nome, e-mail e telefone.");
+    }
+
+    if (!customerInfo.email.includes("@")) {
+      return toast.error("Por favor, insira um e-mail válido.");
     }
 
     if (deliveryMethod === "DELIVERY" && (!customerInfo.cep || !customerInfo.address || !customerInfo.number)) {

@@ -153,6 +153,10 @@ export async function POST(req: Request) {
         payment_methods: {
             excluded_payment_types: excludedMethods
         },
+        payer: {
+          email: customerInfo.email,
+          name: customerInfo.name,
+        },
         back_urls: {
           success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=success&orderId=${order.id}`,
           failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=failure`,
