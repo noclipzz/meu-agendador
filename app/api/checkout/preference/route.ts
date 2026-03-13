@@ -5,7 +5,7 @@ import { sendPushNotification } from "@/lib/push-server";
 
 export async function POST(req: Request) {
   try {
-    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo, shippingCost } = await req.json();
+    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo, shippingCost, paymentMode } = await req.json();
 
     if (!items || items.length === 0 || !companyId || !customerInfo) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
@@ -20,18 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
-    // Verifica módulo MP
-    const subscription = await (db as any).subscription.findUnique({
-      where: { userId: company.ownerId }
-    });
-
-    if (!subscription?.hasMercadoPagoModule && company.ownerId !== "user_39S9qNrKwwgObMZffifdZyNKUKm") {
-      return NextResponse.json({ error: "O módulo de pagamentos online não está ativo." }, { status: 403 });
-    }
-
-    if (!company.mercadopagoAccessToken) {
-      return NextResponse.json({ error: "Esta empresa ainda não configurou pagamentos online." }, { status: 400 });
-    }
+    const vitrineSettings = (company.vitrineSettings as any) || {};
 
     // 2. Calcula total e prepara intens
     let totalItems = 0;
@@ -88,6 +77,7 @@ export async function POST(req: Request) {
         addressInfo: addressInfo || {},
         totalAmount: totalItems,
         status: "PENDING",
+        paymentMethod: paymentMode === "DELIVERY" ? "PAGAMENTO_NA_ENTREGA" : null,
         items: {
           create: items.map((i: any) => {
             const p = dbProducts.find((dbP: any) => dbP.id === i.id);
@@ -114,16 +104,55 @@ export async function POST(req: Request) {
       console.error("Erro ao enviar push:", e);
     }
 
+    // Se for pagamento na entrega, retorna sucesso direto
+    if (paymentMode === "DELIVERY") {
+      return NextResponse.json({ success: true, orderId: order.id });
+    }
+
     // 4. Configura o Mercado Pago
+    // Verifica módulo MP
+    const subscription = await (db as any).subscription.findUnique({
+      where: { userId: company.ownerId }
+    });
+
+    if (!subscription?.hasMercadoPagoModule && company.ownerId !== "user_39S9qNrKwwgObMZffifdZyNKUKm") {
+      return NextResponse.json({ error: "O módulo de pagamentos online não está ativo." }, { status: 403 });
+    }
+
+    if (!company.mercadopagoAccessToken) {
+      return NextResponse.json({ error: "Esta empresa ainda não configurou pagamentos online." }, { status: 400 });
+    }
+
     const client = new MercadoPagoConfig({
       accessToken: company.mercadopagoAccessToken,
     });
 
     const preference = new Preference(client);
 
+    // Mapeamento de métodos aceitos
+    const excludedMethods: any[] = [];
+    const mpMethodsMappings: Record<string, string> = {
+        'credit_card': 'credit_card',
+        'debit_card': 'debit_card',
+        'ticket': 'ticket',
+        'pix': 'pix'
+    };
+
+    if (vitrineSettings.acceptedMethods && Array.isArray(vitrineSettings.acceptedMethods)) {
+        // Se o usuário selecionou alguns, excluímos os outros
+        Object.keys(mpMethodsMappings).forEach(m => {
+            if (!vitrineSettings.acceptedMethods.includes(m)) {
+                excludedMethods.push({ id: mpMethodsMappings[m] });
+            }
+        });
+    }
+
     const result = await preference.create({
       body: {
         items: mpItems,
+        payment_methods: {
+            excluded_payment_types: excludedMethods
+        },
         back_urls: {
           success: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=success&orderId=${order.id}`,
           failure: `${process.env.NEXT_PUBLIC_APP_URL || 'https://meu-agendador.com'}/${slug}/vitrine?payment=failure`,

@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook, Calendar as CalendarIcon, Store, ChevronRight, Plus, Minus, Trash2, CheckCircle2, Truck, Package } from "lucide-react";
+import { 
+  Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook, 
+  Calendar as CalendarIcon, Store, ChevronRight, Plus, Minus, 
+  Trash2, CheckCircle2, Truck, Package, CreditCard, Banknote 
+} from "lucide-react";
 import { formatarTelefone, formatarCEP } from "@/lib/validators";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -37,6 +41,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     complement: ""
   });
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
+  const [paymentMode, setPaymentMode] = useState<"ONLINE" | "DELIVERY">("ONLINE");
 
   const searchParams = useSearchParams();
 
@@ -48,6 +53,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         const data = await res.json();
         setEmpresa(data);
         setVitrineProducts(data.vitrineProducts || []);
+
+        // Se a empresa não aceitar pagamento online (ex: sem token MP), mas aceitar na entrega, muda o padrão
+        const settings = data.vitrineSettings || {};
+        if (!data.mercadopagoAccessToken && settings.acceptDeliveryPayment) {
+          setPaymentMode("DELIVERY");
+        }
 
         // PERSISTÊNCIA: Carregar dados do cliente
         const saved = localStorage.getItem('nohud_customer_info');
@@ -166,6 +177,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           customerInfo,
           deliveryMethod,
           shippingCost,
+          paymentMode,
           addressInfo: { 
             cep: customerInfo.cep,
             address: customerInfo.address,
@@ -183,6 +195,9 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
       
       if (data.id) {
         window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.id}`;
+      } else if (data.success) {
+        setStep("SUCCESS");
+        toast.success("Pedido realizado com sucesso!");
       } else {
         toast.error(data.error || "Erro ao gerar link de pagamento.");
       }
@@ -531,13 +546,45 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               )}
             </div>
 
+            {((empresa.mercadopagoAccessToken) || (empresa.vitrineSettings?.acceptDeliveryPayment)) && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Pagamento</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {empresa.mercadopagoAccessToken && (
+                    <button 
+                      onClick={() => setPaymentMode("ONLINE")}
+                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "ONLINE" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                    >
+                      <CreditCard size={24} />
+                      <div className="text-left">
+                        <p className="font-black text-xs uppercase">Pagar Online</p>
+                        <p className="text-[10px] opacity-70">Cartão, Pix ou Boleto</p>
+                      </div>
+                    </button>
+                  )}
+                  {empresa.vitrineSettings?.acceptDeliveryPayment && (
+                    <button 
+                      onClick={() => setPaymentMode("DELIVERY")}
+                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                    >
+                      <Banknote size={24} />
+                      <div className="text-left">
+                        <p className="font-black text-xs uppercase">Pagar na Entrega/Retirada</p>
+                        <p className="text-[10px] opacity-70">Pague pessoalmente ao receber</p>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="pt-4">
               <button 
                 onClick={handleProceedToPayment}
                 disabled={checkingOut}
                 className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
               >
-                {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={20} /> Ir para o Pagamento</>}
+                {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={20} /> Finalizar Pedido</>}
               </button>
             </div>
           </div>

@@ -121,6 +121,8 @@ model Company {
   // Mercado Pago
   mercadopagoAccessToken String?
   mercadopagoPublicKey   String?
+
+  vitrineSettings Json? @default("{}")
 }
 
 model OrganizationPost {

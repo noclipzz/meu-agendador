@@ -165,6 +165,10 @@ export async function POST(req: Request) {
       dataToSave.customSchedule = body.customSchedule;
     }
 
+    if (body.vitrineSettings !== undefined) {
+      dataToSave.vitrineSettings = body.vitrineSettings;
+    }
+
     // Processar campos tipo Number
     const numberFields = [
       "monthlyGoal", "interval", "regimeTributario", "naturezaOperacao",

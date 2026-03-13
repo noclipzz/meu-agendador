@@ -24,6 +24,7 @@ const formatPaymentMethod = (method: string) => {
     if (!method) return "Aguardando...";
     const m = method.toLowerCase();
     if (m === 'pix') return 'Pix';
+    if (m === 'pagamento_na_entrega') return 'Pagamento na Entrega';
     if (m === 'account_money' || m === 'wallet') return 'Saldo Mercado Pago';
     if (m.includes('credit_card') || m.includes('visa') || m.includes('master') || m.includes('amex') || m.includes('elo') || m.includes('hipercard')) return 'Cartão de Crédito';
     if (m.includes('debit_card') || m.includes('debito')) return 'Cartão de Débito';
@@ -326,7 +327,7 @@ export default function PedidosVitrine() {
                                             <div className="pt-4 flex flex-wrap gap-3">
                                                 <h4 className="w-full text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1">Ações do Pedido</h4>
                                                 
-                                                {pedido.status === "PENDING" && (
+                                                {pedido.status === "PENDING" && pedido.paymentMethod === "PAGAMENTO_NA_ENTREGA" && (
                                                     <button 
                                                         onClick={() => atualizarStatus(pedido.id, "PAID")}
                                                         className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl font-black text-xs hover:bg-emerald-700 shadow-md transition-all active:scale-95"
