@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -42,7 +43,11 @@ const DEFAULT_CENTROS_CUSTO = [
 type TabKey = "categorias" | "pagamentos" | "centros" | "contas";
 
 export default function AuxiliaresPage() {
-    const [activeTab, setActiveTab] = useState<TabKey>("categorias");
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const isConfig = pathname.startsWith("/painel/config");
+    const initialTab = (searchParams.get("tab") as TabKey) || "categorias";
+    const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
     const [loading, setLoading] = useState(true);
 
     // States for custom data
@@ -56,6 +61,13 @@ export default function AuxiliaresPage() {
     const [modalType, setModalType] = useState<TabKey | "">("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [form, setForm] = useState({ id: "", name: "", icon: "📌", description: "", color: "bg-blue-500" });
+
+    useEffect(() => {
+        const tab = searchParams.get("tab") as TabKey;
+        if (tab && ["categorias", "pagamentos", "centros", "contas"].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         loadData();
@@ -188,31 +200,44 @@ export default function AuxiliaresPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
-                            <ArrowLeft size={18} />
-                        </Link>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início / Financeiro / Auxiliares</span>
+            {/* Header - Hidden in Config because parent layout provide it */}
+            {!isConfig && (
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
+                                <ArrowLeft size={18} />
+                            </Link>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início / Financeiro / Auxiliares</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
+                            <Settings2 size={32} className="text-blue-600" />
+                            Opções Auxiliares
+                        </h1>
+                        <p className="text-gray-500 font-bold text-sm mt-1">Gerencie categorias, métodos de pagamento e configurações financeiras.</p>
                     </div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
-                        <Settings2 size={32} className="text-blue-600" />
-                        Opções Auxiliares
-                    </h1>
-                    <p className="text-gray-500 font-bold text-sm mt-1">Gerencie categorias, métodos de pagamento e configurações financeiras.</p>
-                </div>
 
-                {activeTab !== "contas" && (
+                    {activeTab !== "contas" && (
+                        <button
+                            onClick={() => openModal(activeTab)}
+                            className="bg-blue-600 text-white px-5 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
+                        >
+                            <Plus size={18} /> Adicionar Nova
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {isConfig && activeTab !== "contas" && (
+                <div className="flex justify-end mb-4">
                     <button
                         onClick={() => openModal(activeTab)}
                         className="bg-blue-600 text-white px-5 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
                     >
                         <Plus size={18} /> Adicionar Nova
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Info Banner */}
             {activeTab !== "contas" ? (

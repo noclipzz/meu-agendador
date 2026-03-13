@@ -181,13 +181,6 @@ export default function ConfigPlano() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-20 p-4 font-sans animate-in fade-in duration-500">
-            <header className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                    <Star className="text-yellow-500 animate-pulse" size={24} />
-                    <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Meu Plano</h1>
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">Gerencie sua assinatura e visualize os recursos disponíveis.</p>
-            </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* PLANO CONTRATADO */}

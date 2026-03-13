@@ -1,0 +1,21 @@
+"use client";
+
+import React from "react";
+import { Code, Hammer } from "lucide-react";
+
+export default function ApiPage() {
+    return (
+        <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 p-12 rounded-[2.5rem] border dark:border-gray-800 text-center space-y-4">
+            <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto">
+                <Code size={40} />
+            </div>
+            <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">API & Integrações Webhooks</h2>
+            <p className="text-gray-500 dark:text-gray-400 font-medium max-w-md mx-auto">
+                Gerencie suas chaves de API e configure webhooks para integrar o sistema com outras ferramentas.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-emerald-600 font-black text-xs uppercase tracking-widest bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-full w-fit mx-auto">
+                <Hammer size={14} /> Em Breve
+            </div>
+        </div>
+    );
+}

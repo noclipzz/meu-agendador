@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
-import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format } from "date-fns";
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, format, endOfWeek } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 const prisma = db;
@@ -52,6 +52,7 @@ export async function GET() {
         const hoje = toZonedTime(new Date(), TIMEZONE);
         const inicioDia = startOfDay(hoje);
         const fimDia = endOfDay(hoje);
+        const fimSemana = endOfWeek(hoje, { weekStartsOn: 0 }); // Domingo
         const inicioMes = startOfMonth(hoje);
         const fimMes = endOfMonth(hoje);
 
@@ -107,8 +108,29 @@ export async function GET() {
             take: 3
         }) : Promise.resolve([]);
 
-        const [agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos, posts] = await Promise.all([
-            pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos, pPosts
+        // Novos Resumos Financeiros
+        const pReceberHoje = canSeeFinance ? prisma.invoice.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { gte: inicioDia, lte: fimDia } }
+        }) : Promise.resolve([]);
+
+        const pPagarHoje = canSeeFinance ? prisma.expense.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { gte: inicioDia, lte: fimDia } }
+        }) : Promise.resolve([]);
+
+        const pReceberSemana = canSeeFinance ? prisma.invoice.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { gte: inicioDia, lte: fimSemana } }
+        }) : Promise.resolve([]);
+
+        const pPagarSemana = canSeeFinance ? prisma.expense.findMany({
+            where: { companyId: companyId, status: 'PENDENTE', dueDate: { gte: inicioDia, lte: fimSemana } }
+        }) : Promise.resolve([]);
+
+        const [
+            agendamentosHoje, boletosVencidos, boletosVencer, faturasMes, produtos, posts,
+            receberHoje, pagarHoje, receberSemana, pagarSemana
+        ] = await Promise.all([
+            pAgendamentos, pBoletosVencidos, pBoletosVencer, pFaturasMes, pProdutos, pPosts,
+            pReceberHoje, pPagarHoje, pReceberSemana, pPagarSemana
         ]);
 
         // Filtra estoque baixo via Javascript (Quantity <= MinStock)
@@ -140,7 +162,27 @@ export async function GET() {
             posts,
             resumoFinanceiro: {
                 totalMes: faturasMes.reduce((acc, i) => acc + Number(i.value), 0),
-                qtdVencidos: boletosVencidos.length
+                qtdVencidos: boletosVencidos.length,
+                hoje: {
+                    receber: {
+                        count: receberHoje.length,
+                        total: receberHoje.reduce((acc, i) => acc + Number(i.value), 0)
+                    },
+                    pagar: {
+                        count: pagarHoje.length,
+                        total: pagarHoje.reduce((acc, i) => acc + Number(i.value), 0)
+                    }
+                },
+                semana: {
+                    receber: {
+                        count: receberSemana.length,
+                        total: receberSemana.reduce((acc, i) => acc + Number(i.value), 0)
+                    },
+                    pagar: {
+                        count: pagarSemana.length,
+                        total: pagarSemana.reduce((acc, i) => acc + Number(i.value), 0)
+                    }
+                }
             }
         });
 

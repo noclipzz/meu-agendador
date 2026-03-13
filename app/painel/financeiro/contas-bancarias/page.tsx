@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatarMoeda, desformatarMoeda } from "@/lib/validators";
 import { Wallet, Plus, Edit2, Trash2, ArrowLeft, Loader2, Save, X, Building } from "lucide-react";
 
 export default function ContasBancariasPage() {
+    const pathname = usePathname();
+    const isConfig = pathname.startsWith("/painel/config");
     const [loading, setLoading] = useState(true);
     const [contas, setContas] = useState<any[]>([]);
 
@@ -106,29 +109,42 @@ export default function ContasBancariasPage() {
 
     return (
         <div className="space-y-6 animate-in fade-in">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
-                            <ArrowLeft size={18} />
-                        </Link>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início / Financeiro / Contas e Fundos</span>
+            {/* Header - Hidden in Config because parent layout provide it */}
+            {!isConfig && (
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
+                                <ArrowLeft size={18} />
+                            </Link>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início / Financeiro / Contas e Fundos</span>
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
+                            <Wallet size={32} className="text-blue-600" />
+                            Fundo de Caixa e Bancos
+                        </h1>
+                        <p className="text-gray-500 font-bold text-sm mt-1">Gerencie suas contas correntes e gavetas de dinheiro.</p>
                     </div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
-                        <Wallet size={32} className="text-blue-600" />
-                        Fundo de Caixa e Bancos
-                    </h1>
-                    <p className="text-gray-500 font-bold text-sm mt-1">Gerencie suas contas correntes e gavetas de dinheiro.</p>
-                </div>
 
-                <button
-                    onClick={abrirNovaConta}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition flex items-center gap-2 shadow-lg hover:scale-105"
-                >
-                    <Plus size={18} /> Nova Conta / Fundo
-                </button>
-            </div>
+                    <button
+                        onClick={abrirNovaConta}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition flex items-center gap-2 shadow-lg hover:scale-105"
+                    >
+                        <Plus size={18} /> Nova Conta / Fundo
+                    </button>
+                </div>
+            )}
+
+            {isConfig && (
+                <div className="flex justify-end mb-4">
+                    <button
+                        onClick={abrirNovaConta}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm hover:bg-blue-700 transition flex items-center gap-2 shadow-lg hover:scale-105"
+                    >
+                        <Plus size={18} /> Nova Conta / Fundo
+                    </button>
+                </div>
+            )}
 
             {loading ? (
                 <div className="flex justify-center py-20">

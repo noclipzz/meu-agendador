@@ -387,37 +387,9 @@ export default function FinanceiroPage() {
     return (
         <div className="space-y-8 pb-20 p-2 font-sans">
 
-            {/* CABEÇALHO (Oculto na Impressão) */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-gray-800 dark:text-white">Financeiro Profissional</h1>
-                    <p className="text-gray-500 font-bold text-sm">Visão geral de caixa e pendências.</p>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={handlePrint}
-                        className="bg-white text-gray-700 border border-gray-200 px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-50 transition shadow-sm active:scale-95 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    >
-                        <Printer size={20} /> Relatório
-                    </button>
-                    <button
-                        onClick={() => setModalEntrada(true)}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
-                    >
-                        <ArrowUpCircle size={20} /> Lançar Entrada
-                    </button>
-                    <button
-                        onClick={() => setModalDespesa(true)}
-                        className="bg-red-500 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-red-600 transition shadow-lg shadow-red-500/20 active:scale-95"
-                    >
-                        <ArrowDownCircle size={20} /> Lançar Despesa
-                    </button>
-                </div>
-            </div>
-
-
-
-            {/* --- SELETOR DE MÊS (RESUMO FINANCEIRO) --- */}
+            {/* CABEÇALHO REMOVIDO PARA O LAYOUT PAI */}
+            
+            {/* --- SELETOR DE MÊS E AÇÕES --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2 mb-8 mt-4 print:hidden">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1.5 rounded-2xl border dark:border-gray-700 shadow-sm">
@@ -438,6 +410,27 @@ export default function FinanceiroPage() {
                             ))}
                         </select>
                     )}
+                </div>
+
+                <div className="flex gap-2 w-full md:w-auto">
+                    <button
+                        onClick={handlePrint}
+                        className="flex-1 md:flex-none bg-white text-gray-700 border border-gray-200 px-4 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-gray-50 transition shadow-sm active:scale-95 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                    >
+                        <Printer size={18} />
+                    </button>
+                    <button
+                        onClick={() => setModalEntrada(true)}
+                        className="flex-1 md:flex-none bg-blue-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 transition shadow-lg shadow-blue-500/20 active:scale-95"
+                    >
+                        <ArrowUpCircle size={18} /> <span className="hidden sm:inline">Entrada</span>
+                    </button>
+                    <button
+                        onClick={() => setModalDespesa(true)}
+                        className="flex-1 md:flex-none bg-red-500 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-red-600 transition shadow-lg shadow-red-500/20 active:scale-95"
+                    >
+                        <ArrowDownCircle size={18} /> <span className="hidden sm:inline">Despesa</span>
+                    </button>
                 </div>
             </div>
 

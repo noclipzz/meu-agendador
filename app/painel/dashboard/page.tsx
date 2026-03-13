@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Calendar, AlertTriangle, TrendingUp, Package,
-    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell, Megaphone
+    Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell, Megaphone,
+    ArrowUpRight, ArrowDownRight, ChevronRight
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from "date-fns";
@@ -74,6 +75,154 @@ export default function DashboardPage() {
                     </div>
                 )}
             </div>
+ 
+             {/* CARDS DE RESUMO FINANCEIRO (ESTILO SOLICITADO) */}
+             {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                     
+                     {/* Receber Hoje */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-emerald-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-emerald-500 leading-none">{dados.resumoFinanceiro?.hoje?.receber?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">Contas a receber hoje</p>
+                                     <p className="text-xs text-emerald-600 font-black">Total R$ {(dados.resumoFinanceiro?.hoje?.receber?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowUpRight className="text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-receber" className="bg-emerald-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Pagar Hoje */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-red-500 leading-none">{dados.resumoFinanceiro?.hoje?.pagar?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">Contas a pagar hoje</p>
+                                     <p className="text-xs text-red-600 font-black">Total R$ {(dados.resumoFinanceiro?.hoje?.pagar?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowDownRight className="text-red-500/20 group-hover:text-red-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-pagar" className="bg-red-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-red-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Receber na Semana */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-emerald-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-emerald-500 leading-none">{dados.resumoFinanceiro?.semana?.receber?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">A receber na semana</p>
+                                     <p className="text-xs text-emerald-600 font-black">Total R$ {(dados.resumoFinanceiro?.semana?.receber?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowUpRight className="text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-receber" className="bg-emerald-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Pagar na Semana */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-red-500 leading-none">{dados.resumoFinanceiro?.semana?.pagar?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">A pagar na semana</p>
+                                     <p className="text-xs text-red-600 font-black">Total R$ {(dados.resumoFinanceiro?.semana?.pagar?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowDownRight className="text-red-500/20 group-hover:text-red-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-pagar" className="bg-red-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-red-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+                 </div>
+             )}
+ 
+             {/* CARDS DE RESUMO FINANCEIRO (ESTILO SOLICITADO) */}
+             {(dados.plano === "PREMIUM" || dados.plano === "MASTER") && dados.permissions?.financeiro && (
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                     
+                     {/* Receber Hoje */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-emerald-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-emerald-500 leading-none">{dados.resumoFinanceiro?.hoje?.receber?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">Contas a receber hoje</p>
+                                     <p className="text-xs text-emerald-600 font-black">Total R$ {(dados.resumoFinanceiro?.hoje?.receber?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowUpRight className="text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-receber" className="bg-emerald-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Pagar Hoje */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-red-500 leading-none">{dados.resumoFinanceiro?.hoje?.pagar?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">Contas a pagar hoje</p>
+                                     <p className="text-xs text-red-600 font-black">Total R$ {(dados.resumoFinanceiro?.hoje?.pagar?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowDownRight className="text-red-500/20 group-hover:text-red-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-pagar" className="bg-red-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-red-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Receber na Semana */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-emerald-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-emerald-500 leading-none">{dados.resumoFinanceiro?.semana?.receber?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">A receber na semana</p>
+                                     <p className="text-xs text-emerald-600 font-black">Total R$ {(dados.resumoFinanceiro?.semana?.receber?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowUpRight className="text-emerald-500/20 group-hover:text-emerald-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-receber" className="bg-emerald-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+ 
+                     {/* Pagar na Semana */}
+                     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-500/20 overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                         <div className="p-5 flex justify-between items-center relative">
+                             <div className="flex items-center gap-4">
+                                 <span className="text-4xl font-black text-red-500 leading-none">{dados.resumoFinanceiro?.semana?.pagar?.count || 0}</span>
+                                 <div>
+                                     <p className="text-sm text-gray-500 font-bold leading-tight">A pagar na semana</p>
+                                     <p className="text-xs text-red-600 font-black">Total R$ {(dados.resumoFinanceiro?.semana?.pagar?.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                 </div>
+                             </div>
+                             <ArrowDownRight className="text-red-500/20 group-hover:text-red-500/40 transition-colors" size={48} strokeWidth={3} />
+                         </div>
+                         <Link href="/painel/financeiro/contas-pagar" className="bg-red-500 py-2 px-4 text-center text-[10px] font-black text-white uppercase tracking-wider hover:bg-red-600 transition-colors flex items-center justify-center gap-1">
+                             Mais detalhes <ChevronRight size={12} />
+                         </Link>
+                     </div>
+                 </div>
+             )}
 
             {/* GRID PRINCIPAL UNIFICADO */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">

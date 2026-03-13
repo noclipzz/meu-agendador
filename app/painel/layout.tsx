@@ -371,6 +371,10 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'listaEspera', name: "Lista de Espera", path: "/painel/lista-espera", icon: <Clock size={20} /> },
         { key: 'whatsapp', name: "WhatsApp", path: "/painel/whatsapp", icon: <MessageCircle size={20} className="text-green-500" /> },
         { key: 'mural', name: "Mural", path: "/painel/mural", icon: <Megaphone size={20} /> },
+        { key: 'financeiro', name: "Financeiro", path: "/painel/financeiro", icon: <BarChart3 size={20} /> },
+        { key: 'notas_fiscais', name: "Notas fiscais (NFS-e)", path: "/painel/financeiro/notas-fiscais", icon: <FileText size={20} /> },
+        { key: 'boletos', name: "Boletos", path: "/painel/financeiro/boletos", icon: <Barcode size={20} /> },
+        { key: 'config', name: "Configurações", path: "/painel/config", icon: <Settings size={20} /> },
     ];
 
     const cadastrosItems = [
@@ -392,10 +396,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'financeiro', name: "Visão Geral", path: "/painel/financeiro", icon: <BarChart3 size={18} /> },
         { key: 'contas_pagar', name: "Contas a pagar", path: "/painel/financeiro/contas-pagar", icon: <TrendingDown size={18} className="text-red-500" /> },
         { key: 'contas_receber', name: "Contas a receber", path: "/painel/financeiro/contas-receber", icon: <TrendingUp size={18} className="text-emerald-500" /> },
-        { key: 'notas_fiscais', name: "Notas fiscais (NFS-e)", path: "/painel/financeiro/notas-fiscais", icon: <FileText size={18} /> },
         { key: 'dre', name: "DRE gerencial", path: "/painel/financeiro/dre", icon: <Layers size={18} /> },
         { key: 'fluxo_caixa', name: "Fluxo de caixa", path: "/painel/financeiro/fluxo-caixa", icon: <BarChart4 size={18} /> },
-        { key: 'boletos', name: "Boleto bancários", path: "/painel/financeiro/boletos", icon: <Barcode size={18} /> },
         { key: 'auxiliares', name: "Opções auxiliares", path: "/painel/financeiro/auxiliares", icon: <Settings2 size={18} /> },
         { key: 'contas_bancarias', name: "Contas e fundos", path: "/painel/financeiro/contas-bancarias", icon: <Wallet size={18} /> }
     ];
@@ -599,71 +601,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         </Link>
                     ))}
 
-                    {/* GRUPO: FINANCEIRO */}
-                    {visibleFinanceiro.length > 0 && (
-                        <div className="pt-2">
-                            <button
-                                onClick={() => toggleMenu("financeiro_group")}
-                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
-                            >
-                                <div className="flex items-center gap-4 md:gap-3">
-                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
-                                        <BarChart3 size={20} />
-                                    </div>
-                                    <span className="text-base md:text-[14px]">Financeiro</span>
-                                </div>
-                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("financeiro_group") ? "" : "-rotate-90"}`} />
-                            </button>
+                    {/* FINANCEIRO REMOVED FROM GROUP - NOW IN ALLITEMS */}
 
-                            {openMenus.includes("financeiro_group") && (
-                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
-                                    {visibleFinanceiro.map(sub => (
-                                        <Link
-                                            key={sub.path}
-                                            href={sub.path}
-                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
-                                        >
-                                            {sub.icon}
-                                            {sub.name}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* GRUPO: CONFIGURAÇÕES */}
-                    {visibleConfig.length > 0 && (
-                        <div className="pt-2">
-                            <button
-                                onClick={() => toggleMenu("config_group")}
-                                className="w-full flex items-center justify-between px-4 py-3 md:py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition"
-                            >
-                                <div className="flex items-center gap-4 md:gap-3">
-                                    <div className="md:scale-100 scale-110 flex items-center justify-center">
-                                        <Settings size={20} />
-                                    </div>
-                                    <span className="text-base md:text-[14px]">Configurações</span>
-                                </div>
-                                <ChevronDown size={16} className={`transition-transform duration-200 ${openMenus.includes("config_group") ? "" : "-rotate-90"}`} />
-                            </button>
-
-                            {openMenus.includes("config_group") && (
-                                <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
-                                    {visibleConfig.map(sub => (
-                                        <Link
-                                            key={sub.path}
-                                            href={sub.path}
-                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
-                                        >
-                                            {sub.icon}
-                                            {sub.name}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <div />
                 </nav>
 
                 <div className="p-4 md:p-3 space-y-4 md:space-y-2 shrink-0">

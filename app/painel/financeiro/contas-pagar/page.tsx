@@ -444,51 +444,10 @@ export default function ContasPagarPage() {
                     </button>
                 </div>
             )}
-            {/* Header */}
+            {/* CABEÇALHO REMOVIDO PARA O LAYOUT PAI */}
+            
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2 group">
-                        <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
-                            <ArrowLeft size={18} />
-                        </Link>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Início / Contas a pagar / Listar</span>
-                    </div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
-                        <TrendingDown size={32} className="text-red-500" />
-                        Contas a pagar
-                    </h1>
-                </div>
-
-                <div className="flex items-center gap-3 flex-wrap">
-                    {/* Filtro de Período Estilo Neon */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
-                            className="bg-[#0f172a] text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-[#1e293b] transition shadow-lg min-w-[180px] justify-between text-sm"
-                        >
-                            <span className="capitalize">{selectedPeriod}</span>
-                            <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {isPeriodSelectorOpen && (
-                            <>
-                                <div
-                                    className="fixed inset-0 z-10"
-                                    onClick={() => setIsPeriodSelectorOpen(false)}
-                                />
-                                <div className="absolute left-0 md:right-0 md:left-auto mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-left md:origin-top-right">
-                                    <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
-                                    <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
-                                    <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
-                                    <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
-                                    <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
-                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-                                    <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
-                                    <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">Escolha o período</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                <div className="flex items-center gap-3 flex-wrap w-full md:w-auto">
                     <button
                         onClick={() => {
                             setEditingExpense(null);
@@ -502,7 +461,7 @@ export default function ContasPagarPage() {
                             setIsViewOnly(false);
                             setIsModalOpen(true);
                         }}
-                        className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-emerald-600 transition shadow-md active:scale-95 text-sm"
+                        className="flex-1 md:flex-none bg-emerald-500 text-white px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-emerald-600 transition shadow-md active:scale-95 text-sm"
                     >
                         <Plus size={18} /> Adicionar
                     </button>
@@ -511,22 +470,45 @@ export default function ContasPagarPage() {
                             setFilters({ ...filters, frequency: filters.frequency === "MONTHLY" ? "TODAS" : "MONTHLY" });
                             loadData();
                         }}
-                        className={`px-5 py-2.5 rounded-xl font-black flex items-center gap-2 transition text-sm ${filters.frequency === 'MONTHLY' ? 'bg-purple-600 text-white' : 'bg-purple-900/10 text-purple-700 hover:bg-purple-900/20'}`}
+                        className={`flex-1 md:flex-none px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition text-sm ${filters.frequency === 'MONTHLY' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'bg-gray-100 dark:bg-gray-800 text-purple-700 hover:bg-gray-200'}`}
                     >
                         <Wallet size={18} /> Contas fixas
                     </button>
                     <button
-                        onClick={() => toast.info("Exportação em PDF iniciada...")}
-                        className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-5 py-2.5 rounded-xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-sm"
-                    >
-                        <Download size={18} /> Exportar
-                    </button>
-                    <button
                         onClick={() => setIsSearchOpen(!isSearchOpen)}
-                        className={`px-5 py-2.5 rounded-xl font-black flex items-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
+                        className={`flex-1 md:flex-none px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
                     >
                         <Filter size={18} /> Busca avançada
                     </button>
+                </div>
+
+                <div className="relative w-full md:w-auto">
+                    <button
+                        onClick={() => setIsPeriodSelectorOpen(!isPeriodSelectorOpen)}
+                        className="w-full bg-[#0f172a] text-white px-4 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-[#1e293b] transition shadow-lg min-w-[180px] justify-between text-sm"
+                    >
+                        <span className="capitalize">{selectedPeriod}</span>
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isPeriodSelectorOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isPeriodSelectorOpen && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setIsPeriodSelectorOpen(false)}
+                            />
+                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border dark:border-gray-700 py-1 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                <button onClick={() => handlePeriodChange('HOJE')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Hoje</button>
+                                <button onClick={() => handlePeriodChange('SEMANA')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Esta semana</button>
+                                <button onClick={() => handlePeriodChange('MES_PASSADO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Mês passado</button>
+                                <button onClick={() => handlePeriodChange('ESTE_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Este mês</button>
+                                <button onClick={() => handlePeriodChange('PROXIMO_MES')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Próximo mês</button>
+                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+                                <button onClick={() => handlePeriodChange('TODO')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition uppercase tracking-tighter">Todo o período</button>
+                                <button onClick={() => handlePeriodChange('CUSTOM')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition">Escolha o período</button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 

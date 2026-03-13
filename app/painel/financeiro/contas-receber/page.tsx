@@ -476,35 +476,20 @@ export default function ContasReceberPage() {
                     </button>
                 </div>
             )}
+
+            {/* CABEÇALHO REMOVIDO PARA O LAYOUT PAI */}
+            
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/painel/financeiro" className="text-gray-400 hover:text-blue-600 transition">
-                            <ArrowLeft size={20} />
-                        </Link>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Financeiro / Contas a Receber</span>
-                    </div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-3">
-                        <TrendingUp size={32} className="text-emerald-500" />
-                        Contas a Receber
-                    </h1>
-                    <p className="text-gray-500 font-bold text-sm">Gestão de faturas, boletos e entradas futuras.</p>
-                </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full md:w-auto">
                     <button
                         onClick={() => { setModalType("create"); setSelectedInvoice(null); setIsModalOpen(true); }}
-                        className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-emerald-700 transition shadow-lg active:scale-95"
+                        className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-emerald-700 transition shadow-lg active:scale-95"
                     >
                         <Plus size={20} /> Lançar Entrada
                     </button>
-                    <div className="relative group">
-                        <button className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-5 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-gray-200 transition text-sm">
-                            <MoreHorizontal size={20} />
-                        </button>
-                    </div>
                     <button
                         onClick={() => setIsSearchOpen(!isSearchOpen)}
-                        className={`px-5 py-3 rounded-2xl font-black flex items-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
+                        className={`flex-1 md:flex-none px-5 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition text-sm ${isSearchOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'}`}
                     >
                         <Filter size={18} /> Busca avançada
                     </button>

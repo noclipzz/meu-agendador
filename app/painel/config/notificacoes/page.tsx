@@ -137,15 +137,7 @@ export default function NotificacoesPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-6 pb-24 space-y-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-800 dark:text-white flex items-center gap-2">
-                        <Bell size={32} className="text-blue-600" /> Notificações e Alertas
-                    </h1>
-                    <p className="text-gray-500 font-medium mt-1">
-                        Personalize os avisos para você e para os clientes do salão.
-                    </p>
-                </div>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-end gap-4">
                 <button
                     onClick={salvar}
                     disabled={saving}

@@ -262,10 +262,6 @@ export default function ConfigGerais() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20 p-4 font-sans animate-in fade-in duration-500">
-            <header className="flex flex-col gap-1">
-                <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Configurações Gerais</h1>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">Dados da empresa, horários e aparência.</p>
-            </header>
 
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-3xl flex justify-between items-center text-sm dark:bg-gray-900/50 dark:border-gray-800">
                 <div>
