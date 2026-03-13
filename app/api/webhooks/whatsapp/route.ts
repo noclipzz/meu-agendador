@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { processIncomingMessage } from "@/lib/ai/openai";
+import { logIntegration } from "@/lib/integration-logger";
 
 const prisma = db;
 
@@ -57,9 +58,29 @@ export async function POST(req: Request) {
     // 5. LÓGICA DE INTELIGÊNCIA ARTIFICIAL
     if (company.aiEnabled) {
       console.log(`[WHATSAPP AI] Processando mensagem para ${company.name}: "${messageBody}"`);
+      
+      // Log do Webhook Recebido
+      await logIntegration({
+        companyId: company.id,
+        service: "EVOLUTION",
+        type: "WEBHOOK",
+        status: "SUCCESS",
+        endpoint: "/api/webhooks/whatsapp",
+        identifier: telefoneRemetente,
+        payload: { instanceName, messageBody, remoteJid }
+      });
+
       // Não damos await aqui para responder rápido ao webhook da Evolution
       processIncomingMessage(company, remoteJid, messageBody).catch(e => {
         console.error("[WHATSAPP AI ERROR]", e);
+        logIntegration({
+          companyId: company.id,
+          service: "EVOLUTION",
+          type: "WEBHOOK",
+          status: "ERROR",
+          endpoint: "/api/webhooks/whatsapp",
+          errorMessage: e.message || "Erro desconhecido no processamento da IA"
+        });
       });
     }
 
