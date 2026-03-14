@@ -41,7 +41,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     complement: ""
   });
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
-  const [paymentMode, setPaymentMode] = useState<"ONLINE" | "DELIVERY">("ONLINE");
+  const [paymentMode, setPaymentMode] = useState<"ONLINE" | "DELIVERY" | "">("");
   
   // Detalhes do Pagamento na Entrega
   const [deliveryPaymentMethod, setDeliveryPaymentMethod] = useState<"money" | "credit" | "debit" | "">("");
@@ -67,10 +67,11 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         setEmpresa(data);
         setVitrineProducts(data.vitrineProducts || []);
 
-        // Se a empresa não aceitar pagamento online (ex: sem token MP), mas aceitar na entrega, muda o padrão
         const settings = data.vitrineSettings || {};
-        if (!data.mercadopagoAccessToken && settings.acceptDeliveryPayment) {
+        if (!data.acceptsOnlinePayment && settings.acceptDeliveryPayment) {
           setPaymentMode("DELIVERY");
+        } else if (data.acceptsOnlinePayment && !settings.acceptDeliveryPayment) {
+          setPaymentMode("ONLINE");
         }
 
         // PERSISTÊNCIA: Carregar dados do cliente
@@ -717,11 +718,24 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   if (deliveryMethod === "DELIVERY" && !customerInfo.address) {
                     return toast.error("Por favor, preencha o endereço de entrega");
                   }
+                  
+                  if (empresa.acceptsOnlinePayment && !empresa.vitrineSettings?.acceptDeliveryPayment) {
+                     setPaymentMode("ONLINE");
+                     handleProceedToPayment();
+                     return;
+                  }
+
+                  if (!empresa.acceptsOnlinePayment && empresa.vitrineSettings?.acceptDeliveryPayment) {
+                     setPaymentMode("DELIVERY");
+                     setStep("PAYMENT_DETAIL");
+                     return;
+                  }
+
                   setStep("PAYMENT_MODE_SELECT");
                 }}
                 className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
               >
-                <ChevronRight size={20} /> Próximo Passo
+                <ChevronRight size={20} /> {!empresa.vitrineSettings?.acceptDeliveryPayment && empresa.acceptsOnlinePayment ? "Finalizar Pedido" : "Próximo Passo"}
               </button>
             </div>
           </div>
@@ -737,7 +751,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
           <div className="bg-white p-8 rounded-3xl shadow-xl space-y-6">
             <div className="grid grid-cols-1 gap-3">
-              {empresa.mercadopagoAccessToken && (
+              {empresa.acceptsOnlinePayment && (
                 <button
                   onClick={() => setPaymentMode(paymentMode === "ONLINE" ? "" as any : "ONLINE")}
                   className={`p-6 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "ONLINE" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
@@ -797,7 +811,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   }
                 }}
                 disabled={checkingOut || !paymentMode}
-                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
+                className={`w-full font-black py-5 rounded-2xl shadow-xl transition flex items-center justify-center gap-2 ${checkingOut || !paymentMode ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200" : "bg-gradient-to-r from-violet-600 to-pink-600 text-white hover:shadow-2xl"}`}
               >
                 {checkingOut ? <Loader2 className="animate-spin" /> : <><ChevronRight size={20} /> {paymentMode === "DELIVERY" ? "Próximo Passo" : "Finalizar Pedido"}</>}
               </button>
@@ -886,7 +900,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               <button
                 onClick={handleProceedToPayment}
                 disabled={checkingOut || !deliveryPaymentMethod || (deliveryPaymentMethod === "money" && needsChange === null)}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+                className={`w-full font-black py-5 rounded-2xl shadow-xl transition flex items-center justify-center gap-2 ${checkingOut || !deliveryPaymentMethod || (deliveryPaymentMethod === "money" && needsChange === null) ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200" : "bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:shadow-2xl"}`}
               >
                 {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={20} /> Finalizar Pedido</>}
               </button>

@@ -56,11 +56,11 @@ export async function GET(req: Request) {
 
     const hasMercadoPagoModule = subscription?.hasMercadoPagoModule || empresa.ownerId === "user_39S9qNrKwwgObMZffifdZyNKUKm";
 
-    // O objeto 'empresa' aqui já inclui instagramUrl e facebookUrl automaticamente
     return NextResponse.json({
       ...empresa,
       // Nunca retornar o Access Token e Public Key privadas para o front-end público!
       mercadopagoAccessToken: undefined,
+      acceptsOnlinePayment: !!empresa.mercadopagoAccessToken,
       mercadopagoPublicKey: empresa.mercadopagoPublicKey || null, // A chave pública pode ser enviada se necessário para o Brick, mas cuidado.
       hasMercadoPagoModule
     });
