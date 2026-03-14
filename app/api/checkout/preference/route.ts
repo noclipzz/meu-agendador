@@ -256,8 +256,8 @@ export async function POST(req: Request) {
         },
         back_urls: {
           success: `${baseUrl}/${slug}/vitrine?payment=success&orderId=${order.id}`,
-          failure: `${baseUrl}/${slug}/vitrine?payment=failure`,
-          pending: `${baseUrl}/${slug}/vitrine?payment=pending`,
+          failure: `${baseUrl}/${slug}/vitrine?payment=failure&orderId=${order.id}`,
+          pending: `${baseUrl}/${slug}/vitrine?payment=pending&orderId=${order.id}`,
         },
         auto_return: "approved",
         external_reference: `${company.id}__${order.id}`,

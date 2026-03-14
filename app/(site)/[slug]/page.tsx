@@ -81,6 +81,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
   const [nomeCliente, setNomeCliente] = useState("");
   const [telefoneCliente, setTelefoneCliente] = useState("");
+  const [emailCliente, setEmailCliente] = useState("");
   const [isIdentified, setIsIdentified] = useState(false);
   const [agendamentoConcluido, setAgendamentoConcluido] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
@@ -168,7 +169,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           }], 
           customerInfo: {
             name: nomeCliente,
-            phone: telefoneCliente
+            phone: telefoneCliente,
+            email: emailCliente
           },
           deliveryMethod: "PICKUP",
           companyId: empresa.id,
@@ -252,6 +254,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
           date: dataFinal,
           name: nomeCliente,
           phone: telefoneCliente,
+          email: emailCliente,
           type: "CLIENTE"
         })
       });
@@ -284,6 +287,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
         body: JSON.stringify({
           name: nomeCliente,
           phone: telefoneCliente,
+          email: emailCliente,
           preferences,
           serviceId: servicoSelecionado?.id,
           professionalId: profissionalSelecionado?.id,
@@ -491,6 +495,10 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
                 <input className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
               </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase ml-2">E-mail (Para confirmação)</label>
+                <input type="email" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="seu@email.com" value={emailCliente} onChange={e => setEmailCliente(e.target.value)} />
+              </div>
 
               {agendamentosExistentes.length > 0 && (
                 <div className="p-6 bg-yellow-50 border-2 border-yellow-200 rounded-[2rem] space-y-4 animate-in slide-in-from-top-2">
@@ -520,8 +528,8 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
 
               <button
                 onClick={() => {
-                  if (nomeCliente.length < 3 || telefoneCliente.length < 11) {
-                    alert("Por favor, preencha seu nome e telefone corretamente.");
+                  if (nomeCliente.length < 3 || telefoneCliente.length < 11 || !emailCliente.includes("@")) {
+                    alert("Por favor, preencha seu nome, telefone e um e-mail válido.");
                     return;
                   }
                   setIsIdentified(true);
@@ -729,6 +737,10 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2">WhatsApp</label>
                     <input className="w-full border p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="(00) 00000-0000" value={telefoneCliente} onChange={e => setTelefoneCliente(formatarTelefone(e.target.value))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2">E-mail</label>
+                    <input type="email" className="w-full border p-4 rounded-2xl bg-gray-50 outline-none focus:ring-2 ring-blue-500 font-bold transition-all" placeholder="seu@email.com" value={emailCliente} onChange={e => setEmailCliente(e.target.value)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase ml-2">Preferências (Opcional)</label>

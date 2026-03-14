@@ -173,6 +173,17 @@ export async function POST(req: Request) {
                 if (email && !existingClient.email) {
                     await prisma.client.update({ where: { id: existingClient.id }, data: { email } });
                 }
+            } else if (name && phoneClean) {
+                // Cria novo cliente se não existir
+                const newClient = await prisma.client.create({
+                    data: {
+                        name,
+                        phone: phoneClean,
+                        email: email || null,
+                        companyId
+                    }
+                });
+                finalClientId = newClient.id;
             }
         }
 

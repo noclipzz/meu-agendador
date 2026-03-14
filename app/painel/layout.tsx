@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase, HelpCircle,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Bot,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag, ExternalLink
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -388,6 +388,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     ];
 
     const vitrineItems = [
+        { key: 'vitrine_view', name: "Ver Vitrine", path: companySlug ? `https://${companySlug}.nohud.com.br/vitrine` : "#", icon: <ExternalLink size={18} />, external: true },
         { key: 'vitrine_produtos', name: "Produtos", path: "/painel/vitrine", icon: <Store size={18} /> },
         { key: 'vitrine_pedidos', name: "Pedidos", path: "/painel/vitrine/pedidos", icon: <ShoppingBag size={18} /> },
         { key: 'vitrine_config', name: "Configurações", path: "/painel/vitrine/config", icon: <Settings2 size={18} /> },
@@ -577,14 +578,27 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                             {openMenus.includes("vitrine_group") && (
                                 <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-100 dark:border-gray-800 pl-2 animate-in slide-in-from-top-2 duration-200">
                                     {visibleVitrine.map(sub => (
-                                        <Link
-                                            key={sub.path}
-                                            href={sub.path}
-                                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
-                                        >
-                                            {sub.icon}
-                                            {sub.name}
-                                        </Link>
+                                        sub.external ? (
+                                            <a
+                                                key={sub.key}
+                                                href={sub.path}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                                            >
+                                                {sub.icon}
+                                                {sub.name}
+                                            </a>
+                                        ) : (
+                                            <Link
+                                                key={sub.path}
+                                                href={sub.path}
+                                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition text-[13px] ${pathname === sub.path ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold" : "text-gray-500 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"}`}
+                                            >
+                                                {sub.icon}
+                                                {sub.name}
+                                            </Link>
+                                        )
                                     ))}
                                 </div>
                             )}

@@ -37,7 +37,6 @@ const SERVICE_TEMPLATES: Record<string, { name: string, price: string, duration:
         { name: "Tosa Higiênica", price: "30.00", duration: "30" },
     ]
 };
-
 const PRODUCT_TEMPLATES: Record<string, { name: string, price: string }[]> = {
     "Salão de Beleza / Barbearia": [
         { name: "Shampoo Profissional", price: "75.00" },
@@ -47,6 +46,26 @@ const PRODUCT_TEMPLATES: Record<string, { name: string, price: string }[]> = {
         { name: "Pomada Modeladora", price: "45.00" },
         { name: "Óleo para Barba", price: "35.00" },
     ],
+    "Estética": [
+        { name: "Sérum Facial", price: "85.00" },
+        { name: "Protetor Solar FPS 50", price: "95.00" },
+    ],
+    "Clínicas / Consultórios": [
+        { name: "Suplemento Vitamínico", price: "60.00" },
+    ],
+    "Pet Shop": [
+        { name: "Ração Premium 1kg", price: "45.00" },
+        { name: "Brinquedo Mordedor", price: "25.00" },
+    ]
+};
+
+const SERVICE_PLACEHOLDERS: Record<string, string> = {
+    "Salão de Beleza / Barbearia": "Ex: Corte de Cabelo",
+    "Barbearia": "Ex: Corte Social",
+    "Estética": "Ex: Limpeza de Pele",
+    "Clínicas / Consultórios": "Ex: Consulta Médica",
+    "Pet Shop": "Ex: Banho e Tosa",
+    "Outros": "Ex: Meu Serviço"
 };
 
 export default function OnboardingPage() {
@@ -161,7 +180,7 @@ export default function OnboardingPage() {
     }, [slug, companyId]);
 
     // --- HANDLERS ---
-    const handleNext = async () => {
+    const handleNext = async (forceSkip = false) => {
         if (step === 1) {
             if (!companyName || !slug) return toast.error("Preencha o nome e escolha seu link.");
             if (isSlugAvailable === false) return toast.error("Este link já está sendo usado.");
@@ -193,7 +212,9 @@ export default function OnboardingPage() {
         } else if (step === 2) {
             setStep(3);
         } else if (step === 3) {
-            if (!servicoName || !servicoPreco) return toast.error("Preencha o nome e valor do primeiro serviço.");
+            if (!forceSkip && (!servicoName || !servicoPreco)) {
+                return toast.error("Preencha o nome e valor do primeiro serviço.");
+            }
             // Pula vitrine se não for premium
             if (plan === "INDIVIDUAL" || plan === "FREE") {
                 setStep(5);
@@ -246,12 +267,12 @@ export default function OnboardingPage() {
             const payload = {
                 companyData: { name: companyName, slug: slug },
                 ownerProfessional: { name: ownerName, phone: ownerPhone, photoUrl: finalPhoto },
-                service: { 
+                service: servicoName ? { 
                     name: servicoName, 
-                    price: parseFloat(servicoPreco.replace(/[^\d]/g, "")) / 100, 
+                    price: parseFloat(servicoPreco.replace(/[^\d]/g, "") || "0") / 100, 
                     duration: parseInt(servicoDuracao), 
                     imageUrl: finalServiceImg 
-                },
+                } : null,
                 products: products.map(p => ({
                     name: p.name,
                     price: parseFloat(p.price.replace(/[^\d]/g, "")) / 100,
@@ -452,7 +473,7 @@ export default function OnboardingPage() {
                                 <div className="space-y-6 relative z-10">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-500 uppercase">Nome do Serviço</label>
-                                        <input className="w-full bg-transparent border-b border-gray-700 text-xl font-bold outline-none py-1 placeholder:text-gray-700" placeholder="Ex: Corte de Cabelo" value={servicoName} onChange={e => setServicoName(e.target.value)} />
+                                        <input className="w-full bg-transparent border-b border-gray-700 text-xl font-bold outline-none py-1 placeholder:text-gray-700" placeholder={SERVICE_PLACEHOLDERS[ramo] || "Ex: Meu Serviço"} value={servicoName} onChange={e => setServicoName(e.target.value)} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -469,12 +490,12 @@ export default function OnboardingPage() {
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-500 uppercase">Duração (min)</label>
                                             <select className="w-full bg-transparent border-b border-gray-700 text-xl font-bold outline-none py-1 cursor-pointer" value={servicoDuracao} onChange={e => setServicoDuracao(e.target.value)}>
-                                                <option value="15">15 min</option>
-                                                <option value="30">30 min</option>
-                                                <option value="45">45 min</option>
-                                                <option value="60">1h</option>
-                                                <option value="90">1h 30m</option>
-                                                <option value="120">2h</option>
+                                                <option value="15" className="text-black">15 min</option>
+                                                <option value="30" className="text-black">30 min</option>
+                                                <option value="45" className="text-black">45 min</option>
+                                                <option value="60" className="text-black">1h</option>
+                                                <option value="90" className="text-black">1h 30m</option>
+                                                <option value="120" className="text-black">2h</option>
                                             </select>
                                         </div>
                                     </div>
@@ -675,15 +696,15 @@ export default function OnboardingPage() {
                     </button>
 
                     <div className="flex items-center gap-4">
-                        {(step === 2 || step === 4 || step === 5) && (
-                            <button onClick={handleNext} className="text-gray-400 font-black text-[10px] uppercase tracking-widest hover:text-gray-900 transition underline underline-offset-4 decoration-gray-200">
-                                Pular Etapa
+                        {(step === 2 || step === 3 || step === 4 || step === 5) && (
+                            <button onClick={() => handleNext(true)} className="text-gray-500 font-bold text-sm hover:text-gray-900 transition px-4 py-2 rounded-xl hover:bg-gray-100">
+                                Pular
                             </button>
                         )}
                         
                         {step < steps.length ? (
                             <button 
-                                onClick={handleNext} 
+                                onClick={() => handleNext()} 
                                 disabled={loading}
                                 className="bg-black text-white px-10 py-5 rounded-[2rem] font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group disabled:bg-gray-400"
                                 style={{ backgroundColor: cor }}

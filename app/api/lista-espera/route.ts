@@ -9,6 +9,7 @@ export async function POST(req: Request) {
         const {
             name,
             phone,
+            email,
             preferences,
             serviceId,
             professionalId,
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
             data: {
                 customerName: name,
                 customerPhone: phone,
+                customerEmail: email || null,
                 preferences: preferences || "",
                 serviceId: serviceId || null,
                 professionalId: professionalId === 'ANY' ? null : (professionalId || null),

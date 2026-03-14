@@ -98,13 +98,33 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   useEffect(() => {
     const payment = searchParams.get('payment');
     const orderId = searchParams.get('orderId');
-    if (payment === 'success') {
+    if (payment === 'success' && orderId) {
       setStep("SUCCESS");
       setCart([]);
       localStorage.removeItem(`nohud_cart_${params.slug}`);
       toast.success("Pagamento realizado com sucesso!");
     } else if (payment === 'failure') {
       toast.error("Ocorreu um erro no seu pagamento.");
+    } else if (payment === 'pending' && orderId) {
+      // PIX: O Mercado Pago redireciona com status 'pending'
+      // Fazemos polling para verificar quando o pagamento é confirmado
+      toast.info("Aguardando confirmação do pagamento...");
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/checkout/order-status?orderId=${orderId}`);
+          const data = await res.json();
+          if (data.isPaid || data.status === 'PAID') {
+            clearInterval(interval);
+            setStep("SUCCESS");
+            setCart([]);
+            localStorage.removeItem(`nohud_cart_${params.slug}`);
+            toast.success("Pagamento confirmado com sucesso!");
+          }
+        } catch (e) {
+          // silencioso
+        }
+      }, 5000); // Verifica a cada 5 segundos
+      return () => clearInterval(interval);
     }
   }, [searchParams, params.slug]);
 

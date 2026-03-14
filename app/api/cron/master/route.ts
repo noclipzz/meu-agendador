@@ -46,6 +46,7 @@ export async function GET(req: Request) {
 
             const subscricoes = await db.pushSubscription.findMany({ select: { userId: true } });
             let pushSent = 0;
+
             for (const sub of subscricoes) {
                 try {
                     let notificationSent = false;
@@ -123,7 +124,7 @@ export async function GET(req: Request) {
                             if (member?.role === "ADMIN") isTeamAdmin = true;
                         }
 
-                        if (empresaDono || isTeamAdmin) {
+                    if (empresaDono || isTeamAdmin) {
                             // Push
                             if (settings.daily_agenda_push !== false) {
                                 await sendPushNotification(
@@ -305,7 +306,7 @@ export async function GET(req: Request) {
                         caption: "Finalizou o serviço? O sistema automaticamente joga o QR Code de pagamento para o seu cliente e dá baixa na fatura.\n\nSua conciliação bancária vai te amar por isso.\n\nEvite a inadimplência, evite o \"me passa o seu PIX depois?\" e transpareça extremo profissionalismo a cada venda.\n\nO NOHUD é o parceiro de negócios que não tira folga.\n\n#pix #automação #pagamento #vendas #NOHUD"
                     },
                     {
-                        title: "Entregue a melhor Experiência.",
+                        title: "Entregue a melhor Experience.",
                         subtitle: "Encante seu cliente antes mesmo de você encostar nele.",
                         feature: "Ficha Digital",
                         emoji: "✨",
@@ -422,7 +423,7 @@ export async function GET(req: Request) {
         }
 
         // --------------------------------------------------------------------------------
-        // 5. TAREFA: LEMBRETE 24 HORAS ANTES (WHATSAPP)
+        // 5. TAREFA: LEMBRETE 24 HORAS ANTES (WHATSAPP E EMAIL)
         // --------------------------------------------------------------------------------
         if (!isTestIg) {
             try {
@@ -435,10 +436,9 @@ export async function GET(req: Request) {
                     where: {
                         date: { gte: startOfTomorrowUTC, lte: endOfTomorrowUTC },
                         status: { in: ["PENDENTE", "CONFIRMADO"] },
-                        reminderSent: false,
-                        customerPhone: { not: null }
+                        reminderSent: false
                     },
-                    include: { company: true, service: true }
+                    include: { company: true, service: true, client: true }
                 });
 
                 let remindersSent = 0;
@@ -446,35 +446,61 @@ export async function GET(req: Request) {
                     try {
                         const company = b.company;
                         const notifSettings = (company as any).notificationSettings || {};
-                        const allowsReminder = notifSettings.client_reminder_whatsapp !== false;
+                        const allowsReminderWpp = notifSettings.client_reminder_whatsapp !== false;
+                        const allowsReminderEmail = notifSettings.client_reminder_email !== false;
 
-                        if (allowsReminder && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && b.customerPhone) {
+                        const timeStr = formatarHorario(new Date(b.date));
+                        const shortId = b.id.slice(-4).toUpperCase();
+
+                        // A) WHATSAPP
+                        if (allowsReminderWpp && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && b.customerPhone) {
                             const sub = await prisma.subscription.findUnique({ where: { userId: company.ownerId } });
                             if (sub?.plan === "MASTER") {
-                                const shortId = b.id.slice(-4).toUpperCase();
-                                const timeStr = formatarHorario(new Date(b.date));
                                 const msg = `🔔 *Lembrete de Agendamento*\n\nOlá ${b.customerName}, seu horário de *${b.service?.name || "Atendimento"}* é *AMANHÃ* às ${timeStr}.\n*(Ref: #${shortId})*`;
-                                await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, b.customerPhone, msg);
-                                await prisma.booking.update({ where: { id: b.id }, data: { reminderSent: true } });
-                                remindersSent++;
-                                // Delay reduzido para evitar timeout excessivo em muitos agendamentos
-                                if (bookingsAmanha.length > 5) {
-                                    await new Promise(r => setTimeout(r, 500));
-                                } else {
-                                    await new Promise(r => setTimeout(r, 1500));
-                                }
+                                await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, b.customerPhone, msg).catch(() => {});
                             }
                         }
+
+                        // B) EMAIL
+                        if (allowsReminderEmail && (b.client?.email || (b as any).customerEmail)) {
+                            const targetEmail = b.client?.email || (b as any).customerEmail;
+                            await resend.emails.send({
+                                from: `${company.name} <nao-responda@nohud.com.br>`,
+                                to: targetEmail,
+                                subject: `🔔 Lembrete: Seu horário amanhã às ${timeStr}`,
+                                html: `
+                                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                        <h2>Olá, ${b.customerName}!</h2>
+                                        <p>Este é um lembrete do seu agendamento para <strong>amanhã</strong>.</p>
+                                        <div style="background: #fdfcea; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #fef3c7;">
+                                            <p><strong>📅 Data:</strong> Amanhã, ${format(toZonedTime(b.date, timezone), "dd/MM/yyyy")}</p>
+                                            <p><strong>🕒 Horário:</strong> ${timeStr}</p>
+                                            <p><strong>💇 Serviço:</strong> ${b.service?.name || "Atendimento"}</p>
+                                            <p><strong>📍 Local:</strong> ${company.name}</p>
+                                        </div>
+                                        <p>Caso precise desmarcar, entre em contato ou acesse nosso portal.</p>
+                                        <p style="font-size: 12px; color: #999;">Ref: #${shortId}</p>
+                                    </div>
+                                `
+                            }).catch(() => {});
+                        }
+
+                        if (allowsReminderWpp || allowsReminderEmail) {
+                            await prisma.booking.update({ where: { id: b.id }, data: { reminderSent: true } });
+                            remindersSent++;
+                        }
+
+                        if (bookingsAmanha.length > 5) await new Promise(r => setTimeout(r, 800));
                     } catch (err) { }
                 }
-                logs.push(`Lembretes 24h: ${remindersSent} mensagens enviadas.`);
+                logs.push(`Lembretes 24h: ${remindersSent} agendamentos processados.`);
             } catch (remErr: any) {
                 logs.push(`Lembretes 24h: Erro na automação (${remErr.message})`);
             }
         }
 
         // --------------------------------------------------------------------------------
-        // 6. TAREFA: AVISOS DE COBRANÇA DE FATURAS (WHATSAPP)
+        // 6. TAREFA: AVISOS DE COBRANÇA DE FATURAS (WHATSAPP E EMAIL)
         // --------------------------------------------------------------------------------
         if (!isTestIg) {
             try {
@@ -502,22 +528,21 @@ export async function GET(req: Request) {
                 });
 
                 let cobrancasEnviadas = 0;
-
-                // Limitar a quantidade de faturas processadas nesta execução (proteção contra timeout Vercel / banimento WA)
                 const faturasLimitadas = faturasPendentes.slice(0, 50);
 
                 for (const invoice of faturasLimitadas) {
                     try {
                         const company = invoice.company;
                         const client = invoice.client;
-
-                        if (!client?.phone || company.whatsappStatus !== 'CONNECTED' || !company.evolutionServerUrl) continue;
+                        if (!client) continue;
 
                         const dataVencimentoUTC = new Date(invoice.dueDate);
                         const dataVencimentoZoned = startOfDay(toZonedTime(dataVencimentoUTC, timezone));
                         const targetHojeDia = startOfDay(hojeZoned).getTime();
 
                         const settings = company.notificationSettings as any || {};
+                        const allowsBillingWpp = settings.client_billing_whatsapp !== false;
+                        const allowsBillingEmail = settings.client_billing_email !== false;
 
                         let tipoMensagem = "";
                         let corpoBase = "";
@@ -535,27 +560,49 @@ export async function GET(req: Request) {
                             tipoMensagem = "🚨 Fatura Vencida";
                             corpoBase = `Notamos que sua fatura no valor de *R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* venceu há *2 DIAS* e ainda consta como pendente em nosso sistema.\nPor favor, regularize sua situação assim que possível.`;
                         } else {
-                            continue; // Caiu fora da regra exata por conversão de fuso
+                            continue;
                         }
 
-                        let msg = `💰 *${tipoMensagem} - ${company.name}*\n\n`;
-                        msg += `Olá, *${client.name}*!\n`;
-                        msg += `${corpoBase}\n\n`;
-                        msg += `📝 *Serviço/Referência:* ${invoice.description}\n`;
+                        // WhatsApp
+                        if (allowsBillingWpp && client.phone && company.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl) {
+                            let msg = `💰 *${tipoMensagem} - ${company.name}*\n\n`;
+                            msg += `Olá, *${client.name}*!\n`;
+                            msg += `${corpoBase}\n\n`;
+                            msg += `📝 *Serviço/Referência:* ${invoice.description}\n`;
+                            if (invoice.bankUrl) msg += `🔗 *Link do Boleto:*\n${invoice.bankUrl}\n\n`;
+                            if (invoice.pixCopyPaste) msg += `📱 *PIX (Copia e Cola):*\n${invoice.pixCopyPaste}\n\n`;
+                            msg += `_Caso já tenha realizado o pagamento, desconsidere esta mensagem._`;
 
-                        if (invoice.bankUrl) msg += `🔗 *Link do Boleto:*\n${invoice.bankUrl}\n\n`;
-                        if (invoice.pixCopyPaste) msg += `📱 *PIX (Copia e Cola):*\n${invoice.pixCopyPaste}\n\n`;
+                            await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, client.phone, msg).catch(() => {});
+                        }
 
-                        msg += `_Caso já tenha realizado o pagamento, desconsidere esta mensagem._`;
+                        // Email
+                        if (allowsBillingEmail && client.email) {
+                            await resend.emails.send({
+                                from: `${company.name} <nao-responda@nohud.com.br>`,
+                                to: client.email,
+                                subject: `💰 ${tipoMensagem}: Sua fatura na ${company.name}`,
+                                html: `
+                                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                                        <h2>Olá, ${client.name}!</h2>
+                                        <p>${corpoBase.replace(/\*/g, '')}</p>
+                                        <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+                                            <p><strong>Serviço/Referência:</strong> ${invoice.description}</p>
+                                            <p><strong>Valor:</strong> R$ ${Number(invoice.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                            <p><strong>Vencimento:</strong> ${format(toZonedTime(invoice.dueDate, timezone), "dd/MM/yyyy")}</p>
+                                        </div>
+                                        ${invoice.bankUrl ? `<a href="${invoice.bankUrl}" style="background:#3b82f6; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold; display:inline-block; margin-right:10px;">Ver Boleto</a>` : ''}
+                                        <p style="font-size: 12px; color: #999; margin-top: 20px;">Caso já tenha realizado o pagamento, desconsidere esta mensagem.</p>
+                                    </div>
+                                `
+                            }).catch(() => {});
+                        }
 
-                        await sendEvolutionMessage(company.evolutionServerUrl, company.evolutionApiKey!, company.whatsappInstanceId!, client.phone, msg);
                         cobrancasEnviadas++;
-
-                        // Delay seguro de 1.5 a 3 segundos entre envios para evitar banimento do WhatsApp e sobrecarga da Evolution API
-                        await new Promise(r => setTimeout(r, 1500 + Math.random() * 1500));
+                        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
                     } catch (e) { }
                 }
-                logs.push(`Avisos Financeiros: ${cobrancasEnviadas} cobranças enviadas.`);
+                logs.push(`Avisos Financeiros: ${cobrancasEnviadas} cobranças processadas.`);
             } catch (err: any) {
                 logs.push(`Avisos Financeiros: Erro na automação (${err.message})`);
             }
@@ -587,6 +634,91 @@ export async function GET(req: Request) {
                 logs.push(`Backup: Enviado com sucesso.`);
             } catch (backupErr: any) {
                 logs.push(`Backup: Erro (${backupErr.message})`);
+            }
+        }
+
+        // --------------------------------------------------------------------------------
+        // 8. TAREFA: RESUMO FINANCEIRO DIÁRIO (PUSH E EMAIL)
+        // --------------------------------------------------------------------------------
+        if (!isTestIg) {
+            try {
+                const hojeZoned = toZonedTime(now, timezone);
+                const startOfTodayUTC = fromZonedTime(startOfDay(hojeZoned), timezone);
+                const endOfTodayUTC = fromZonedTime(endOfDay(hojeZoned), timezone);
+
+                const companies = await prisma.company.findMany({
+                    select: { id: true, name: true, ownerId: true, notificationEmail: true, notificationSettings: true }
+                });
+
+                for (const company of companies) {
+                    try {
+                        const settings = (company.notificationSettings as any) || {};
+                        const wantPush = settings.financial_summaries_push === true;
+                        const wantEmail = settings.financial_summaries_email === true;
+
+                        if (!wantPush && !wantEmail) continue;
+
+                        const invoices = await prisma.invoice.findMany({
+                            where: {
+                                companyId: company.id,
+                                paidAt: { gte: startOfTodayUTC, lte: endOfTodayUTC },
+                                status: "PAGO"
+                            }
+                        });
+
+                        const total = invoices.reduce((acc, inv) => acc + Number(inv.value), 0);
+                        if (total === 0) continue;
+
+                        const breakdown = invoices.reduce((acc: any, inv) => {
+                            const method = inv.method || "OUTRO";
+                            acc[method] = (acc[method] || 0) + Number(inv.value);
+                            return acc;
+                        }, {});
+
+                        const breakdownList = Object.entries(breakdown)
+                            .map(([method, val]) => `<li>${method}: R$ ${Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</li>`)
+                            .join("");
+
+                        // Push
+                        if (wantPush) {
+                            await sendPushNotification(
+                                company.ownerId,
+                                "💰 Resumo do Dia",
+                                `Hoje você faturou R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Confira o detalhamento.`,
+                                "/painel/financeiro/faturamento"
+                            );
+                        }
+
+                        // Email
+                        if (wantEmail && company.notificationEmail) {
+                            await resend.emails.send({
+                                from: "NOHUD Financeiro <financeiro@nohud.com.br>",
+                                to: company.notificationEmail,
+                                subject: `💰 Resumo Financeiro Diário - ${company.name}`,
+                                html: `
+                                    <div style="font-family: sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
+                                        <h2 style="color: #0f172a;">Resumo do Dia: ${format(hojeZoned, "dd/MM/yyyy")}</h2>
+                                        <p style="font-size: 16px; color: #64748b;">Parabéns! Veja o desempenho financeiro da sua empresa hoje:</p>
+                                        
+                                        <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center; border: 1px solid #f1f5f9;">
+                                            <span style="color: #64748b; font-size: 14px; display: block; margin-bottom: 8px;">FATURAMENTO TOTAL</span>
+                                            <span style="color: #10b981; font-size: 32px; font-weight: 800;">R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+
+                                        <h3 style="color: #1e293b; font-size: 18px; margin-bottom: 12px;">Detalhamento por Método:</h3>
+                                        <ul style="color: #475569; line-height: 1.6;">${breakdownList}</ul>
+
+                                        <br/>
+                                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/painel/financeiro/faturamento" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 10px; font-weight: 600;">Ver Relatório Completo</a>
+                                    </div>
+                                `
+                            }).catch(() => {});
+                        }
+                    } catch (e) { }
+                }
+                logs.push(`Resumo Financeiro: Processado.`);
+            } catch (err: any) {
+                logs.push(`Resumo Financeiro: Erro (${err.message})`);
             }
         }
 
