@@ -88,12 +88,12 @@ export default function VitrinePage() {
 
     function openNew() {
         setEditingProduct(null);
-        setForm({ 
-            name: "", 
-            description: "", 
-            price: "", 
+        setForm({
+            name: "",
+            description: "",
+            price: "",
             unitValue: "1",
-            imageUrl: "", 
+            imageUrl: "",
             showInVitrine: true,
             showStock: false,
             deliveryDeadline: "Pronta entrega",
@@ -373,8 +373,8 @@ export default function VitrinePage() {
                         <div
                             key={product.id}
                             className={`bg-white dark:bg-gray-800 rounded-3xl border overflow-hidden shadow-sm hover:shadow-lg transition-all group ${product.showInVitrine
-                                    ? "dark:border-gray-700 border-gray-100"
-                                    : "dark:border-gray-800 border-gray-200 opacity-70"
+                                ? "dark:border-gray-700 border-gray-100"
+                                : "dark:border-gray-800 border-gray-200 opacity-70"
                                 }`}
                         >
                             {/* IMAGE */}
@@ -437,8 +437,8 @@ export default function VitrinePage() {
                                     <button
                                         onClick={() => toggleVitrine(product)}
                                         className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black uppercase transition ${product.showInVitrine
-                                                ? "bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100"
-                                                : "bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200"
+                                            ? "bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100"
+                                            : "bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200"
                                             }`}
                                     >
                                         {product.showInVitrine ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -576,7 +576,7 @@ export default function VitrinePage() {
                                                     <Package size={20} className={form.showStock ? "text-blue-600" : "text-gray-400"} />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black dark:text-white">Exibir Qtd</p>
+                                                    <p className="text-sm font-black dark:text-white">Exibir Qtd em estoque</p>
                                                 </div>
                                             </div>
                                             <button
@@ -596,8 +596,8 @@ export default function VitrinePage() {
                                         <input
                                             className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
                                             placeholder="Ex: Nome do Produto"
-                                             value={form.name}
-                                             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
+                                            value={form.name}
+                                            onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                                         />
                                     </div>
 
@@ -682,7 +682,7 @@ export default function VitrinePage() {
                                             <label className="text-sm font-black dark:text-white flex items-center gap-2">
                                                 <Tag size={18} className="text-violet-500" /> Variações
                                             </label>
-                                            <button 
+                                            <button
                                                 onClick={() => setForm(prev => ({ ...prev, variations: [...prev.variations, { name: "", options: [] }] }))}
                                                 className="text-xs font-black text-violet-600 uppercase hover:underline"
                                             >
@@ -692,16 +692,16 @@ export default function VitrinePage() {
                                         <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                                             {form.variations.map((v, i) => (
                                                 <div key={i} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-2xl border dark:border-gray-700 relative">
-                                                    <button onClick={() => { const n = [...form.variations]; n.splice(i,1); setForm(p=>({...p, variations: n})) }} className="absolute top-2 right-2 text-gray-400 hover:text-red-500"><X size={14} /></button>
-                                                    <input className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-2 font-black text-xs outline-none dark:text-white" placeholder="Ex: Variação" value={v.name} onChange={e=>{const n=[...form.variations]; n[i]={...n[i], name: e.target.value}; setForm(p=>({...p, variations: n}))}} />
+                                                    <button onClick={() => { const n = [...form.variations]; n.splice(i, 1); setForm(p => ({ ...p, variations: n })) }} className="absolute top-2 right-2 text-gray-400 hover:text-red-500"><X size={14} /></button>
+                                                    <input className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-2 font-black text-xs outline-none dark:text-white" placeholder="Ex: Variação" value={v.name} onChange={e => { const n = [...form.variations]; n[i] = { ...n[i], name: e.target.value }; setForm(p => ({ ...p, variations: n })) }} />
                                                     <div className="flex flex-wrap gap-1">
                                                         {v.options.map((opt, oi) => (
                                                             <span key={oi} className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1">
                                                                 {opt}
-                                                                <button onClick={()=>{const n=[...form.variations]; const no=[...n[i].options]; no.splice(oi,1); n[i]={...n[i], options: no}; setForm(p=>({...p, variations: n}))}}><X size={8}/></button>
+                                                                <button onClick={() => { const n = [...form.variations]; const no = [...n[i].options]; no.splice(oi, 1); n[i] = { ...n[i], options: no }; setForm(p => ({ ...p, variations: n })) }}><X size={8} /></button>
                                                             </span>
                                                         ))}
-                                                        <input className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border-2 border-dashed w-20 outline-none" placeholder="+ Opção" onKeyDown={e=>{if(e.key==='Enter'){const val=e.currentTarget.value.trim(); if(val){const n=[...form.variations]; n[i]={...n[i], options: [...n[i].options, ...val.split(',').map(x=>x.trim())]}; setForm(p=>({...p, variations: n})); e.currentTarget.value=""}}}} />
+                                                        <input className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border-2 border-dashed w-20 outline-none" placeholder="+ Opção" onKeyDown={e => { if (e.key === 'Enter') { const val = e.currentTarget.value.trim(); if (val) { const n = [...form.variations]; n[i] = { ...n[i], options: [...n[i].options, ...val.split(',').map(x => x.trim())] }; setForm(p => ({ ...p, variations: n })); e.currentTarget.value = "" } } }} />
                                                     </div>
                                                 </div>
                                             ))}

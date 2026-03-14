@@ -739,19 +739,25 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
             <div className="grid grid-cols-1 gap-3">
               {empresa.mercadopagoAccessToken && (
                 <button
-                  onClick={() => setPaymentMode("ONLINE")}
+                  onClick={() => setPaymentMode(paymentMode === "ONLINE" ? "" as any : "ONLINE")}
                   className={`p-6 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "ONLINE" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
                 >
                   <CreditCard size={32} />
                   <div className="text-left">
-                    <p className="font-black text-sm uppercase">Pagar Agora</p>
-                    <p className="text-xs opacity-70">Cartão, Pix ou Boleto online</p>
+                    <p className="font-black text-sm uppercase">Pagar Online</p>
+                    <p className="text-xs opacity-70">
+                      {empresa.vitrineSettings?.acceptedMethods?.length > 0 
+                        ? empresa.vitrineSettings.acceptedMethods
+                            .map((m: string) => m === 'pix' ? 'Pix' : m === 'credit_card' ? 'Cartão' : m === 'debit_card' ? 'Débito' : 'Boleto')
+                            .join(', ')
+                        : "Cartão, Pix ou Boleto"}
+                    </p>
                   </div>
                 </button>
               )}
               {empresa.vitrineSettings?.acceptDeliveryPayment && (
                 <button
-                  onClick={() => setPaymentMode("DELIVERY")}
+                  onClick={() => setPaymentMode(paymentMode === "DELIVERY" ? "" as any : "DELIVERY")}
                   className={`p-6 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
                 >
                   <Banknote size={32} />
@@ -783,13 +789,14 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
             <div className="pt-4">
               <button
                 onClick={() => {
+                  if (!paymentMode) return toast.error("Selecione uma forma de pagamento");
                   if (paymentMode === "DELIVERY") {
                     setStep("PAYMENT_DETAIL");
                   } else {
                     handleProceedToPayment();
                   }
                 }}
-                disabled={checkingOut}
+                disabled={checkingOut || !paymentMode}
                 className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
               >
                 {checkingOut ? <Loader2 className="animate-spin" /> : <><ChevronRight size={20} /> {paymentMode === "DELIVERY" ? "Próximo Passo" : "Finalizar Pedido"}</>}
@@ -815,7 +822,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   return (
                     <button
                       key={method}
-                      onClick={() => setDeliveryPaymentMethod(method as any)}
+                      onClick={() => setDeliveryPaymentMethod(deliveryPaymentMethod === method ? "" as any : method as any)}
                       className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${deliveryPaymentMethod === method ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
                     >
                       {method === 'money' ? <Banknote size={24} /> : <CreditCard size={24} />}

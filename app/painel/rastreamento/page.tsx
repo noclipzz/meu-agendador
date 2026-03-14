@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import {
     MapPin, Map as MapIcon, Users, RefreshCw,
-    MoreHorizontal, Smartphone, Signal, Info, AlertCircle
+    MoreHorizontal, Smartphone, Signal, Info, AlertCircle,
+    Route as RouteIcon, Plus, Trash2, Search, ChevronRight,
+    MapPinned, Store, User as UserIcon, Navigation, Loader2, X
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -23,11 +25,26 @@ export default function TrackingPage() {
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const [selectedLocation, setSelectedLocation] = useState<any>(null);
 
+    // Route Creation States
+    const [isCreatingRoute, setIsCreatingRoute] = useState(false);
+    const [routePoints, setRoutePoints] = useState<any[]>([]);
+    const [routeName, setRouteName] = useState("Nova Rota de Entrega");
+    const [orders, setOrders] = useState<any[]>([]);
+    const [clients, setClients] = useState<any[]>([]);
+    const [isSavingRoute, setIsSavingRoute] = useState(false);
+    const [historyRoutes, setHistoryRoutes] = useState<any[]>([]);
+
     useEffect(() => {
         carregarDados();
         const interval = setInterval(carregarDados, 30000); // 30s auto-refresh
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (isCreatingRoute) {
+            carregarAuxiliares();
+        }
+    }, [isCreatingRoute]);
 
     const carregarDados = async () => {
         try {
@@ -49,6 +66,68 @@ export default function TrackingPage() {
             console.error(e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const carregarAuxiliares = async () => {
+        try {
+            const [ordersRes, clientsRes, routesRes] = await Promise.all([
+                fetch("/api/painel/vitrine/pedidos"),
+                fetch("/api/clientes"),
+                fetch("/api/radar/routes" + (selectedLocation ? `?professionalId=${selectedLocation.professionalId}` : ""))
+            ]);
+
+            const ordersData = await ordersRes.json();
+            const clientsData = await clientsRes.json();
+            const routesData = await routesRes.json();
+
+            setOrders(Array.isArray(ordersData) ? ordersData.filter((o: any) => o.status !== 'DELIVERED' && o.status !== 'CANCELED') : []);
+            setClients(Array.isArray(clientsData) ? clientsData : []);
+            setHistoryRoutes(Array.isArray(routesData) ? routesData : []);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const addPoint = (point: any) => {
+        setRoutePoints(prev => [...prev, {
+            ...point,
+            id: Math.random().toString(36).substr(2, 9),
+            status: "PENDING"
+        }]);
+        toast.success("Parada adicionada!");
+    };
+
+    const removePoint = (id: string) => {
+        setRoutePoints(prev => prev.filter(p => p.id !== id));
+    };
+
+    const saveRoute = async () => {
+        if (routePoints.length === 0) return toast.error("Adicione pelo menos uma parada!");
+        setIsSavingRoute(true);
+        try {
+            const res = await fetch("/api/radar/routes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    professionalId: selectedLocation.professionalId,
+                    name: routeName,
+                    points: routePoints
+                })
+            });
+
+            if (res.ok) {
+                toast.success("Rota enviada com sucesso!");
+                setIsCreatingRoute(false);
+                setRoutePoints([]);
+                carregarAuxiliares();
+            } else {
+                toast.error("Erro ao salvar rota");
+            }
+        } catch (e) {
+            toast.error("Erro de conexão");
+        } finally {
+            setIsSavingRoute(false);
         }
     };
 
@@ -156,6 +235,15 @@ export default function TrackingPage() {
                         </div>
                     </div>
 
+                    {selectedLocation && (
+                        <button
+                            onClick={() => setIsCreatingRoute(true)}
+                            className="w-full bg-white dark:bg-gray-900 p-4 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-900 text-indigo-600 font-black text-xs uppercase flex items-center justify-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition shadow-sm"
+                        >
+                            <RouteIcon size={18} /> Criar Rota para {selectedLocation.professional?.name.split(' ')[0]}
+                        </button>
+                    )}
+
                     <div className="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-3xl border border-amber-100 dark:border-amber-900/30">
                         <div className="flex gap-4">
                             <Info className="text-amber-600 shrink-0" size={20} />
@@ -182,8 +270,185 @@ export default function TrackingPage() {
                             </button>
                         </div>
                     </div>
+
+                    {/* HISTÓRICO DE ROTAS RECENTES */}
+                    <div className="bg-white dark:bg-gray-900 rounded-[2rem] border dark:border-gray-800 p-8 shadow-sm">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Rotas Recentes</h3>
+                                <p className="text-xs text-gray-400 font-bold uppercase">Acompanhe o status das entregas</p>
+                            </div>
+                            <Navigation className="text-gray-200 dark:text-gray-800" size={32} />
+                        </div>
+
+                        {historyRoutes.length === 0 ? (
+                            <div className="py-12 text-center text-gray-400 font-bold uppercase text-[10px] italic">Nenhuma rota criada recentemente</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {historyRoutes.map((route) => (
+                                    <div key={route.id} className="p-5 rounded-2xl border dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 hover:border-indigo-200 dark:hover:border-indigo-900 transition group">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-700 flex items-center justify-center text-indigo-600 shadow-sm">
+                                                <MapPinned size={20} />
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${route.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : route.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                                {route.status === 'COMPLETED' ? 'Finalizada' : route.status === 'IN_PROGRESS' ? 'Em Curso' : 'Pendente'}
+                                            </span>
+                                        </div>
+                                        <p className="font-black text-sm text-gray-800 dark:text-white mb-1">{route.name}</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase mb-4 flex items-center gap-1">
+                                            <Users size={12} /> {route.professional?.name.split(' ')[0]} • {route.points?.length || 0} paradas
+                                        </p>
+                                        
+                                        <div className="space-y-2 mb-4">
+                                            {route.points?.slice(0, 2).map((pt: any) => (
+                                                <div key={pt.id} className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400 font-medium">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${pt.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                                                    <span className="truncate">{pt.label}</span>
+                                                </div>
+                                            ))}
+                                            {route.points?.length > 2 && <p className="text-[9px] text-indigo-500 font-bold ml-3">+ {route.points.length - 2} paradas</p>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* MODAL / SLIDE-OVER DE CRIAÇÃO DE ROTA */}
+            {isCreatingRoute && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-end animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreatingRoute(false)} />
+                    <div className="relative w-full max-w-xl h-full bg-slate-50 dark:bg-gray-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 overflow-hidden">
+                        {/* HEADER MODAL */}
+                        <div className="p-8 bg-indigo-600 text-white shrink-0 relative">
+                            <button onClick={() => setIsCreatingRoute(false)} className="absolute top-8 right-8 p-2 hover:bg-white/20 rounded-xl transition">
+                                <X size={24} />
+                            </button>
+                            <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Planejar Rota</h2>
+                            <p className="text-indigo-100 font-medium text-sm flex items-center gap-2 uppercase tracking-wide">
+                                Designer de Logística para <span className="font-black text-white px-2 py-0.5 bg-indigo-500 rounded-lg">{selectedLocation.professional?.name}</span>
+                            </p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
+                            {/* NOME DA ROTA */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Signal size={12} /> Nome de Referência
+                                </label>
+                                <input 
+                                    value={routeName}
+                                    onChange={e => setRouteName(e.target.value)}
+                                    className="w-full bg-white dark:bg-gray-800 p-4 rounded-2xl border-2 border-transparent focus:border-indigo-400 outline-none font-black text-slate-800 dark:text-white shadow-sm transition-all"
+                                    placeholder="Ex: Entregas Manhã"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-8">
+                                {/* BUSCAR PEDIDOS VITRINE */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Store size={14} className="text-indigo-500"/> Pedidos Vitrine
+                                    </h3>
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                        {orders.length === 0 ? (
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase italic p-4 text-center border-2 border-dashed rounded-2xl">Vazio</p>
+                                        ) : (
+                                            orders.map(order => (
+                                                <button 
+                                                    key={order.id}
+                                                    onClick={() => addPoint({
+                                                        label: `Pedido #${order.id.slice(-4).toUpperCase()}`,
+                                                        address: order.addressInfo?.address ? `${order.addressInfo.address}, ${order.addressInfo.number} - ${order.addressInfo.neighborhood}` : "Retirada",
+                                                        orderId: order.id
+                                                    })}
+                                                    className="w-full text-left p-4 bg-white dark:bg-gray-800 rounded-2xl border border-slate-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-900 transition group shadow-sm"
+                                                >
+                                                    <p className="font-black text-[11px] text-slate-800 dark:text-white uppercase truncate">#{order.id.slice(-6).toUpperCase()} • {order.customerName}</p>
+                                                    <p className="text-[9px] text-slate-400 font-bold truncate mt-1">{order.addressInfo?.address || 'Sem endereço'}</p>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* BUSCAR CLIENTES */}
+                                <div className="space-y-4">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <UserIcon size={14} className="text-indigo-500"/> Clientes
+                                    </h3>
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                        {clients.length === 0 ? (
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase italic p-4 text-center border-2 border-dashed rounded-2xl">Vazio</p>
+                                        ) : (
+                                            clients.map(client => (
+                                                <button 
+                                                    key={client.id}
+                                                    onClick={() => addPoint({
+                                                        label: `${client.name}`,
+                                                        address: `${client.address}, ${client.number} - ${client.neighborhood}`,
+                                                        clientId: client.id
+                                                    })}
+                                                    className="w-full text-left p-4 bg-white dark:bg-gray-800 rounded-2xl border border-slate-100 dark:border-gray-800 hover:border-indigo-200 dark:hover:border-indigo-900 transition group shadow-sm"
+                                                >
+                                                    <p className="font-black text-[11px] text-slate-800 dark:text-white uppercase truncate">{client.name}</p>
+                                                    <p className="text-[9px] text-slate-400 font-bold truncate mt-1">{client.address || 'Sem endereço'}</p>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* LISTA DE PARADAS DA ROTA */}
+                            <div className="space-y-4">
+                                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                                    <span>Paradas na Rota ({routePoints.length})</span>
+                                    {routePoints.length > 0 && <button onClick={() => setRoutePoints([])} className="text-rose-500 hover:underline">Limpar</button>}
+                                </h3>
+                                
+                                <div className="space-y-3">
+                                    {routePoints.length === 0 ? (
+                                        <div className="p-10 border-4 border-dashed border-slate-200 dark:border-gray-800 rounded-[2rem] flex flex-col items-center justify-center text-slate-300">
+                                            <Plus size={32} />
+                                            <p className="text-[10px] font-black uppercase mt-2">Nenhuma parada adicionada</p>
+                                        </div>
+                                    ) : (
+                                        routePoints.map((point, idx) => (
+                                            <div key={point.id} className="bg-white dark:bg-gray-800 p-5 rounded-2xl border-2 border-slate-100 dark:border-gray-800 flex items-center gap-4 group hover:border-indigo-400 transition shadow-sm">
+                                                <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-gray-700 flex items-center justify-center text-xs font-black text-slate-600 dark:text-gray-300">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-black text-xs text-slate-800 dark:text-white uppercase truncate">{point.label}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold truncate">{point.address}</p>
+                                                </div>
+                                                <button onClick={() => removePoint(point.id)} className="p-2 text-slate-300 hover:text-rose-500 transition">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* BOTÃO FINALIZAR */}
+                        <div className="p-8 bg-white dark:bg-gray-900 border-t dark:border-gray-800 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+                            <button 
+                                onClick={saveRoute}
+                                disabled={isSavingRoute || routePoints.length === 0}
+                                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-5 rounded-2xl shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-3 uppercase tracking-tighter text-sm transition transition-all active:scale-95"
+                            >
+                                {isSavingRoute ? <Loader2 className="animate-spin" /> : <><Navigation size={20} /> Publicar Rota</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

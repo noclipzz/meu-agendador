@@ -106,6 +106,7 @@ model Company {
   orders                Order[]
   vitrineProducts       VitrineProduct[]
   blockedDates          BlockedDate[]
+  routes                Route[]
 
   // AI Reception Settings
   aiEnabled      Boolean? @default(false)
@@ -180,6 +181,7 @@ model Professional {
   waitingList   WaitingList[]
   services      Service[]              @relation("ProfessionalToService")
   locations     ProfessionalLocation[]
+  routes        Route[]
 }
 
 model Service {
@@ -344,6 +346,7 @@ model Client {
   formEntries       FormEntry[]
   invoices          Invoice[]
   consentTerms      ConsentTerm[]
+  routePoints       RoutePoint[]
 }
 
 model Attachment {
@@ -663,6 +666,7 @@ model Order {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  routePoints     RoutePoint[]
 
   @@index([companyId])
 }
@@ -676,5 +680,41 @@ model OrderItem {
   variation        Json?
   order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   vitrineProduct   VitrineProduct @relation(fields: [vitrineProductId], references: [id])
+}
+
+model Route {
+  id             String       @id @default(cuid())
+  name           String       @default("Nova Rota")
+  status         String       @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELED
+  professionalId String
+  companyId      String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  points         RoutePoint[]
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  company        Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
+  @@index([companyId])
+}
+
+model RoutePoint {
+  id          String   @id @default(cuid())
+  routeId     String
+  orderId     String? // Link para um pedido da vitrine
+  clientId    String? // Link para um cliente cadastrado
+  label       String   // Nome da parada (Ex: Cliente João ou Pedido #123)
+  address     String?  // Endereço completo para o GPS
+  status      String   @default("PENDING") // PENDING, COMPLETED, SKIPPED
+  orderIndex  Int      @default(0) // Ordem da parada
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  route       Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  order       Order?   @relation(fields: [orderId], references: [id])
+  client      Client?  @relation(fields: [clientId], references: [id])
+
+  @@index([routeId])
 }
 

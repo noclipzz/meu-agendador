@@ -17,6 +17,7 @@ export default function DashboardPage() {
     const [dados, setDados] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [activeRoute, setActiveRoute] = useState<any>(null);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -26,12 +27,21 @@ export default function DashboardPage() {
     }, []);
 
     useEffect(() => {
-        fetch('/api/painel/dashboard')
-            .then(res => res.json())
-            .then(data => {
-                setDados(data);
-                setLoading(false);
-            });
+        const fetchDashboard = async () => {
+            const res = await fetch('/api/painel/dashboard');
+            const data = await res.json();
+            setDados(data);
+            
+            if (data.userRole === "PROFESSIONAL") {
+                const routeRes = await fetch('/api/radar/routes/active');
+                if (routeRes.ok) {
+                    const routeData = await routeRes.json();
+                    setActiveRoute(routeData);
+                }
+            }
+            setLoading(false);
+        };
+        fetchDashboard();
     }, []);
 
 
@@ -40,6 +50,29 @@ export default function DashboardPage() {
 
     return (
         <div id="tour-dashboard-content" className="p-6 space-y-8 pb-20 font-sans">
+
+            {/* NOTIFICAÇÃO DE ROTA ATIVA PARA PROFISSIONAIS */}
+            {activeRoute && (
+                <Link href="/painel/rastreamento/rota" className="block group">
+                    <div className="bg-indigo-600 p-6 rounded-[2rem] shadow-xl shadow-indigo-500/20 text-white flex items-center justify-between relative overflow-hidden transition-all group-hover:scale-[1.01] active:scale-[0.99]">
+                        <div className="relative z-10 flex items-center gap-6">
+                            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center animate-bounce">
+                                <Navigation size={28} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tighter">Você tem uma rota ativa!</h3>
+                                <p className="text-indigo-100 text-sm font-bold flex items-center gap-2 uppercase tracking-wide">
+                                    {activeRoute.points.filter((p: any) => p.status === 'COMPLETED').length} de {activeRoute.points.length} paradas concluídas • Clique para ver
+                                </p>
+                            </div>
+                        </div>
+                        <div className="relative z-10 bg-white text-indigo-600 p-3 rounded-full shadow-lg group-hover:translate-x-2 transition-transform">
+                            <ChevronRight size={24} />
+                        </div>
+                        <Navigation className="absolute -bottom-6 -right-6 text-white/10" size={140} />
+                    </div>
+                </Link>
+            )}
 
             {/* BOAS VINDAS */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
