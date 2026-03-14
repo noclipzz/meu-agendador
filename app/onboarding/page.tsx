@@ -783,13 +783,6 @@ export default function OnboardingPage() {
                 </div>
             </div>
 
-            {/* Overlay Mobile para previes (Opcional) */}
-            <div className="lg:hidden fixed bottom-6 right-6 z-[100]">
-                <button className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center shadow-2xl relative animate-bounce">
-                    <Smartphone size={24} />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-                </button>
-            </div>
         </div>
     );
 }
