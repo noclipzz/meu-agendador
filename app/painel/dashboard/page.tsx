@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import {
     LayoutDashboard, Calendar, AlertTriangle, TrendingUp, Package,
     Clock, CheckCircle2, DollarSign, ArrowRight, BarChart3, Bell, Megaphone,
-    ArrowUpRight, ArrowDownRight, ChevronRight
+    ArrowUpRight, ArrowDownRight, ChevronRight, Navigation
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from "date-fns";
