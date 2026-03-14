@@ -89,7 +89,7 @@ export async function POST(req: Request) {
                 bookingId: bookingId || null,
                 costCenter: costCenter || null,
                 paidAt: status === "PAGO" ? new Date() : null
-            }
+            } as any
         });
 
         // 3. Atualiza agendamento E BAIXA ESTOQUE COM LÓGICA DE LOTES
@@ -174,7 +174,7 @@ export async function POST(req: Request) {
                         const valorComissao = (valorLiquido * comissaoPercent) / 100;
 
                         // Criação do Contas a Pagar para o Profissional
-                        await prisma.expense.create({
+                        await (prisma.expense as any).create({
                             data: {
                                 companyId,
                                 description: `Comissão - ${profData.name} - ${servicoData.name}`,
@@ -390,7 +390,7 @@ export async function POST(req: Request) {
                         const parsed = parseGerarNfseResponse(nsfeResult.soapResponse);
 
                         if (parsed.isSuccess && parsed.nfseGerada) {
-                            await prisma.invoice.update({
+                            await (prisma.invoice as any).update({
                                 where: { id: invoice.id },
                                 data: {
                                     nfeStatus: "EMITIDA",
@@ -400,7 +400,7 @@ export async function POST(req: Request) {
                             });
                             console.log(`✅ [NFSe] Nota fiscal emitida! Nº ${parsed.numeroNfse}`);
                         } else if (!parsed.isError) {
-                            await prisma.invoice.update({
+                            await (prisma.invoice as any).update({
                                 where: { id: invoice.id },
                                 data: {
                                     nfeStatus: "PROCESSANDO",
@@ -446,7 +446,7 @@ export async function PUT(req: Request) {
                 method,
                 costCenter,
                 paidAt: status === "PAGO" ? new Date() : undefined
-            }
+            } as any
         });
 
         return NextResponse.json(updatedInvoice);

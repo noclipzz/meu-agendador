@@ -140,6 +140,7 @@ export async function GET(request: Request) {
         const startFilter = startOfDay(hoje) > inicioMes ? startOfDay(hoje) : inicioMes;
         const endFilter = isCurrentMonth ? undefined : fimMes;
 
+        console.log("🚦 [FINANCEIRO] Iniciando consultas para companyId:", companyId);
         const [receitasMes, despesasMes, receitasMesAnterior, rankingServicosRaw, rankingProfissionaisRaw, allExpenses, boletosVencidos, boletosAbertos, estoqueLotesAdicionados, todasContasBancarias] = await Promise.all([
             // 1. Receitas do Mês SELECIONADO (PAGO)
             prisma.invoice.findMany({
