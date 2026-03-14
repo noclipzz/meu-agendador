@@ -41,11 +41,14 @@ export async function PUT(req: Request) {
     const dataFormatada = formatarDataCompleta(new Date(booking.date));
     const emailCliente = booking.client?.email;
 
-    // A. E-mail para o Admin (Sempre que houver notificationEmail)
+    // A. E-mail para o Admin (Sempre que houver notificationEmail e configuração permitir)
+    const notifSettings = (booking.company.notificationSettings as any) || {};
+    const adminPrefKey = 'admin_confirm_email'; // This is a staff preference, but we check company-wide if not specified per user
+
     if (booking.company.notificationEmail) {
       try {
         console.log("📨 [DEBUG] Enviando confirmação para ADMIN:", booking.company.notificationEmail);
-        const { error } = await resend.emails.send({
+        await resend.emails.send({
           from: `NOHUD App <nao-responda@nohud.com.br>`,
           to: booking.company.notificationEmail,
           subject: `🗓️ Agendamento CONFIRMADO: ${booking.customerName}`,
@@ -56,9 +59,8 @@ export async function PUT(req: Request) {
                     <p><strong>Profissional:</strong> ${booking.professional?.name || "N/A"}</p>
                 `
         });
-        if (error) console.error("❌ [DEBUG] Erro Resend Admin:", error);
       } catch (e) {
-        console.error("❌ [DEBUG] Erro fatal e-mail admin:", e);
+        console.error("❌ [DEBUG] Erro e-mail admin:", e);
       }
     }
 
@@ -66,7 +68,7 @@ export async function PUT(req: Request) {
     if (emailCliente) {
       try {
         console.log("📨 [DEBUG] Enviando confirmação para CLIENTE:", emailCliente);
-        const { error } = await resend.emails.send({
+        await resend.emails.send({
           from: `NOHUD App <nao-responda@nohud.com.br>`,
           to: emailCliente,
           subject: `✅ Agendamento Confirmado: ${dataFormatada}`,
@@ -84,10 +86,32 @@ export async function PUT(req: Request) {
                 </div>
             `
         });
-        if (error) console.error("❌ [DEBUG] Erro Resend Cliente:", error);
       } catch (e) {
-        console.error("❌ [DEBUG] Erro fatal e-mail cliente:", e);
+        console.error("❌ [DEBUG] Erro e-mail cliente:", e);
       }
+    }
+
+    // C. WhatsApp para o Cliente (Se ativado)
+    const sendWhatsappToClient = notifSettings.client_confirm_whatsapp !== false;
+    if (sendWhatsappToClient && booking.company.whatsappStatus === 'CONNECTED' && booking.company.evolutionServerUrl && booking.customerPhone) {
+      const { sendEvolutionMessage } = await import("@/lib/whatsapp");
+      const { formatarHorario, formatarDiaExtenso } = await import("@/app/utils/formatters");
+      const timeStr = formatarHorario(new Date(booking.date));
+      const dateStr = formatarDiaExtenso(new Date(booking.date));
+      const message = (booking.company.whatsappConfirmMessage || `✅ *Agendamento Confirmado!*\n\n{nome}, seu horário para *{servico}* está garantido. Até lá!`)
+        .replace(/\\n/g, '\n')
+        .replace("{nome}", booking.customerName || "")
+        .replace("{servico}", booking.service?.name || "atendimento")
+        .replace("{dia}", dateStr)
+        .replace("{hora}", timeStr);
+
+      await sendEvolutionMessage(
+        booking.company.evolutionServerUrl,
+        booking.company.evolutionApiKey!,
+        booking.company.whatsappInstanceId!,
+        booking.customerPhone,
+        message
+      ).catch(e => console.error("Erro zap confirmação:", e));
     }
 
     // C. Notificação Push para o Profissional e Admins

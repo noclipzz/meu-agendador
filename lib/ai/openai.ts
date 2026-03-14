@@ -55,12 +55,12 @@ export async function processIncomingMessage(
             });
         }
 
-        // Add user message to DB
-        await db.whatsAppChatMessage.create({
+        // Add user message to DB - never save null
+        await (db as any).whatsAppChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "user",
-                content: messageBody
+                content: messageBody || ""
             }
         });
 
@@ -251,11 +251,11 @@ Regras Gerais:
                 data: { updatedAt: new Date() }
             });
 
-            await db.whatsAppChatMessage.create({
+            await (db as any).whatsAppChatMessage.create({
                 data: {
                     sessionId: session.id,
                     role: "assistant",
-                    content: responseMessage.content || null,
+                    content: responseMessage.content || "",
                     toolCalls: responseMessage.tool_calls as any
                 }
             });
@@ -278,11 +278,11 @@ Regras Gerais:
                 });
 
                 // Salvar a resposta da ferramenta para manter o contexto na próxima mensagem
-                await db.whatsAppChatMessage.create({
+                await (db as any).whatsAppChatMessage.create({
                     data: {
                         sessionId: session.id,
                         role: "tool",
-                        content: functionResponse,
+                        content: functionResponse || "{}",
                         toolCallId: toolCall.id
                     }
                 });
@@ -312,11 +312,11 @@ Regras Gerais:
             .replace(/\*\*(.*?)\*\*/g, '*$1*');
 
         // Save reply to DB
-        await db.whatsAppChatMessage.create({
+        await (db as any).whatsAppChatMessage.create({
             data: {
                 sessionId: session.id,
                 role: "assistant",
-                content: reply
+                content: reply || ""
             }
         });
 

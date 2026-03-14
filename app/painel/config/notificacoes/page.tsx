@@ -20,7 +20,11 @@ export default function NotificacoesPage() {
             new_booking_email: true,
             new_booking_push: true,
             daily_agenda_push: true,
-            financial_summaries_email: true
+            financial_summaries_email: true,
+            booking_cancellation_push: true,
+            payment_received_push: true,
+            waiting_list_push: true,
+            stock_alerts_push: true
         } as Record<string, boolean>
     });
 
@@ -32,7 +36,10 @@ export default function NotificacoesPage() {
         client_payment_whatsapp: true,
         client_billing_reminder_5d: true,
         client_billing_reminder_today: true,
-        client_billing_reminder_2d_after: true
+        client_billing_reminder_2d_after: true,
+        client_confirm_whatsapp: true,
+        client_cancel_whatsapp: true,
+        client_order_whatsapp: true,
     } as Record<string, boolean>);
 
     const [companyId, setCompanyId] = useState("");
@@ -59,6 +66,10 @@ export default function NotificacoesPage() {
                             new_booking_push: data.userPref.settings?.new_booking_push ?? true,
                             daily_agenda_push: data.userPref.settings?.daily_agenda_push ?? true,
                             financial_summaries_email: data.userPref.settings?.financial_summaries_email ?? true,
+                            booking_cancellation_push: data.userPref.settings?.booking_cancellation_push ?? true,
+                            payment_received_push: data.userPref.settings?.payment_received_push ?? true,
+                            waiting_list_push: data.userPref.settings?.waiting_list_push ?? true,
+                            stock_alerts_push: data.userPref.settings?.stock_alerts_push ?? true,
                         }
                     });
                 }
@@ -71,6 +82,9 @@ export default function NotificacoesPage() {
                     client_billing_reminder_5d: data.companySettings?.client_billing_reminder_5d ?? true,
                     client_billing_reminder_today: data.companySettings?.client_billing_reminder_today ?? true,
                     client_billing_reminder_2d_after: data.companySettings?.client_billing_reminder_2d_after ?? true,
+                    client_confirm_whatsapp: data.companySettings?.client_confirm_whatsapp ?? true,
+                    client_cancel_whatsapp: data.companySettings?.client_cancel_whatsapp ?? true,
+                    client_order_whatsapp: data.companySettings?.client_order_whatsapp ?? true,
                 });
 
                 setCompanyId(data.companyId || "");
@@ -182,8 +196,20 @@ export default function NotificacoesPage() {
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Novos Agendamentos (Apito Instantâneo)</span>
                                     </label>
                                     <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.booking_cancellation_push} onChange={() => toggleUserSetting('booking_cancellation_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Cancelamentos de Clientes</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.payment_received_push} onChange={() => toggleUserSetting('payment_received_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Pagamentos Recebidos (Vendas/Boletos)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
                                         <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.daily_agenda_push} onChange={() => toggleUserSetting('daily_agenda_push')} />
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Alerta Matinal (Sua Agenda do Dia)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-purple-600 border-gray-300 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.stock_alerts_push} onChange={() => toggleUserSetting('stock_alerts_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 transition">Alertas de Estoque Baixo</span>
                                     </label>
                                 </div>
                             )}
@@ -210,11 +236,15 @@ export default function NotificacoesPage() {
                                 <div className="pl-1 space-y-3 pt-2 border-t dark:border-gray-700/50 animate-in fade-in duration-300">
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <input type="checkbox" className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.new_booking_email} onChange={() => toggleUserSetting('new_booking_email')} />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Novos Agendamentos (Mais detalhes)</span>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Novos Agendamentos (Detalhes via E-mail)</span>
                                     </label>
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <input type="checkbox" className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.financial_summaries_email} onChange={() => toggleUserSetting('financial_summaries_email')} />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Resumos Financeiros (Faturas NOHUD)</span>
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Resumos Financeiros (Vendas/Faturas)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input type="checkbox" className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" checked={userPref.settings.waiting_list_push} onChange={() => toggleUserSetting('waiting_list_push')} />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition">Novas Entradas na Lista de Espera</span>
                                     </label>
                                 </div>
                             )}
@@ -259,6 +289,22 @@ export default function NotificacoesPage() {
                                 </label>
 
                                 <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_confirm_whatsapp} onChange={() => toggleCompanySetting('client_confirm_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Horário Confirmado</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">O Bot avisa o cliente quando você aceita o agendamento no painel.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_cancel_whatsapp} onChange={() => toggleCompanySetting('client_cancel_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Aviso de Cancelamento</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Informa ao cliente que o horário foi cancelado ou removido.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
                                     <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_waiting_list_whatsapp} onChange={() => toggleCompanySetting('client_waiting_list_whatsapp')} />
                                     <div>
                                         <span className="text-sm font-bold text-gray-800 dark:text-white block">Fila de Espera Automática</span>
@@ -269,8 +315,16 @@ export default function NotificacoesPage() {
                                 <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
                                     <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_payment_whatsapp} onChange={() => toggleCompanySetting('client_payment_whatsapp')} />
                                     <div>
-                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Confirmação de Pagamento PIX/Cora</span>
-                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Avisa o cliente quando o pagamento cai no sistema.</p>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Confirmação de Pagamento (Boleto/PIX)</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Avisa o cliente quando o pagamento de uma fatura cai no sistema.</p>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-4 p-4 rounded-xl border dark:border-gray-700/50 hover:bg-green-50/50 dark:hover:bg-green-900/10 cursor-pointer transition">
+                                    <input type="checkbox" className="w-5 h-5 rounded text-green-600 border-gray-300 mt-0.5 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700" checked={companySettings.client_order_whatsapp} onChange={() => toggleCompanySetting('client_order_whatsapp')} />
+                                    <div>
+                                        <span className="text-sm font-bold text-gray-800 dark:text-white block">Comprovante de Venda Vitrine</span>
+                                        <p className="text-xs text-gray-500 mt-1 leading-snug">Envia o resumo do pedido e link de pagamento da loja online.</p>
                                     </div>
                                 </label>
 
