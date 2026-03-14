@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-type Step = "VITRINE" | "CART" | "CHECKOUT" | "SUCCESS";
+type Step = "VITRINE" | "CART" | "CHECKOUT" | "PAYMENT_MODE_SELECT" | "PAYMENT_DETAIL" | "SUCCESS";
 
 export default function VitrinePublica({ params }: { params: { slug: string } }) {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -42,6 +42,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   });
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [paymentMode, setPaymentMode] = useState<"ONLINE" | "DELIVERY">("ONLINE");
+  
+  // Detalhes do Pagamento na Entrega
+  const [deliveryPaymentMethod, setDeliveryPaymentMethod] = useState<"money" | "credit" | "debit" | "">("");
+  const [needsChange, setNeedsChange] = useState<boolean | null>(null);
+  const [changeAmount, setChangeAmount] = useState("");
+  
   const [isSubdomain, setIsSubdomain] = useState(false);
 
   const searchParams = useSearchParams();
@@ -258,7 +264,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
             complement: customerInfo.complement
           },
           companyId: empresa.id,
-          slug: params.slug
+          slug: params.slug,
+          deliveryPaymentDetails: paymentMode === "DELIVERY" ? {
+            method: deliveryPaymentMethod,
+            needsChange,
+            changeAmount: needsChange ? changeAmount : null
+          } : null
         })
       });
       const data = await res.json();
@@ -298,17 +309,24 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   // TELA DE SUCESSO
   if (step === "SUCCESS") {
     const hasProntaEntrega = cart.some(item => item.deliveryDeadline?.toLowerCase().includes("pronta entrega"));
+    const isPayOnDelivery = paymentMode === "DELIVERY";
+
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl text-center max-w-sm w-full animate-in zoom-in duration-300">
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} />
           </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-2">Pagamento confirmado!</h2>
+          <h2 className="text-2xl font-black text-gray-900 mb-2">
+            {isPayOnDelivery ? "Pedido confirmado!" : "Pagamento confirmado!"}
+          </h2>
           <p className="text-gray-500 font-medium mb-6">
-            {hasProntaEntrega
-              ? "Seu pedido já está te aguardando!"
-              : "Você receberá uma mensagem assim que seu pedido estiver disponível."}
+            {isPayOnDelivery 
+              ? "Recebemos seu pedido. Prepare o pagamento para o momento da entrega/retirada!"
+              : (hasProntaEntrega
+                  ? "Seu pedido já está te aguardando!"
+                  : "Você receberá uma mensagem assim que seu pedido estiver disponível.")
+            }
           </p>
           <button
             onClick={() => window.location.href = isSubdomain ? "/vitrine" : `/${params.slug}/vitrine`}
@@ -522,7 +540,19 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   </div>
                 )}
               </div>
-              <div className="flex justify-between items-center text-gray-900 font-black text-xl pt-2">
+              <div className="space-y-1 border-b dark:border-gray-800 pb-2 mb-2">
+                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                  <span>Subtotal</span>
+                  <span>R$ {cartSubtotal.toFixed(2)}</span>
+                </div>
+                {deliveryMethod === "DELIVERY" && (
+                  <div className="flex justify-between items-center text-sm font-medium text-gray-500">
+                    <span>Entrega</span>
+                    <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between items-center text-gray-900 dark:text-white font-black text-xl pt-2">
                 <span>Total</span>
                 <span>R$ {cartTotal.toFixed(2)}</span>
               </div>
@@ -583,10 +613,20 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 </button>
                 <button
                   onClick={() => setDeliveryMethod("DELIVERY")}
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${deliveryMethod === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 relative ${deliveryMethod === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
                 >
                   <Truck size={24} />
                   <span className="font-black text-xs">Entrega</span>
+                  {deliveryMethod === "DELIVERY" && shippingCost > 0 && (
+                    <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg animate-in zoom-in">
+                      +{shippingCost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </div>
+                  )}
+                  {deliveryMethod === "DELIVERY" && shippingCost === 0 && (
+                    <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg animate-in zoom-in">
+                      Grátis
+                    </div>
+                  )}
                 </button>
               </div>
 
@@ -650,43 +690,196 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               )}
             </div>
 
-            {((empresa.mercadopagoAccessToken) || (empresa.vitrineSettings?.acceptDeliveryPayment)) && (
-              <div className="space-y-4">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Pagamento</h3>
-                <div className="grid grid-cols-1 gap-3">
-                  {empresa.mercadopagoAccessToken && (
-                    <button
-                      onClick={() => setPaymentMode("ONLINE")}
-                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "ONLINE" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
-                    >
-                      <CreditCard size={24} />
-                      <div className="text-left">
-                        <p className="font-black text-xs uppercase">Pagar Online</p>
-                        <p className="text-[10px] opacity-70">Cartão, Pix ou Boleto</p>
-                      </div>
-                    </button>
-                  )}
-                  {empresa.vitrineSettings?.acceptDeliveryPayment && (
-                    <button
-                      onClick={() => setPaymentMode("DELIVERY")}
-                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
-                    >
-                      <Banknote size={24} />
-                      <div className="text-left">
-                        <p className="font-black text-xs uppercase">Pagar na Entrega/Retirada</p>
-                        <p className="text-[10px] opacity-70">Pague pessoalmente ao receber</p>
-                      </div>
-                    </button>
-                  )}
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
+              <div className="flex justify-between text-xs font-bold text-gray-500">
+                <span>Produtos</span>
+                <span>R$ {cartSubtotal.toFixed(2)}</span>
+              </div>
+              {deliveryMethod === "DELIVERY" && (
+                <div className="flex justify-between text-xs font-bold text-gray-500">
+                  <span>Entrega</span>
+                  <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
                 </div>
+              )}
+              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
+                <span>Total</span>
+                <span>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+
+            <div className="pt-4">
+              <button
+                onClick={() => {
+                  if (!customerInfo.name || !customerInfo.phone) {
+                    return toast.error("Por favor, preencha nome e telefone");
+                  }
+                  if (deliveryMethod === "DELIVERY" && !customerInfo.address) {
+                    return toast.error("Por favor, preencha o endereço de entrega");
+                  }
+                  setStep("PAYMENT_MODE_SELECT");
+                }}
+                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
+              >
+                <ChevronRight size={20} /> Próximo Passo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === "PAYMENT_MODE_SELECT" && (
+        <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <button onClick={() => setStep("CHECKOUT")} className="p-2 bg-white rounded-xl shadow-sm"><X size={20} /></button>
+            <h2 className="text-2xl font-black text-gray-900">Como deseja pagar?</h2>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl shadow-xl space-y-6">
+            <div className="grid grid-cols-1 gap-3">
+              {empresa.mercadopagoAccessToken && (
+                <button
+                  onClick={() => setPaymentMode("ONLINE")}
+                  className={`p-6 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "ONLINE" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                >
+                  <CreditCard size={32} />
+                  <div className="text-left">
+                    <p className="font-black text-sm uppercase">Pagar Agora</p>
+                    <p className="text-xs opacity-70">Cartão, Pix ou Boleto online</p>
+                  </div>
+                </button>
+              )}
+              {empresa.vitrineSettings?.acceptDeliveryPayment && (
+                <button
+                  onClick={() => setPaymentMode("DELIVERY")}
+                  className={`p-6 rounded-2xl border-2 transition-all flex items-center gap-4 ${paymentMode === "DELIVERY" ? "border-violet-600 bg-violet-50 text-violet-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                >
+                  <Banknote size={32} />
+                  <div className="text-left">
+                    <p className="font-black text-sm uppercase">Pagar na Entrega</p>
+                    <p className="text-xs opacity-70">Pague pessoalmente ao receber</p>
+                  </div>
+                </button>
+              )}
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
+              <div className="flex justify-between text-xs font-bold text-gray-500">
+                <span>Produtos</span>
+                <span>R$ {cartSubtotal.toFixed(2)}</span>
+              </div>
+              {deliveryMethod === "DELIVERY" && (
+                <div className="flex justify-between text-xs font-bold text-gray-500">
+                  <span>Entrega</span>
+                  <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
+                <span>Total</span>
+                <span>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <button
+                onClick={() => {
+                  if (paymentMode === "DELIVERY") {
+                    setStep("PAYMENT_DETAIL");
+                  } else {
+                    handleProceedToPayment();
+                  }
+                }}
+                disabled={checkingOut}
+                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
+              >
+                {checkingOut ? <Loader2 className="animate-spin" /> : <><ChevronRight size={20} /> {paymentMode === "DELIVERY" ? "Próximo Passo" : "Finalizar Pedido"}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === "PAYMENT_DETAIL" && (
+        <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <button onClick={() => setStep("PAYMENT_MODE_SELECT")} className="p-2 bg-white rounded-xl shadow-sm"><ChevronRight className="rotate-180" size={20} /></button>
+            <h2 className="text-2xl font-black text-gray-900">Detalhes da Entrega</h2>
+          </div>
+
+          <div className="bg-white p-8 rounded-3xl shadow-xl space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Selecione o método</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {(empresa.vitrineSettings?.deliveryMethods || ["money", "credit", "debit"]).map((method: string) => {
+                  const labels: Record<string, string> = { money: "Dinheiro", credit: "Cartão de Crédito", debit: "Cartão de Débito" };
+                  return (
+                    <button
+                      key={method}
+                      onClick={() => setDeliveryPaymentMethod(method as any)}
+                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 ${deliveryPaymentMethod === method ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                    >
+                      {method === 'money' ? <Banknote size={24} /> : <CreditCard size={24} />}
+                      <span className="font-black text-xs uppercase">{labels[method] || method}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {deliveryPaymentMethod === "money" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Precisa de troco?</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setNeedsChange(true)}
+                    className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === true ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                  >
+                    Sim
+                  </button>
+                  <button
+                    onClick={() => { setNeedsChange(false); setChangeAmount(""); }}
+                    className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === false ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+                  >
+                    Não
+                  </button>
+                </div>
+
+                {needsChange && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Troco para quanto?</label>
+                    <input
+                      placeholder="Ex: R$ 50,00"
+                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-emerald-200 focus:bg-white transition font-bold"
+                      value={changeAmount}
+                      onChange={e => setChangeAmount(e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             )}
+
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
+              <div className="flex justify-between text-xs font-bold text-gray-500">
+                <span>Produtos</span>
+                <span>R$ {cartSubtotal.toFixed(2)}</span>
+              </div>
+              {deliveryMethod === "DELIVERY" && (
+                <div className="flex justify-between text-xs font-bold text-gray-500">
+                  <span>Entrega</span>
+                  <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
+                <span>Total</span>
+                <span>R$ {cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
 
             <div className="pt-4">
               <button
                 onClick={handleProceedToPayment}
-                disabled={checkingOut}
-                className="w-full bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2"
+                disabled={checkingOut || !deliveryPaymentMethod || (deliveryPaymentMethod === "money" && needsChange === null)}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-5 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {checkingOut ? <Loader2 className="animate-spin" /> : <><Store size={20} /> Finalizar Pedido</>}
               </button>

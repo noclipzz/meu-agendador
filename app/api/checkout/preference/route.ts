@@ -8,7 +8,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
-    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo, shippingCost, paymentMode } = await req.json();
+    const { items, customerInfo, deliveryMethod, companyId, slug, addressInfo, shippingCost, paymentMode, deliveryPaymentDetails } = await req.json();
 
     if (!items || items.length === 0 || !companyId || !customerInfo) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
@@ -80,7 +80,8 @@ export async function POST(req: Request) {
         addressInfo: addressInfo || {},
         totalAmount: totalItems,
         status: "PENDING",
-        paymentMethod: paymentMode === "DELIVERY" ? "PAGAMENTO_NA_ENTREGA" : null,
+        paymentMethod: paymentMode === "DELIVERY" ? "PAGAMENTO_NA_ENTREGA" : "MERCADO_PAGO",
+        paymentDetails: deliveryPaymentDetails || {},
         items: {
           create: items.map((i: any) => {
             const p = dbProducts.find((dbP: any) => dbP.id === i.id);
@@ -163,12 +164,14 @@ export async function POST(req: Request) {
                     <div style="margin-bottom: 32px;">
                       <h2 style="color: #1e293b; font-size: 18px; margin-bottom: 16px;">Resumo dos Itens</h2>
                       ${itemsHtml}
-                      
                       <div style="margin-top: 24px; padding: 20px; background-color: #f8fafc; border-radius: 12px; text-align: right;">
                         <span style="color: #64748b; font-size: 16px; margin-right: 12px;">Total do Pedido</span>
                         <span style="color: #6d28d9; font-size: 24px; font-weight: 800;">R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <p style="text-align: right; color: #94a3b8; font-size: 12px; margin-top: 8px;">Pagamento: Na Entrega</p>
+                      <p style="text-align: right; color: #94a3b8; font-size: 12px; margin-top: 8px;">
+                        Pagamento: ${deliveryPaymentDetails?.method === 'money' ? 'Dinheiro' : deliveryPaymentDetails?.method === 'credit' ? 'Cartão de Crédito' : deliveryPaymentDetails?.method === 'debit' ? 'Cartão de Débito' : 'Na Entrega'}
+                        ${deliveryPaymentDetails?.needsChange ? `<br/>Troco para: R$ ${deliveryPaymentDetails.changeAmount}` : ''}
+                      </p>
                     </div>
 
                     <div style="text-align: center;">

@@ -122,6 +122,7 @@ export async function POST(req: Request) {
                     price: body.price ? Number(body.price) : 0,
                     description: body.description || null,
                     imageUrl: body.imageUrl || null,
+                    category: body.category || null,
                     companyId: company.id,
                 }
             });
@@ -193,6 +194,7 @@ export async function PUT(req: Request) {
                     price: body.price !== undefined ? Number(body.price) : undefined,
                     description: body.description ?? undefined,
                     imageUrl: body.imageUrl ?? undefined,
+                    category: body.category ?? undefined,
                 }
             });
             return NextResponse.json(updated);

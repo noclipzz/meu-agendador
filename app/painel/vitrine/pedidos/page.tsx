@@ -289,6 +289,21 @@ export default function PedidosVitrine() {
                                                         <Hash size={12} /> ID: {pedido.paymentId}
                                                     </div>
                                                 )}
+                                                {pedido.paymentDetails && typeof pedido.paymentDetails === 'object' && pedido.paymentDetails.method && (
+                                                    <div className="w-full mt-2 p-3 bg-white dark:bg-gray-800 rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/30">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Detalhes na Entrega:</p>
+                                                        <p className="text-xs font-bold dark:text-gray-200">
+                                                            {pedido.paymentDetails.method === 'money' ? 'Dinheiro' : 
+                                                             pedido.paymentDetails.method === 'credit' ? 'Cartão de Crédito' : 
+                                                             pedido.paymentDetails.method === 'debit' ? 'Cartão de Débito' : pedido.paymentDetails.method}
+                                                        </p>
+                                                        {pedido.paymentDetails.needsChange && (
+                                                            <p className="text-xs font-bold text-emerald-600 mt-1">
+                                                                Levar troco para: R$ {pedido.paymentDetails.changeAmount}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { 
     Loader2, ArrowRight, CheckCircle2, ChevronRight, Upload, 
     Smartphone, Scissors, Sparkles, Building2, Store, 
-    User, Users, MapPin, Globe, Palette, Check, X, Camera, Plus, Trash2, ShoppingBag, Clock
+    User, Users, MapPin, Globe, Palette, Check, X, Camera, Plus, Trash2, ShoppingBag, Clock,
+    Instagram, Facebook
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -60,12 +61,12 @@ const PRODUCT_TEMPLATES: Record<string, { name: string, price: string }[]> = {
 };
 
 const SERVICE_PLACEHOLDERS: Record<string, string> = {
-    "Salão de Beleza / Barbearia": "Ex: Corte de Cabelo",
-    "Barbearia": "Ex: Corte Social",
-    "Estética": "Ex: Limpeza de Pele",
-    "Clínicas / Consultórios": "Ex: Consulta Médica",
-    "Pet Shop": "Ex: Banho e Tosa",
-    "Outros": "Ex: Meu Serviço"
+    "Salão de Beleza / Barbearia": "Ex: Nome do Serviço",
+    "Barbearia": "Ex: Nome do Serviço",
+    "Estética": "Ex: Nome do Serviço",
+    "Clínicas / Consultórios": "Ex: Nome do Serviço",
+    "Pet Shop": "Ex: Nome do Serviço",
+    "Outros": "Ex: Nome do Serviço"
 };
 
 export default function OnboardingPage() {
@@ -120,6 +121,8 @@ export default function OnboardingPage() {
     const [cor, setCor] = useState("#2563eb");
     const [logoUrl, setLogoUrl] = useState("");
     const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [instagram, setInstagram] = useState("");
+    const [facebook, setFacebook] = useState("");
     const [editandoHorario, setEditandoHorario] = useState<number | null>(null);
     
     const logoRef = useRef<HTMLInputElement>(null);
@@ -215,28 +218,17 @@ export default function OnboardingPage() {
             if (!forceSkip && (!servicoName || !servicoPreco)) {
                 return toast.error("Preencha o nome e valor do primeiro serviço.");
             }
-            // Pula vitrine se não for premium
-            if (plan === "INDIVIDUAL" || plan === "FREE") {
-                setStep(5);
-            } else {
-                setStep(4);
-            }
+            setStep(4);
         } else if (step === 4) {
             setStep(5);
         } else if (step === 5) {
             setStep(6);
-        } else if (step === 6) {
-            setStep(7);
         }
     };
 
     const handleBack = () => {
         if (step > 1) {
-            if (step === 5 && (plan === "INDIVIDUAL" || plan === "FREE")) {
-                setStep(3);
-            } else {
-                setStep(step - 1);
-            }
+            setStep(step - 1);
         }
     };
 
@@ -273,14 +265,16 @@ export default function OnboardingPage() {
                     duration: parseInt(servicoDuracao), 
                     imageUrl: finalServiceImg 
                 } : null,
-                products: products.map(p => ({
-                    name: p.name,
-                    price: parseFloat(p.price.replace(/[^\d]/g, "")) / 100,
-                    quantity: 10
-                })),
+                products: [],
                 client: clientName ? { name: clientName, phone: clientPhone } : null,
                 schedule: { workDays: dias.join(","), customSchedule: horariosPorDia },
-                details: { businessBranch: ramo, siteColor: cor, logoUrl: finalLogo }
+                details: { 
+                    businessBranch: ramo, 
+                    siteColor: cor, 
+                    logoUrl: finalLogo,
+                    instagramUrl: instagram,
+                    facebookUrl: facebook
+                }
             };
 
             const res = await fetch("/api/onboarding", {
@@ -314,7 +308,7 @@ export default function OnboardingPage() {
 
     // --- UI HELPERS ---
     const ramosOptions = Object.keys(SERVICE_TEMPLATES).concat("Outros");
-    const steps = ["Identidade", "Perfil", "Serviços", "Vitrine", "Clientes", "Agenda", "Design"];
+    const steps = ["Identidade", "Perfil", "Serviços", "Clientes", "Agenda", "Design"];
     const currentStepTitle = steps[step - 1];
 
     if (verificando) return <div className="h-screen flex flex-col items-center justify-center bg-gray-50"><Loader2 className="animate-spin text-blue-600 mb-4" size={40} /><p className="text-gray-500 font-bold animate-pulse">Carregando...</p></div>;
@@ -360,7 +354,7 @@ export default function OnboardingPage() {
                                 <label className="text-[10px] font-black text-gray-400 uppercase">Nome Fantasia</label>
                                 <input 
                                     className="w-full text-2xl font-black border-b-4 border-gray-100 focus:border-blue-500 outline-none pb-2 transition-all"
-                                    placeholder="Ex: Studio VIP"
+                                    placeholder="Ex: Nome da Empresa"
                                     value={companyName}
                                     onChange={(e) => setCompanyName(e.target.value)}
                                 />
@@ -371,7 +365,7 @@ export default function OnboardingPage() {
                                 <div className="flex items-end gap-2 text-xl font-bold bg-gray-50 p-4 rounded-3xl border border-dashed border-gray-200">
                                     <input 
                                         className="bg-transparent border-b-2 border-blue-200 text-blue-600 outline-none w-full lowercase"
-                                        placeholder="meu-negocio"
+                                        placeholder="seulink"
                                         value={slug}
                                         onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''))}
                                     />
@@ -414,7 +408,7 @@ export default function OnboardingPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase">Seu Nome Profissional</label>
                                     <input 
                                         className="w-full bg-transparent border-b-2 border-blue-200 text-xl font-bold outline-none pb-1"
-                                        placeholder="Ex: João da Silva"
+                                        placeholder="Ex: Seu Nome"
                                         value={ownerName}
                                         onChange={e => setOwnerName(e.target.value)}
                                     />
@@ -505,67 +499,8 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {/* --- PASSO 4: VITRINE (PREMIUM) --- */}
+                {/* --- PASSO 4: CLIENTES --- */}
                 {step === 4 && (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-4xl font-black text-gray-900 tracking-tight">Venda Produtos</h1>
-                                <span className="bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-md">PREMIUM</span>
-                            </div>
-                            <p className="text-gray-500 font-medium text-sm">Transforme seu agendador em uma loja completa. Seus clientes podem reservar produtos online.</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex gap-2 pb-4 overflow-x-auto custom-scrollbar">
-                                {(PRODUCT_TEMPLATES[ramo] || []).map(p => (
-                                    <button 
-                                        key={p.name}
-                                        onClick={() => addProduct(p.name, p.price)}
-                                        className="flex-shrink-0 bg-amber-50 border border-amber-200 p-4 rounded-3xl flex flex-col items-center gap-2 hover:bg-amber-100 transition"
-                                    >
-                                        <ShoppingBag className="text-amber-600" size={24} />
-                                        <div className="text-center">
-                                            <p className="text-xs font-black text-amber-900">{p.name}</p>
-                                            <p className="text-[10px] font-bold text-amber-600">R$ {p.price.replace(".", ",")}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="bg-gray-50 rounded-[2.5rem] p-6 border-2 border-dashed border-gray-200">
-                                {products.length === 0 ? (
-                                    <div className="py-10 text-center space-y-2">
-                                        <Store className="text-gray-300 mx-auto" size={48} />
-                                        <p className="text-gray-400 font-bold text-sm">Nenhum produto adicionado ainda.</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {products.map(p => (
-                                            <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm flex justify-between items-center animate-in zoom-in-95">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
-                                                        <Check size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-black text-sm">{p.name}</p>
-                                                        <p className="text-xs font-bold text-blue-600" style={{ color: cor }}>{p.price}</p>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => setProducts(products.filter(item => item.id !== p.id))} className="p-2 text-gray-300 hover:text-red-500 transition">
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* --- PASSO 5: CLIENTES --- */}
-                {step === 5 && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                         <div className="space-y-2">
                             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Seu primeiro cliente</h1>
@@ -576,7 +511,7 @@ export default function OnboardingPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase">Nome do Cliente</label>
-                                    <input className="w-full p-4 rounded-2xl bg-white border-2 border-transparent focus:border-blue-500 outline-none font-bold text-sm transition" placeholder="Ex: Maria Oliveira" value={clientName} onChange={e => setClientName(e.target.value)} />
+                                    <input className="w-full p-4 rounded-2xl bg-white border-2 border-transparent focus:border-blue-500 outline-none font-bold text-sm transition" placeholder="Ex: Nome do Cliente" value={clientName} onChange={e => setClientName(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-400 uppercase">Telefone / WhatsApp</label>
@@ -587,8 +522,8 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {/* --- PASSO 6: AGENDA --- */}
-                {step === 6 && (
+                {/* --- PASSO 5: AGENDA --- */}
+                {step === 5 && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
                         <div className="space-y-2">
                             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Seus Horários</h1>
@@ -619,7 +554,7 @@ export default function OnboardingPage() {
                                         )}
                                         {editandoHorario === id && (
                                             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-                                                <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-xs space-y-6">
+                                                <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-max-xs space-y-6">
                                                    <h3 className="font-black text-xl text-center">Horário de {diaName}</h3>
                                                    <div className="grid grid-cols-1 gap-4">
                                                         <div className="space-y-2">
@@ -642,8 +577,8 @@ export default function OnboardingPage() {
                     </div>
                 )}
 
-                {/* --- PASSO 7: DESIGN --- */}
-                {step === 7 && (
+                {/* --- PASSO 6: DESIGN --- */}
+                {step === 6 && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                         <div className="space-y-2">
                             <h1 className="text-4xl font-black text-gray-900 tracking-tight">Finalização Visual</h1>
@@ -676,6 +611,30 @@ export default function OnboardingPage() {
                                     <button onClick={() => logoRef.current?.click()} className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-white px-4 py-2 rounded-xl shadow-sm border">Subir Logotipo</button>
                                     <input type="file" ref={logoRef} className="hidden" onChange={e => e.target.files?.[0] && setLogoFile(e.target.files[0])} />
                                 </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase">Redes Sociais (Opcional)</label>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:ring-2 ring-pink-500 transition">
+                                            <Instagram className="text-pink-500" size={20} />
+                                            <input 
+                                                className="bg-transparent outline-none flex-1 text-sm font-bold placeholder:text-gray-300" 
+                                                placeholder="Link do Instagram" 
+                                                value={instagram}
+                                                onChange={e => setInstagram(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100 focus-within:ring-2 ring-blue-500 transition">
+                                            <Facebook className="text-blue-600" size={20} />
+                                            <input 
+                                                className="bg-transparent outline-none flex-1 text-sm font-bold placeholder:text-gray-300" 
+                                                placeholder="Link do Facebook" 
+                                                value={facebook}
+                                                onChange={e => setFacebook(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-[3rem] text-white flex flex-col justify-center text-center space-y-4 shadow-2xl">
@@ -696,7 +655,7 @@ export default function OnboardingPage() {
                     </button>
 
                     <div className="flex items-center gap-4">
-                        {(step === 2 || step === 3 || step === 4 || step === 5) && (
+                        {(step === 2 || step === 3 || step === 4) && (
                             <button onClick={() => handleNext(true)} className="text-gray-500 font-bold text-sm hover:text-gray-900 transition px-4 py-2 rounded-xl hover:bg-gray-100">
                                 Pular
                             </button>
@@ -794,20 +753,12 @@ export default function OnboardingPage() {
                                 </div>
                             )}
 
-                            {/* Vitrine */}
-                            {products.length > 0 && (
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase px-1">Vitrine</p>
-                                    <div className="flex gap-2 overflow-x-hidden pb-1">
-                                        {products.slice(0,2).map(p => (
-                                            <div key={p.id} className="w-1/2 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                                                <div className="w-full h-20 bg-white rounded-xl mb-2 flex items-center justify-center">
-                                                    <ShoppingBag size={20} className="text-gray-200" />
-                                                </div>
-                                                <p className="text-[9px] font-black truncate">{p.name}</p>
-                                                <p className="text-[9px] font-bold text-blue-600" style={{ color: cor }}>{p.price}</p>
-                                            </div>
-                                        ))}
+                            {/* Social Presence */}
+                            {(instagram || facebook) && (
+                                <div className="pt-2 animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="flex justify-center gap-4">
+                                        {instagram && <Instagram size={18} className="text-pink-500" />}
+                                        {facebook && <Facebook size={18} className="text-blue-600" />}
                                     </div>
                                 </div>
                             )}

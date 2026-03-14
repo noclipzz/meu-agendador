@@ -11,6 +11,7 @@ import { ModalPortal } from "@/components/ui/ModalPortal";
 
 export default function EstoquePage() {
     const [produtos, setProdutos] = useState<any[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
     const [logs, setLogs] = useState<any[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -39,12 +40,26 @@ export default function EstoquePage() {
         price: "", 
         description: "", 
         imageUrl: "",
+        category: "",
     });
 
     useEffect(() => {
         carregarEstoque();
         carregarFornecedores();
+        carregarConfig();
     }, []);
+
+    async function carregarConfig() {
+        try {
+            const res = await fetch("/api/painel/config");
+            const data = await res.json();
+            if (data.vitrineSettings?.categories) {
+                setCategories(data.vitrineSettings.categories);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar categorias:", error);
+        }
+    }
 
     async function carregarFornecedores() {
         const res = await fetch('/api/painel/fornecedores');
@@ -91,6 +106,7 @@ export default function EstoquePage() {
             price: produto.price ? formatarMoeda(produto.price) : "",
             description: produto.description || "",
             imageUrl: produto.imageUrl || "",
+            category: produto.category || "",
         });
         setAbaAtiva("LOTES");
         setOperacao("ADD");
@@ -112,6 +128,7 @@ export default function EstoquePage() {
             price: "", 
             description: "", 
             imageUrl: "",
+            category: "",
         });
         setQtdInput("");
         setValidadeInput("");
@@ -143,7 +160,8 @@ export default function EstoquePage() {
                         imageUrl: formBasico.imageUrl,
                         quantity: qtdInput,
                         expiryDate: validadeInput,
-                        supplierId: selectedSupplierId
+                        supplierId: selectedSupplierId,
+                        category: formBasico.category,
                     })
                 });
                 if (res.ok) {
@@ -196,6 +214,7 @@ export default function EstoquePage() {
                 price: desformatarMoeda(formBasico.price),
                 description: formBasico.description,
                 imageUrl: formBasico.imageUrl,
+                category: formBasico.category,
             })
         });
         if (res.ok) {
@@ -340,6 +359,13 @@ export default function EstoquePage() {
                                             <select className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={selectedSupplierId} onChange={e => setSelectedSupplierId(e.target.value)}>
                                                 <option value="">Nenhum fornecedor</option>
                                                 {allSuppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Grupo / Categoria (Vitrine)</label>
+                                            <select className="w-full p-4 rounded-2xl border-2 dark:border-gray-700 bg-white dark:bg-gray-900 font-bold outline-none dark:text-white" value={formBasico.category} onChange={e => setFormBasico({ ...formBasico, category: e.target.value })}>
+                                                <option value="">Nenhum grupo</option>
+                                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                             </select>
                                         </div>
                                     </div>

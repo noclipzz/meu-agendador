@@ -108,6 +108,8 @@ export async function POST(req: Request) {
                 businessBranch: details?.businessBranch || company.businessBranch,
                 siteColor: details?.siteColor || company.siteColor,
                 logoUrl: details?.logoUrl || company.logoUrl,
+                instagramUrl: details?.instagramUrl || company.instagramUrl,
+                facebookUrl: details?.facebookUrl || company.facebookUrl,
                 onboardingCompleted: true
             }
         });

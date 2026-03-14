@@ -223,6 +223,7 @@ export async function GET() {
                 },
                 companyId: myCompany?.id, // ID da sua empresa
                 companyName: myCompany?.name,
+                slug: myCompany?.slug, // ✅ Adicionado slug
                 isOwner: true, // ✅ Flag de dono absoluto
                 isTrial: false, // Super Admin nunca é trial
                 hasTrackingModule: true, // Super Admin tem tudo
@@ -293,6 +294,7 @@ export async function GET() {
                 },
                 companyId: company.id,
                 companyName: company.name,
+                slug: company.slug, // ✅ Adicionado slug
                 isOwner: true, // ✅ Flag de dono
                 isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD",
                 hasTrackingModule: subscription?.hasTrackingModule || false,

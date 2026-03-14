@@ -12,6 +12,7 @@ export default function VitrineConfig() {
     const [vitrineSettings, setVitrineSettings] = useState({
         acceptedMethods: ["pix", "credit_card"],
         acceptDeliveryPayment: false,
+        deliveryMethods: ["money", "credit", "debit"],
         categories: [] as string[],
     });
 
@@ -195,6 +196,35 @@ export default function VitrineConfig() {
                             </div>
                         </div>
 
+                        {vitrineSettings.acceptDeliveryPayment && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                <p className="text-xs font-black text-gray-400 uppercase ml-2 tracking-widest">Métodos na entrega:</p>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {[
+                                        { id: 'money', label: 'Dinheiro' },
+                                        { id: 'credit', label: 'Cartão de Crédito' },
+                                        { id: 'debit', label: 'Cartão de Débito' },
+                                    ].map(m => (
+                                        <label key={m.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-emerald-300 transition-all">
+                                            <span className="text-xs font-bold dark:text-gray-200">{m.label}</span>
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                                checked={vitrineSettings.deliveryMethods?.includes(m.id)}
+                                                onChange={() => {
+                                                    const current = vitrineSettings.deliveryMethods || [];
+                                                    const updated = current.includes(m.id)
+                                                        ? current.filter(id => id !== m.id)
+                                                        : [...current, m.id];
+                                                    setVitrineSettings(prev => ({ ...prev, deliveryMethods: updated }));
+                                                }}
+                                            />
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 p-4 rounded-2xl flex gap-3">
                             <Info size={20} className="text-amber-600 shrink-0" />
                             <p className="text-xs text-amber-700 dark:text-amber-400 font-medium leading-relaxed">
@@ -261,7 +291,7 @@ export default function VitrineConfig() {
                 </div>
 
                 <div className="space-y-4">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Crie grupos para organizar seus produtos na vitrine (ex: Doces, Bolos, Bebidas).</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Crie grupos para organizar seus produtos na vitrine (ex: Geral, Bebidas, etc).</p>
                     
                     <div className="flex gap-2">
                         <input 

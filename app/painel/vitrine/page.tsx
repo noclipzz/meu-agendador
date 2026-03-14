@@ -595,9 +595,9 @@ export default function VitrinePage() {
                                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Nome do Produto *</label>
                                         <input
                                             className="w-full border dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:ring-2 ring-violet-500 font-bold text-sm"
-                                            placeholder="Ex: Coca-Cola 350ml"
-                                            value={form.name}
-                                            onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder="Ex: Nome do Produto"
+                                             value={form.name}
+                                             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                                         />
                                     </div>
 
@@ -693,7 +693,7 @@ export default function VitrinePage() {
                                             {form.variations.map((v, i) => (
                                                 <div key={i} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-2xl border dark:border-gray-700 relative">
                                                     <button onClick={() => { const n = [...form.variations]; n.splice(i,1); setForm(p=>({...p, variations: n})) }} className="absolute top-2 right-2 text-gray-400 hover:text-red-500"><X size={14} /></button>
-                                                    <input className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-2 font-black text-xs outline-none dark:text-white" placeholder="Ex: Sabor" value={v.name} onChange={e=>{const n=[...form.variations]; n[i]={...n[i], name: e.target.value}; setForm(p=>({...p, variations: n}))}} />
+                                                    <input className="bg-transparent border-b border-gray-300 dark:border-gray-600 w-full mb-2 font-black text-xs outline-none dark:text-white" placeholder="Ex: Variação" value={v.name} onChange={e=>{const n=[...form.variations]; n[i]={...n[i], name: e.target.value}; setForm(p=>({...p, variations: n}))}} />
                                                     <div className="flex flex-wrap gap-1">
                                                         {v.options.map((opt, oi) => (
                                                             <span key={oi} className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1">
