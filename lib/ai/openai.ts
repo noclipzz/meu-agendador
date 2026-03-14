@@ -78,7 +78,15 @@ export async function processIncomingMessage(
         });
         
         // Reverse to get them in chronological (asc) order for OpenAI
-        const chronologicalMessages = recentMessages.reverse();
+        let chronologicalMessages = recentMessages.reverse();
+
+        // --- FIX: Limpa mensagens 'tool' órfãs no início do histórico ---
+        // A OpenAI exige que toda mensagem 'tool' seja precedida pelo 'assistant' com 'tool_calls'.
+        // Se o nosso 'take: 20' cortou no meio de uma sequência (ficando c/ o tool mas s/ o assistant original),
+        // removemos os órfãos do início para evitar erro 400.
+        while (chronologicalMessages.length > 0 && (chronologicalMessages[0] as any).role === "tool") {
+            chronologicalMessages.shift();
+        }
 
         const now = new Date();
         const dataHoje = now.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
