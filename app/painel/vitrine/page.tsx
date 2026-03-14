@@ -271,12 +271,31 @@ export default function VitrinePage() {
                         Gerencie os produtos que aparecem na sua página de agendamento.
                     </p>
                 </div>
-                <button
-                    onClick={openNew}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-3 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-95"
-                >
-                    <Plus size={20} /> Novo Produto
-                </button>
+                <div className="flex gap-3">
+                    {companyId && (
+                        <button
+                            onClick={() => {
+                                // Buscamos o slug da empresa para o link
+                                fetch('/api/painel/config')
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.slug) {
+                                            window.open(`https://${data.slug}.nohud.com.br/vitrine`, "_blank");
+                                        }
+                                    });
+                            }}
+                            className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-black py-3 px-6 rounded-2xl border dark:border-gray-700 shadow-sm hover:shadow-md transition active:scale-95"
+                        >
+                            <ExternalLink size={20} /> Ver Vitrine
+                        </button>
+                    )}
+                    <button
+                        onClick={openNew}
+                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white font-black py-3 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all active:scale-95"
+                    >
+                        <Plus size={20} /> Novo Produto
+                    </button>
+                </div>
             </div>
 
             {/* STATS */}

@@ -129,39 +129,100 @@ Regras Gerais:
 
         // Format historical messages
         chronologicalMessages.forEach((msg: any) => {
-            const msgObj: any = { role: msg.role as any, content: msg.content || null };
+            // Skip messages with no content and no tool info - they are useless
+            if (!msg.content && !msg.toolCalls && !msg.toolCallId && msg.role !== "assistant") return;
 
-            if (msg.role === "assistant" && msg.toolCalls) {
-                // Se o JSON for vazio ou inválido, ignora a parte de tool_calls
-                const calls = msg.toolCalls as any[];
-                if (calls && calls.length > 0) {
-                    msgObj.tool_calls = calls;
-                    // MUITO IMPORTANTE: Se tem tool_calls, o content DEVE ser null para a OpenAI
-                    msgObj.content = null;
-                } else {
-                    // Se era um role assistant mas sem conteúdo nem ferramentas (bug), ignora a mensagem inteira
-                    if (!msg.content) return;
+            if (msg.role === "user") {
+                // User messages MUST have content as string, OpenAI rejects null
+                if (!msg.content) return; // skip empty user messages
+                openAiMessages.push({ role: "user", content: String(msg.content) });
+                return;
+            }
+
+            if (msg.role === "assistant") {
+                if (msg.toolCalls) {
+                    const calls = msg.toolCalls as any[];
+                    if (calls && calls.length > 0) {
+                        openAiMessages.push({
+                            role: "assistant",
+                            content: msg.content || null,
+                            tool_calls: calls
+                        });
+                    } else if (msg.content) {
+                        openAiMessages.push({ role: "assistant", content: String(msg.content) });
+                    }
+                    // If no content AND no valid tool_calls, skip entirely
+                } else if (msg.content) {
+                    openAiMessages.push({ role: "assistant", content: String(msg.content) });
                 }
+                // Skip assistant messages with no content and no tool_calls
+                return;
             }
 
             if (msg.role === "tool") {
-                // NUNCA enviar um role 'tool' sem o ID, pois a OpenAI rejeita a requisição inteira
-                if (!msg.toolCallId) return;
-                msgObj.tool_call_id = msg.toolCallId;
+                if (!msg.toolCallId || !msg.content) return; // skip invalid tool messages
+                openAiMessages.push({
+                    role: "tool",
+                    tool_call_id: msg.toolCallId,
+                    content: String(msg.content)
+                });
+                return;
             }
-
-            openAiMessages.push(msgObj);
         });
 
-        // Caso a última mensagem no histórico seja um 'assistant' com ferramentas mas sem a 'tool' correspondente
-        // (ex: timeout no meio da execução), a OpenAI daria erro. Removemos ela para limpar o contexto.
-        // O loop garante que removemos o par assistant-toolCalls incompleto.
+        // --- SANITIZATION PASS ---
+        // 1. Remove orphaned 'tool' messages at the start (no preceding assistant with tool_calls)
+        while (openAiMessages.length > 1 && openAiMessages[1]?.role === "tool") {
+            openAiMessages.splice(1, 1);
+        }
+
+        // 2. Remove any 'tool' message that doesn't have a matching assistant tool_call before it
+        for (let i = openAiMessages.length - 1; i >= 1; i--) {
+            if (openAiMessages[i].role === "tool") {
+                const toolCallId = openAiMessages[i].tool_call_id;
+                // Find the nearest preceding assistant with matching tool_call
+                let foundMatch = false;
+                for (let j = i - 1; j >= 0; j--) {
+                    if (openAiMessages[j].role === "assistant" && openAiMessages[j].tool_calls) {
+                        const hasMatch = openAiMessages[j].tool_calls.some((tc: any) => tc.id === toolCallId);
+                        if (hasMatch) { foundMatch = true; break; }
+                    }
+                }
+                if (!foundMatch) {
+                    openAiMessages.splice(i, 1);
+                }
+            }
+        }
+
+        // 3. Remove trailing assistant messages with tool_calls that have no tool response following them
         while (openAiMessages.length > 0) {
             const lastMsg = openAiMessages[openAiMessages.length - 1];
             if (lastMsg && lastMsg.role === "assistant" && lastMsg.tool_calls) {
                 openAiMessages.pop();
             } else {
                 break;
+            }
+        }
+
+        // 4. Remove any assistant with tool_calls whose tool responses are missing (mid-history)
+        for (let i = openAiMessages.length - 1; i >= 0; i--) {
+            if (openAiMessages[i].role === "assistant" && openAiMessages[i].tool_calls) {
+                const expectedIds = openAiMessages[i].tool_calls.map((tc: any) => tc.id);
+                const allFound = expectedIds.every((id: string) => {
+                    for (let j = i + 1; j < openAiMessages.length; j++) {
+                        if (openAiMessages[j].role === "tool" && openAiMessages[j].tool_call_id === id) return true;
+                        if (openAiMessages[j].role !== "tool") break;
+                    }
+                    return false;
+                });
+                if (!allFound) {
+                    // Remove the assistant + any orphaned tool messages after it
+                    let removeCount = 1;
+                    while (i + removeCount < openAiMessages.length && openAiMessages[i + removeCount].role === "tool") {
+                        removeCount++;
+                    }
+                    openAiMessages.splice(i, removeCount);
+                }
             }
         }
 

@@ -90,6 +90,14 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
   const [waitingListLoading, setWaitingListLoading] = useState(false);
   const [waitingListSuccess, setWaitingListSuccess] = useState(false);
   const [preferences, setPreferences] = useState("");
+  const [isSubdomain, setIsSubdomain] = useState(false);
+
+  // 1. Carrega dados da empresa
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsSubdomain(window.location.hostname.includes(params.slug));
+    }
+  }, [params.slug]);
 
   // 1. Carrega dados da empresa
   useEffect(() => {
@@ -459,7 +467,7 @@ export default function PaginaEmpresa({ params }: { params: { slug: string } }) 
             <CalendarIcon size={18} /> Agendamento
           </button>
           <Link 
-            href={`/${params.slug}/vitrine`}
+            href={isSubdomain ? "/vitrine" : `/${params.slug}/vitrine`}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
           >
             <Store size={18} /> Vitrine

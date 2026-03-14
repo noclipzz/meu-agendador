@@ -1,0 +1,43 @@
+﻿LOGS EVOLUTION (last 48h): 20
+{"time":"2026-03-14T21:02:12.333Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T20:27:18.648Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T17:36:01.489Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T01:11:40.253Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T01:02:47.207Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T01:00:18.280Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-14T00:01:05.088Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid parameter: messages with role 'tool' must be a response to a preceeding message with 'tool_calls'."}
+{"time":"2026-03-13T23:40:52.492Z","type":"WEBHOOK","status":"ERROR","endpoint":null,"identifier":null,"error":"400 Invalid value for 'content': expected a string, got null."}
+{"time":"2026-03-13T23:40:34.265Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T23:40:31.655Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T23:40:15.796Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T23:40:09.997Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T20:29:46.058Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T20:29:45.488Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T01:47:58.996Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-13T01:47:57.514Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-12T22:55:44.153Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-12T22:55:42.385Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-12T22:54:49.735Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+{"time":"2026-03-12T22:54:48.863Z","type":"WEBHOOK","status":"SUCCESS","endpoint":null,"identifier":"nohud-cmkv","error":null}
+
+CHAT SESSIONS: 3
+{"id":"cmmm2pvnm0001l70az69sjhuw","jid":"553188357138@s.whatsapp.net","status":"ACTIVE","updated":"2026-03-14T00:58:51.843Z"}
+{"id":"cmmk1brb30001js0a75drnck2","jid":"553188357138@s.whatsapp.net","status":"ACTIVE","updated":"2026-03-14T00:58:51.691Z"}
+{"id":"cmmkwyy4p0003jl0ao7nj7kft","jid":"5531988357138@s.whatsapp.net","status":"ACTIVE","updated":"2026-03-14T00:58:51.376Z"}
+
+MESSAGES (session cmmm2pvnm0001l70az69sjhuw): 10
+{"time":"2026-03-14T21:02:11.121Z","role":"user","content":"Sim"}
+{"time":"2026-03-14T20:27:17.647Z","role":"user","content":"Sim"}
+{"time":"2026-03-14T17:36:00.686Z","role":"user","content":"Boa tarde"}
+{"time":"2026-03-14T01:11:39.972Z","role":"user","content":"Boa noite"}
+{"time":"2026-03-14T01:02:46.063Z","role":"user","content":"oi"}
+{"time":"2026-03-14T01:00:17.359Z","role":"user","content":"boa noite"}
+{"time":"2026-03-14T00:01:04.577Z","role":"user","content":"teste"}
+{"time":"2026-03-13T23:40:51.283Z","role":"user","content":"boa noite"}
+{"time":"2026-03-13T23:08:39.618Z","role":"user","content":"oi"}
+{"time":"2026-03-13T23:08:19.980Z","role":"user","content":"boa noite"}
+
+COMPANY: {"id":"cmkv7l8ev0001i70co3dtq33x","name":"NOHUD","aiEnabled":true,"whatsappInstanceId":"nohud-cmkv"}
+
+BOOKINGS: 1
+{"id":"cmkzwwyni001ni7mo9tb9ue1l","status":"CONCLUIDO","date":"2026-01-30T13:00:00.000Z"}

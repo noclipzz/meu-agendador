@@ -42,8 +42,15 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   });
   const [deliveryMethod, setDeliveryMethod] = useState<"PICKUP" | "DELIVERY">("PICKUP");
   const [paymentMode, setPaymentMode] = useState<"ONLINE" | "DELIVERY">("ONLINE");
+  const [isSubdomain, setIsSubdomain] = useState(false);
 
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsSubdomain(window.location.hostname.includes(params.slug));
+    }
+  }, [params.slug]);
 
   useEffect(() => {
     async function carregarDados() {
@@ -284,7 +291,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               : "Você receberá uma mensagem assim que seu pedido estiver disponível."}
           </p>
           <button
-            onClick={() => window.location.href = `/${params.slug}/vitrine`}
+            onClick={() => window.location.href = isSubdomain ? "/vitrine" : `/${params.slug}/vitrine`}
             className="w-full bg-gray-900 text-white font-black py-4 rounded-2xl hover:bg-black transition"
           >
             Voltar para a Vitrine
@@ -367,7 +374,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           {/* TABS DE NAVEGAÇÃO */}
           <div className="flex bg-gray-200 p-1.5 rounded-[2rem] w-full max-w-lg mb-8 shadow-inner">
             <Link
-              href={`/${params.slug}`}
+              href={isSubdomain ? "/" : `/${params.slug}`}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[1.5rem] text-sm font-black transition-all text-gray-500 hover:bg-white/50"
             >
               <CalendarIcon size={18} /> Agendamento
