@@ -206,7 +206,7 @@ export default function PedidosVitrine() {
                                         R$ {Number(pedido.totalAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                     </span>
                                     <div className="flex gap-2">
-                                        {pedido.isPaid && (
+                                        {pedido.isPaid && pedido.status !== "PAID" && (
                                             <div className="px-3 py-1 rounded-full text-[10px] font-black uppercase border flex items-center gap-1.5 bg-emerald-100 text-emerald-700 border-emerald-200">
                                                 <CheckCircle2 size={14} /> PAGO
                                             </div>
@@ -279,7 +279,7 @@ export default function PedidosVitrine() {
                                                 }`}>
                                                     {formatPaymentMethod(pedido.paymentMethod)}
                                                 </div>
-                                                {pedido.isPaid && (
+                                                {pedido.isPaid && pedido.status !== "PAID" && (
                                                     <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-black uppercase animate-in zoom-in duration-300">
                                                         Pago
                                                     </span>

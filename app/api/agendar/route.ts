@@ -344,15 +344,28 @@ export async function POST(req: Request) {
         }
 
         // B) PUSH NOTIFICATIONS
+        const notifSettings = (company?.notificationSettings as any) || {};
         try {
             const pushTitle = isEvento ? "📅 Novo Evento!" : "🔔 Novo Agendamento!";
             const pushBody = isEvento
                 ? `Evento: "${name}" para ${dataFormatada}`
                 : `${name} solicitou ${nomeServico} para ${dataFormatada}`;
 
-            // Notifica Admins (Apenas se for CLIENTE externo agendando)
+            // Notifica Admins (Push e Email)
             if (!userId) {
-                await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda");
+                await notifyAdminsOfCompany(companyId, pushTitle, pushBody, "/painel/agenda", "new_booking_push");
+                
+                // Email Admin
+                if (notifSettings.new_booking_email !== false && company.notificationEmail) {
+                    const { Resend } = await import("resend");
+                    const resend = new Resend(process.env.RESEND_API_KEY);
+                    await resend.emails.send({
+                        from: "NOHUD App <nao-responda@nohud.com.br>",
+                        to: company.notificationEmail,
+                        subject: `🗓️ Novo Agendamento: ${name}`,
+                        html: `<p>${pushBody}</p><p>Data: ${dataFormatada}</p>`
+                    }).catch(e => console.error("Erro email novo agendamento staff:", e));
+                }
             }
 
             // Notifica Profissionais específicos
@@ -369,14 +382,33 @@ export async function POST(req: Request) {
                     ? `Evento: "${name}" às ${formatarHorario(new Date(date))}`
                     : `${name} agendou ${nomeServico} para as ${formatarHorario(new Date(date))}`;
 
-                await notifyProfessional(proId, proPushTitle, proPushBody, "/painel/agenda");
+                await notifyProfessional(proId, proPushTitle, proPushBody, "/painel/agenda", "new_booking_push");
+            }
+
+            // Email para o Cliente (Confirmando solicitação)
+            if (notifSettings.client_new_booking_email !== false && email) {
+                const { Resend } = await import("resend");
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                await resend.emails.send({
+                    from: `${company.name} <nao-responda@nohud.com.br>`,
+                    to: email,
+                    subject: `🗓️ Recebemos seu agendamento: ${nomeServico}`,
+                    html: `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            <h2>Olá, ${name}!</h2>
+                            <p>Recebemos sua solicitação de agendamento para <strong>${nomeServico}</strong> em <strong>${dataFormatada}</strong>.</p>
+                            <p>Em breve você receberá uma confirmação.</p>
+                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+                            <p style="font-size: 12px; color: #666;">Local: ${company.name}</p>
+                        </div>
+                    `
+                }).catch(e => console.error("Erro email novo agendamento client:", e));
             }
         } catch (pushErr) {
-            console.error("Erro push:", pushErr);
+            console.error("Erro push/email:", pushErr);
         }
 
         // C) WHATSAPP - EVOLUTION API (Se estiver conectado e for plano MASTER)
-        const notifSettings = company?.notificationSettings as any || {};
         const sendWhatsappToClient = notifSettings.client_new_booking_whatsapp !== false; // Padrão é true
 
         if (sendWhatsappToClient && company?.whatsappStatus === 'CONNECTED' && company.evolutionServerUrl && company.whatsappInstanceId && company.evolutionApiKey && phone && companyPlan === "MASTER") {

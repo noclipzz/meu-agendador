@@ -96,48 +96,104 @@ export async function POST(req: Request) {
     });
 
     // 3.5 Notifica o dono (Push)
-    try {
-      await notifyAdminsOfCompany(
-        company.id,
-        "📦 Novo Pedido na Vitrine",
-        `${customerInfo.name} realizou um pedido de R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        "/painel/vitrine/pedidos"
-      );
-    } catch (e) {
-      console.error("Erro ao enviar push:", e);
-    }
-
-    // 3.6 Notifica o dono (Email de Backup)
-    if (company.notificationEmail) {
+    // Para pedidos online, notificaremos o dono apenas quando o pagamento for CONFIRMADO
+    // Exceto se for pagamento na entrega, aí notificamos agora.
+    if (paymentMode === "DELIVERY") {
       try {
-        const itemsList = items.map((i: any) => {
-          const p = dbProducts.find((dbP: any) => dbP.id === i.id);
-          return `- ${i.quantity}x ${p?.name || 'Produto'} ${i.variationLabel ? `(${i.variationLabel})` : ''}`;
-        }).join('<br/>');
+        await notifyAdminsOfCompany(
+          company.id,
+          "📦 Novo Pedido na Vitrine",
+          `${customerInfo.name} realizou um pedido de R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          "/painel/vitrine/pedidos"
+        );
+      } catch (e) {
+        console.error("Erro ao enviar push:", e);
+      }
 
-        const deliveryText = deliveryMethod === "DELIVERY" 
-          ? `Entrega em: ${addressInfo?.address}, ${addressInfo?.number} - ${addressInfo?.neighborhood}` 
-          : "Retirada no Local";
+      // 3.6 Notifica o dono (Email de Backup) - DESIGN PREMIUM
+      if (company.notificationEmail) {
+        try {
+          const itemsHtml = items.map((i: any) => {
+            const p = dbProducts.find((dbP: any) => dbP.id === i.id);
+            return `
+              <div style="padding: 12px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+                <div style="flex: 1;">
+                  <span style="font-weight: 600; color: #1e293b;">${i.quantity}x</span> 
+                  <span style="color: #475569;">${p?.name || 'Produto'}</span>
+                  ${i.variationLabel ? `<br/><small style="color: #94a3b8; margin-left: 24px;">${i.variationLabel}</small>` : ''}
+                </div>
+                <div style="font-weight: 500; color: #1e293b;">
+                  R$ ${(Number(p?.price || 0) * Number(i.quantity)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            `;
+          }).join('');
 
-        await resend.emails.send({
-          from: "NOHUD Vitrine <vendas@nohud.com.br>",
-          to: company.notificationEmail,
-          subject: `📦 Novo Pedido: ${customerInfo.name}`,
-          html: `
-            <h3>Novo pedido recebido na Vitrine!</h3>
-            <p><strong>Cliente:</strong> ${customerInfo.name}</p>
-            <p><strong>WhatsApp:</strong> ${customerInfo.phone}</p>
-            <p><strong>Método:</strong> ${deliveryText}</p>
-            <p><strong>Total:</strong> R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-            <hr/>
-            <p><strong>Itens:</strong><br/>${itemsList}</p>
-            <br/>
-            <p><small>ID do Pedido: ${order.id}</small></p>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/painel/vitrine/pedidos" style="background:#6d28d9; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold;">Ver Pedido no Painel</a>
-          `
-        });
-      } catch (emailErr) {
-        console.error("Erro ao enviar email de backup:", emailErr);
+          const deliveryText = deliveryMethod === "DELIVERY" 
+            ? `🚚 Entrega em: ${addressInfo?.address}, ${addressInfo?.number} - ${addressInfo?.neighborhood}` 
+            : "🏬 Retirada no Local";
+
+          await resend.emails.send({
+            from: "NOHUD Vitrine <vendas@nohud.com.br>",
+            to: company.notificationEmail,
+            subject: `📦 Novo Pedido: ${customerInfo.name}`,
+            html: `
+              <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                  <div style="background-color: #6d28d9; padding: 32px 40px; text-align: center;">
+                    <h1 style="color: #ffffff; font-size: 24px; margin: 0; font-weight: 700;">Novo Pedido Recebido!</h1>
+                    <p style="color: #ddd6fe; margin: 8px 0 0 0; font-size: 16px;">Você tem uma nova venda na sua vitrine.</p>
+                  </div>
+                  
+                  <div style="padding: 40px;">
+                    <div style="margin-bottom: 32px; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px;">
+                      <h2 style="color: #1e293b; font-size: 18px; margin-bottom: 16px;">Detalhes do Cliente</h2>
+                      <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px;">
+                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px;">CLIENTE</p>
+                        <p style="margin: 0 0 16px 0; color: #1e293b; font-weight: 600; font-size: 16px;">${customerInfo.name}</p>
+                        
+                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px;">CONTATO</p>
+                        <p style="margin: 0 0 16px 0; color: #1e293b; font-size: 16px;">WhatsApp: ${customerInfo.phone}</p>
+                        
+                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px;">MÉTODO DE ENVIO</p>
+                        <p style="margin: 0; color: #1e293b; font-size: 16px;">${deliveryText}</p>
+                      </div>
+                    </div>
+
+                    <div style="margin-bottom: 32px;">
+                      <h2 style="color: #1e293b; font-size: 18px; margin-bottom: 16px;">Resumo dos Itens</h2>
+                      ${itemsHtml}
+                      
+                      <div style="margin-top: 24px; padding: 20px; background-color: #f8fafc; border-radius: 12px; text-align: right;">
+                        <span style="color: #64748b; font-size: 16px; margin-right: 12px;">Total do Pedido</span>
+                        <span style="color: #6d28d9; font-size: 24px; font-weight: 800;">R$ ${totalItems.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <p style="text-align: right; color: #94a3b8; font-size: 12px; margin-top: 8px;">Pagamento: Na Entrega</p>
+                    </div>
+
+                    <div style="text-align: center;">
+                      <a href="${process.env.NEXT_PUBLIC_APP_URL}/painel/vitrine/pedidos" 
+                         style="display: inline-block; background-color: #6d28d9; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; transition: background-color 0.2s;">
+                        Gerenciar Pedido no Painel
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div style="padding: 32px 40px; background-color: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                    <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+                      ID do Pedido: <span style="font-family: monospace;">${order.id}</span>
+                    </p>
+                    <p style="color: #94a3b8; font-size: 12px; margin: 8px 0 0 0;">
+                      &copy; ${new Date().getFullYear()} NOHUD. Todos os direitos reservados.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            `
+          });
+        } catch (emailErr) {
+          console.error("Erro ao enviar email de backup:", emailErr);
+        }
       }
     }
 

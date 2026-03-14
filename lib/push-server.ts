@@ -23,12 +23,20 @@ const ensureWebPushConfigured = () => {
     }
 };
 
-export async function sendPushNotification(userId: string, title: string, body: string, url: string = "/painel") {
+export async function sendPushNotification(userId: string, title: string, body: string, url: string = "/painel", settingKey?: string) {
     if (!ensureWebPushConfigured()) return;
 
     try {
         const prefs = await db.userNotificationPref.findUnique({ where: { userId } });
-        if (prefs && prefs.push === false) return; // User opted out of push
+        
+        // Se o usuário desativou Push no geral
+        if (prefs && prefs.push === false) return; 
+
+        // Se uma chave específica foi passada, verifica se ela está habilitada
+        if (settingKey && prefs?.settings) {
+            const settings = prefs.settings as Record<string, boolean>;
+            if (settings[settingKey] === false) return; 
+        }
 
         const subs = await db.pushSubscription.findUnique({
             where: { userId },
@@ -51,7 +59,7 @@ export async function sendPushNotification(userId: string, title: string, body: 
     }
 }
 
-export async function notifyAdminsOfCompany(companyId: string, title: string, body: string, url: string = "/painel") {
+export async function notifyAdminsOfCompany(companyId: string, title: string, body: string, url: string = "/painel", settingKey?: string) {
     try {
         // Busca admins da empresa
         const company = await db.company.findUnique({
@@ -60,7 +68,7 @@ export async function notifyAdminsOfCompany(companyId: string, title: string, bo
         });
 
         if (company?.ownerId) {
-            await sendPushNotification(company.ownerId, title, body, url);
+            await sendPushNotification(company.ownerId, title, body, url, settingKey);
         }
 
         // Também busca membros da equipe com role ADMIN
@@ -71,7 +79,7 @@ export async function notifyAdminsOfCompany(companyId: string, title: string, bo
 
         for (const member of adminTeamMembers) {
             if (member.clerkUserId) {
-                await sendPushNotification(member.clerkUserId, title, body, url);
+                await sendPushNotification(member.clerkUserId, title, body, url, settingKey);
             }
         }
     } catch (error) {
@@ -79,7 +87,7 @@ export async function notifyAdminsOfCompany(companyId: string, title: string, bo
     }
 }
 
-export async function notifyProfessional(professionalId: string, title: string, body: string, url: string = "/painel") {
+export async function notifyProfessional(professionalId: string, title: string, body: string, url: string = "/painel", settingKey?: string) {
     try {
         const professional = await db.professional.findUnique({
             where: { id: professionalId },
@@ -87,7 +95,7 @@ export async function notifyProfessional(professionalId: string, title: string, 
         });
 
         if (professional?.userId) {
-            await sendPushNotification(professional.userId, title, body, url);
+            await sendPushNotification(professional.userId, title, body, url, settingKey);
         }
     } catch (error) {
         console.error(`Error notifying professional ${professionalId}:`, error);

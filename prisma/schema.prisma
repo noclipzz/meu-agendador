@@ -435,6 +435,7 @@ model FormTemplate {
 model WaitingList {
   id             String        @id @default(cuid())
   customerName   String
+  customerEmail  String?
   customerPhone  String
   preferences    String?
   status         String        @default("ATIVO")

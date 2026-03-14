@@ -222,9 +222,9 @@ export async function POST(req: Request) {
 
                             // NOTIFY ADMIN & PROFESSIONAL
                             const dataFmt = formatarDataCompleta(booking.date);
-                            await notifyAdminsOfCompany(company.id, "❌ Cancelado via WhatsApp", `${booking.customerName} CANCELOU o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
+                            await notifyAdminsOfCompany(company.id, "❌ Cancelado via WhatsApp", `${booking.customerName} CANCELOU o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda", "booking_cancellation_push");
                             if (booking.professionalId) {
-                                await notifyProfessional(booking.professionalId, "❌ Cancelado via WhatsApp", `${booking.customerName} CANCELOU o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
+                                await notifyProfessional(booking.professionalId, "❌ Cancelado via WhatsApp", `${booking.customerName} CANCELOU o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda", "booking_cancellation_push");
                             }
                         } else {
                             // Normal confirmation
@@ -240,9 +240,9 @@ export async function POST(req: Request) {
                             await sendEvolutionMessage(serverUrl, apiKey, instanceName, remoteJid, msgConfirmSuccess);
 
                             const dataFmt = formatarDataCompleta(booking.date);
-                            await notifyAdminsOfCompany(company.id, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou para às ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
+                            await notifyAdminsOfCompany(company.id, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou para às ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda", "new_booking_push");
                             if (booking.professionalId) {
-                                await notifyProfessional(booking.professionalId, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda");
+                                await notifyProfessional(booking.professionalId, "✅ Confirmado via WhatsApp", `${booking.customerName} confirmou o horário de ${dataFmt.split(' às ')[1] || ''}`, "/painel/agenda", "new_booking_push");
                             }
 
                             await logIntegration({

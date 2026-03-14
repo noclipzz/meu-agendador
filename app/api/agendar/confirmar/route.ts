@@ -64,8 +64,9 @@ export async function PUT(req: Request) {
       }
     }
 
-    // B. E-mail para o Cliente (Somente se ele tiver e-mail)
-    if (emailCliente) {
+    // B. E-mail para o Cliente (Somente se ativado e ele tiver e-mail)
+    const sendEmailToClient = notifSettings.client_confirm_email !== false;
+    if (sendEmailToClient && emailCliente) {
       try {
         console.log("📨 [DEBUG] Enviando confirmação para CLIENTE:", emailCliente);
         await resend.emails.send({

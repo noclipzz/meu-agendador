@@ -46,36 +46,62 @@ export async function GET(req: Request) {
 
             const subscricoes = await db.pushSubscription.findMany({ select: { userId: true } });
             let pushSent = 0;
-
             for (const sub of subscricoes) {
                 try {
                     let notificationSent = false;
+                    const pref = await db.userNotificationPref.findUnique({ where: { userId: sub.userId } });
+                    const settings = (pref?.settings as any) || {};
 
                     // A) Verificar se é Profissional
                     const profissional = await db.professional.findUnique({
                         where: { userId: sub.userId },
-                        select: { id: true, name: true }
+                        select: { id: true, name: true, email: true }
                     });
 
                     if (profissional) {
-                        const primeiro = await db.booking.findFirst({
+                        const bookingsHoje = await db.booking.findMany({
                             where: {
                                 professionalId: profissional.id,
                                 date: { gte: inicioDiaUTC, lte: fimDiaUTC },
                                 status: { in: ["PENDENTE", "CONFIRMADO"] }
                             },
                             orderBy: { date: 'asc' },
-                            select: { date: true }
+                            include: { service: true }
                         });
 
-                        if (primeiro) {
+                        if (bookingsHoje.length > 0) {
+                            const primeiro = bookingsHoje[0];
                             const horaFmt = format(toZonedTime(primeiro.date, timezone), "HH:mm");
-                            await sendPushNotification(
-                                sub.userId,
-                                "Bom dia! ☀️",
-                                `Bom dia ${profissional.name}, Hoje o seu primeiro compromisso é às ${horaFmt} horas, confira sua agenda de hoje.`,
-                                "/painel/agenda"
-                            );
+                            
+                            // Push
+                            if (settings.daily_agenda_push !== false) {
+                                await sendPushNotification(
+                                    sub.userId,
+                                    "Bom dia! ☀️",
+                                    `Bom dia ${profissional.name}, Hoje o seu primeiro compromisso é às ${horaFmt} horas, confira sua agenda de hoje.`,
+                                    "/painel/agenda"
+                                );
+                            }
+
+                            // Email
+                            if (settings.daily_agenda_email === true && (profissional.email || sub.userId)) {
+                                const targetEmail = profissional.email || (await clerkClient.users.getUser(sub.userId)).emailAddresses[0]?.emailAddress;
+                                if (targetEmail) {
+                                    const lista = bookingsHoje.map(b => `<li>${format(toZonedTime(b.date, timezone), "HH:mm")} - ${b.customerName} (${b.service?.name})</li>`).join("");
+                                    await resend.emails.send({
+                                        from: 'NOHUD App <nao-responda@nohud.com.br>',
+                                        to: targetEmail,
+                                        subject: `☀️ Sua Agenda de Hoje: ${profissional.name}`,
+                                        html: `
+                                            <h2>Bom dia, ${profissional.name}!</h2>
+                                            <p>Você tem <strong>${bookingsHoje.length}</strong> compromissos agendados para hoje.</p>
+                                            <ul>${lista}</ul>
+                                            <br/>
+                                            <a href="https://nohud.com.br/painel/agenda" style="background:#3b82f6; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold;">Ver Agenda Completa</a>
+                                        `
+                                    }).catch(() => {});
+                                }
+                            }
                             notificationSent = true;
                             pushSent++;
                         }
@@ -85,7 +111,7 @@ export async function GET(req: Request) {
                     if (!notificationSent) {
                         const empresaDono = await db.company.findUnique({
                             where: { ownerId: sub.userId },
-                            select: { id: true }
+                            select: { id: true, name: true, notificationEmail: true }
                         });
 
                         let isTeamAdmin = false;
@@ -98,12 +124,33 @@ export async function GET(req: Request) {
                         }
 
                         if (empresaDono || isTeamAdmin) {
-                            await sendPushNotification(
-                                sub.userId,
-                                "Bom dia! ☀️",
-                                "Bom dia!!, venha conferir os agendamentos de hoje!",
-                                "/painel/agenda"
-                            );
+                            // Push
+                            if (settings.daily_agenda_push !== false) {
+                                await sendPushNotification(
+                                    sub.userId,
+                                    "Bom dia! ☀️",
+                                    "Bom dia!!, venha conferir os agendamentos de hoje!",
+                                    "/painel/agenda"
+                                );
+                            }
+
+                            // Email
+                            if (settings.daily_agenda_email === true) {
+                                const targetEmail = empresaDono?.notificationEmail || (await clerkClient.users.getUser(sub.userId)).emailAddresses[0]?.emailAddress;
+                                if (targetEmail) {
+                                    await resend.emails.send({
+                                        from: 'NOHUD App <nao-responda@nohud.com.br>',
+                                        to: targetEmail,
+                                        subject: `☀️ Bom dia! Confira os agendamentos de hoje`,
+                                        html: `
+                                            <h2>Bom dia!</h2>
+                                            <p>O dia já começou! Venha conferir como está a ocupação da sua empresa hoje.</p>
+                                            <br/>
+                                            <a href="https://nohud.com.br/painel/agenda" style="background:#3b82f6; color:white; padding:10px 20px; text-decoration:none; border-radius:10px; font-weight:bold;">Abrir Painel</a>
+                                        `
+                                    }).catch(() => {});
+                                }
+                            }
                             pushSent++;
                         }
                     }
@@ -111,7 +158,7 @@ export async function GET(req: Request) {
                     console.error(`Erro ao processar notificação matinal para user ${sub.userId}:`, err);
                 }
             }
-            logs.push(`Push: ${pushSent} notificações enviadas.`);
+            logs.push(`Agenda Matinal: ${pushSent} notificações processadas.`);
         }
 
         // --------------------------------------------------------------------------------
