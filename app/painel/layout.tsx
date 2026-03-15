@@ -49,6 +49,8 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     const [userPlan, setUserPlan] = useState<string | null>(null);
     const [isTrial, setIsTrial] = useState(false); // ✅ NOVO: Flag de Trial
     const [userPermissions, setUserPermissions] = useState<any>({}); // Iniciando como objeto vazio para evitar erros de filtro
+    const [currentLocalRole, setCurrentLocalRole] = useState<string>(""); // Local para evitar delay do context
+    const [currentLocalIsOwner, setCurrentLocalIsOwner] = useState<boolean>(false); // Local para evitar delay do context
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Novo: Sidebar mobile
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -231,13 +233,14 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                 setUserPlan(dados.plan);
                 setUserRole(dados.role);
-                setIsOwner(!!dados.isOwner); // ✅ Salva se é dono
-                setIsTrial(!!dados.isTrial); // ✅ Salva se é trial
+                setCurrentLocalRole(dados.role); // Sincroniza local
+                setIsOwner(!!dados.isOwner); 
+                setCurrentLocalIsOwner(!!dados.isOwner); // Sincroniza local
                 setHasTrackingModule(!!dados.hasTrackingModule);
-                setUserPermissions(dados.permissions || {}); // Garante objeto
+                setUserPermissions(dados.permissions || {}); 
                 setCompanySlug(dados.slug || null);
                 setCompanyId(dados.companyId);
-                setHasAccess(true); // Libera acesso total
+                setHasAccess(true); 
                 setVerificando(false);
 
             } catch (error) {
@@ -413,6 +416,12 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
     ];
 
     const filterMenu = (items: any[]) => items.filter(item => {
+        // ADMIN sempre vê tudo
+        const finalRole = currentLocalRole || userRole;
+        const finalIsOwner = currentLocalIsOwner || isOwner;
+
+        if (finalRole === "ADMIN") return true;
+
         if (userPlan === "INDIVIDUAL") {
             if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "vitrine_payment", "vitrine_config", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
@@ -421,15 +430,17 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             if (["fichas-tecnicas", "estoque", "whatsapp"].includes(item.key)) return false;
         }
 
-        if (item.key === 'whatsapp' && !isOwner) return false;
+        if (item.key === 'whatsapp' && !finalIsOwner) return false;
         if (item.key === 'mural') return true;
-        if (userRole === "ADMIN") return true;
-        if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
+        
+        if (!userPermissions || Object.keys(userPermissions).length === 0) {
+             return item.key === 'agenda' || item.key === 'clientes';
+        }
 
         const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key) ? "financeiro" : 
                         ["vitrine_produtos", "vitrine_pedidos", "vitrine_payment", "vitrine_config"].includes(item.key) ? "vitrine" : 
                         item.key;
-        return userPermissions[permKey as keyof typeof userPermissions];
+        return !!userPermissions[permKey as keyof typeof userPermissions];
     });
 
     const visibleItems = filterMenu(allItems);
@@ -685,7 +696,9 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
                         currentRoute.key
                     ) : null;
 
-                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute] && !isOwner && userRole !== "ADMIN");
+                    const finalRole = currentLocalRole || userRole;
+                    const finalIsOwner = currentLocalIsOwner || isOwner;
+                    const isDenied = isWhatsAppBlocked || (currentRoute && finalRole !== "ADMIN" && !finalIsOwner && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute]);
 
                     if (isDenied) {
                         return (
