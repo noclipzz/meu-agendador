@@ -180,6 +180,9 @@ model Professional {
   signatureUrl  String?
   certificadoA1Url String?
   certificadoSenha String?
+  isTechnicalResponsible Boolean @default(false)
+  councilName           String?
+  councilNumber         String?
   attachments   Attachment[]
   bookings      Booking[]
   company       Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)

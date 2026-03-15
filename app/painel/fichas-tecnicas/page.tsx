@@ -108,12 +108,15 @@ export default function FichasTecnicasPage() {
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
 
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "", hasDigitalSignatureModule: false });
+    const [technicalProfessionals, setTechnicalProfessionals] = useState<any[]>([]);
     const [printConfigModal, setPrintConfigModal] = useState<{
         entry: any;
         dateVisible: boolean;
         twoColumns: boolean;
         signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean };
+        selectedTechnicalId?: string;
         useDigitalSignature: boolean;
+        a1Choice?: 'prof' | 'company' | 'technical' | 'none';
         includeQR: boolean;
         docNumber: string;
         customFooter: string;
@@ -121,7 +124,16 @@ export default function FichasTecnicasPage() {
 
     useEffect(() => {
         carregarEmpresa();
+        carregarResponsaveisTecnicos();
     }, []);
+
+    async function carregarResponsaveisTecnicos() {
+        try {
+            const res = await fetch('/api/painel/profissionais');
+            const data = await res.json();
+            setTechnicalProfessionals(data.filter((p: any) => p.isTechnicalResponsible));
+        } catch { }
+    }
 
     // Salvar preferências sempre que mudarem
     useEffect(() => {
@@ -213,7 +225,9 @@ export default function FichasTecnicasPage() {
                 dateVisible: savedSettings.dateVisible ?? true,
                 twoColumns: savedSettings.twoColumns ?? false,
                 signatures: savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
+                selectedTechnicalId: "",
                 useDigitalSignature: savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
+                a1Choice: savedSettings.a1Choice || 'none',
                 includeQR: savedSettings.includeQR ?? true
             });
             return;
@@ -224,7 +238,9 @@ export default function FichasTecnicasPage() {
             dateVisible: true,
             twoColumns: false,
             signatures: { client: true, prof: true, company: false, technical: false },
+            selectedTechnicalId: "",
             useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
+            a1Choice: 'none',
             includeQR: true
         };
 
@@ -238,13 +254,14 @@ export default function FichasTecnicasPage() {
             entry: entryVisualizando,
             docNumber: entryVisualizando.id.slice(-6).toUpperCase(),
             customFooter: "",
-            ...initialPrefs
+            ...initialPrefs,
+            a1Choice: initialPrefs.a1Choice as 'prof' | 'company' | 'technical' | 'none'
         });
     }
 
     async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
+        const { entry, dateVisible, signatures, selectedTechnicalId, useDigitalSignature, a1Choice, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
 
         // --- BLOQUEIO PERMANENTE NA PRIMEIRA IMPRESSÃO ---
         if (!entry.isLocked) {
@@ -258,7 +275,7 @@ export default function FichasTecnicasPage() {
                         clientId: entry.clientId,
                         data: entry.data,
                         lock: true,
-                        printSettings: { dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter }
+                        printSettings: { dateVisible, signatures, selectedTechnicalId, useDigitalSignature, a1Choice, includeQR, twoColumns, docNumber, customFooter }
                     })
                 });
                 
@@ -428,6 +445,12 @@ export default function FichasTecnicasPage() {
         </style></head><body>
         <div class="page">
             <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
+
+            ${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? `
+            <div style="position: absolute; top: 120px; right: 30px; border: 2px solid #0d9488; opacity: 0.15; padding: 10px; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; font-size: 10px; text-transform: uppercase; color: #0d9488; text-align: center; pointer-events: none; z-index: 10;">
+                Assinado<br/>Digitalmente<br/>ICP-Brasil
+            </div>
+            ` : ''}
             
             <div class="header">
                 <div class="header-left">
@@ -474,30 +497,40 @@ export default function FichasTecnicasPage() {
             <div class="signatures-container">
                 ${signatures.client ? `
                     <div class="signature-block">
+                        ${(useDigitalSignature && entry.client?.signatureUrl && a1Choice === 'none') ? `<img src="${entry.client.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
-                        <div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
+                        <div class="signature-label">${entry.client?.name || 'Assinatura do Cliente'}</div>
                     </div>` : ''}
                 
                 ${signatures.prof ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && entry.professional?.signatureUrl && (a1Choice === 'prof' || a1Choice === 'none')) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
-                        <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                        <div class="signature-label">
+                            <div style="font-weight: 900;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                            ${entry.professional?.isTechnicalResponsible ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${entry.professional.councilName} ${entry.professional.councilNumber}</div>` : ''}
+                        </div>
                     </div>` : ''}
 
                 ${signatures.company ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && empresaInfo.signatureUrl && (a1Choice === 'company' || a1Choice === 'none')) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${empresaInfo?.legalRepresentative || empresaInfo?.corporateName || empresaInfo?.name || 'Responsável Legal'}</div>
                     </div>` : ''}
 
-                ${signatures.technical ? `
-                    <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.technicalSignatureUrl) ? `<img src="${empresaInfo.technicalSignatureUrl}" class="signature-image" />` : ''}
-                        <div class="signature-line"></div>
-                        <div class="signature-label">Responsável Técnico</div>
-                    </div>` : ''}
+                ${signatures.technical ? (function () {
+                    const tech = technicalProfessionals.find(p => p.id === selectedTechnicalId);
+                    return `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && tech?.signatureUrl && (a1Choice === 'technical' || a1Choice === 'none')) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">
+                                <div style="font-weight: 900;">${tech?.name || 'Assinatura do Responsável Técnico'}</div>
+                                ${tech?.councilName ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${tech.councilName} ${tech.councilNumber || ''}</div>` : ''}
+                            </div>
+                        </div>`;
+                })() : ''}
             </div>
 
             <div class="footer-line">
@@ -1555,6 +1588,25 @@ export default function FichasTecnicasPage() {
                                             </div>
                                             <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura do Responsável Técnico</span>
                                         </label>
+
+                                        {printConfigModal.signatures.technical && (
+                                            <div className="pl-8 space-y-2 animate-in slide-in-from-left-2 duration-300">
+                                                <label className="text-[9px] font-black text-orange-500 uppercase block tracking-widest">Selecionar Responsável Técnico</label>
+                                                <select
+                                                    className="w-full p-3 rounded-xl border-2 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-orange-500 transition-all"
+                                                    value={printConfigModal.selectedTechnicalId}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, selectedTechnicalId: e.target.value })}
+                                                >
+                                                    <option value="">Selecione um profissional...</option>
+                                                    {technicalProfessionals.map((p: any) => (
+                                                        <option key={p.id} value={p.id}>{p.name} {p.councilNumber ? `(${p.councilNumber})` : ''}</option>
+                                                    ))}
+                                                </select>
+                                                {technicalProfessionals.length === 0 && (
+                                                    <p className="text-[10px] text-red-500 font-bold italic">Nenhum profissional marcado como Responsável Técnico na Equipe.</p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1599,6 +1651,53 @@ export default function FichasTecnicasPage() {
                                             <p className="text-[10px] text-gray-400">Permite validar a veracidade do documento online.</p>
                                         </div>
                                     </label>
+
+                                    {printConfigModal.useDigitalSignature && (
+                                        <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border-2 border-blue-500/20 rounded-2xl animate-in slide-in-from-top-2">
+                                            <label className="text-[9px] font-black text-blue-500 uppercase mb-3 block tracking-widest">Identidade Digital para Assinatura (A1)</label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                <button
+                                                    onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'none' })}
+                                                    className={`p-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${printConfigModal.a1Choice === 'none' ? 'border-blue-500 bg-white text-blue-600' : 'border-transparent text-gray-400'}`}
+                                                >
+                                                    Padrão (Sem carimbo A1)
+                                                </button>
+                                                
+                                                {printConfigModal.entry.professional?.certificadoA1Url && (
+                                                    <button
+                                                        onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'prof' })}
+                                                        className={`p-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${printConfigModal.a1Choice === 'prof' ? 'border-blue-500 bg-white text-blue-600' : 'border-transparent text-gray-400'}`}
+                                                    >
+                                                        <span>Profissional: {printConfigModal.entry.professional.name}</span>
+                                                        <ShieldCheck size={14} className={printConfigModal.a1Choice === 'prof' ? 'text-blue-500' : 'text-gray-300'} />
+                                                    </button>
+                                                )}
+
+                                                {printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url && (
+                                                    <button
+                                                        onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'technical' })}
+                                                        className={`p-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${printConfigModal.a1Choice === 'technical' ? 'border-blue-500 bg-white text-blue-600' : 'border-transparent text-gray-400'}`}
+                                                    >
+                                                        <span>R. Técnico: {technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.name}</span>
+                                                        <ShieldCheck size={14} className={printConfigModal.a1Choice === 'technical' ? 'text-blue-500' : 'text-gray-300'} />
+                                                    </button>
+                                                )}
+
+                                                {empresaInfo.certificadoA1Url && (
+                                                    <button
+                                                        onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'company' })}
+                                                        className={`p-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-between ${printConfigModal.a1Choice === 'company' ? 'border-blue-500 bg-white text-blue-600' : 'border-transparent text-gray-400'}`}
+                                                    >
+                                                        <span>Empresa: {empresaInfo.corporateName || empresaInfo.name}</span>
+                                                        <ShieldCheck size={14} className={printConfigModal.a1Choice === 'company' ? 'text-blue-500' : 'text-gray-300'} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <p className="text-[9px] text-blue-600/60 mt-2 font-bold uppercase leading-tight italic">
+                                                * O certificado selecionado validará juridicamente este documento.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Layout */}

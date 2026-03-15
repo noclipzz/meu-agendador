@@ -63,12 +63,21 @@ export async function GET(req: Request) {
 
         const professionals = await db.professional.findMany({
             where: { userId: { in: uniqueUserIds } },
-            select: { userId: true, name: true, signatureUrl: true, certificadoA1Url: true, certificadoSenha: true }
+            select: { 
+                userId: true, 
+                name: true, 
+                signatureUrl: true, 
+                certificadoA1Url: true, 
+                certificadoSenha: true,
+                isTechnicalResponsible: true,
+                councilName: true,
+                councilNumber: true
+            } as any
         });
 
-        const entriesWithInfo = entries.map(e => ({
+        const entriesWithInfo = (entries as any).map((e: any) => ({
             ...e,
-            professional: professionals.find(p => p.userId === e.filledBy) || null
+            professional: professionals.find((p: any) => p.userId === e.filledBy) || null
         }));
 
         return NextResponse.json(entriesWithInfo);
@@ -109,7 +118,7 @@ export async function POST(req: Request) {
 
         if (id) {
             // Verifica se está bloqueado
-            const existing = await db.formEntry.findUnique({ where: { id } });
+            const existing = await db.formEntry.findUnique({ where: { id } }) as any;
             if (existing?.isLocked) {
                 return NextResponse.json({ error: "Este documento está finalizado e não pode ser alterado." }, { status: 403 });
             }

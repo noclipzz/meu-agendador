@@ -88,7 +88,12 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { name, email, phone, photoUrl, color, cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status, certificadoA1Url, certificadoSenha } = body;
+    const { 
+      name, email, phone, photoUrl, color, cpf, rg, birthDate, cep, address, 
+      number, complement, neighborhood, city, state, notes, status, 
+      certificadoA1Url, certificadoSenha,
+      isTechnicalResponsible, councilName, councilNumber
+    } = body;
 
     // 1. Apenas o dono pode adicionar equipe
     const company = await prisma.company.findUnique({
@@ -149,7 +154,7 @@ export async function POST(req: Request) {
       }
 
       // Cria o Profissional na Agenda
-      const professional = await tx.professional.create({
+      const professional = await (tx.professional as any).create({
         data: {
           name,
           phone,
@@ -158,9 +163,12 @@ export async function POST(req: Request) {
           signatureUrl: body.signatureUrl || null,
           color: color || "#3b82f6",
           companyId: company.id,
-          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO",
+          cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus,          status: status || "ATIVO",
           certificadoA1Url,
           certificadoSenha,
+          isTechnicalResponsible: isTechnicalResponsible || false,
+          councilName,
+          councilNumber,
           services: {
             connect: body.serviceIds?.map((id: string) => ({ id })) || []
           }
@@ -240,7 +248,7 @@ export async function PUT(req: Request) {
     });
 
     // 2. Atualiza dados do profissional
-    const updated = await prisma.professional.update({
+    const updated = await (prisma.professional as any).update({
       where: { id: body.id },
       data: {
         name: body.name,
@@ -263,6 +271,9 @@ export async function PUT(req: Request) {
         status: body.status,
         certificadoA1Url: body.certificadoA1Url,
         certificadoSenha: body.certificadoSenha,
+        isTechnicalResponsible: body.isTechnicalResponsible,
+        councilName: body.councilName,
+        councilNumber: body.councilNumber,
         services: {
           set: body.serviceIds ? body.serviceIds.map((id: string) => ({ id })) : []
         }

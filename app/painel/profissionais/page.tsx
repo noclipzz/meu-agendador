@@ -78,7 +78,10 @@ export default function GestaoEquipe() {
         },
         serviceIds: [] as string[],
         certificadoA1Url: "",
-        certificadoSenha: ""
+        certificadoSenha: "",
+        isTechnicalResponsible: false,
+        councilName: "",
+        councilNumber: ""
     });
 
     async function handleCEPChange(cep: string) {
@@ -421,7 +424,10 @@ export default function GestaoEquipe() {
             },
             serviceIds: p.services ? p.services.map((s: any) => s.id) : [],
             certificadoA1Url: p.certificadoA1Url || "",
-            certificadoSenha: p.certificadoSenha || ""
+            certificadoSenha: p.certificadoSenha || "",
+            isTechnicalResponsible: p.isTechnicalResponsible || false,
+            councilName: p.councilName || "",
+            councilNumber: p.councilNumber || ""
         });
         setModalAberto(true);
     }
@@ -448,7 +454,10 @@ export default function GestaoEquipe() {
             },
             serviceIds: [],
             certificadoA1Url: "",
-            certificadoSenha: ""
+            certificadoSenha: "",
+            isTechnicalResponsible: false,
+            councilName: "",
+            councilNumber: ""
         });
     }
 
@@ -838,46 +847,92 @@ export default function GestaoEquipe() {
                                             <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Telefone / WhatsApp</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
                                         </div>
                                         <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">URL da Foto (Opcional)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white text-xs" placeholder="Cole um link de imagem..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} /></div>
-                                        <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                </div>
+                                
+                                {/* 1.1 RESPONSÁVEL TÉCNICO */}
+                                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-800/20 p-6 rounded-3xl mt-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldCheck className="text-emerald-600" size={20} />
                                             <div>
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Assinatura (PNG Transparente)</label>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-40 h-16 bg-white border-2 border-dashed dark:border-gray-700 rounded-xl flex items-center justify-center overflow-hidden">
-                                                        {form.signatureUrl ? <img src={form.signatureUrl} className="h-full object-contain" /> : <PenTool size={24} className="text-gray-200" />}
-                                                    </div>
-                                                    <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Alterar PNG</span>
-                                                        <input type="file" className="hidden" onChange={handleUploadAssinatura} accept="image/*" />
-                                                    </label>
+                                                <h4 className="text-sm font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-tight">Responsável Técnico</h4>
+                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-widest">Habilitar assinatura digital para este profissional</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setForm({ ...form, isTechnicalResponsible: !form.isTechnicalResponsible })}
+                                            className={`w-12 h-6 rounded-full flex items-center p-1 transition-colors ${form.isTechnicalResponsible ? 'bg-emerald-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${form.isTechnicalResponsible ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+
+                                    {form.isTechnicalResponsible && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase ml-3 mb-1 block">Conselho (Ex: CRM, CRP, CRO)</label>
+                                                    <input 
+                                                        className="w-full border-2 border-emerald-100 dark:border-emerald-800 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-emerald-500 font-bold dark:text-white"
+                                                        placeholder="Ex: CRM-SP"
+                                                        value={form.councilName}
+                                                        onChange={e => setForm({ ...form, councilName: e.target.value.toUpperCase() })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase ml-3 mb-1 block">Número do Registro</label>
+                                                    <input 
+                                                        className="w-full border-2 border-emerald-100 dark:border-emerald-800 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-emerald-500 font-bold dark:text-white"
+                                                        placeholder="Ex: 123456"
+                                                        value={form.councilNumber}
+                                                        onChange={e => setForm({ ...form, councilNumber: e.target.value })}
+                                                    />
                                                 </div>
                                             </div>
-                                            <div>
-                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Certificado Digital A1 (.pfx)</label>
-                                                <div className="flex flex-col gap-2">
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                                <div>
+                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase ml-3 mb-1 block">Assinatura Digital (PNG Transparente)</label>
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${form.certificadoA1Url ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-300'}`}>
-                                                            {form.certificadoA1Url ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
+                                                        <div className="w-40 h-16 bg-white border-2 border-dashed border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-center overflow-hidden">
+                                                            {form.signatureUrl ? <img src={form.signatureUrl} className="h-full object-contain" /> : <PenTool size={24} className="text-emerald-200" />}
                                                         </div>
-                                                        <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                                                {form.certificadoA1Url ? "Alterar Certificado" : "Selecionar .PFX"}
-                                                            </span>
-                                                            <input type="file" className="hidden" onChange={handleUploadCertificadoA1} accept=".pfx,.p12" />
+                                                        <label className="flex-1 bg-emerald-100/50 dark:bg-emerald-950 p-3 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:bg-white dark:hover:bg-emerald-900 transition">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">Alterar PNG</span>
+                                                            <input type="file" className="hidden" onChange={handleUploadAssinatura} accept="image/*" />
                                                         </label>
                                                     </div>
-                                                    {form.certificadoA1Url && (
-                                                        <input 
-                                                            type="password"
-                                                            className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-gray-100 dark:bg-gray-950 outline-none focus:border-blue-500 font-bold text-xs dark:text-white"
-                                                            placeholder="Senha do Certificado"
-                                                            value={form.certificadoSenha}
-                                                            onChange={e => setForm({ ...form, certificadoSenha: e.target.value })}
-                                                        />
-                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase ml-3 mb-1 block">Certificado Digital A1 (.pfx)</label>
+                                                    <div className="flex flex-col gap-2">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${form.certificadoA1Url ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-400'}`}>
+                                                                {form.certificadoA1Url ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
+                                                            </div>
+                                                            <label className="flex-1 bg-emerald-100/50 dark:bg-emerald-950 p-3 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 text-center cursor-pointer hover:bg-white dark:hover:bg-emerald-900 transition">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                                                                    {form.certificadoA1Url ? "Alterar Certificado" : "Selecionar .PFX"}
+                                                                </span>
+                                                                <input type="file" className="hidden" onChange={handleUploadCertificadoA1} accept=".pfx,.p12" />
+                                                            </label>
+                                                        </div>
+                                                        {form.certificadoA1Url && (
+                                                            <input 
+                                                                type="password"
+                                                                className="w-full border-2 border-emerald-200 dark:border-emerald-800 p-3 rounded-xl bg-white dark:bg-gray-950 outline-none focus:border-emerald-500 font-bold text-xs dark:text-white"
+                                                                placeholder="Senha do Certificado"
+                                                                value={form.certificadoSenha}
+                                                                onChange={e => setForm({ ...form, certificadoSenha: e.target.value })}
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+                                </div>
                                 </div>
 
                                 {/* 2. DADOS PESSOAIS */}
