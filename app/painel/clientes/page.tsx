@@ -785,6 +785,8 @@ export default function ClientesPage() {
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
         const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
+        const accentColor = entry.template?.accentColor || "#f8fafc";
+        const fLayout = entry.template?.fieldsLayout || "stacked";
 
         // Separar headers e campos normais
         const sections: { header: string; items: { label: string; value: string; width: string; type?: string; highlight?: boolean }[] }[] = [];
@@ -920,7 +922,7 @@ export default function ClientesPage() {
                 if (isStatic) {
                     const h = (item as any).highlight;
                     const style = h ? `background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;` : `border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px;`;
-                    const valueStyle = h ? `color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #475569; font-weight: 500; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
+                    const valueStyle = h ? `color: #1e3a8a; font-weight: 900; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #000000; font-weight: 900; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
                     
                     camposHtml += `<div class="field-item w-100" style="${style}">
                         <div class="field-value" style="${valueStyle}">${renderMarkdown(item.value)}</div>
@@ -939,8 +941,16 @@ export default function ClientesPage() {
                 if (twoColumns && !isLong) widthClass = 'w-50';
                 if (isLong) widthClass = 'w-100'; // Override if too long
 
-                camposHtml += `<div class="field-item ${widthClass}">
-                    <div class="field-label">${renderMarkdown(item.label)}</div>
+                const isInline = fLayout === 'inline' && !isLong;
+                const layoutClass = isInline ? 'layout-inline' : '';
+
+                // Se for um bloco de dados (cliente/empresa), aplicamos o fundo de destaque
+                const itemStyle = isSpecial 
+                    ? `background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; margin: 10px 0; padding: 15px 20px;` 
+                    : `min-height: ${isInline ? '30px' : '48px'};`;
+
+                camposHtml += `<div class="field-item ${widthClass} ${layoutClass}" style="${itemStyle}">
+                    <div class="field-label">${renderMarkdown(item.label)}${isInline ? ':' : ''}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
             });
@@ -978,11 +988,16 @@ export default function ClientesPage() {
 
             .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
             
-            .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
-            .client-item { display: flex; flex-direction: column; }
-            .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
+            .client-box { background: ${accentColor}; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+            .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '3px'}; }
+            .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
+            .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
             .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
             .client-item.full { grid-column: span 2; }
+
+            .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 15px; min-height: 30px; }
+            .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
+            .field-item.layout-inline .field-value { margin-top: 0; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; margin-bottom: 10px; clear: both; display: block; width: 100%; }
             .section-header { font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; background: #eff6ff; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-left: 4px solid #3b82f6; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
@@ -1019,9 +1034,10 @@ export default function ClientesPage() {
             .footer-text strong { color: #1e293b; }
 
             @media print {
-                body { padding:0; }
+                body { padding:0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 .page { padding: 40px; max-width: 100%; border: none; }
                 .back-button { display:none !important; }
+                .client-box { background: ${accentColor} !important; }
                 .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1 { break-inside: avoid; page-break-inside: avoid; }
                 .fields-grid { break-inside: auto; }
             }
@@ -1055,7 +1071,7 @@ export default function ClientesPage() {
             <h1 class="doc-title">${entry.template?.name}</h1>
 
             ${!fields.some(f => f.type === 'company_data') ? `
-            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px;">
+            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px; background-color: ${accentColor} !important; break-inside: avoid; page-break-inside: avoid;">
                 <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
                 <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
@@ -1063,7 +1079,7 @@ export default function ClientesPage() {
             </div>` : ''}
 
             ${!fields.some(f => f.type === 'client_data') ? `
-            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px;">
+            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px; background-color: ${accentColor} !important; break-inside: avoid; page-break-inside: avoid;">
                 <div class="client-item"><label>Cliente</label><span>${(entry.client?.name || clienteSelecionado?.name) || '—'}</span></div>
                 <div class="client-item"><label>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? (entry.client?.cnpj || clienteSelecionado?.cnpj || '—') : (entry.client?.cpf || clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${(entry.client?.phone || clienteSelecionado?.phone) || '—'}</span></div>
@@ -1186,14 +1202,18 @@ export default function ClientesPage() {
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
                     .doc-title { font-size: 22px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 20px; }
                     .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 30px; margin-bottom: 12px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
-                    .client-item { display: flex; flex-direction: column; }
-                    .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+                    .client-box { background: ${accentColor} !important; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
+                    .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '2px'}; }
+                    .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
+                    .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
                     .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; } 
                     .fields-grid { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; } 
                     .field-item { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; } 
+                    .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 12px; min-height: 30px; }
+                    .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
+                    .field-item.layout-inline .field-value { margin-top: 0; }
                     .field-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
                     .field-value { font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
                     .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.3333%; } .w-25 { width: 25%; } .w-66 { width: 66.6666%; } .w-75 { width: 75%; }
@@ -1210,6 +1230,8 @@ export default function ClientesPage() {
                     .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
                     .back-button { display: none !important; }
+                    /* Prevenir quebra de pagina no PDF */
+                    .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1, .header { page-break-inside: avoid !important; break-inside: avoid !important; }
                 </style>
                 ${
                    // Remover o botão 'Voltar' e qualquer cabeçalho indesejado do HTML injetado
