@@ -72,12 +72,14 @@ export default function ClientesPage() {
     const [fichaVisualizando, setFichaVisualizando] = useState<any>(null);
     const [loadingFichas, setLoadingFichas] = useState(false);
     const [modalFichaAberto, setModalFichaAberto] = useState(false);
+    const [technicalProfessionals, setTechnicalProfessionals] = useState<any[]>([]);
     const [empresaInfo, setEmpresaInfo] = useState<any>({ name: "", logo: "", plan: "", city: "", hasDigitalSignatureModule: false });
     const [printConfigModal, setPrintConfigModal] = useState<{
         entry: any;
         dateVisible: boolean;
         twoColumns: boolean;
         signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean; digitalA1: boolean };
+        selectedTechnicalId?: string;
         useDigitalSignature: boolean;
         includeQR: boolean;
         docNumber: string;
@@ -159,9 +161,18 @@ export default function ClientesPage() {
     }
 
     useEffect(() => {
+        carregarResponsaveisTecnicos();
         carregarClientes();
         carregarEmpresa();
     }, []);
+
+    async function carregarResponsaveisTecnicos() {
+        try {
+            const res = await fetch('/api/painel/profissionais');
+            const data = await res.json();
+            setTechnicalProfessionals(data.filter((p: any) => p.isTechnicalResponsible));
+        } catch { }
+    }
 
     // Salvar preferências sempre que mudarem
     useEffect(() => {
@@ -690,7 +701,8 @@ export default function ClientesPage() {
                 savedSettings.includeQR ?? true,
                 savedSettings.twoColumns ?? false,
                 savedSettings.docNumber || entry.id.slice(-6).toUpperCase(),
-                savedSettings.customFooter || ""
+                savedSettings.customFooter || "",
+                savedSettings.selectedTechnicalId
             );
             return;
         }
@@ -720,7 +732,7 @@ export default function ClientesPage() {
 
     async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
+        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId } = printConfigModal;
 
         // --- BLOQUEIO PERMANENTE NA PRIMEIRA IMPRESSÃO ---
         if (!entry.isLocked) {
@@ -734,7 +746,7 @@ export default function ClientesPage() {
                         clientId: entry.clientId,
                         data: entry.data,
                         lock: true,
-                        printSettings: { dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter }
+                        printSettings: { dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId }
                     })
                 });
                 
@@ -747,10 +759,10 @@ export default function ClientesPage() {
             } catch (err) { console.error(err); }
         }
 
-        executarImpressaoDaFichaDirect(entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter);
+        executarImpressaoDaFichaDirect(entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId);
     }
 
-    async function executarImpressaoDaFichaDirect(entry: any, dateVisible: boolean, signatures: any, useDigitalSignature: boolean, includeQR: boolean, twoColumns: boolean, docNumber: string, customFooter: string) {
+    async function executarImpressaoDaFichaDirect(entry: any, dateVisible: boolean, signatures: any, useDigitalSignature: boolean, includeQR: boolean, twoColumns: boolean, docNumber: string, customFooter: string, selectedTechnicalId?: string) {
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -1048,26 +1060,32 @@ export default function ClientesPage() {
                     `}
                 ` : ''}
 
-                ${signatures.technical ? `
-                    ${(signatures.digitalA1 && empresaInfo.technicalCertificadoA1Url) ? `
-                        <div class="signature-a1">
-                            <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
-                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
-                            <div class="a1-details">
-                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
-                                RT: ${empresaInfo?.legalRepresentative || 'Empresa'}<br/>
-                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
-                                ID: ${entry.id.toUpperCase()}
+                ${signatures.technical ? (function() {
+                    const tech = technicalProfessionals?.find(p => p.id === selectedTechnicalId);
+                    return `
+                        ${(signatures.digitalA1 && tech?.certificadoA1Url) ? `
+                            <div class="signature-a1">
+                                <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
+                                <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                                <div class="a1-details">
+                                    CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                                    RT: ${tech?.name || 'Responsável Técnico'}<br/>
+                                    Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                    ID: ${entry.id.toUpperCase()}
+                                </div>
+                                <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
                             </div>
-                            <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
-                        </div>
-                    ` : `
-                    <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.technicalSignatureUrl) ? `<img src="${empresaInfo.technicalSignatureUrl}" class="signature-image" />` : ''}
-                        <div class="signature-line"></div>
-                        <div class="signature-label">${empresaInfo?.legalRepresentative || 'Responsável Técnico'}</div>
-                    </div>`}
-                ` : ''}
+                        ` : `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && tech?.signatureUrl) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">
+                                <div style="font-weight: 900;">${tech?.name || 'Assinatura do Responsável Técnico'}</div>
+                                ${tech?.councilName ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${tech.councilName} ${tech.councilNumber || ''}</div>` : ''}
+                            </div>
+                        </div>`}
+                    `;
+                })() : ''}
             </div>
 
             <div class="footer-line">
@@ -2353,7 +2371,7 @@ export default function ClientesPage() {
                                                 if (opt.id === 'digitalA1') {
                                                     const hasProfA1 = printConfigModal.signatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url;
                                                     const hasCompanyA1 = printConfigModal.signatures.company && !!empresaInfo.certificadoA1Url;
-                                                    const hasTechA1 = printConfigModal.signatures.technical && !!empresaInfo.technicalCertificadoA1Url;
+                                                    const hasTechA1 = printConfigModal.signatures.technical && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url;
                                                     return hasProfA1 || hasCompanyA1 || hasTechA1;
                                                 }
                                                 return true;
@@ -2372,7 +2390,7 @@ export default function ClientesPage() {
                                                                 if (opt.id !== 'digitalA1') {
                                                                     const stillHasA1 = (newSignatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url) ||
                                                                                        (newSignatures.company && !!empresaInfo.certificadoA1Url) ||
-                                                                                       (newSignatures.technical && !!empresaInfo.technicalCertificadoA1Url);
+                                                                                       (newSignatures.technical && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url);
                                                                     if (!stillHasA1) {
                                                                         newSignatures.digitalA1 = false;
                                                                     }
@@ -2385,6 +2403,25 @@ export default function ClientesPage() {
                                                 );
                                             })}
                                         </div>
+                                        {printConfigModal.signatures.technical && (
+                                            <div className="pl-8 space-y-2 animate-in slide-in-from-left-2 duration-300">
+                                                <label className="text-[9px] font-black text-orange-500 uppercase block tracking-widest">Selecionar Responsável Técnico</label>
+                                                <select
+                                                    className="w-full p-3 rounded-xl border-2 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-bold dark:text-white outline-none focus:border-orange-500 transition-all"
+                                                    value={printConfigModal.selectedTechnicalId}
+                                                    onChange={(e) => setPrintConfigModal({ ...printConfigModal, selectedTechnicalId: e.target.value })}
+                                                >
+                                                    <option value="">Selecione um profissional...</option>
+                                                    {technicalProfessionals.map((p: any) => (
+                                                        <option key={p.id} value={p.id}>{p.name} {p.councilNumber ? `(${p.councilNumber})` : ''}</option>
+                                                    ))}
+                                                </select>
+                                                {technicalProfessionals.length === 0 && (
+                                                    <p className="text-[10px] text-red-500 font-bold italic">Nenhum profissional marcado como Responsável Técnico na Equipe.</p>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {(printConfigModal.signatures.prof || printConfigModal.signatures.company || printConfigModal.signatures.technical || printConfigModal.signatures.client) && (
                                             <div className="mt-4 animate-in slide-in-from-top-2">
                                                 <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' : (printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500 cursor-pointer')}`}>
