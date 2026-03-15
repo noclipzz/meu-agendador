@@ -609,7 +609,7 @@ export default function FichasTecnicasPage() {
                     .auth-text { text-align: left; }
                     .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; }
                     .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; }
-                    .qr-code { width: 35px; height: 35px; }
+                    .qr-code { width: 35px; height: 35px; display: block !important; }
                     .header-right { text-align: right; }
                     .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
@@ -638,7 +638,11 @@ export default function FichasTecnicasPage() {
                     .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
                 </style>
-                ${html.split('<body>')[1]?.split('</body>')[0] || html}
+                ${/* Pegar o conteúdo respeitando a estrutura do cabeçalho */ 
+                   html.includes('id="printable-content"') 
+                   ? html.split('id="printable-content">')[1]?.split('</body>')[0] 
+                   : (html.split('<body>')[1]?.split('</body>')[0] || html)
+                }
             </div>
         `;
 
