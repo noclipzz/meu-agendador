@@ -239,6 +239,7 @@ export default function ClientesPage() {
                     technicalSignatureUrl: data.technicalSignatureUrl || "",
                     technicalCertificadoA1Url: data.technicalCertificadoA1Url || "",
                     technicalCertificadoSenha: data.technicalCertificadoSenha || "",
+                    certificadoA1Url: data.certificadoA1Url || "",
                     hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
                 });
             }
@@ -932,12 +933,12 @@ export default function ClientesPage() {
             .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
             .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
 
-            .signature-a1 { border: 2px solid #0d9488; background: #f0fdfa; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 250px; max-width: 300px; flex: 1; position: relative; overflow: hidden; }
-            .signature-a1::before { content: "CERTIFICADO DIGITAL"; position: absolute; top: 5px; right: -25px; background: #0d9488; color: white; font-size: 6px; font-weight: 900; padding: 2px 30px; transform: rotate(45deg); }
-            .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; display: flex; items-center gap: 1; }
-            .a1-name { font-size: 11px; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; line-height: 1.2; }
-            .a1-details { font-size: 9px; color: #475569; margin-top: 6px; font-weight: 700; text-align: center; line-height: 1.4; }
-            .a1-footer { font-size: 7px; color: #64748b; margin-top: 8px; text-transform: uppercase; font-weight: 800; border-top: 1px solid #ccfbf1; pt-1; width: 100%; text-align: center; }
+            .signature-a1 { border: 2px double #0d9488; background: #f0fdfa; border-radius: 4px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 260px; max-width: 300px; flex: 1; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(13,148,136,0.2); }
+            .signature-a1::before { content: "CERTIFICADO DIGITAL"; position: absolute; top: 12px; right: -30px; background: #0d9488; color: white; font-size: 8px; font-weight: 900; padding: 4px 40px; transform: rotate(45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .a1-title { font-size: 9px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; border-bottom: 1px dashed #99f6e4; padding-bottom: 4px; width: 100%; justify-content: center; }
+            .a1-name { font-size: 12px; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; line-height: 1.2; }
+            .a1-details { font-size: 9px; color: #334155; margin-top: 8px; font-weight: 700; text-align: center; line-height: 1.5; font-family: monospace; letter-spacing: -0.2px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ccfbf1; width: 100%; }
+            .a1-footer { font-size: 7px; color: #64748b; margin-top: 8px; text-transform: uppercase; font-weight: 800; width: 100%; text-align: center; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
@@ -1027,19 +1028,7 @@ export default function ClientesPage() {
                 ` : ''}
 
                 ${signatures.company ? `
-                    ${(signatures.digitalA1 && empresaInfo.technicalCertificadoA1Url) ? `
-                        <div class="signature-a1">
-                            <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
-                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
-                            <div class="a1-details">
-                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
-                                RT: ${empresaInfo?.legalRepresentative || 'Empresa'}<br/>
-                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
-                                ID: ${entry.id.toUpperCase()}
-                            </div>
-                            <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
-                        </div>
-                    ` : (signatures.digitalA1 && empresaInfo.certificadoA1Url) ? `
+                    ${(signatures.digitalA1 && empresaInfo.certificadoA1Url) ? `
                         <div class="signature-a1">
                             <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
                             <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
@@ -1060,12 +1049,26 @@ export default function ClientesPage() {
                     `}
                 ` : ''}
 
-                ${signatures.technical && !empresaInfo.technicalCertificadoA1Url ? `
+                ${signatures.technical ? `
+                    ${(signatures.digitalA1 && empresaInfo.technicalCertificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
+                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                            <div class="a1-details">
+                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                                RT: ${empresaInfo?.legalRepresentative || 'Empresa'}<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
+                        </div>
+                    ` : `
                     <div class="signature-block">
                         ${(useDigitalSignature && empresaInfo.technicalSignatureUrl) ? `<img src="${empresaInfo.technicalSignatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${empresaInfo?.legalRepresentative || 'Responsável Técnico'}</div>
-                    </div>` : ''}
+                    </div>`}
+                ` : ''}
             </div>
 
             <div class="footer-line">
@@ -2347,7 +2350,15 @@ export default function ClientesPage() {
                                                 { id: 'company', label: 'Assinatura da Empresa' },
                                                 { id: 'technical', label: 'Assinatura do Resp. Técnico' },
                                                 { id: 'digitalA1', label: 'Certificado Digital (A1)' },
-                                            ].map(opt => {
+                                            ].filter(opt => {
+                                                if (opt.id === 'digitalA1') {
+                                                    const hasProfA1 = printConfigModal.signatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url;
+                                                    const hasCompanyA1 = printConfigModal.signatures.company && !!empresaInfo.certificadoA1Url;
+                                                    const hasTechA1 = printConfigModal.signatures.technical && !!empresaInfo.technicalCertificadoA1Url;
+                                                    return hasProfA1 || hasCompanyA1 || hasTechA1;
+                                                }
+                                                return true;
+                                            }).map(opt => {
                                                 const isChecked = printConfigModal.signatures[opt.id as keyof typeof printConfigModal.signatures];
                                                 return (
                                                     <label key={opt.id} className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${isChecked ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'}`}>
@@ -2355,14 +2366,27 @@ export default function ClientesPage() {
                                                             type="checkbox"
                                                             className="accent-teal-600 w-4 h-4"
                                                             checked={isChecked}
-                                                            onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, [opt.id]: e.target.checked } })}
+                                                            onChange={(e) => {
+                                                                const checked = e.target.checked;
+                                                                const newSignatures = { ...printConfigModal.signatures, [opt.id]: checked };
+                                                                // Uncheck digitalA1 if no valid signers with A1 are selected anymore
+                                                                if (opt.id !== 'digitalA1') {
+                                                                    const stillHasA1 = (newSignatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url) ||
+                                                                                       (newSignatures.company && !!empresaInfo.certificadoA1Url) ||
+                                                                                       (newSignatures.technical && !!empresaInfo.technicalCertificadoA1Url);
+                                                                    if (!stillHasA1) {
+                                                                        newSignatures.digitalA1 = false;
+                                                                    }
+                                                                }
+                                                                setPrintConfigModal({ ...printConfigModal, signatures: newSignatures });
+                                                            }}
                                                         />
                                                         <span className={`font-bold text-sm ${isChecked ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
                                                     </label>
                                                 );
                                             })}
                                         </div>
-                                        {(printConfigModal.signatures.prof || printConfigModal.signatures.company) && (
+                                        {(printConfigModal.signatures.prof || printConfigModal.signatures.company || printConfigModal.signatures.technical || printConfigModal.signatures.client) && (
                                             <div className="mt-4 animate-in slide-in-from-top-2">
                                                 <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 cursor-not-allowed border-gray-100 bg-gray-50' : (printConfigModal.useDigitalSignature ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-900/20' : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-teal-500 cursor-pointer')}`}>
                                                     <input
