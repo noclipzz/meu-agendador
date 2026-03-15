@@ -58,6 +58,7 @@ interface FormField {
         max: number;
         step: number;
     };
+    highlight?: boolean;
 }
 
 interface Template {
@@ -318,8 +319,8 @@ export default function FichasTecnicasPage() {
         const data = entry.data as Record<string, any> || {};
 
         // Separar headers e campos normais
-        const sections: { header: string; items: { label: string; value: string; width: string; type?: string }[] }[] = [];
-        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string }[] } = { header: '', items: [] };
+        const sections: { header: string; items: { label: string; value: string; width: string; type?: string; highlight?: boolean }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string; highlight?: boolean }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
             if (field.conditional) {
@@ -340,15 +341,15 @@ export default function FichasTecnicasPage() {
                 if (!shouldShow) return;
             }
 
-            if (field.type === 'header' || field.type === 'static') {
+            if (field.type === 'header') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
                 }
-                if (field.type === 'header') {
-                    currentSection = { header: field.label, items: [] };
-                } else {
-                    currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type });
-                }
+                currentSection = { header: field.label, items: [] };
+                return;
+            }
+            if (field.type === 'static') {
+                currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type, highlight: field.highlight });
                 return;
             }
             let valor = '';
@@ -374,14 +375,15 @@ export default function FichasTecnicasPage() {
                     valor = tableHtml;
                 }
             } else if (field.type === 'client_data') {
+                const c = entry.client || clienteSelecionado;
                 valor = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
-                    <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
-                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
-                    <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
-                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
-                    <div class="client-item full"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
-                    <div class="client-item full"><label>Endereço</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                    <div class="client-item"><label>Cliente</label><span>${c?.name || '—'}</span></div>
+                    <div class="client-item"><label>${c?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${c?.clientType === 'JURIDICA' ? (c?.cnpj || '—') : (c?.cpf || '—')}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${c?.phone || '—'}</span></div>
+                    <div class="client-item"><label>${c?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${c?.clientType === 'JURIDICA' ? (c?.inscricaoEstadual || '—') : (c?.rg || '—')}</span></div>
+                    <div class="client-item full"><label>E-mail</label><span>${c?.email || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço</label><span>${c?.address || ''}, ${c?.number || ''} ${c?.complement || ''} - ${c?.neighborhood || ''} - ${c?.city || ''}/${c?.state || ''}</span></div>
                 </div>`;
             } else if (field.type === 'company_data') {
                 const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
@@ -442,8 +444,12 @@ export default function FichasTecnicasPage() {
                 const isLong = item.value.length > 80 || containsTable || containsImg || isStatic || isSpecial;
 
                 if (isStatic) {
-                    camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
-                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${renderMarkdown(item.value)}</div>
+                    const h = (item as any).highlight;
+                    const style = h ? `background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;` : `border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px;`;
+                    const valueStyle = h ? `color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #475569; font-weight: 500; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
+                    
+                    camposHtml += `<div class="field-item w-100" style="${style}">
+                        <div class="field-value" style="${valueStyle}">${renderMarkdown(item.value)}</div>
                     </div>`;
                     return;
                 }
@@ -507,10 +513,10 @@ export default function FichasTecnicasPage() {
             .client-item.full { grid-column: span 2; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
-            .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
+            .section-header { font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; background: #eff6ff; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-left: 4px solid #3b82f6; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
             
-            .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-direction: column; }
-            .field-item { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; }
+            .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
             .field-item:last-child { border-bottom: none; }
             .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
             .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
@@ -1189,6 +1195,17 @@ export default function FichasTecnicasPage() {
                                                         <Underline size={14} />
                                                     </button>
                                                     <span className="text-[10px] text-gray-400 ml-auto self-center">Formatar seleção</span>
+                                                    <div className="border-l dark:border-gray-800 ml-2 pl-2 flex items-center">
+                                                        <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 cursor-pointer whitespace-nowrap">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={campo.highlight || false}
+                                                                onChange={e => atualizarCampo(campo.id, { highlight: e.target.checked })}
+                                                                className="accent-blue-600"
+                                                            />
+                                                            Destacar Bloco (Azul)
+                                                        </label>
+                                                    </div>
                                                 </div>
                                                 <textarea
                                                     id={`textarea-${campo.id}`}
@@ -1501,8 +1518,8 @@ export default function FichasTecnicasPage() {
                                                                 {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case">{campo.helpText}</p>}
                                                             </div>
                                                         ) : campo.type === 'static' ? (
-                                                            <div className="bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-gray-800 mt-2">
-                                                                <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed formatted-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
+                                                            <div className={`p-4 rounded-xl border mt-2 transition-colors duration-200 ${campo.highlight ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50/30 dark:bg-gray-900/10 border-gray-100 dark:border-gray-800'}`}>
+                                                                <div className={`text-sm font-medium leading-relaxed formatted-preview ${campo.highlight ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
                                                             </div>
                                                         ) : (
                                                             <div>

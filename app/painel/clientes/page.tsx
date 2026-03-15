@@ -787,8 +787,8 @@ export default function ClientesPage() {
         const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
 
         // Separar headers e campos normais
-        const sections: { header: string; items: { label: string; value: string; width: string; type?: string }[] }[] = [];
-        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string }[] } = { header: '', items: [] };
+        const sections: { header: string; items: { label: string; value: string; width: string; type?: string; highlight?: boolean }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string; highlight?: boolean }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
             if (field.conditional) {
@@ -809,15 +809,15 @@ export default function ClientesPage() {
                 if (!shouldShow) return;
             }
 
-            if (field.type === 'header' || field.type === 'static') {
+            if (field.type === 'header') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
                 }
-                if (field.type === 'header') {
-                    currentSection = { header: field.label, items: [] };
-                } else {
-                    currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type });
-                }
+                currentSection = { header: field.label, items: [] };
+                return;
+            }
+            if (field.type === 'static') {
+                currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type, highlight: field.highlight });
                 return;
             }
             let valor = '';
@@ -918,8 +918,12 @@ export default function ClientesPage() {
                 const isLong = item.value.length > 80 || containsTable || containsImg || isStatic || isSpecial;
 
                 if (isStatic) {
-                    camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
-                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${renderMarkdown(item.value)}</div>
+                    const h = (item as any).highlight;
+                    const style = h ? `background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;` : `border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px;`;
+                    const valueStyle = h ? `color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #475569; font-weight: 500; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
+                    
+                    camposHtml += `<div class="field-item w-100" style="${style}">
+                        <div class="field-value" style="${valueStyle}">${renderMarkdown(item.value)}</div>
                     </div>`;
                     return;
                 }
@@ -981,7 +985,7 @@ export default function ClientesPage() {
             .client-item.full { grid-column: span 2; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; margin-bottom: 10px; clear: both; display: block; width: 100%; }
-            .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
+            .section-header { font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; background: #eff6ff; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-left: 4px solid #3b82f6; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
             
             .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
             .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
