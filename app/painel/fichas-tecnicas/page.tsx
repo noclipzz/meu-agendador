@@ -596,21 +596,65 @@ export default function FichasTecnicasPage() {
         </div>
         </body></html>`;
 
+        // --- GERAÇÃO OTIMIZADA PARA PDF ---
+        const pdfContent = `
+            <div id="pdf-container" style="width: 800px; padding: 40px; background: white; color: #1f2937; font-family: 'Inter', sans-serif; position: relative;">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 15px; }
+                    .header-left { display: flex; align-items: center; gap: 15px; }
+                    .company-logo { width: 45px; height: 45px; object-fit: contain; }
+                    .company-name { font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+                    .auth-badge { display: flex; align-items: center; gap: 8px; border: 1px solid #ccfbf1; background: #f0fdfa; padding: 6px 12px; border-radius: 8px; }
+                    .auth-text { text-align: left; }
+                    .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; }
+                    .qr-code { width: 35px; height: 35px; }
+                    .header-right { text-align: right; }
+                    .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
+                    .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
+                    .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
+                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+                    .client-item { display: flex; flex-direction: column; }
+                    .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
+                    .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+                    .client-item.full { grid-column: span 2; }
+                    .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
+                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
+                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
+                    .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
+                    .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+                    .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.33%; } .w-25 { width: 25%; } .w-66 { width: 66.66%; } .w-75 { width: 75%; }
+                    .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
+                    .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
+                    .signature-image { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 250px; height: 120px; object-fit: contain; mix-blend-mode: multiply; }
+                    .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
+                    .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; }
+                    .signature-a1 { border: 1px solid #0d9488; background: #fff; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 250px; flex: 1; }
+                    .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+                    .a1-name { font-size: 10px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+                    .a1-details { font-size: 8px; color: #334155; margin-top: 2px; font-weight: 600; font-family: monospace; }
+                    .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+                    .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
+                    .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
+                </style>
+                ${html.split('<body>')[1]?.split('</body>')[0] || html}
+            </div>
+        `;
+
         // --- ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
-        // Se a assinatura digital está ativada, gerar PDF assinado e NÃO abrir janela de impressão
         if (useDigitalSignature && a1Choice && a1Choice !== 'none') {
             setSigningPdf(true);
             try {
                 // @ts-ignore
                 const html2pdf = (await import('html2pdf.js')).default;
                 
-                // --- RENDERIZAÇÃO COM DESIGN PRESERVADO ---
                 const container = document.createElement('div');
-                container.innerHTML = html;
-                container.style.position = 'absolute';
-                container.style.left = '-9999px';
+                container.innerHTML = pdfContent;
+                container.style.position = 'fixed';
+                container.style.left = '0';
                 container.style.top = '0';
-                container.style.width = '800px';
+                container.style.zIndex = '-9999';
                 container.style.background = 'white';
                 document.body.appendChild(container);
 
@@ -618,26 +662,18 @@ export default function FichasTecnicasPage() {
                     margin: 0,
                     filename: `ficha_${docNumber}.pdf`,
                     image: { type: 'jpeg' as const, quality: 0.98 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        letterRendering: true,
-                    },
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                // Buffer de tempo para o browser processar o layout do container invisível
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Esperar o browser processar o layout do container invisível
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
-                const worker = html2pdf().set(opt).from(container);
-                const pdfDataUri = await worker.toPdf().output('datauristring');
+                const pdfDataUri = await html2pdf().set(opt).from(container).outputPdf('datauristring');
                 const pdfBase64 = pdfDataUri.split(',')[1];
-                
                 document.body.removeChild(container);
 
-                if (!pdfBase64) {
-                    throw new Error("Falha ao gerar o conteúdo do PDF. Tente novamente.");
-                }
+                if (!pdfBase64) throw new Error("Falha na extração de dados do PDF");
 
                 const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
                     method: 'POST',
