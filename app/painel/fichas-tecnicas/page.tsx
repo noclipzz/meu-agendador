@@ -614,22 +614,22 @@ export default function FichasTecnicasPage() {
                     .header-left { display: flex; align-items: center; gap: 15px; }
                     .company-logo { width: 45px; height: 45px; object-fit: contain; }
                     .company-name { font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
-                    .auth-badge { display: flex; align-items: center; gap: 8px; border: 1px solid #ccfbf1; background: #f0fdfa; padding: 6px 12px; border-radius: 8px; }
+                    .auth-badge { display: flex; align-items: center; gap: 8px; border: 1.5px solid #ccfbf1; background: #f0fdfa; padding: 4px 10px; border-radius: 8px; height: 45px; overflow: hidden; }
                     .auth-text { text-align: left; }
-                    .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; }
-                    .qr-code { width: 35px; height: 35px; display: block !important; }
+                    .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; }
+                    .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; margin-top: 2px; }
+                    .qr-code { width: 35px; height: 35px; object-fit: contain; display: block !important; }
                     .header-right { text-align: right; }
                     .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
-                    .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
-                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+                    .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 30px; margin-top: 40px; }
+                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
                     .client-item { display: flex; flex-direction: column; }
                     .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
                     .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
-                    .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 25px; display: block; width: 100%; }
-                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; background: white; margin-bottom: 20px; }
+                    .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; }
+                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; background: white; margin-bottom: 30px; }
                     .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 12px 15px; display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; min-height: 65px; }
                     .field-label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
                     .field-value { font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.3; word-break: break-word; }
@@ -668,6 +668,10 @@ export default function FichasTecnicasPage() {
                 // --- RENDERIZAÇÃO POR SNAPSHOT (MÁXIMA FIDELIDADE) ---
                 const container = document.createElement('div');
                 container.innerHTML = pdfContent;
+
+                // Forçar remoção de elementos de navegação e indesejados
+                container.querySelectorAll('.back-button, button, .no-print').forEach(el => el.remove());
+
                 container.style.position = 'absolute';
                 container.style.left = '-5000px';
                 container.style.top = '0';
@@ -697,13 +701,13 @@ export default function FichasTecnicasPage() {
                 const { jsPDF } = await import('jspdf');
 
                 const canvas = await html2canvas(container, {
-                    scale: 2,
+                    scale: 3, // Aumentar escala para nitidez máxima
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                     width: 800,
-                    windowWidth: 800,
+                    windowWidth: 1024, // Simular tela maior para layout desktop fixo
                     height: container.scrollHeight,
                     scrollY: 0,
                     x: 0,
