@@ -318,10 +318,28 @@ export default function FichasTecnicasPage() {
         const data = entry.data as Record<string, any> || {};
 
         // Separar headers e campos normais
-        const sections: { header: string; items: { label: string; value: string }[] }[] = [];
-        let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
+        const sections: { header: string; items: { label: string; value: string; width: string; type?: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
+            if (field.conditional) {
+                const dependOnId = field.conditional.dependsOnId;
+                const requiredValue = field.conditional.dependsOnValue;
+                const actualValue = data[dependOnId];
+
+                let shouldShow = false;
+                if (typeof requiredValue === 'boolean') {
+                    shouldShow = requiredValue === true ? !!actualValue : !actualValue;
+                } else {
+                    if (Array.isArray(actualValue)) {
+                        shouldShow = actualValue.includes(requiredValue);
+                    } else {
+                        shouldShow = actualValue === requiredValue;
+                    }
+                }
+                if (!shouldShow) return;
+            }
+
             if (field.type === 'header' || field.type === 'static') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
@@ -329,9 +347,7 @@ export default function FichasTecnicasPage() {
                 if (field.type === 'header') {
                     currentSection = { header: field.label, items: [] };
                 } else {
-                    // Texto fixo entra como um item especial ou uma seção sem título se preferir
-                    // Para alinhar com o pedido de "orientações fixas", vamos colocar como um item sem label ou com label invisível
-                    currentSection.items.push({ label: '', value: field.label });
+                    currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type });
                 }
                 return;
             }
@@ -357,6 +373,25 @@ export default function FichasTecnicasPage() {
                     tableHtml += '</tbody></table>';
                     valor = tableHtml;
                 }
+            } else if (field.type === 'client_data') {
+                valor = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
+                    <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
+                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
+                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
+                    <div class="client-item full"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                </div>`;
+            } else if (field.type === 'company_data') {
+                const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
+                valor = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
+                    <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
+                    <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
+                </div>`;
             } else {
                 valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
                     field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
@@ -367,7 +402,7 @@ export default function FichasTecnicasPage() {
                 }
             }
 
-            currentSection.items.push({ label: field.label, value: String(valor) });
+            currentSection.items.push({ label: field.label, value: String(valor), width: field.width || "100%", type: field.type });
         });
         if (currentSection.items.length > 0 || currentSection.header) {
             sections.push(currentSection);
@@ -396,23 +431,37 @@ export default function FichasTecnicasPage() {
             const sectionHeader = section.header?.trim().toUpperCase();
 
             if (sectionHeader && sectionHeader !== templateName) {
-                camposHtml += `<div class="section-header">${section.header}</div>`;
+                camposHtml += `<div class="section-header">${renderMarkdown(section.header)}</div>`;
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
                 const containsTable = item.value.includes('<table');
+                const containsImg = item.value.includes('<img');
+                const isSpecial = item.type === 'client_data' || item.type === 'company_data';
                 const isStatic = item.label === ''; // Convention for static fields
-                const isLong = item.value.length > 80 || containsTable || isStatic;
+                const isLong = item.value.length > 80 || containsTable || containsImg || isStatic || isSpecial;
 
                 if (isStatic) {
-                    camposHtml += `<div class="field-item full-width" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
-                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${item.value}</div>
+                    camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
+                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${renderMarkdown(item.value)}</div>
                     </div>`;
                     return;
                 }
 
-                camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
-                    <div class="field-label">${item.label}</div>
+                let widthClass = 'w-100';
+                if (!isLong && !twoColumns) {
+                    const w = (item as any).width;
+                    if (w === '50%') widthClass = 'w-50';
+                    else if (w === '33%') widthClass = 'w-33';
+                    else if (w === '25%') widthClass = 'w-25';
+                    else if (w === '66%') widthClass = 'w-66';
+                    else if (w === '75%') widthClass = 'w-75';
+                }
+                if (twoColumns && !isLong) widthClass = 'w-50';
+                if (isLong) widthClass = 'w-100';
+
+                camposHtml += `<div class="field-item ${widthClass}">
+                    <div class="field-label">${renderMarkdown(item.label)}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
             });
@@ -1158,12 +1207,49 @@ export default function FichasTecnicasPage() {
                                                 Este bloco carregará automaticamente os dados {campo.type === "client_data" ? "do cliente" : "da empresa"} na impressão.
                                             </div>
                                         ) : (
-                                            <input
-                                                className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
-                                                placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Pergunta / Nome do campo (ex: Tipo de Cabelo/Pele)"}
-                                                value={campo.label}
-                                                onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
-                                            />
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                <div className="flex gap-1 border-b dark:border-gray-800 pb-1.5 px-1">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const input = document.getElementById(`input-${campo.id}`) as HTMLInputElement;
+                                                            if (!input) return;
+                                                            const start = input.selectionStart || 0;
+                                                            const end = input.selectionEnd || 0;
+                                                            const text = campo.label;
+                                                            const before = text.substring(0, start);
+                                                            const selection = text.substring(start, end);
+                                                            const after = text.substring(end);
+                                                            atualizarCampo(campo.id, { label: `${before}**${selection || 'texto'}**${after}` });
+                                                        }}
+                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition text-gray-400 hover:text-blue-600" title="Negrito">
+                                                        <Bold size={12} />
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const input = document.getElementById(`input-${campo.id}`) as HTMLInputElement;
+                                                            if (!input) return;
+                                                            const start = input.selectionStart || 0;
+                                                            const end = input.selectionEnd || 0;
+                                                            const text = campo.label;
+                                                            const before = text.substring(0, start);
+                                                            const selection = text.substring(start, end);
+                                                            const after = text.substring(end);
+                                                            atualizarCampo(campo.id, { label: `${before}*${selection || 'texto'}*${after}` });
+                                                        }}
+                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition text-gray-400 hover:text-blue-600" title="Itálico">
+                                                        <Italic size={12} />
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    id={`input-${campo.id}`}
+                                                    className="w-full border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
+                                                    placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Pergunta / Nome do campo (ex: Tipo de Cabelo/Pele)"}
+                                                    value={campo.label}
+                                                    onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
+                                                />
+                                            </div>
                                         )}
                                         {campo.type !== "header" && campo.type !== "static" && campo.type !== "client_data" && campo.type !== "company_data" && (
                                             <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 cursor-pointer whitespace-nowrap">
@@ -1410,20 +1496,19 @@ export default function FichasTecnicasPage() {
                                                     )}
                                                     <div className={`${campo.conditional ? 'opacity-40' : ''}`}>
                                                         {campo.type === 'header' ? (
-                                                            <h3 className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-4 mb-2">
-                                                                {campo.label || "Título de seção..."}
-                                                                {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case mt-1">{campo.helpText}</p>}
-                                                            </h3>
+                                                            <div className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-4 mb-2 flex flex-col gap-1">
+                                                                <div dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "Título de seção...") }} />
+                                                                {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case">{campo.helpText}</p>}
+                                                            </div>
                                                         ) : campo.type === 'static' ? (
                                                             <div className="bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-gray-800 mt-2">
-                                                                <p className="text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-pre-wrap leading-relaxed">
-                                                                    {campo.label || "O conteúdo fixo aparecerá aqui..."}
-                                                                </p>
+                                                                <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed formatted-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
                                                             </div>
                                                         ) : (
                                                             <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-1.5 leading-tight">
-                                                                    {campo.label || "Escreva a sua pergunta..."} {campo.required && <span className="text-red-500">*</span>}
+                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-1.5 leading-tight flex items-center gap-1">
+                                                                    <div dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "Escreva a sua pergunta...") }} />
+                                                                    {campo.required && <span className="text-red-500">*</span>}
                                                                 </label>
                                                                 {campo.helpText && <p className="text-[9px] text-gray-400 font-medium ml-1 mb-2 leading-tight italic">{campo.helpText}</p>}
 

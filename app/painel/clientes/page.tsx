@@ -784,6 +784,7 @@ export default function ClientesPage() {
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
+        const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
 
         // Separar headers e campos normais
         const sections: { header: string; items: { label: string; value: string; width: string; type?: string }[] }[] = [];
@@ -815,7 +816,7 @@ export default function ClientesPage() {
                 if (field.type === 'header') {
                     currentSection = { header: field.label, items: [] };
                 } else {
-                    currentSection.items.push({ label: '', value: field.label, width: '100%', type: field.type });
+                    currentSection.items.push({ label: '', value: field.label, width: field.width || '100%', type: field.type });
                 }
                 return;
             }
@@ -849,14 +850,15 @@ export default function ClientesPage() {
             } else if (field.type === 'currency') {
                 valor = data[field.id] ? `R$ ${Number(data[field.id]).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—';
             } else if (field.type === 'client_data') {
+                const c = entry.client || clienteSelecionado;
                 valor = `
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
-                    <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
-                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
-                    <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
-                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
-                    <div class="client-item full"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
-                    <div class="client-item full"><label>Endereço</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                    <div class="client-item"><label>Cliente</label><span>${c?.name || '—'}</span></div>
+                    <div class="client-item"><label>${c?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${c?.clientType === 'JURIDICA' ? (c?.cnpj || '—') : (c?.cpf || '—')}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${c?.phone || '—'}</span></div>
+                    <div class="client-item"><label>${c?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${c?.clientType === 'JURIDICA' ? (c?.inscricaoEstadual || '—') : (c?.rg || '—')}</span></div>
+                    <div class="client-item full"><label>E-mail</label><span>${c?.email || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço</label><span>${c?.address || ''}, ${c?.number || ''} ${c?.complement || ''} - ${c?.neighborhood || ''} - ${c?.city || ''}/${c?.state || ''}</span></div>
                 </div>`;
             } else if (field.type === 'company_data') {
                 valor = `
@@ -905,7 +907,7 @@ export default function ClientesPage() {
             const sectionHeader = section.header?.trim().toUpperCase();
 
             if (sectionHeader && sectionHeader !== templateName) {
-                camposHtml += `<div class="section-header">${section.header}</div>`;
+                camposHtml += `<div class="section-header">${renderMarkdown(section.header)}</div>`;
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
@@ -945,7 +947,6 @@ export default function ClientesPage() {
             ? `<img src="${empresaInfo.logo}" class="company-logo" />`
             : `<div class="company-logo-placeholder">📋</div>`;
 
-        const nomeEmpresa = empresaInfo.corporateName || empresaInfo.name || 'Empresa';
 
         const html = `<!DOCTYPE html><html><head><title>Ficha - ${clienteSelecionado?.name}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1059,13 +1060,13 @@ export default function ClientesPage() {
 
             ${!fields.some(f => f.type === 'client_data') ? `
             <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px;">
-                <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
-                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
-                <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
-                <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
-                <div class="client-item"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
-                ${clienteSelecionado?.clientType !== 'JURIDICA' ? `<div class="client-item"><label>Estado Civil</label><span>${clienteSelecionado?.maritalStatus || '—'}</span></div>` : ''}
-                <div class="client-item ${clienteSelecionado?.clientType !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                <div class="client-item"><label>Cliente</label><span>${(entry.client?.name || clienteSelecionado?.name) || '—'}</span></div>
+                <div class="client-item"><label>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? (entry.client?.cnpj || clienteSelecionado?.cnpj || '—') : (entry.client?.cpf || clienteSelecionado?.cpf || '—')}</span></div>
+                <div class="client-item"><label>Telefone</label><span>${(entry.client?.phone || clienteSelecionado?.phone) || '—'}</span></div>
+                <div class="client-item"><label>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${(entry.client?.clientType || clienteSelecionado?.clientType) === 'JURIDICA' ? (entry.client?.inscricaoEstadual || clienteSelecionado?.inscricaoEstadual || '—') : (entry.client?.rg || clienteSelecionado?.rg || '—')}</span></div>
+                <div class="client-item"><label>E-mail</label><span>${(entry.client?.email || clienteSelecionado?.email) || '—'}</span></div>
+                ${(entry.client?.clientType || clienteSelecionado?.clientType) !== 'JURIDICA' ? `<div class="client-item"><label>Estado Civil</label><span>${(entry.client?.maritalStatus || clienteSelecionado?.maritalStatus) || '—'}</span></div>` : ''}
+                <div class="client-item ${(entry.client?.clientType || clienteSelecionado?.clientType) !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${(entry.client?.address || clienteSelecionado?.address) || ''}, ${(entry.client?.number || clienteSelecionado?.number) || ''} ${(entry.client?.complement || clienteSelecionado?.complement) || ''} - ${(entry.client?.neighborhood || clienteSelecionado?.neighborhood) || ''} - ${(entry.client?.city || clienteSelecionado?.city) || ''}/${(entry.client?.state || clienteSelecionado?.state) || ''}</span></div>
             </div>` : ''}
 
 
