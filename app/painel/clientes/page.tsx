@@ -793,11 +793,15 @@ export default function ClientesPage() {
                 if (!shouldShow) return;
             }
 
-            if (field.type === 'header') {
+            if (field.type === 'header' || field.type === 'static') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
                 }
-                currentSection = { header: field.label, items: [] };
+                if (field.type === 'header') {
+                    currentSection = { header: field.label, items: [] };
+                } else {
+                    currentSection.items.push({ label: '', value: field.label, width: '100%' });
+                }
                 return;
             }
             let valor = '';
@@ -864,14 +868,25 @@ export default function ClientesPage() {
         // Gerar HTML dos campos com suporte a larguras (%)
         let camposHtml = '';
         sections.forEach(section => {
-            if (section.header && section.header !== entry.template?.name) {
+            const templateName = entry.template?.name?.trim().toUpperCase();
+            const sectionHeader = section.header?.trim().toUpperCase();
+
+            if (sectionHeader && sectionHeader !== templateName) {
                 camposHtml += `<div class="section-header">${section.header}</div>`;
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
                 const containsTable = item.value.includes('<table');
                 const containsImg = item.value.includes('<img');
-                const isLong = item.value.length > 80 || containsTable || containsImg;
+                const isStatic = item.label === ''; // Convention for static fields
+                const isLong = item.value.length > 80 || containsTable || containsImg || isStatic;
+
+                if (isStatic) {
+                    camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
+                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${item.value}</div>
+                    </div>`;
+                    return;
+                }
 
                 let widthClass = 'w-100';
                 if (!isLong && !twoColumns) {
@@ -905,8 +920,7 @@ export default function ClientesPage() {
             * { margin:0; padding:0; box-sizing:border-box; }
             body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .page { width: 100%; max-width: 800px; margin: 0 auto; padding: 40px 30px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-            .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
-            @media screen and (max-width: 600px) { .back-button { display: flex; } .page { padding: 15px; } }
+            @media screen and (max-width: 600px) { .page { padding: 15px; } }
             
             .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 15px; }
             .header-left { display: flex; align-items: center; gap: 15px; }
@@ -931,8 +945,8 @@ export default function ClientesPage() {
             .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
             .client-item.full { grid-column: span 2; }
 
-            .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
-            .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
+            .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; margin-bottom: 10px; clear: both; display: block; width: 100%; }
+            .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
             
             .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
             .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
@@ -974,7 +988,6 @@ export default function ClientesPage() {
             }
         </style></head><body>
         <div class="page">
-            <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
             
             <div class="header">
                 <div class="header-left">
@@ -1118,7 +1131,7 @@ export default function ClientesPage() {
                     .header-left { display: flex; align-items: center; gap: 15px; }
                     .company-logo { width: 45px; height: 45px; object-fit: contain; }
                     .company-name { font-size: 18px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
-                    .auth-badge { display: flex; align-items: center; gap: 8px; border: 1.5px solid #ccfbf1; background: #f0fdfa; padding: 4px 10px; border-radius: 8px; height: 45px; overflow: hidden; }
+                    .auth-badge { display: flex; align-items: center; gap: 8px; border: 1.5px solid #ccfbf1; background: #f0fdfa; padding: 4px 10px; border-radius: 8px; min-height: 45px; }
                     .auth-text { text-align: left; }
                     .auth-label { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; }
                     .auth-hash { font-size: 7px; font-family: monospace; color: #64748b; margin-top: 2px; }
@@ -1854,6 +1867,13 @@ export default function ClientesPage() {
                                                         {(fichaVisualizando.template?.fields as any[])?.map((field: any) => {
                                                             const valor = (fichaVisualizando.data as any)?.[field.id];
                                                             if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
+                                                            if (field.type === 'static') return (
+                                                                <div key={field.id} className="col-span-1 sm:col-span-3 bg-blue-50/30 dark:bg-blue-900/10 p-5 rounded-2xl border-2 border-blue-100 dark:border-blue-900/20 my-2">
+                                                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-bold whitespace-pre-wrap leading-relaxed">
+                                                                        {field.label}
+                                                                    </p>
+                                                                </div>
+                                                            );
                                                             return (
                                                                 <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b dark:border-gray-800/50">
                                                                     {field.type === 'table' ? (
@@ -2326,7 +2346,14 @@ export default function ClientesPage() {
                                                                     {field.helpText && <p className="text-xs text-gray-500 mt-1 font-medium">{field.helpText}</p>}
                                                                 </div>
                                                             )}
-                                                            {field.type !== 'header' && (
+                                                            {field.type === 'static' && (
+                                                                <div className="bg-blue-50/30 dark:bg-blue-900/10 p-5 rounded-3xl border-2 border-blue-100 dark:border-blue-900/20 my-2">
+                                                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-bold whitespace-pre-wrap leading-relaxed">
+                                                                        {field.label}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {field.type !== 'header' && field.type !== 'static' && (
                                                                 <div className="mb-1">
                                                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block leading-tight">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
                                                                     {field.helpText && <p className="text-[9px] text-gray-500 font-medium ml-1 leading-tight italic">{field.helpText}</p>}

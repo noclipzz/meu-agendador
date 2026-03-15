@@ -24,7 +24,7 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
     return createPortal(children, target);
 }
 
-type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table";
+type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table" | "static";
 
 type FieldWidth = "100%" | "50%" | "33%" | "25%" | "66%" | "75%";
 
@@ -74,6 +74,7 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
     { type: "slider", label: "Escala", icon: SlidersHorizontal, desc: "Arrastar de X a Y" },
     { type: "image", label: "Foto/Upload", icon: ImageIcon, desc: "Anexar imagem" },
     { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas" },
+    { type: "static", label: "Texto Fixo", icon: FileText, desc: "Orientações/Avisos" },
 ];
 
 export default function FichasTecnicasPage() {
@@ -304,11 +305,17 @@ export default function FichasTecnicasPage() {
         let currentSection: { header: string; items: { label: string; value: string }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
-            if (field.type === 'header') {
+            if (field.type === 'header' || field.type === 'static') {
                 if (currentSection.items.length > 0 || currentSection.header) {
                     sections.push(currentSection);
                 }
-                currentSection = { header: field.label, items: [] };
+                if (field.type === 'header') {
+                    currentSection = { header: field.label, items: [] };
+                } else {
+                    // Texto fixo entra como um item especial ou uma seção sem título se preferir
+                    // Para alinhar com o pedido de "orientações fixas", vamos colocar como um item sem label ou com label invisível
+                    currentSection.items.push({ label: '', value: field.label });
+                }
                 return;
             }
             let valor = '';
@@ -368,13 +375,25 @@ export default function FichasTecnicasPage() {
         // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
         let camposHtml = '';
         sections.forEach(section => {
-            if (section.header && section.header !== entry.template?.name) {
+            const templateName = entry.template?.name?.trim().toUpperCase();
+            const sectionHeader = section.header?.trim().toUpperCase();
+
+            if (sectionHeader && sectionHeader !== templateName) {
                 camposHtml += `<div class="section-header">${section.header}</div>`;
             }
             camposHtml += '<div class="fields-grid">';
             section.items.forEach(item => {
                 const containsTable = item.value.includes('<table');
-                const isLong = item.value.length > 80 || containsTable;
+                const isStatic = item.label === ''; // Convention for static fields
+                const isLong = item.value.length > 80 || containsTable || isStatic;
+
+                if (isStatic) {
+                    camposHtml += `<div class="field-item full-width" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
+                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${item.value}</div>
+                    </div>`;
+                    return;
+                }
+
                 camposHtml += `<div class="field-item${isLong ? ' full-width' : ''}">
                     <div class="field-label">${item.label}</div>
                     <div class="field-value">${item.value}</div>
@@ -396,8 +415,7 @@ export default function FichasTecnicasPage() {
             * { margin:0; padding:0; box-sizing:border-box; }
             body { font-family:'Inter',sans-serif; color:#1f2937; background:#fff; height: 100%; display: flex; flex-direction: column; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .page { width: 100%; max-width: 800px; margin: 0 auto; padding: 40px 30px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
-            .back-button { display:none; margin-bottom: 20px; font-size: 14px; font-weight: 800; color: #0d9488; text-decoration: none; align-items: center; gap: 5px; cursor: pointer; }
-            @media screen and (max-width: 600px) { .back-button { display: flex; } .page { padding: 15px; } }
+            @media screen and (max-width: 600px) { .page { padding: 15px; } }
             
             .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #0d9488; padding-bottom: 15px; }
             .header-left { display: flex; align-items: center; gap: 15px; }
@@ -459,7 +477,7 @@ export default function FichasTecnicasPage() {
             }
         </style></head><body>
         <div class="page">
-            <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
+            
 
             ${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? `
             <div style="position: absolute; top: 120px; right: 30px; border: 4px double #0d9488; background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 50%; width: 140px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; line-height: 1.1; color: #0d9488; text-align: center; pointer-events: none; z-index: 1000; box-shadow: 0 0 0 2px #0d9488;">
@@ -816,7 +834,7 @@ export default function FichasTecnicasPage() {
         const novoCampo: FormField = {
             id: crypto.randomUUID(),
             type,
-            label: "",
+            label: type === "static" ? "Insira suas orientações fixas aqui..." : "",
             width: "100%",
             required: false,
             ...(type === "select" || type === "checkboxGroup" || type === "table" ? { options: [""] } : {}),
@@ -985,13 +1003,22 @@ export default function FichasTecnicasPage() {
                                         <span className="text-[9px] font-black bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-lg uppercase shrink-0">
                                             {FIELD_TYPES.find(f => f.type === campo.type)?.label}
                                         </span>
-                                        <input
-                                            className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
-                                            placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Pergunta / Nome do campo (ex: Tipo de Cabelo/Pele)"}
-                                            value={campo.label}
-                                            onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
-                                        />
-                                        {campo.type !== "header" && (
+                                        {campo.type === "static" ? (
+                                            <textarea
+                                                className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500 min-h-[80px]"
+                                                placeholder="Insira aqui as orientações fixas para este documento..."
+                                                value={campo.label}
+                                                onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
+                                            />
+                                        ) : (
+                                            <input
+                                                className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
+                                                placeholder={campo.type === "header" ? "Título da seção (ex: Histórico de Tratamento)" : "Pergunta / Nome do campo (ex: Tipo de Cabelo/Pele)"}
+                                                value={campo.label}
+                                                onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
+                                            />
+                                        )}
+                                        {campo.type !== "header" && campo.type !== "static" && (
                                             <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 cursor-pointer whitespace-nowrap">
                                                 <input
                                                     type="checkbox"
@@ -1004,7 +1031,7 @@ export default function FichasTecnicasPage() {
                                         )}
                                     </div>
 
-                                    {campo.type !== "header" && (
+                                    {campo.type !== "header" && campo.type !== "static" && (
                                         <div className="flex flex-col gap-3 mt-3 sm:ml-2 border-l-2 border-blue-50 dark:border-gray-800 pl-4 py-2 opacity-90 transition-opacity">
                                             {/* Subtítulo / Ajuda */}
                                             <div>
@@ -1240,6 +1267,12 @@ export default function FichasTecnicasPage() {
                                                                 {campo.label || "Título de seção..."}
                                                                 {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case mt-1">{campo.helpText}</p>}
                                                             </h3>
+                                                        ) : campo.type === 'static' ? (
+                                                            <div className="bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-gray-800 mt-2">
+                                                                <p className="text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-pre-wrap leading-relaxed">
+                                                                    {campo.label || "O conteúdo fixo aparecerá aqui..."}
+                                                                </p>
+                                                            </div>
                                                         ) : (
                                                             <div>
                                                                 <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-1.5 leading-tight">
@@ -1624,12 +1657,20 @@ export default function FichasTecnicasPage() {
                             {entryVisualizando.template?.fields.map((campo: any, idx: number) => {
                                 const value = entryVisualizando.data[campo.id];
 
-                                if (campo.type === 'header') {
+                                if (campo.type === 'header' || campo.type === 'static') {
                                     return (
                                         <div key={idx} className="border-b-2 border-gray-100 dark:border-gray-900 pt-8 pb-3 first:pt-0">
-                                            <h3 className="font-black text-xl text-gray-800 dark:text-gray-200 uppercase tracking-tight">
-                                                {campo.label}
-                                            </h3>
+                                            {campo.type === 'header' ? (
+                                                <h3 className="font-black text-xl text-gray-800 dark:text-gray-200 uppercase tracking-tight">
+                                                    {campo.label}
+                                                </h3>
+                                            ) : (
+                                                <div className="bg-blue-50/30 dark:bg-blue-900/10 p-6 rounded-[2rem] border-2 border-blue-100 dark:border-blue-900/20">
+                                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-bold whitespace-pre-wrap leading-relaxed">
+                                                        {campo.label}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 }
