@@ -1153,31 +1153,65 @@ export default function ClientesPage() {
                 // @ts-ignore
                 const html2pdf = (await import('html2pdf.js')).default;
                 
+                // --- RENDERIZAÇÃO ROBUSTA (SNAPSHOT) ---
                 const container = document.createElement('div');
                 container.innerHTML = pdfContent;
-                container.style.position = 'fixed';
-                container.style.left = '0';
+                container.style.position = 'absolute';
+                container.style.left = '-5000px'; // Fora da vista lateral
                 container.style.top = '0';
-                container.style.zIndex = '-9999';
+                container.style.width = '800px';
                 container.style.background = 'white';
+                container.style.opacity = '1';
+                container.style.visibility = 'visible';
                 document.body.appendChild(container);
 
-                const opt = {
-                    margin: 0,
-                    filename: `ficha_${docNumber}.pdf`,
-                    image: { type: 'jpeg' as const, quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
-                    jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-                };
+                // Forçar o browser a carregar as imagens do container
+                const imgs = container.querySelectorAll('img');
+                const imgPromises = Array.from(imgs).map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    });
+                });
 
-                // Esperar tempo suficiente para renderização completa de fontes e imagens
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Aguardar imagens e fontes (1.5s total)
+                await Promise.all([
+                    ...imgPromises,
+                    new Promise(resolve => setTimeout(resolve, 1500))
+                ]);
 
-                const pdfDataUri = await html2pdf().set(opt).from(container).outputPdf('datauristring');
-                const pdfBase64 = pdfDataUri.split(',')[1];
+                // @ts-ignore - Importar html2canvas e jsPDF que vêm com o html2pdf.js
+                const html2canvas = (await import('html2canvas')).default;
+                const { jsPDF } = await import('jspdf');
+
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                const pdfBase64 = pdf.output('datauristring').split(',')[1];
+                
                 document.body.removeChild(container);
 
-                if (!pdfBase64) throw new Error("Falha na extração de dados do PDF");
+                if (!pdfBase64 || pdfBase64.length < 1000) {
+                    throw new Error("Falha ao processar captura do PDF. O documento resultou vazio.");
+                }
 
                 // Enviar para o servidor assinar
                 const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
