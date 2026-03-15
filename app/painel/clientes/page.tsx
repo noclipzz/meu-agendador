@@ -1261,11 +1261,8 @@ export default function ClientesPage() {
 
                 const pdfWidth = pdf.internal.pageSize.getWidth();
                 const pdfHeight = pdf.internal.pageSize.getHeight();
-                
-                // Conversão de mm para pixels (considerando o scale do html2canvas)
-                // 1mm = 3.78px aprox. A 96 DPI. Com scale 3, multiplicamos.
                 const pxWidth = canvas.width;
-                const pxPageHeight = (pdfHeight * pxWidth) / pdfWidth;
+                const pxPageHeight = Math.floor((pdfHeight * pxWidth) / pdfWidth);
                 
                 let currentY = 0;
                 let isFirstPage = true;
@@ -1273,24 +1270,32 @@ export default function ClientesPage() {
                 while (currentY < canvas.height) {
                     if (!isFirstPage) pdf.addPage();
                     
+                    const remainingHeight = canvas.height - currentY;
+                    const cropHeight = Math.min(pxPageHeight, remainingHeight);
+
                     const pageCanvas = document.createElement('canvas');
                     pageCanvas.width = pxWidth;
-                    pageCanvas.height = Math.min(pxPageHeight, canvas.height - currentY);
+                    pageCanvas.height = cropHeight;
                     
                     const ctx = pageCanvas.getContext('2d');
                     if (ctx) {
+                        ctx.imageSmoothingEnabled = false; // Evitar borrão no recorte
                         ctx.drawImage(
                             canvas,
-                            0, currentY, pxWidth, pageCanvas.height, // Source
-                            0, 0, pxWidth, pageCanvas.height        // Destination
+                            0, currentY, pxWidth, cropHeight, // Origem
+                            0, 0, pxWidth, cropHeight         // Destino
                         );
                         
-                        const pageData = pageCanvas.toDataURL('image/jpeg', 1.0);
-                        const drawHeight = (pageCanvas.height * pdfWidth) / pxWidth;
-                        pdf.addImage(pageData, 'JPEG', 0, 0, pdfWidth, drawHeight);
+                        const pageData = pageCanvas.toDataURL('image/jpeg', 0.98);
+                        const drawHeight = (cropHeight * pdfWidth) / pxWidth;
+                        
+                        // Forçar altura total do PDF se for uma página completa para evitar gaps de arredondamento
+                        const finalDrawHeight = (cropHeight >= pxPageHeight - 2) ? pdfHeight : drawHeight;
+                        
+                        pdf.addImage(pageData, 'JPEG', 0, 0, pdfWidth, finalDrawHeight);
                     }
                     
-                    currentY += pxPageHeight;
+                    currentY += cropHeight;
                     isFirstPage = false;
                 }
 
