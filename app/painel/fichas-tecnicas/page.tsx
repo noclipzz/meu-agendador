@@ -506,7 +506,7 @@ export default function FichasTecnicasPage() {
                 <div class="client-item ${clienteSelecionado?.clientType !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
             </div>
 
-            <div class="section-title">${entry.template?.name}</div>
+
             <div class="fields-grid">${camposHtml}</div>
 
             ${dateVisible ? `
