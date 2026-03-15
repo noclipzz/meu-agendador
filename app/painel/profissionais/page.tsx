@@ -626,6 +626,10 @@ export default function GestaoEquipe() {
                                             <section>
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><FileText size={14} /> Documentação</h4>
                                                 <div className="grid grid-cols-12 gap-4">
+                                                    <div className="col-span-12 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800">
+                                                        <label className="text-[9px] font-black text-gray-400 uppercase">Nome Completo</label>
+                                                        <p className="font-bold dark:text-white text-sm">{proSelecionado.name || "---"}</p>
+                                                    </div>
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CPF</label><p className="font-bold dark:text-white text-sm">{formatarCPF(proSelecionado.cpf || "") || "---"}</p></div>
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">RG</label><p className="font-bold dark:text-white text-sm">{proSelecionado.rg || "---"}</p></div>
                                                     <div className="col-span-6 md:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Nascimento</label><p className="font-bold dark:text-white text-sm">{proSelecionado.birthDate && !isNaN(new Date(proSelecionado.birthDate).getTime()) ? format(new Date(proSelecionado.birthDate), "dd/MM/yyyy") : "---"}</p></div>

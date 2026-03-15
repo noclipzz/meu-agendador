@@ -77,7 +77,7 @@ export default function ClientesPage() {
         entry: any;
         dateVisible: boolean;
         twoColumns: boolean;
-        signatures: { client: boolean; prof: boolean; company: boolean };
+        signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean };
         useDigitalSignature: boolean;
         includeQR: boolean;
         docNumber: string;
@@ -85,7 +85,8 @@ export default function ClientesPage() {
     } | null>(null);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
-        birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO"
+        birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
+        corporateName: "", openingDate: "", cnae: "", legalRepresentative: ""
     });
 
     // Query params para integração com a agenda
@@ -107,7 +108,11 @@ export default function ClientesPage() {
                 if (data && !data.message) {
                     setForm(prev => ({
                         ...prev,
-                        name: data.razao_social || data.nome_fantasia || prev.name,
+                        name: data.nome_fantasia || data.razao_social || prev.name,
+                        corporateName: data.razao_social || prev.corporateName,
+                        openingDate: data.data_abertura ? data.data_abertura.split('-').reverse().join('/') : prev.openingDate,
+                        cnae: data.cnae_fiscal_descricao || data.cnae_fiscal || prev.cnae,
+                        legalRepresentative: data.qsa && data.qsa.length > 0 ? data.qsa.map((s: any) => s.nome).join(', ') : prev.legalRepresentative,
                         email: data.email || prev.email,
                         phone: data.ddd_telefone_1 ? formatarTelefone(data.ddd_telefone_1) : prev.phone,
                         cep: data.cep ? formatarCEP(data.cep) : prev.cep,
@@ -599,12 +604,16 @@ export default function ClientesPage() {
             complement: cliente.complement || "",
             neighborhood: cliente.neighborhood || "",
             maritalStatus: cliente.maritalStatus || "",
-            state: cliente.state || ""
+            state: cliente.state || "",
+            corporateName: cliente.corporateName || "",
+            openingDate: cliente.openingDate || "",
+            cnae: cliente.cnae || "",
+            legalRepresentative: cliente.legalRepresentative || ""
         });
         setIsEditing(true);
         setModalAberto(true);
     }
-    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO" }); }
+    function fecharModal() { setModalAberto(false); setIsEditing(false); setForm({ id: "", name: "", phone: "", email: "", photoUrl: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO", corporateName: "", openingDate: "", cnae: "", legalRepresentative: "" }); }
 
     // === FICHAS TÉCNICAS ===
     async function carregarFichas() {
@@ -1128,6 +1137,14 @@ export default function ClientesPage() {
                                                         <>
                                                             <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CNPJ</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cnpj || "---"}</p></div>
                                                             <div className="col-span-6 lg:col-span-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Inscrição Estadual</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.inscricaoEstadual || "---"}</p></div>
+                                                            {clienteSelecionado.clientType === 'JURIDICA' && (
+                                                                <>
+                                                                    <div className="col-span-12 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Razão Social</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.corporateName || "---"}</p></div>
+                                                                    <div className="col-span-6 lg:col-span-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Data de Abertura</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.openingDate || "---"}</p></div>
+                                                                    <div className="col-span-6 lg:col-span-8 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">CNAE Principal</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.cnae || "---"}</p></div>
+                                                                    <div className="col-span-12 p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border dark:border-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase">Responsável / Sócios</label><p className="font-bold dark:text-white text-xs">{clienteSelecionado.legalRepresentative || "---"}</p></div>
+                                                                </>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
@@ -1832,6 +1849,22 @@ export default function ClientesPage() {
                                                         <div className="md:col-span-6 space-y-1">
                                                             <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Inscrição Estadual</label>
                                                             <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.inscricaoEstadual} onChange={e => setForm({ ...form, inscricaoEstadual: e.target.value })} placeholder="Isento, ou nº IE" />
+                                                        </div>
+                                                        <div className="md:col-span-12 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Razão Social</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.corporateName} onChange={e => setForm({ ...form, corporateName: e.target.value })} placeholder="Nome oficial da empresa" />
+                                                        </div>
+                                                        <div className="md:col-span-4 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Data de Abertura</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.openingDate} onChange={e => setForm({ ...form, openingDate: e.target.value })} placeholder="DD/MM/AAAA" />
+                                                        </div>
+                                                        <div className="md:col-span-8 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">CNAE Principal</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.cnae} onChange={e => setForm({ ...form, cnae: e.target.value })} placeholder="Código ou descrição" />
+                                                        </div>
+                                                        <div className="md:col-span-12 space-y-1">
+                                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3">Responsável Legal / Sócios</label>
+                                                            <input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-900 outline-none focus:border-blue-500 font-bold dark:text-white transition" value={form.legalRepresentative} onChange={e => setForm({ ...form, legalRepresentative: e.target.value })} placeholder="Nomes dos responsáveis" />
                                                         </div>
                                                     </>
                                                 ) : (

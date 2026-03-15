@@ -125,6 +125,10 @@ export async function POST(req: Request) {
         notes: body.notes,
         maritalStatus: body.maritalStatus,
         photoUrl: body.photoUrl,
+        corporateName: body.corporateName,
+        openingDate: body.openingDate,
+        cnae: body.cnae,
+        legalRepresentative: body.legalRepresentative,
         status: body.status || "ATIVO",
         companyId: companyId
       }
@@ -200,6 +204,10 @@ export async function PUT(req: Request) {
         notes: data.notes,
         maritalStatus: data.maritalStatus,
         photoUrl: data.photoUrl,
+        corporateName: data.corporateName,
+        openingDate: data.openingDate,
+        cnae: data.cnae,
+        legalRepresentative: data.legalRepresentative,
         status: data.status
       }
     });

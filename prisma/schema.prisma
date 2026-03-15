@@ -334,6 +334,10 @@ model Client {
   photoUrl          String?
   clientType        String        @default("FISICA")
   cnpj              String?
+  corporateName     String?
+  openingDate       String?
+  cnae              String?
+  legalRepresentative String?
   inscricaoEstadual String?
   attachments       Attachment[]
   bookings          Booking[]
