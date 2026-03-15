@@ -607,13 +607,11 @@ export default function FichasTecnicasPage() {
                 // --- RENDERIZAÇÃO COM DESIGN PRESERVADO ---
                 const container = document.createElement('div');
                 container.innerHTML = html;
-                container.style.position = 'fixed';
-                container.style.left = '0';
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
                 container.style.top = '0';
                 container.style.width = '800px';
-                container.style.zIndex = '-9999';
-                container.style.opacity = '0';
-                container.style.pointerEvents = 'none';
+                container.style.background = 'white';
                 document.body.appendChild(container);
 
                 const opt = {
@@ -624,13 +622,12 @@ export default function FichasTecnicasPage() {
                         scale: 2, 
                         useCORS: true, 
                         letterRendering: true,
-                        logging: false
                     },
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
                 // Buffer de tempo para o browser processar o layout do container invisível
-                await new Promise(resolve => setTimeout(resolve, 800));
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 const worker = html2pdf().set(opt).from(container);
                 const pdfDataUri = await worker.toPdf().output('datauristring');
