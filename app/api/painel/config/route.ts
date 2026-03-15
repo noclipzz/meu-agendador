@@ -52,9 +52,12 @@ export async function GET() {
       return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
     }
 
-    // --- 🔐 SUPER ADMIN VITALÍCIO ---
-    const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
-    if (userId === SUPER_ADMIN) {
+    // --- 🔐 SUPER ADMINS VITALÍCIOS ---
+    const SUPER_ADMINS = [
+      "user_39S9qNrKwwgObMZffifdZyNKUKm", // Conta Principal
+      "user_39SJsqppxdaQvu3hklYpD9cjDeH"  // Yan Kairon
+    ];
+    if (SUPER_ADMINS.includes(userId)) {
       return NextResponse.json({
         ...config,
         plan: "MASTER",
@@ -63,6 +66,8 @@ export async function GET() {
         cancelAtPeriodEnd: false,
         hasNfeModule: true,
         hasBoletoModule: true,
+        hasDigitalSignatureModule: true,
+        hasTrackingModule: true,
         hasAiReceptionModule: true,
         hasMercadoPagoModule: true,
         extraUsersCount: 0,
@@ -84,9 +89,11 @@ export async function GET() {
       hasNfeModule: subscription?.hasNfeModule || false,
       hasBoletoModule: subscription?.hasBoletoModule || false,
       hasDigitalSignatureModule: subscription?.hasDigitalSignatureModule || false,
+      hasTrackingModule: subscription?.hasTrackingModule || false,
+      hasAiReceptionModule: subscription?.hasAiReceptionModule || false,
       hasMercadoPagoModule: subscription?.hasMercadoPagoModule || false,
       extraUsersCount: subscription?.extraUsersCount || 0,
-      isOwner: config.ownerId === userId // ✅ Flag de dono
+      isOwner: config.ownerId === userId
     });
   } catch (error) {
     console.error("ERRO_GET_CONFIG:", error);
