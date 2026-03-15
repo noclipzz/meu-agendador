@@ -8,6 +8,29 @@ import {
 import { toast } from "sonner";
 import { useAgenda } from "@/contexts/AgendaContext";
 
+const BANCOS = [
+  { code: "001", name: "Banco do Brasil S.A." },
+  { code: "003", name: "BANCO DA AMAZONIA S.A." },
+  { code: "004", name: "Banco do Nordeste do Brasil S.A." },
+  { code: "033", name: "Banco Santander (Brasil) S.A." },
+  { code: "041", name: "Banco do Estado do Rio Grande do Sul S.A. (Banrisul)" },
+  { code: "070", name: "BRB - BANCO DE BRASILIA S.A." },
+  { code: "077", name: "Banco Inter S.A." },
+  { code: "104", name: "Caixa Econômica Federal" },
+  { code: "197", name: "Stone Pagamentos S.A." },
+  { code: "212", name: "Banco Original S.A." },
+  { code: "237", name: "Banco Bradesco S.A." },
+  { code: "260", name: "Nu Pagamentos S.A. (Nubank)" },
+  { code: "336", name: "Banco C6 S.A. (C6 Bank)" },
+  { code: "341", name: "Itaú Unibanco S.A." },
+  { code: "403", name: "Cora Sociedade de Crédito Direto S.A. (Cora)" },
+  { code: "422", name: "Banco Safra S.A." },
+  { code: "633", name: "Banco Rendimento S.A." },
+  { code: "655", name: "Banco Votorantim S.A. (Neon/BV)" },
+  { code: "748", name: "Banco Cooperativo Sicredi S.A." },
+  { code: "756", name: "Banco Cooperativo do Brasil S.A. (Sicoob)" },
+];
+
 export default function AsaasPaymentPage() {
   const { companyId } = useAgenda();
   const [loading, setLoading] = useState(true);
@@ -19,7 +42,6 @@ export default function AsaasPaymentPage() {
     bankAgency: "",
     bankAccount: "",
     bankAccountDigit: "",
-    // Informações da Empresa para o Asaas (Subconta)
     cnpj: "",
     name: "",
     email: "",
@@ -27,14 +49,22 @@ export default function AsaasPaymentPage() {
     mobilePhone: ""
   });
 
+  const [bankSearch, setBankSearch] = useState("");
+  const [showBankDropdown, setShowBankDropdown] = useState(false);
+
   useEffect(() => {
     async function carregarDados() {
       try {
         const res = await fetch("/api/painel/config");
         const data = await res.json();
         setCompany(data);
+        
+        const bCode = data.asaasBankCode || "";
+        const bankMatch = BANCOS.find(b => b.code === bCode);
+        setBankSearch(bankMatch ? `${bankMatch.code} - ${bankMatch.name}` : bCode);
+
         setForm({
-          bankCode: data.asaasBankCode || "",
+          bankCode: bCode,
           bankAgency: data.asaasBankAgency || "",
           bankAccount: data.asaasBankAccount || "",
           bankAccountDigit: data.asaasBankAccountDigit || "",
@@ -90,8 +120,15 @@ export default function AsaasPaymentPage() {
     </div>
   );
 
+  const filteredBanks = bankSearch.length > 0 
+    ? BANCOS.filter(b => 
+        b.name.toLowerCase().includes(bankSearch.toLowerCase()) || 
+        b.code.includes(bankSearch)
+      )
+    : BANCOS;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-20" onClick={() => setShowBankDropdown(false)}>
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -164,14 +201,49 @@ export default function AsaasPaymentPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-2">
+              <div className="col-span-2 relative">
                 <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-1">Banco</label>
                 <input
                   className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 dark:text-white outline-none focus:ring-2 ring-blue-500 font-bold text-sm"
-                  placeholder="Selecione ou digite o código do banco (ex: 341, 001)"
-                  value={form.bankCode}
-                  onChange={e => setForm({ ...form, bankCode: e.target.value })}
+                  placeholder="Selecione ou digite o banco (ex: Itaú, 341)"
+                  value={bankSearch}
+                  autoComplete="off"
+                  onChange={e => {
+                    setBankSearch(e.target.value);
+                    setForm({ ...form, bankCode: e.target.value }); // Temporário, será sobreposto ao selecionar
+                    setShowBankDropdown(true);
+                  }}
+                  onFocus={() => setShowBankDropdown(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowBankDropdown(true);
+                  }}
                 />
+                
+                {showBankDropdown && filteredBanks.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto overflow-x-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    {filteredBanks.map(b => (
+                      <button
+                        key={b.code}
+                        className="w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors flex items-center justify-between group border-b last:border-0 dark:border-gray-700/50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBankSearch(`${b.code} - ${b.name}`);
+                          setForm({ ...form, bankCode: b.code });
+                          setShowBankDropdown(false);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-blue-600 uppercase tracking-tighter">{b.code}</span>
+                          <span className="text-sm font-bold dark:text-white group-hover:text-blue-600 transition-colors uppercase">{b.name}</span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <CheckCircle2 size={16} className="text-emerald-500" />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
