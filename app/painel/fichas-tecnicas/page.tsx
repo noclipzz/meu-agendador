@@ -447,8 +447,10 @@ export default function FichasTecnicasPage() {
             <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
 
             ${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? `
-            <div style="position: absolute; top: 120px; right: 30px; border: 2px solid #0d9488; opacity: 0.15; padding: 10px; border-radius: 50%; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; font-size: 10px; text-transform: uppercase; color: #0d9488; text-align: center; pointer-events: none; z-index: 10;">
-                Assinado<br/>Digitalmente<br/>ICP-Brasil
+            <div style="position: absolute; top: 80px; right: 20px; border: 3px double #0d9488; background: rgba(13, 148, 136, 0.05); padding: 12px; border-radius: 50%; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; line-height: 1.1; color: #0d9488; text-align: center; pointer-events: none; z-index: 100;">
+                <span style="font-size: 8px; text-transform: uppercase; margin-bottom: 2px;">Autenticado por</span>
+                <span style="font-size: 11px; text-transform: uppercase;">Certificado<br/>Digital A1</span>
+                <span style="font-size: 7px; margin-top: 4px; opacity: 0.8;">Padrão ICP-Brasil</span>
             </div>
             ` : ''}
             
@@ -497,14 +499,14 @@ export default function FichasTecnicasPage() {
             <div class="signatures-container">
                 ${signatures.client ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && entry.client?.signatureUrl && a1Choice === 'none') ? `<img src="${entry.client.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && entry.client?.signatureUrl) ? `<img src="${entry.client.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${entry.client?.name || 'Assinatura do Cliente'}</div>
                     </div>` : ''}
                 
                 ${signatures.prof ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && entry.professional?.signatureUrl && (a1Choice === 'prof' || a1Choice === 'none')) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">
                             <div style="font-weight: 900;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
@@ -514,7 +516,7 @@ export default function FichasTecnicasPage() {
 
                 ${signatures.company ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.signatureUrl && (a1Choice === 'company' || a1Choice === 'none')) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${empresaInfo?.legalRepresentative || empresaInfo?.corporateName || empresaInfo?.name || 'Responsável Legal'}</div>
                     </div>` : ''}
@@ -523,7 +525,7 @@ export default function FichasTecnicasPage() {
                     const tech = technicalProfessionals.find(p => p.id === selectedTechnicalId);
                     return `
                         <div class="signature-block">
-                            ${(useDigitalSignature && tech?.signatureUrl && (a1Choice === 'technical' || a1Choice === 'none')) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
+                            ${(useDigitalSignature && tech?.signatureUrl) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
                             <div class="signature-line"></div>
                             <div class="signature-label">
                                 <div style="font-weight: 900;">${tech?.name || 'Assinatura do Responsável Técnico'}</div>
@@ -1606,6 +1608,35 @@ export default function FichasTecnicasPage() {
                                                     <p className="text-[10px] text-red-500 font-bold italic">Nenhum profissional marcado como Responsável Técnico na Equipe.</p>
                                                 )}
                                             </div>
+                                        )}
+
+                                        {((printConfigModal.signatures.prof && printConfigModal.entry.professional?.certificadoA1Url) ||
+                                          (printConfigModal.signatures.company && empresaInfo.certificadoA1Url) ||
+                                          (printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url)) && (
+                                            <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.useDigitalSignature ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-gray-100 dark:border-gray-800'} animate-in zoom-in-95`}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="hidden"
+                                                    checked={printConfigModal.useDigitalSignature}
+                                                    onChange={(e) => {
+                                                        const isChecked = e.target.checked;
+                                                        let newChoice = printConfigModal.a1Choice;
+
+                                                        if (isChecked && newChoice === 'none') {
+                                                            // Auto-seleciona a melhor opção
+                                                            if (printConfigModal.signatures.company && empresaInfo.certificadoA1Url) newChoice = 'company';
+                                                            else if (printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url) newChoice = 'technical';
+                                                            else if (printConfigModal.signatures.prof && printConfigModal.entry.professional?.certificadoA1Url) newChoice = 'prof';
+                                                        }
+
+                                                        setPrintConfigModal({ ...printConfigModal, useDigitalSignature: isChecked, a1Choice: newChoice });
+                                                    }}
+                                                />
+                                                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.useDigitalSignature ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                    {printConfigModal.useDigitalSignature && <X size={12} className="text-white" />}
+                                                </div>
+                                                <span className="font-bold text-sm text-gray-700 dark:text-gray-300 uppercase tracking-tight">Certificado Digital (A1)</span>
+                                            </label>
                                         )}
                                     </div>
                                 </div>
