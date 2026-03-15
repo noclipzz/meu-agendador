@@ -1107,17 +1107,39 @@ export default function ClientesPage() {
                 // @ts-ignore
                 const html2pdf = (await import('html2pdf.js')).default;
                 
+                // --- RENDERIZAÇÃO COERENTE COM O DESIGN ---
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                container.style.position = 'fixed';
+                container.style.left = '0';
+                container.style.top = '0';
+                container.style.width = '800px';
+                container.style.zIndex = '-9999';
+                container.style.opacity = '0';
+                container.style.pointerEvents = 'none';
+                document.body.appendChild(container);
+
                 const opt = {
                     margin: 0,
                     filename: `ficha_${docNumber}.pdf`,
                     image: { type: 'jpeg' as const, quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        letterRendering: true,
+                        logging: false
+                    },
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                // Gerar PDF em base64 passando o HTML diretamente (gera em um iframe interno)
-                const pdfDataUri = await html2pdf().set(opt).from(html).output('datauristring');
+                // Aguardar um pouco para garantir que CSS e Imagens foram processados pelo browser
+                await new Promise(resolve => setTimeout(resolve, 800));
+
+                const worker = html2pdf().set(opt).from(container);
+                const pdfDataUri = await worker.toPdf().output('datauristring');
                 const pdfBase64 = pdfDataUri.split(',')[1];
+                
+                document.body.removeChild(container);
 
                 if (!pdfBase64) {
                     throw new Error("Falha ao gerar o conteúdo do PDF. Tente novamente.");
