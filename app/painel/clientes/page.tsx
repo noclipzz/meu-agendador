@@ -98,6 +98,7 @@ export default function ClientesPage() {
     const router = useRouter();
     const { userRole } = useAgenda(); // Pegando role
     const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+    const nomeEmpresaExibicao = empresaInfo?.corporateName || empresaInfo?.name || 'Sua Empresa';
 
     async function handleCNPJChange(cnpj: string) {
         const formatado = formatarCNPJ(cnpj);
@@ -1962,7 +1963,7 @@ export default function ClientesPage() {
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">Empresa</label><span className="text-sm font-black dark:text-white">{nomeEmpresa}</span></div>
+                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">Empresa</label><span className="text-sm font-black dark:text-white">{nomeEmpresaExibicao}</span></div>
                                                                                 <div><label className="text-[9px] font-bold text-gray-500 uppercase block">CNPJ</label><span className="text-sm font-black dark:text-white">{empresaInfo?.cnpj || '---'}</span></div>
                                                                             </>
                                                                         )}
@@ -2461,7 +2462,7 @@ export default function ClientesPage() {
                                                                             </>
                                                                         ) : (
                                                                             <>
-                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Sua Empresa</label><p className="text-xs font-black dark:text-gray-300">{nomeEmpresa}</p></div>
+                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Sua Empresa</label><p className="text-xs font-black dark:text-gray-300">{nomeEmpresaExibicao}</p></div>
                                                                                 <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">CNPJ</label><p className="text-xs font-black dark:text-gray-300">{empresaInfo?.cnpj || '---'}</p></div>
                                                                             </>
                                                                         )}
