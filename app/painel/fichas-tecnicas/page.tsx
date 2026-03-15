@@ -160,6 +160,11 @@ export default function FichasTecnicasPage() {
                     plan: data.plan || "",
                     city: data.city || "",
                     address: data.address || "",
+                    number: data.number || "",
+                    complement: data.complement || "",
+                    neighborhood: data.neighborhood || "",
+                    state: data.state || "",
+                    cep: data.cep || "",
                     phone: data.phone || "",
                     cnpj: data.cnpj || "",
                     corporateName: data.corporateName || "",
@@ -514,14 +519,14 @@ export default function FichasTecnicasPage() {
 
             <h1 class="doc-title">${entry.template?.name}</h1>
 
-            <div class="client-box">
+            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px;">
                 <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
                 <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
-                <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || empresaInfo?.city || '—'}</span></div>
+                <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
             </div>
 
-            <div class="client-box">
+            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px;">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
@@ -647,12 +652,12 @@ export default function FichasTecnicasPage() {
                     .header-right { text-align: right; }
                     .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
-                    .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 30px; margin-top: 40px; }
-                    .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 35px; margin-bottom: 15px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+                    .doc-title { font-size: 22px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 20px; }
+                    .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 30px; margin-bottom: 12px; display: block; width: 100%; clear: both; line-height: 1.5; }
+                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
                     .client-item { display: flex; flex-direction: column; }
-                    .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
-                    .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+                    .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+                    .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; }
                     .fields-grid { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
