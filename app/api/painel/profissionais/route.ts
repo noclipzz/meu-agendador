@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { name, email, phone, photoUrl, color, cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status } = body;
+    const { name, email, phone, photoUrl, color, cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, status, certificadoA1Url, certificadoSenha } = body;
 
     // 1. Apenas o dono pode adicionar equipe
     const company = await prisma.company.findUnique({
@@ -159,6 +159,8 @@ export async function POST(req: Request) {
           color: color || "#3b82f6",
           companyId: company.id,
           cpf, rg, birthDate, cep, address, number, complement, neighborhood, city, state, notes, maritalStatus: body.maritalStatus, status: status || "ATIVO",
+          certificadoA1Url,
+          certificadoSenha,
           services: {
             connect: body.serviceIds?.map((id: string) => ({ id })) || []
           }
@@ -259,6 +261,8 @@ export async function PUT(req: Request) {
         notes: body.notes,
         maritalStatus: body.maritalStatus,
         status: body.status,
+        certificadoA1Url: body.certificadoA1Url,
+        certificadoSenha: body.certificadoSenha,
         services: {
           set: body.serviceIds ? body.serviceIds.map((id: string) => ({ id })) : []
         }

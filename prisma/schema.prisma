@@ -67,6 +67,8 @@ model Company {
   coraKeyUrl                    String?
   signatureUrl                  String?                @default("")
   technicalSignatureUrl         String?                @default("")
+  technicalCertificadoA1Url      String?
+  technicalCertificadoSenha      String?
   legalRepresentative           String?
   notificationSettings          Json?                  @default("{}")
   cnae                          String?
@@ -176,6 +178,8 @@ model Professional {
   updatedAt     DateTime              @default(now()) @updatedAt
   maritalStatus String?
   signatureUrl  String?
+  certificadoA1Url String?
+  certificadoSenha String?
   attachments   Attachment[]
   bookings      Booking[]
   company       Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)

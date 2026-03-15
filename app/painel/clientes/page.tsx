@@ -50,7 +50,7 @@ export default function ClientesPage() {
     const [abaAtiva, setAbaAtiva] = useState<"DADOS" | "HISTORICO" | "FINANCEIRO" | "ANEXOS" | "FICHAS">("DADOS");
     const [filtroHistorico, setFiltroHistorico] = useState({ dataInicial: "", dataFinal: "", servico: "", profissional: "" });
     const [isEditing, setIsEditing] = useState(false);
-    const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' | 'TERMO' } | null>(null);
+    const [confirmarExclusao, setConfirmarExclusao] = useState<{ id: string, tipo: 'CLIENTE' | 'ANEXO' | 'TERMO' | 'FICHA' } | null>(null);
 
     // Termos de Consentimento
     const [modalTermoAberto, setModalTermoAberto] = useState(false);
@@ -77,7 +77,7 @@ export default function ClientesPage() {
         entry: any;
         dateVisible: boolean;
         twoColumns: boolean;
-        signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean };
+        signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean; digitalA1: boolean };
         useDigitalSignature: boolean;
         includeQR: boolean;
         docNumber: string;
@@ -236,6 +236,9 @@ export default function ClientesPage() {
                     cnpj: data.cnpj || "",
                     corporateName: data.corporateName || "",
                     signatureUrl: data.signatureUrl || "",
+                    technicalSignatureUrl: data.technicalSignatureUrl || "",
+                    technicalCertificadoA1Url: data.technicalCertificadoA1Url || "",
+                    technicalCertificadoSenha: data.technicalCertificadoSenha || "",
                     hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
                 });
             }
@@ -572,7 +575,7 @@ export default function ClientesPage() {
     async function executarExclusao() {
         if (!confirmarExclusao) return;
         const { id, tipo } = confirmarExclusao;
-        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : tipo === 'TERMO' ? `/api/clientes/termos/${id}` : '/api/clientes/anexos';
+        const url = tipo === 'CLIENTE' ? `/api/clientes/${id}` : tipo === 'TERMO' ? `/api/clientes/termos/${id}` : tipo === 'FICHA' ? '/api/painel/fichas-tecnicas/entries' : '/api/clientes/anexos';
         const res = await fetch(url, { method: 'DELETE', body: tipo === 'CLIENTE' || tipo === 'TERMO' ? undefined : JSON.stringify({ id }) });
         if (res.ok) {
             if (tipo === 'CLIENTE') {
@@ -580,6 +583,8 @@ export default function ClientesPage() {
                 setClienteSelecionado(null);
             } else if (tipo === 'TERMO') {
                 setClienteSelecionado({ ...clienteSelecionado, consentTerms: clienteSelecionado.consentTerms.filter((t: any) => t.id !== id) });
+            } else if (tipo === 'FICHA') {
+                setFichaEntries(prev => prev.filter(e => e.id !== id));
             } else {
                 setClienteSelecionado({ ...clienteSelecionado, attachments: clienteSelecionado.attachments.filter((a: any) => a.id !== id) });
             }
@@ -664,20 +669,7 @@ export default function ClientesPage() {
     }
 
     async function excluirFicha(id: string) {
-        if (!confirm("Tem certeza que deseja excluir esta ficha?")) return;
-        try {
-            const res = await fetch('/api/painel/fichas-tecnicas/entries', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            });
-            if (res.ok) {
-                toast.success("Ficha excluída!");
-                setFichaEntries(fichaEntries.filter(e => e.id !== id));
-            } else {
-                toast.error("Erro ao excluir ficha");
-            }
-        } catch { toast.error("Erro ao excluir"); }
+        setConfirmarExclusao({ id, tipo: 'FICHA' });
     }
 
     function imprimirFicha(entry: any) {
@@ -692,7 +684,7 @@ export default function ClientesPage() {
             executarImpressaoDaFichaDirect(
                 entry,
                 savedSettings.dateVisible ?? true,
-                savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
+                savedSettings.signatures || { client: true, prof: true, company: false, technical: false, digitalA1: false },
                 savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
                 savedSettings.includeQR ?? true,
                 savedSettings.twoColumns ?? false,
@@ -706,7 +698,7 @@ export default function ClientesPage() {
         let initialPrefs = {
             dateVisible: true,
             twoColumns: false,
-            signatures: { client: true, prof: true, company: false, technical: false },
+            signatures: { client: true, prof: true, company: false, technical: false, digitalA1: false },
             useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
             includeQR: true
         };
@@ -936,9 +928,16 @@ export default function ClientesPage() {
             
             .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
             .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
-            .signature-image { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 220px; height: 80px; object-fit: cover; object-position: center bottom; mix-blend-mode: multiply; z-index: 0; pointer-events: none; }
+            .signature-image { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 250px; height: 120px; object-fit: contain; object-position: center bottom; mix-blend-mode: multiply; z-index: 0; pointer-events: none; }
             .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
             .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
+
+            .signature-a1 { border: 2px solid #0d9488; background: #f0fdfa; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 250px; max-width: 300px; flex: 1; position: relative; overflow: hidden; }
+            .signature-a1::before { content: "CERTIFICADO DIGITAL"; position: absolute; top: 5px; right: -25px; background: #0d9488; color: white; font-size: 6px; font-weight: 900; padding: 2px 30px; transform: rotate(45deg); }
+            .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; display: flex; items-center gap: 1; }
+            .a1-name { font-size: 11px; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; line-height: 1.2; }
+            .a1-details { font-size: 9px; color: #475569; margin-top: 6px; font-weight: 700; text-align: center; line-height: 1.4; }
+            .a1-footer { font-size: 7px; color: #64748b; margin-top: 8px; text-transform: uppercase; font-weight: 800; border-top: 1px solid #ccfbf1; pt-1; width: 100%; text-align: center; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
@@ -1000,22 +999,72 @@ export default function ClientesPage() {
             <div class="signatures-container">
                 ${signatures.client ? `
                     <div class="signature-block">
+                        ${(useDigitalSignature && clienteSelecionado?.signatureUrl) ? `<img src="${clienteSelecionado.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${clienteSelecionado?.name || 'Assinatura do Cliente'}</div>
                     </div>` : ''}
                 
                 ${signatures.prof ? `
-                    <div class="signature-block">
-                        ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
-                        <div class="signature-line"></div>
-                        <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
-                    </div>` : ''}
+                    ${(signatures.digitalA1 && entry.professional?.certificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                            <div class="a1-name">${entry.professional?.name}</div>
+                            <div class="a1-details">
+                                CPF: ${entry.professional?.cpf || '—'}<br/>
+                                Assinatura: Profissional Preenchedor<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
+                        </div>
+                    ` : `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                        </div>
+                    `}
+                ` : ''}
 
-                ${signatures.company && !signatures.prof ? `
+                ${signatures.company ? `
+                    ${(signatures.digitalA1 && empresaInfo.technicalCertificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
+                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                            <div class="a1-details">
+                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                                RT: ${empresaInfo?.legalRepresentative || 'Empresa'}<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
+                        </div>
+                    ` : (signatures.digitalA1 && empresaInfo.certificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                            <div class="a1-details">
+                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                                Assinatura: Entidade Jurídica (Empresa)<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
+                        </div>
+                    ` : `
+                        <div class="signature-block">
+                            ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                        </div>
+                    `}
+                ` : ''}
+
+                ${signatures.technical && !empresaInfo.technicalCertificadoA1Url ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                        ${(useDigitalSignature && empresaInfo.technicalSignatureUrl) ? `<img src="${empresaInfo.technicalSignatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
-                        <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                        <div class="signature-label">${empresaInfo?.legalRepresentative || 'Responsável Técnico'}</div>
                     </div>` : ''}
             </div>
 
@@ -2296,6 +2345,8 @@ export default function ClientesPage() {
                                                 { id: 'client', label: 'Assinatura do Cliente' },
                                                 { id: 'prof', label: 'Assinatura do Profissional' },
                                                 { id: 'company', label: 'Assinatura da Empresa' },
+                                                { id: 'technical', label: 'Assinatura do Resp. Técnico' },
+                                                { id: 'digitalA1', label: 'Certificado Digital (A1)' },
                                             ].map(opt => {
                                                 const isChecked = printConfigModal.signatures[opt.id as keyof typeof printConfigModal.signatures];
                                                 return (
@@ -2575,6 +2626,41 @@ export default function ClientesPage() {
                 </ModalPortal>
             )}
 
-        </div >
+            {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+            {confirmarExclusao && (
+                <ModalPortal>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[300] p-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-md relative shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 border-4 border-white dark:border-gray-800">
+                            <div className="p-8 text-center">
+                                <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                    <Trash2 size={40} />
+                                </div>
+                                <h2 className="text-2xl font-black dark:text-white mb-2 tracking-tight">Confirmar Exclusão</h2>
+                                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                                    Você tem certeza que deseja excluir este item? <br/>
+                                    <span className="text-red-500 font-bold uppercase text-[10px] tracking-widest mt-2 block">Esta ação é irreversível e permanente.</span>
+                                </p>
+                            </div>
+
+                            <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex gap-3">
+                                <button
+                                    onClick={() => setConfirmarExclusao(null)}
+                                    className="flex-1 bg-white dark:bg-gray-800 border-2 dark:border-gray-700 text-gray-400 p-4 rounded-2xl font-black text-xs uppercase hover:bg-gray-100 transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={executarExclusao}
+                                    className="flex-1 bg-red-600 text-white p-4 rounded-2xl font-black text-xs uppercase hover:bg-red-700 transition shadow-lg shadow-red-500/20 active:scale-95"
+                                >
+                                    Excluir Agora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </ModalPortal>
+            )}
+
+        </div>
     );
 }

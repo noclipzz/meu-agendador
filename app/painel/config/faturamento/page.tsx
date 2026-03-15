@@ -35,6 +35,8 @@ export default function ConfigFaturamento() {
 
     const [certificadoA1Url, setCertificadoA1Url] = useState("");
     const [certificadoSenha, setCertificadoSenha] = useState("");
+    const [technicalCertificadoA1Url, setTechnicalCertificadoA1Url] = useState("");
+    const [technicalCertificadoSenha, setTechnicalCertificadoSenha] = useState("");
     const [creditCardTax, setCreditCardTax] = useState("");
     const [debitCardTax, setDebitCardTax] = useState("");
 
@@ -47,6 +49,7 @@ export default function ConfigFaturamento() {
     const [coraDiscountRate, setCoraDiscountRate] = useState("0");
 
     const inputCertRef = useRef<HTMLInputElement>(null);
+    const inputRTCertRef = useRef<HTMLInputElement>(null);
     const inputCoraCertRef = useRef<HTMLInputElement>(null);
     const inputCoraKeyRef = useRef<HTMLInputElement>(null);
 
@@ -87,6 +90,8 @@ export default function ConfigFaturamento() {
 
                 setCertificadoA1Url(dataConfig.certificadoA1Url || "");
                 setCertificadoSenha(dataConfig.certificadoSenha || "");
+                setTechnicalCertificadoA1Url(dataConfig.technicalCertificadoA1Url || "");
+                setTechnicalCertificadoSenha(dataConfig.technicalCertificadoSenha || "");
                 setCreditCardTax(String(dataConfig.creditCardTax || "0"));
                 setDebitCardTax(String(dataConfig.debitCardTax || "0"));
 
@@ -101,17 +106,19 @@ export default function ConfigFaturamento() {
         finally { setLoading(false); }
     }
 
-    async function handleCertUpload() {
-        if (!inputCertRef.current?.files?.[0]) return;
-        const file = inputCertRef.current.files[0];
+    async function handleCertUpload(isRT = false) {
+        const ref = isRT ? inputRTCertRef : inputCertRef;
+        if (!ref.current?.files?.[0]) return;
+        const file = ref.current.files[0];
         setIsUploading(true);
         try {
-            const newBlob = await upload(`cert_${file.name}`, file, {
+            const newBlob = await upload(`cert_${isRT ? 'rt_' : ''}${file.name}`, file, {
                 access: 'public',
                 handleUploadUrl: '/api/upload/token',
             });
-            setCertificadoA1Url(newBlob.url);
-            toast.success("Certificado enviado!");
+            if (isRT) setTechnicalCertificadoA1Url(newBlob.url);
+            else setCertificadoA1Url(newBlob.url);
+            toast.success(`Certificado ${isRT ? 'do Responsável Técnico ' : ''}enviado!`);
         } catch (error) { toast.error("Falha ao enviar certificado."); }
         finally { setIsUploading(false); }
     }
@@ -151,6 +158,7 @@ export default function ConfigFaturamento() {
                     descontarImpostos, construcaoCivil, descontarDeducoes,
                     aliquotaServico: parseFloat(aliquotaServico || "0"),
                     certificadoA1Url, certificadoSenha,
+                    technicalCertificadoA1Url, technicalCertificadoSenha,
                     creditCardTax: parseFloat(creditCardTax || "0"), debitCardTax: parseFloat(debitCardTax || "0"),
                     coraClientId, coraCertUrl, coraKeyUrl,
                     coraFineRate: parseFloat(coraFineRate || "0"),
@@ -296,19 +304,37 @@ export default function ConfigFaturamento() {
                                     </div>
                                     <div className="md:col-span-2 p-6 bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-3xl flex items-center justify-between gap-4">
                                         <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Certificado Digital (A1 .pfx)</label>
+                                            <label className="text-xs font-bold text-gray-500 uppercase block dark:text-gray-400">Certificado Digital Empresa (A1 .pfx)</label>
                                             {certificadoA1Url && <div className="text-emerald-600 font-bold text-xs mt-1 flex items-center gap-1"><CheckCircle size={14} /> Instalado</div>}
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <input type="file" accept=".pfx,.p12" ref={inputCertRef} onChange={handleCertUpload} className="hidden" />
+                                            <input type="file" accept=".pfx,.p12" ref={inputCertRef} onChange={() => handleCertUpload(false)} className="hidden" />
                                             <button onClick={() => inputCertRef.current?.click()} disabled={isUploading} className="bg-gray-800 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black transition text-sm">
                                                 {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Upload
                                             </button>
                                         </div>
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Senha do Certificado</label>
-                                        <input type="password" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={certificadoSenha} onChange={e => setCertificadoSenha(e.target.value)} />
+                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Senha do Certificado Empresa</label>
+                                        <input type="password" title="Senha do Certificado Empresa" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={certificadoSenha} onChange={e => setCertificadoSenha(e.target.value)} />
+                                    </div>
+
+                                    {/* SEÇÃO RESPONSÁVEL TÉCNICO A1 */}
+                                    <div className="md:col-span-2 mt-4 p-6 bg-emerald-50/50 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-800/20 rounded-3xl flex items-center justify-between gap-4">
+                                        <div>
+                                            <label className="text-xs font-bold text-emerald-700 uppercase block dark:text-emerald-400">Certificado Digital Resp. Técnico (A1 .pfx)</label>
+                                            {technicalCertificadoA1Url && <div className="text-emerald-600 font-bold text-xs mt-1 flex items-center gap-1"><CheckCircle size={14} /> Instalado</div>}
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input type="file" accept=".pfx,.p12" ref={inputRTCertRef} onChange={() => handleCertUpload(true)} className="hidden" />
+                                            <button onClick={() => inputRTCertRef.current?.click()} disabled={isUploading} className="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-emerald-700 transition text-sm">
+                                                {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Upload RT
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase mb-2 block dark:text-gray-400">Senha do Certificado Resp. Técnico</label>
+                                        <input type="password" title="Senha do Certificado Resp. Técnico" className="w-full border dark:border-gray-700 p-4 rounded-2xl bg-white dark:bg-gray-800 font-bold dark:text-white" value={technicalCertificadoSenha} onChange={e => setTechnicalCertificadoSenha(e.target.value)} />
                                     </div>
                                 </div>
                             </div>

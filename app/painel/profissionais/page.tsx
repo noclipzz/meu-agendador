@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-    Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check,
+    Trash2, Plus, Save, Loader2, Pencil, X, UserCircle, Phone, ShieldCheck, Check, CheckCircle,
     Users, History, Star, Calendar, Clock, Mail, UploadCloud, Image as ImageIcon, Search,
     MapPin, FileText, LayoutDashboard, BarChart3, Package, ClipboardList, Briefcase, Settings, User as UserIcon, Megaphone,
     Download, Eye, Receipt, QrCode, CreditCard, Banknote, PenTool
@@ -76,7 +76,9 @@ export default function GestaoEquipe() {
             config: false,
             mural: true
         },
-        serviceIds: [] as string[]
+        serviceIds: [] as string[],
+        certificadoA1Url: "",
+        certificadoSenha: ""
     });
 
     async function handleCEPChange(cep: string) {
@@ -179,6 +181,22 @@ export default function GestaoEquipe() {
                 toast.success("Assinatura digital salva!");
             }
         } catch (error) { toast.error("Falha ao subir assinatura."); }
+    }
+
+    async function handleUploadCertificadoA1(e: React.ChangeEvent<HTMLInputElement>) {
+        if (!e.target.files?.[0]) return;
+        const file = e.target.files[0];
+        toast.info("Enviando certificado...");
+        try {
+            const blob = await upload(`a1-${form.name || 'pro'}.pfx`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            if (blob.url) {
+                setForm(prev => ({ ...prev, certificadoA1Url: blob.url }));
+                toast.success("Certificado A1 enviado!");
+            }
+        } catch (error) { toast.error("Falha ao subir certificado."); }
     }
 
     async function adicionarNotaRapidaPro() {
@@ -401,7 +419,9 @@ export default function GestaoEquipe() {
                 config: false,
                 mural: true
             },
-            serviceIds: p.services ? p.services.map((s: any) => s.id) : []
+            serviceIds: p.services ? p.services.map((s: any) => s.id) : [],
+            certificadoA1Url: p.certificadoA1Url || "",
+            certificadoSenha: p.certificadoSenha || ""
         });
         setModalAberto(true);
     }
@@ -426,7 +446,9 @@ export default function GestaoEquipe() {
                 config: false,
                 mural: true
             },
-            serviceIds: []
+            serviceIds: [],
+            certificadoA1Url: "",
+            certificadoSenha: ""
         });
     }
 
@@ -816,16 +838,43 @@ export default function GestaoEquipe() {
                                             <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Telefone / WhatsApp</label><input type="tel" maxLength={15} className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white" placeholder="(00) 00000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: formatarTelefone(e.target.value) })} /></div>
                                         </div>
                                         <div><label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">URL da Foto (Opcional)</label><input className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none focus:border-blue-500 font-bold dark:text-white text-xs" placeholder="Cole um link de imagem..." value={form.photoUrl} onChange={e => setForm({ ...form, photoUrl: e.target.value })} /></div>
-                                        <div className="pt-2">
-                                            <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Assinatura Digital (PNG Transparente)</label>
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-40 h-16 bg-white border-2 border-dashed dark:border-gray-700 rounded-xl flex items-center justify-center overflow-hidden">
-                                                    {form.signatureUrl ? <img src={form.signatureUrl} className="h-full object-contain" /> : <PenTool size={24} className="text-gray-200" />}
+                                        <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Assinatura (PNG Transparente)</label>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-40 h-16 bg-white border-2 border-dashed dark:border-gray-700 rounded-xl flex items-center justify-center overflow-hidden">
+                                                        {form.signatureUrl ? <img src={form.signatureUrl} className="h-full object-contain" /> : <PenTool size={24} className="text-gray-200" />}
+                                                    </div>
+                                                    <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Alterar PNG</span>
+                                                        <input type="file" className="hidden" onChange={handleUploadAssinatura} accept="image/*" />
+                                                    </label>
                                                 </div>
-                                                <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Enviar Arquivo</span>
-                                                    <input type="file" className="hidden" onChange={handleUploadAssinatura} accept="image/*" />
-                                                </label>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-3 mb-1 block">Certificado Digital A1 (.pfx)</label>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${form.certificadoA1Url ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-300'}`}>
+                                                            {form.certificadoA1Url ? <CheckCircle size={24} /> : <ShieldCheck size={24} />}
+                                                        </div>
+                                                        <label className="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-2xl border-2 dark:border-gray-700 text-center cursor-pointer hover:bg-white dark:hover:bg-gray-700 transition">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                                {form.certificadoA1Url ? "Alterar Certificado" : "Selecionar .PFX"}
+                                                            </span>
+                                                            <input type="file" className="hidden" onChange={handleUploadCertificadoA1} accept=".pfx,.p12" />
+                                                        </label>
+                                                    </div>
+                                                    {form.certificadoA1Url && (
+                                                        <input 
+                                                            type="password"
+                                                            className="w-full border-2 dark:border-gray-700 p-3 rounded-xl bg-gray-100 dark:bg-gray-950 outline-none focus:border-blue-500 font-bold text-xs dark:text-white"
+                                                            placeholder="Senha do Certificado"
+                                                            value={form.certificadoSenha}
+                                                            onChange={e => setForm({ ...form, certificadoSenha: e.target.value })}
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

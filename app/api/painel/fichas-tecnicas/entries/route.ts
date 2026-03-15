@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 
         const professionals = await db.professional.findMany({
             where: { userId: { in: uniqueUserIds } },
-            select: { userId: true, name: true, signatureUrl: true }
+            select: { userId: true, name: true, signatureUrl: true, certificadoA1Url: true, certificadoSenha: true }
         });
 
         const entriesWithInfo = entries.map(e => ({

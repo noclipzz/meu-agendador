@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       "signatureUrl", "technicalSignatureUrl", "legalRepresentative", "workDays", "corporateName",
       "cnpj", "phone", "cep", "address", "number", "complement", "neighborhood",
       "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
-      "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
+      "certificadoSenha", "technicalCertificadoA1Url", "technicalCertificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",
       "cnae", "fiscalPadraoDesc", "itemListaServico",
       "codigoTributacao", "codigoNbs", "mercadopagoAccessToken", "mercadopagoPublicKey"
     ];
