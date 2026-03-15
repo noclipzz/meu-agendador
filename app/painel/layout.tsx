@@ -414,7 +414,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
     const filterMenu = (items: any[]) => items.filter(item => {
         if (userPlan === "INDIVIDUAL") {
-            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "vitrine_config", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
+            if (["mural", "financeiro", "fichas-tecnicas", "estoque", "vitrine_produtos", "vitrine_pedidos", "vitrine_payment", "vitrine_config", "whatsapp", "contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias", "rastreamento"].includes(item.key)) return false;
         }
         if (!hasTrackingModule && item.key === 'rastreamento') return false;
         if (userPlan === "PREMIUM") {
@@ -427,7 +427,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         if (!userPermissions) return item.key === 'agenda' || item.key === 'clientes';
 
         const permKey = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"].includes(item.key) ? "financeiro" : 
-                        ["vitrine_produtos", "vitrine_pedidos", "vitrine_config"].includes(item.key) ? "vitrine" : 
+                        ["vitrine_produtos", "vitrine_pedidos", "vitrine_payment", "vitrine_config"].includes(item.key) ? "vitrine" : 
                         item.key;
         return userPermissions[permKey as keyof typeof userPermissions];
     });
@@ -671,7 +671,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
             {/* --- MAIN: ADICIONADO CLASSES DE RESET PARA IMPRESSÃO --- */}
             <main id="main-content-panel" className="flex-1 p-4 md:p-8 overflow-y-auto overflow-x-hidden h-full bg-gray-100 dark:bg-gray-900 print:p-0 print:m-0 print:w-full print:h-auto print:overflow-visible print:bg-white custom-scrollbar focus:outline-none scroll-smooth">
                 {(() => {
-                    const allPossibleItems = [...allItems, ...cadastrosItems, ...financeiroItems];
+                    const allPossibleItems = [...allItems, ...cadastrosItems, ...financeiroItems, ...vitrineItems];
                     const currentRoute = allPossibleItems.find(item => pathname === item.path);
 
                     // Bloqueio Hard para WhatsApp (Apenas OWNER)
@@ -679,8 +679,13 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                     // Mapeia sub-rotas do financeiro para a permissão principal 'financeiro'
                     const finSubKeys = ["contas_pagar", "contas_receber", "notas_fiscais", "dre", "fluxo_caixa", "boletos", "auxiliares", "contas_bancarias"];
-                    const permKeyForRoute = currentRoute ? (finSubKeys.includes(currentRoute.key) ? "financeiro" : currentRoute.key) : null;
-                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute] && !isOwner);
+                    const permKeyForRoute = currentRoute ? (
+                        finSubKeys.includes(currentRoute.key) ? "financeiro" : 
+                        ["vitrine_produtos", "vitrine_pedidos", "vitrine_payment", "vitrine_config"].includes(currentRoute.key) ? "vitrine" : 
+                        currentRoute.key
+                    ) : null;
+
+                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute] && !isOwner && userRole !== "ADMIN");
 
                     if (isDenied) {
                         return (
