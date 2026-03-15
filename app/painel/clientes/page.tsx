@@ -9,7 +9,7 @@ import {
     Calendar, Clock, MapPin, FileText, CheckCircle2, UserCircle,
     DollarSign, Receipt, Trash2, Download, Image as ImageIcon,
     FileIcon, Loader2, UploadCloud, CreditCard, QrCode, Banknote, AlertTriangle,
-    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck, Link2, PenTool, CheckCircle, SlidersHorizontal
+    ClipboardList, Printer, ChevronDown, Eye, ShieldCheck, Link2, PenTool, CheckCircle, SlidersHorizontal, User, Building2
 } from "lucide-react";
 import { format, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -838,6 +838,24 @@ export default function ClientesPage() {
                 valor = data[field.id] !== undefined ? String(data[field.id]) : '—';
             } else if (field.type === 'currency') {
                 valor = data[field.id] ? `R$ ${Number(data[field.id]).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—';
+            } else if (field.type === 'client_data') {
+                valor = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
+                    <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
+                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
+                    <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'Insc. Estadual' : 'RG'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.inscricaoEstadual || '—') : (clienteSelecionado?.rg || '—')}</span></div>
+                    <div class="client-item full"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
+                </div>`;
+            } else if (field.type === 'company_data') {
+                valor = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
+                    <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
+                    <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
+                    <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
+                    <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
+                </div>`;
             } else {
                 valor = field.type === 'checkbox' ? (data[field.id] ? '✅ Sim' : '✗ Não') :
                     field.type === 'checkboxGroup' ? (Array.isArray(data[field.id]) ? data[field.id].join(', ') : '—') :
@@ -848,7 +866,7 @@ export default function ClientesPage() {
                 }
             }
 
-            currentSection.items.push({ label: field.label, value: String(valor), width: field.width || "100%" });
+            currentSection.items.push({ label: field.label, value: String(valor), width: field.width || "100%", type: field.type });
         });
         if (currentSection.items.length > 0 || currentSection.header) {
             sections.push(currentSection);
@@ -883,8 +901,9 @@ export default function ClientesPage() {
             section.items.forEach(item => {
                 const containsTable = item.value.includes('<table');
                 const containsImg = item.value.includes('<img');
+                const isSpecial = item.type === 'client_data' || item.type === 'company_data';
                 const isStatic = item.label === ''; // Convention for static fields
-                const isLong = item.value.length > 80 || containsTable || containsImg || isStatic;
+                const isLong = item.value.length > 80 || containsTable || containsImg || isStatic || isSpecial;
 
                 if (isStatic) {
                     camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
@@ -1020,13 +1039,15 @@ export default function ClientesPage() {
 
             <h1 class="doc-title">${entry.template?.name}</h1>
 
+            ${!fields.some(f => f.type === 'company_data') ? `
             <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px;">
                 <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
                 <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
                 <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
-            </div>
+            </div>` : ''}
 
+            ${!fields.some(f => f.type === 'client_data') ? `
             <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px;">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
@@ -1035,7 +1056,7 @@ export default function ClientesPage() {
                 <div class="client-item"><label>E-mail</label><span>${clienteSelecionado?.email || '—'}</span></div>
                 ${clienteSelecionado?.clientType !== 'JURIDICA' ? `<div class="client-item"><label>Estado Civil</label><span>${clienteSelecionado?.maritalStatus || '—'}</span></div>` : ''}
                 <div class="client-item ${clienteSelecionado?.clientType !== 'JURIDICA' ? 'full' : ''}"><label>Endereço Completo</label><span>${clienteSelecionado?.address || ''}, ${clienteSelecionado?.number || ''} ${clienteSelecionado?.complement || ''} - ${clienteSelecionado?.neighborhood || ''} - ${clienteSelecionado?.city || ''}/${clienteSelecionado?.state || ''}</span></div>
-            </div>
+            </div>` : ''}
 
 
             <div class="fields-grid">${camposHtml}</div>
@@ -1928,6 +1949,26 @@ export default function ClientesPage() {
                                                                     </p>
                                                                 </div>
                                                             );
+                                                            if (field.type === 'client_data' || field.type === 'company_data') return (
+                                                                <div key={field.id} className="col-span-1 sm:col-span-3 bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border-2 border-dashed dark:border-gray-800 my-2">
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-3 flex items-center gap-2">
+                                                                        {field.type === 'client_data' ? <User size={14} /> : <Building2 size={14} />} {field.label}
+                                                                    </p>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                        {field.type === 'client_data' ? (
+                                                                            <>
+                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">Nome</label><span className="text-sm font-black dark:text-white">{clienteSelecionado.name}</span></div>
+                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">Documento</label><span className="text-sm font-black dark:text-white">{clienteSelecionado.cpf || clienteSelecionado.cnpj || '---'}</span></div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">Empresa</label><span className="text-sm font-black dark:text-white">{nomeEmpresa}</span></div>
+                                                                                <div><label className="text-[9px] font-bold text-gray-500 uppercase block">CNPJ</label><span className="text-sm font-black dark:text-white">{empresaInfo?.cnpj || '---'}</span></div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
                                                             return (
                                                                 <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 py-3 border-b dark:border-gray-800/50">
                                                                     {field.type === 'table' ? (
@@ -2407,7 +2448,28 @@ export default function ClientesPage() {
                                                                     </p>
                                                                 </div>
                                                             )}
-                                                            {field.type !== 'header' && field.type !== 'static' && (
+                                                            {(field.type === 'client_data' || field.type === 'company_data') && (
+                                                                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-[2rem] border-2 border-dashed dark:border-gray-800 my-2">
+                                                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-4 flex items-center gap-2">
+                                                                        {field.type === 'client_data' ? <User size={14} className="text-blue-500" /> : <Building2 size={14} className="text-teal-500" />} {field.label}
+                                                                    </p>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        {field.type === 'client_data' ? (
+                                                                            <>
+                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Nome do Cliente</label><p className="text-xs font-black dark:text-gray-300">{clienteSelecionado.name}</p></div>
+                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Documento</label><p className="text-xs font-black dark:text-gray-300">{clienteSelecionado.cpf || clienteSelecionado.cnpj || '---'}</p></div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Sua Empresa</label><p className="text-xs font-black dark:text-gray-300">{nomeEmpresa}</p></div>
+                                                                                <div className="opacity-60"><label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">CNPJ</label><p className="text-xs font-black dark:text-gray-300">{empresaInfo?.cnpj || '---'}</p></div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[9px] font-bold text-blue-500 uppercase mt-4 text-center">ℹ️ Estes dados serão preenchidos automaticamente na ficha final.</p>
+                                                                </div>
+                                                            )}
+                                                            {field.type !== 'header' && field.type !== 'static' && field.type !== 'client_data' && field.type !== 'company_data' && (
                                                                 <div className="mb-1">
                                                                     <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block leading-tight">{field.label} {field.required && <span className="text-red-500">*</span>}</label>
                                                                     {field.helpText && <p className="text-[9px] text-gray-500 font-medium ml-1 leading-tight italic">{field.helpText}</p>}

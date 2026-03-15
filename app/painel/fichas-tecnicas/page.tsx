@@ -6,7 +6,7 @@ import {
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
     Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid,
     Search, Clock, Filter, ArrowRight, History as HistoryIcon, Printer, Trash,
-    ShieldCheck, Eye, Image as ImageIcon, SlidersHorizontal, DollarSign
+    ShieldCheck, Eye, Image as ImageIcon, SlidersHorizontal, DollarSign, User, Building2
 } from "lucide-react";
 import QRCode from "qrcode";
 import { createPortal } from "react-dom";
@@ -24,7 +24,7 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
     return createPortal(children, target);
 }
 
-type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table" | "static";
+type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table" | "static" | "client_data" | "company_data";
 
 type FieldWidth = "100%" | "50%" | "33%" | "25%" | "66%" | "75%";
 
@@ -75,6 +75,8 @@ const FIELD_TYPES: { type: FieldType; label: string; icon: any; desc: string }[]
     { type: "image", label: "Foto/Upload", icon: ImageIcon, desc: "Anexar imagem" },
     { type: "table", label: "Tabela", icon: LayoutGrid, desc: "Tabela com colunas" },
     { type: "static", label: "Texto Fixo", icon: FileText, desc: "Orientações/Avisos" },
+    { type: "client_data", label: "Dados Cliente", icon: User, desc: "Box com dados do paciente" },
+    { type: "company_data", label: "Dados sua empresa", icon: Building2, desc: "Box com dados da sua empresa" },
 ];
 
 export default function FichasTecnicasPage() {
@@ -888,7 +890,9 @@ export default function FichasTecnicasPage() {
         const novoCampo: FormField = {
             id: crypto.randomUUID(),
             type,
-            label: type === "static" ? "Insira suas orientações fixas aqui..." : "",
+            label: type === "static" ? "Insira suas orientações fixas aqui..." : 
+                   type === "client_data" ? "DADOS DO CLIENTE" : 
+                   type === "company_data" ? "INFORMAÇÕES DA EMPRESA" : "",
             width: "100%",
             required: false,
             ...(type === "select" || type === "checkboxGroup" || type === "table" ? { options: [""] } : {}),
@@ -1064,6 +1068,10 @@ export default function FichasTecnicasPage() {
                                                 value={campo.label}
                                                 onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
                                             />
+                                        ) : campo.type === "client_data" || campo.type === "company_data" ? (
+                                            <div className="flex-1 p-2.5 bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">
+                                                Este bloco carregará automaticamente os dados {campo.type === "client_data" ? "do cliente" : "da empresa"} na impressão.
+                                            </div>
                                         ) : (
                                             <input
                                                 className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500"
@@ -1072,7 +1080,7 @@ export default function FichasTecnicasPage() {
                                                 onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
                                             />
                                         )}
-                                        {campo.type !== "header" && campo.type !== "static" && (
+                                        {campo.type !== "header" && campo.type !== "static" && campo.type !== "client_data" && campo.type !== "company_data" && (
                                             <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 cursor-pointer whitespace-nowrap">
                                                 <input
                                                     type="checkbox"
@@ -1085,7 +1093,7 @@ export default function FichasTecnicasPage() {
                                         )}
                                     </div>
 
-                                    {campo.type !== "header" && campo.type !== "static" && (
+                                    {campo.type !== "header" && campo.type !== "static" && campo.type !== "client_data" && campo.type !== "company_data" && (
                                         <div className="flex flex-col gap-3 mt-3 sm:ml-2 border-l-2 border-blue-50 dark:border-gray-800 pl-4 py-2 opacity-90 transition-opacity">
                                             {/* Subtítulo / Ajuda */}
                                             <div>
