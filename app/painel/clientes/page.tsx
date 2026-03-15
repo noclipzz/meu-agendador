@@ -1242,31 +1242,45 @@ export default function ClientesPage() {
                     y: 0
                 });
 
-                const imgData = canvas.toDataURL('image/jpeg', 1.0);
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
                     format: 'a4'
                 });
 
-                const imgProps = pdf.getImageProperties(imgData);
                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                const pdfHeight = pdf.internal.pageSize.getHeight();
                 
-                let heightLeft = imgHeight;
-                let position = 0;
+                // Conversão de mm para pixels (considerando o scale do html2canvas)
+                // 1mm = 3.78px aprox. A 96 DPI. Com scale 3, multiplicamos.
+                const pxWidth = canvas.width;
+                const pxPageHeight = (pdfHeight * pxWidth) / pdfWidth;
+                
+                let currentY = 0;
+                let isFirstPage = true;
 
-                // Adicionar a primeira página
-                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pageHeight;
-
-                // Se houver mais conteúdo, adicionar páginas subsequentes
-                while (heightLeft > 0) {
-                    position = heightLeft - imgHeight; // Deslocamento negativo
-                    pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
-                    heightLeft -= pageHeight;
+                while (currentY < canvas.height) {
+                    if (!isFirstPage) pdf.addPage();
+                    
+                    const pageCanvas = document.createElement('canvas');
+                    pageCanvas.width = pxWidth;
+                    pageCanvas.height = Math.min(pxPageHeight, canvas.height - currentY);
+                    
+                    const ctx = pageCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(
+                            canvas,
+                            0, currentY, pxWidth, pageCanvas.height, // Source
+                            0, 0, pxWidth, pageCanvas.height        // Destination
+                        );
+                        
+                        const pageData = pageCanvas.toDataURL('image/jpeg', 1.0);
+                        const drawHeight = (pageCanvas.height * pdfWidth) / pxWidth;
+                        pdf.addImage(pageData, 'JPEG', 0, 0, pdfWidth, drawHeight);
+                    }
+                    
+                    currentY += pxPageHeight;
+                    isFirstPage = false;
                 }
 
                 const pdfBase64 = pdf.output('datauristring').split(',')[1];
