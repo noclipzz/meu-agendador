@@ -1123,11 +1123,11 @@ export default function ClientesPage() {
                     .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
                     .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
-                    .section-header { font-size: 11px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f8fafc; padding: 6px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; }
-                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
-                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
-                    .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
-                    .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+                    .section-header { font-size: 12px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 10px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 15px; }
+                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; background: white; }
+                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; min-height: 55px; }
+                    .field-label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+                    .field-value { font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
                     .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.33%; } .w-25 { width: 25%; } .w-66 { width: 66.66%; } .w-75 { width: 75%; }
                     .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
                     .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
