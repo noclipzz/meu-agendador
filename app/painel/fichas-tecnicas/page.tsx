@@ -164,6 +164,7 @@ export default function FichasTecnicasPage() {
                     signatureUrl: data.signatureUrl || "",
                     technicalSignatureUrl: data.technicalSignatureUrl || "",
                     legalRepresentative: data.legalRepresentative || "",
+                    certificadoA1Url: data.certificadoA1Url || "",
                     hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
                 });
             }
@@ -1644,13 +1645,9 @@ export default function FichasTecnicasPage() {
                                             </div>
                                         )}
 
-                                        {Object.entries(printConfigModal.signatures).some(([key, val]) => 
-                                            val && (
-                                                (key === 'prof' && !!printConfigModal.entry.professional?.certificadoA1Url) ||
-                                                (key === 'company' && !!empresaInfo.certificadoA1Url) ||
-                                                (key === 'technical' && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url)
-                                            )
-                                        ) && (
+                                        {((printConfigModal.signatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url) ||
+                                          (printConfigModal.signatures.company && !!empresaInfo.certificadoA1Url) ||
+                                          (printConfigModal.signatures.technical && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url)) && (
                                             <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.useDigitalSignature ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-gray-100 dark:border-gray-800'} animate-in zoom-in-95`}>
                                                 <input
                                                     type="checkbox"

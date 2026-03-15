@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool, Lock, Check } from "lucide-react";
+import { Save, Loader2, UploadCloud, Moon, Building2, Mail, Instagram, Facebook, X, MapPin, Search, Clock, PenTool, Lock, Check, ShieldCheck } from "lucide-react";
 import { useTheme } from "../../../../hooks/useTheme";
 import { toast } from "sonner";
 import { upload } from "@vercel/blob/client";
@@ -65,6 +65,9 @@ export default function ConfigGerais() {
     const [state, setState] = useState("");
     const [slug, setSlug] = useState("");
     const [editandoSlug, setEditandoSlug] = useState(false);
+    const [certificadoA1Url, setCertificadoA1Url] = useState("");
+    const [certificadoSenha, setCertificadoSenha] = useState("");
+    const inputA1Ref = useRef<HTMLInputElement>(null);
 
     const [userRole, setUserRole] = useState<string>("PROFESSIONAL");
 
@@ -93,6 +96,7 @@ export default function ConfigGerais() {
                 setSignatureUrl(dataConfig.signatureUrl || "");
                 setTechnicalSignatureUrl(dataConfig.technicalSignatureUrl || "");
                 setLegalRepresentative(dataConfig.legalRepresentative || "");
+                setCertificadoA1Url(dataConfig.certificadoA1Url || "");
                 setOpenTime(dataConfig.openTime || "09:00");
                 setCloseTime(dataConfig.closeTime || "18:00");
                 setLunchStart(dataConfig.lunchStart || "12:00");
@@ -125,6 +129,8 @@ export default function ConfigGerais() {
                 setCity(dataConfig.city || "");
                 setState(dataConfig.state || "");
                 setSlug(dataConfig.slug || "");
+                setCertificadoA1Url(dataConfig.certificadoA1Url || "");
+                setCertificadoSenha(dataConfig.certificadoSenha || "");
             }
         } catch (error) {
             console.error("ERRO_AO_CARREGAR:", error);
@@ -190,6 +196,24 @@ export default function ConfigGerais() {
         }
     }
 
+    async function handleA1Upload() {
+        if (!inputA1Ref.current?.files?.[0]) return;
+        const file = inputA1Ref.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`certificado-a1.pfx`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            setCertificadoA1Url(newBlob.url);
+            toast.success("Certificado A1 carregado com sucesso!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Falha no upload do certificado A1.");
+        }
+        finally { setIsUploading(false); }
+    }
+
     async function handleLogoUpload() {
         if (!inputFileRef.current?.files?.[0]) return;
         const file = inputFileRef.current.files[0];
@@ -252,6 +276,7 @@ export default function ConfigGerais() {
                     name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, technicalSignatureUrl, legalRepresentative,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), customSchedule,
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state, slug,
+                    certificadoA1Url, certificadoSenha
                 })
             });
 
@@ -310,7 +335,7 @@ export default function ConfigGerais() {
                                             className="bg-transparent text-white font-black text-lg md:text-xl outline-none w-full placeholder:text-blue-300/50"
                                             value={slug}
                                             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''))}
-                                            placeholder="seu-subdominio"
+                                            placeholder="seu-subdomínio"
                                         />
                                         <span className="text-blue-200 font-bold">.nohud.com.br</span>
                                     </div>
@@ -483,52 +508,67 @@ export default function ConfigGerais() {
                             </div>
                         </div>
 
-                        <div className="border-t dark:border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="border-t dark:border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Logotipo</label>
-                                <div className="flex items-center gap-6">
-                                    <div className="w-24 h-24 bg-gray-100 dark:bg-gray-900 rounded-3xl border dark:border-gray-700 flex items-center justify-center overflow-hidden shadow-inner">
-                                        {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <UploadCloud className="text-gray-400" size={32} />}
+                                <label className="text-xs font-bold text-gray-400 uppercase mb-3 block">Logotipo do Negócio</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden">
+                                        {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <UploadCloud className="text-gray-300" size={24} />}
                                     </div>
-                                    <div>
-                                        <input type="file" accept="image/*" ref={inputFileRef} onChange={handleLogoUpload} className="hidden" />
-                                        <button onClick={() => inputFileRef.current?.click()} disabled={isUploading} className="bg-gray-800 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-black transition text-sm dark:bg-gray-700">
-                                            {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud size={16} />} Alterar Imagem
-                                        </button>
-                                    </div>
+                                    <input type="file" accept="image/*" ref={inputFileRef} onChange={handleLogoUpload} className="hidden" />
+                                    <button onClick={() => inputFileRef.current?.click()} disabled={isUploading} className="text-[10px] font-black uppercase tracking-widest bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-200 transition">
+                                        {isUploading ? "..." : "Alterar"}
+                                    </button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Assinatura Digital da Empresa</label>
-                                <div className="flex items-center gap-6">
-                                    <div className="w-48 h-24 bg-white dark:bg-gray-950 rounded-3xl border-2 border-dashed dark:border-gray-800 flex items-center justify-center overflow-hidden">
-                                        {signatureUrl ? <img src={signatureUrl} alt="Assinatura" className="h-full object-contain mix-blend-multiply" /> : <PenTool className="text-gray-300" size={32} />}
+                                <label className="text-xs font-bold text-gray-400 uppercase mb-3 block">Ranhura/Assinatura PNG (Empresa)</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-32 h-16 bg-white dark:bg-gray-950 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden">
+                                        {signatureUrl ? <img src={signatureUrl} alt="Assinatura" className="h-full object-contain mix-blend-multiply" /> : <PenTool className="text-gray-300" size={24} />}
                                     </div>
-                                    <div>
-                                        <input type="file" accept="image/*" ref={inputSignatureRef} onChange={handleSignatureUpload} className="hidden" />
-                                        <button onClick={() => inputSignatureRef.current?.click()} disabled={isUploading} className="bg-blue-600 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-blue-700 transition text-sm">
-                                            {isUploading ? <Loader2 className="animate-spin" /> : <PenTool size={16} />} Carregar Assinatura
-                                        </button>
-                                        <p className="text-[9px] text-gray-400 mt-2">Use um arquivo PNG transparente.</p>
-                                    </div>
+                                    <input type="file" accept="image/*" ref={inputSignatureRef} onChange={handleSignatureUpload} className="hidden" />
+                                    <button onClick={() => inputSignatureRef.current?.click()} disabled={isUploading} className="text-[10px] font-black uppercase tracking-widest bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-4 py-2.5 rounded-xl hover:bg-blue-100 transition">
+                                        {isUploading ? "..." : "Carregar PNG"}
+                                    </button>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Assinatura do Responsável Técnico</label>
-                                <div className="flex items-center gap-6">
-                                    <div className="w-48 h-24 bg-white dark:bg-gray-950 rounded-3xl border-2 border-dashed border-orange-300 dark:border-orange-800 flex items-center justify-center overflow-hidden">
-                                        {technicalSignatureUrl ? <img src={technicalSignatureUrl} alt="Assinatura Técnica" className="h-full object-contain mix-blend-multiply" /> : <PenTool className="text-orange-300" size={32} />}
+                            <div className="md:col-span-2 p-6 bg-blue-50/30 dark:bg-blue-900/10 rounded-[2rem] border-2 border-blue-500/20">
+                                <h3 className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <ShieldCheck size={16} /> Certificado Digital A1 (Criptografia)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Arquivo Certificado (.pfx ou .p12)</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`flex-1 p-3 rounded-xl border-2 border-dashed flex items-center gap-3 ${certificadoA1Url ? 'border-green-500/30 bg-green-50/50' : 'border-gray-200'} transition-all`}>
+                                                <Lock size={18} className={certificadoA1Url ? 'text-green-500' : 'text-gray-300'} />
+                                                <span className="text-[10px] font-bold text-gray-500 truncate">
+                                                    {certificadoA1Url ? "Certificado Vinculado ✅" : "Nenhum arquivo enviado"}
+                                                </span>
+                                            </div>
+                                            <input type="file" accept=".pfx,.p12" ref={inputA1Ref} onChange={handleA1Upload} className="hidden" />
+                                            <button onClick={() => inputA1Ref.current?.click()} disabled={isUploading} className="bg-blue-600 text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition shadow-lg">
+                                                {isUploading ? "..." : "Upload A1"}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div>
-                                        <input type="file" accept="image/*" ref={inputTechSignatureRef} onChange={handleTechSignatureUpload} className="hidden" />
-                                        <button onClick={() => inputTechSignatureRef.current?.click()} disabled={isUploading} className="bg-orange-500 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-orange-600 transition text-sm">
-                                            {isUploading ? <Loader2 className="animate-spin" /> : <PenTool size={16} />} Carregar Assinatura
-                                        </button>
-                                        <p className="text-[9px] text-gray-400 mt-2">Assinatura do profissional técnico (PNG transparente).</p>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block tracking-widest">Senha do Certificado</label>
+                                        <input 
+                                            type="password"
+                                            className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-white dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-blue-500 transition-all"
+                                            placeholder="Senha do arquivo..."
+                                            value={certificadoSenha}
+                                            onChange={e => setCertificadoSenha(e.target.value)}
+                                        />
                                     </div>
                                 </div>
+                                <p className="text-[9px] text-blue-500/60 mt-3 font-bold uppercase italic leading-tight">
+                                    * O certificado A1 é necessário para gerar assinaturas digitais com validade jurídica ICP-Brasil.
+                                </p>
                             </div>
                         </div>
                     </div>
