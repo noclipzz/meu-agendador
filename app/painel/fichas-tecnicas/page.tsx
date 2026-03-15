@@ -408,7 +408,14 @@ export default function FichasTecnicasPage() {
                 }
             }
 
-            currentSection.items.push({ label: field.label, value: String(valor), width: field.width || "100%", type: field.type });
+            currentSection.items.push({ 
+                label: field.label, 
+                value: String(valor), 
+                width: field.width || "100%", 
+                type: field.type,
+                // Pass highlight for static fields
+                highlight: field.highlight 
+            });
         });
         if (currentSection.items.length > 0 || currentSection.header) {
             sections.push(currentSection);
@@ -476,8 +483,13 @@ export default function FichasTecnicasPage() {
 
                 const isInline = fLayout === 'inline' && !isLong;
                 const layoutClass = isInline ? 'layout-inline' : '';
+                
+                // Se for um bloco de dados (cliente/empresa), aplicamos o fundo de destaque
+                const itemStyle = isSpecial 
+                    ? `background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; margin: 10px 0; padding: 15px 20px;` 
+                    : `min-height: ${isInline ? '30px' : '48px'};`;
 
-                camposHtml += `<div class="field-item ${widthClass} ${layoutClass}" style="min-height: ${isInline ? '30px' : '48px'};">
+                camposHtml += `<div class="field-item ${widthClass} ${layoutClass}" style="${itemStyle}">
                     <div class="field-label">${renderMarkdown(item.label)}${isInline ? ':' : ''}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
@@ -518,8 +530,9 @@ export default function FichasTecnicasPage() {
             .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
             
             .client-box { background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
-            .client-item { display: flex; flex-direction: column; }
-            .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+            .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '2px'}; }
+            .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
+            .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
             .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
             .client-item.full { grid-column: span 2; }
 
@@ -600,14 +613,14 @@ export default function FichasTecnicasPage() {
 
             <h1 class="doc-title">${entry.template?.name}</h1>
 
-            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px;">
+            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px; background-color: ${accentColor} !important;">
                 <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
                 <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
                 <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
             </div>
 
-            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px;">
+            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px; background-color: ${accentColor} !important;">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
@@ -732,9 +745,10 @@ export default function FichasTecnicasPage() {
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
                     .doc-title { font-size: 22px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 20px; }
                     .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 30px; margin-bottom: 12px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .client-box { background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
-                    .client-item { display: flex; flex-direction: column; }
-                    .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+                    .client-box { background: ${accentColor} !important; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
+                    .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '2px'}; }
+                    .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
+                    .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
                     .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; }
@@ -1287,8 +1301,33 @@ export default function FichasTecnicasPage() {
                                                 </div>
                                             </div>
                                         ) : campo.type === "client_data" || campo.type === "company_data" ? (
-                                            <div className="flex-1 p-2.5 bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">
-                                                Este bloco carregará automaticamente os dados {campo.type === "client_data" ? "do cliente" : "da empresa"} na impressão.
+                                            <div className="flex-1 flex flex-col gap-3">
+                                                <div 
+                                                    className="p-4 border-2 border-dashed rounded-xl text-[10px] font-black uppercase transition-all duration-300 flex items-center justify-center min-h-[60px]"
+                                                    style={{ 
+                                                        backgroundColor: accentColor,
+                                                        borderColor: accentColor === '#f8fafc' ? '#bfdbfe' : 'transparent',
+                                                        color: accentColor === '#f8fafc' ? '#2563eb' : '#1e3a8a'
+                                                    }}
+                                                >
+                                                    Este bloco carregará automaticamente os dados {campo.type === "client_data" ? "do cliente" : "da empresa"} na impressão.
+                                                </div>
+
+                                                <div className="bg-white/50 dark:bg-gray-950/50 p-3 rounded-xl border dark:border-gray-800">
+                                                    <label className="text-[9px] font-black text-gray-400 uppercase mb-2 block">Escolha a cor de fundo para este destaque:</label>
+                                                    <div className="flex gap-2 items-center flex-wrap">
+                                                        {["#f8fafc", "#eff6ff", "#f0fdf4", "#fefce8", "#fef2f2", "#fffbeb"].map(color => (
+                                                            <button
+                                                                key={color}
+                                                                type="button"
+                                                                onClick={() => setAccentColor(color)}
+                                                                className={`w-7 h-7 rounded-lg border-2 transition-all ${accentColor === color ? 'border-blue-500 scale-110 shadow-sm' : 'border-gray-200 dark:border-gray-800 hover:scale-105'}`}
+                                                                style={{ backgroundColor: color }}
+                                                            />
+                                                        ))}
+                                                        <span className="text-[8px] font-bold text-gray-400 ml-2 italic uppercase tracking-tight">* Afeta todos os blocos de cliente/empresa</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="flex-1 flex flex-col gap-2">
