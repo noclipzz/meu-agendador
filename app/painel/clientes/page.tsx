@@ -1141,6 +1141,7 @@ export default function ClientesPage() {
                     .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 4px; }
                     .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
+                    .back-button { display: none !important; }
                 </style>
                 ${/* Pegar o conteúdo respeitando a estrutura do cabeçalho */ 
                    html.includes('id="printable-content"') 
@@ -1194,7 +1195,13 @@ export default function ClientesPage() {
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
-                    logging: false
+                    logging: false,
+                    width: 800,
+                    windowWidth: 800,
+                    height: container.scrollHeight,
+                    scrollY: 0,
+                    x: 0,
+                    y: 0
                 });
 
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
