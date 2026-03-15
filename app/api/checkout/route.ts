@@ -186,11 +186,13 @@ export async function GET() {
             return NextResponse.json({ active: false });
         }
 
-        // --- 🔐 SUPER ADMIN VITALÍCIO ---
-        // Se for o dono do sistema, libera tudo SEMPRE.
-        const SUPER_ADMIN = "user_39S9qNrKwwgObMZffifdZyNKUKm";
+        // --- 🔐 SUPER ADMINS VITALÍCIOS ---
+        const SUPER_ADMINS = [
+            "user_39S9qNrKwwgObMZffifdZyNKUKm", // Conta Principal
+            "user_39SJsqppxdaQvu3hklYpD9cjDeH"  // Yan Kairon
+        ];
 
-        if (userId === SUPER_ADMIN) {
+        if (SUPER_ADMINS.includes(userId)) {
             console.log("👑 [CHECKOUT] SUPER ADMIN DETECTADO - LIBERANDO ACESSO TOTAL");
 
             // Busca apenas a empresa para ter o ID correto no painel
@@ -296,11 +298,11 @@ export async function GET() {
                 },
                 companyId: company.id,
                 companyName: company.name,
-                slug: company.slug, // ✅ Adicionado slug
-                isOwner: true, // ✅ Flag de dono
+                slug: company.slug,
+                isOwner: true,
                 isTrial: subscription?.stripeSubscriptionId === "TRIAL_PERIOD",
-                hasTrackingModule: subscription?.hasTrackingModule || false,
-                hasMercadoPagoModule: subscription?.hasMercadoPagoModule || false,
+                hasTrackingModule: true, // Dono sempre vê
+                hasMercadoPagoModule: true,
                 onboardingCompleted: company.onboardingCompleted
             });
         }

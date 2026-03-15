@@ -698,7 +698,13 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
 
                     const finalRole = currentLocalRole || userRole;
                     const finalIsOwner = currentLocalIsOwner || isOwner;
-                    const isDenied = isWhatsAppBlocked || (currentRoute && finalRole !== "ADMIN" && !finalIsOwner && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute]);
+                    
+                    // Se for Admin ou Dono, NUNCA bloqueia acesso às rotas internas
+                    if (finalRole === "ADMIN" || finalIsOwner) {
+                        return children;
+                    }
+
+                    const isDenied = isWhatsAppBlocked || (currentRoute && userPermissions && permKeyForRoute && !userPermissions[permKeyForRoute]);
 
                     if (isDenied) {
                         return (
