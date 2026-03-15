@@ -628,12 +628,12 @@ export default function FichasTecnicasPage() {
                     .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
                     .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
-                    .section-header { font-size: 12px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 10px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 15px; }
-                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; background: white; }
-                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; min-height: 55px; }
-                    .field-label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
-                    .field-value { font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
-                    .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.33%; } .w-25 { width: 25%; } .w-66 { width: 66.66%; } .w-75 { width: 75%; }
+                    .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 25px; display: block; width: 100%; }
+                    .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; background: white; margin-bottom: 20px; }
+                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 12px 15px; display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; min-height: 65px; }
+                    .field-label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .field-value { font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.3; word-break: break-word; }
+                    .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.3333%; } .w-25 { width: 25%; } .w-66 { width: 66.6666%; } .w-75 { width: 75%; }
                     .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
                     .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
                     .signature-image { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 250px; height: 120px; object-fit: contain; mix-blend-mode: multiply; }
@@ -648,10 +648,12 @@ export default function FichasTecnicasPage() {
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
                     .back-button { display: none !important; }
                 </style>
-                ${/* Pegar o conteúdo respeitando a estrutura do cabeçalho */ 
-                   html.includes('id="printable-content"') 
+                ${
+                   // Remover o botão 'Voltar' e qualquer cabeçalho indesejado do HTML injetado
+                   (html.includes('id="printable-content"') 
                    ? html.split('id="printable-content">')[1]?.split('</body>')[0] 
-                   : (html.split('<body>')[1]?.split('</body>')[0] || html)
+                   : (html.split('<body>')[1]?.split('</body>')[0] || html))
+                   .replace(/<a[^>]*class="back-button"[^>]*>.*?<\/a>/gi, '')
                 }
             </div>
         `;
