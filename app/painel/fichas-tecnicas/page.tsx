@@ -112,7 +112,7 @@ export default function FichasTecnicasPage() {
         entry: any;
         dateVisible: boolean;
         twoColumns: boolean;
-        signatures: { client: boolean; prof: boolean; company: boolean };
+        signatures: { client: boolean; prof: boolean; company: boolean; technical: boolean };
         useDigitalSignature: boolean;
         includeQR: boolean;
         docNumber: string;
@@ -150,6 +150,8 @@ export default function FichasTecnicasPage() {
                     cnpj: data.cnpj || "",
                     corporateName: data.corporateName || "",
                     signatureUrl: data.signatureUrl || "",
+                    technicalSignatureUrl: data.technicalSignatureUrl || "",
+                    legalRepresentative: data.legalRepresentative || "",
                     hasDigitalSignatureModule: data.hasDigitalSignatureModule || false
                 });
             }
@@ -201,7 +203,7 @@ export default function FichasTecnicasPage() {
         let initialPrefs = {
             dateVisible: true,
             twoColumns: false,
-            signatures: { client: true, prof: true, company: false },
+            signatures: { client: true, prof: true, company: false, technical: false },
             useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
             includeQR: true
         };
@@ -433,11 +435,18 @@ export default function FichasTecnicasPage() {
                         <div class="signature-label">${entry.professional?.name || 'Assinatura do Profissional'}</div>
                     </div>` : ''}
 
-                ${signatures.company && !signatures.prof ? `
+                ${signatures.company ? `
                     <div class="signature-block">
                         ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
-                        <div class="signature-label">${empresaInfo?.corporateName || empresaInfo?.name || 'Assinatura da Empresa'}</div>
+                        <div class="signature-label">${empresaInfo?.legalRepresentative || empresaInfo?.corporateName || empresaInfo?.name || 'Responsável Legal'}</div>
+                    </div>` : ''}
+
+                ${signatures.technical ? `
+                    <div class="signature-block">
+                        ${(useDigitalSignature && empresaInfo.technicalSignatureUrl) ? `<img src="${empresaInfo.technicalSignatureUrl}" class="signature-image" />` : ''}
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Responsável Técnico</div>
                     </div>` : ''}
             </div>
 
@@ -1465,7 +1474,19 @@ export default function FichasTecnicasPage() {
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.company ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
                                                 {printConfigModal.signatures.company && <X size={12} className="text-white" />}
                                             </div>
-                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura da Empresa</span>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura do Responsável Legal</span>
+                                        </label>
+                                        <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.signatures.technical ? 'border-orange-500 bg-orange-50/30 dark:bg-orange-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={printConfigModal.signatures.technical}
+                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, technical: e.target.checked } })}
+                                            />
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.technical ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                                                {printConfigModal.signatures.technical && <X size={12} className="text-white" />}
+                                            </div>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Incluir Assinatura do Responsável Técnico</span>
                                         </label>
                                     </div>
                                 </div>
