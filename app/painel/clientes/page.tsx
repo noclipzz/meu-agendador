@@ -84,7 +84,9 @@ export default function ClientesPage() {
         includeQR: boolean;
         docNumber: string;
         customFooter: string;
+        a1Choice?: 'company' | 'technical' | 'prof' | 'none';
     } | null>(null);
+    const [signingPdf, setSigningPdf] = useState(false);
     const [form, setForm] = useState({
         id: "", name: "", phone: "", email: "", clientType: "FISICA", cpf: "", cnpj: "", rg: "", inscricaoEstadual: "", photoUrl: "",
         birthDate: "", cep: "", address: "", number: "", complement: "", neighborhood: "", city: "", state: "", notes: "", maritalStatus: "", status: "ATIVO",
@@ -726,13 +728,14 @@ export default function ClientesPage() {
             entry,
             docNumber: entry.id.slice(-6).toUpperCase(),
             customFooter: "",
+            a1Choice: 'none',
             ...initialPrefs
         });
     }
 
     async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
-        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId } = printConfigModal;
+        const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId, a1Choice } = printConfigModal;
 
         // --- BLOQUEIO PERMANENTE NA PRIMEIRA IMPRESSÃO ---
         if (!entry.isLocked) {
@@ -759,10 +762,10 @@ export default function ClientesPage() {
             } catch (err) { console.error(err); }
         }
 
-        executarImpressaoDaFichaDirect(entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId);
+        executarImpressaoDaFichaDirect(entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter, selectedTechnicalId, a1Choice);
     }
 
-    async function executarImpressaoDaFichaDirect(entry: any, dateVisible: boolean, signatures: any, useDigitalSignature: boolean, includeQR: boolean, twoColumns: boolean, docNumber: string, customFooter: string, selectedTechnicalId?: string) {
+    async function executarImpressaoDaFichaDirect(entry: any, dateVisible: boolean, signatures: any, useDigitalSignature: boolean, includeQR: boolean, twoColumns: boolean, docNumber: string, customFooter: string, selectedTechnicalId?: string, a1Choice?: string) {
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -1104,6 +1107,75 @@ export default function ClientesPage() {
                 printWindow.print();
                 setPrintConfigModal(null);
             }, 600);
+            return;
+        }
+
+        // --- NOVO: ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
+        if (signatures.digitalA1) {
+            setSigningPdf(true);
+            try {
+                // @ts-ignore
+                const html2pdf = (await import('html2pdf.js')).default;
+                
+                // Criar container temporário oculto para o PDF
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
+                container.style.top = '0';
+                container.style.width = '800px'; // Largura padrão para geração fiel ao Desktop
+                document.body.appendChild(container);
+
+                const opt = {
+                    margin: 0,
+                    filename: `ficha_${docNumber}.pdf`,
+                    image: { type: 'jpeg' as const, quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                    jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+                };
+
+                // Gerar PDF em base64
+                const pdfBase64 = await html2pdf().set(opt).from(container).outputPdf('base64');
+                document.body.removeChild(container);
+
+                // Enviar para o servidor assinar
+                const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pdfBase64,
+                        choice: a1Choice || (signatures.company ? 'company' : signatures.technical ? 'technical' : 'prof'),
+                        professionalId: selectedTechnicalId,
+                        entryId: entry.id
+                    })
+                });
+
+                if (!signRes.ok) {
+                    const error = await signRes.json();
+                    throw new Error(error.error || "Erro ao assinar PDF");
+                }
+
+                // Download do PDF assinado
+                const blob = await signRes.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ficha_${docNumber}_assinada.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                toast.success("PDF assinado criptograficamente com sucesso!", {
+                    description: "O arquivo foi baixado e já contém os metadados de autenticidade ICP-Brasil."
+                });
+                setPrintConfigModal(null);
+            } catch (err: any) {
+                console.error("Erro assinatura digital:", err);
+                toast.error("Erro ao gerar assinatura real: " + err.message);
+            } finally {
+                setSigningPdf(false);
+            }
         }
     }
 
@@ -2388,14 +2460,25 @@ export default function ClientesPage() {
                                                                 const newSignatures = { ...printConfigModal.signatures, [opt.id]: checked };
                                                                 // Uncheck digitalA1 if no valid signers with A1 are selected anymore
                                                                 if (opt.id !== 'digitalA1') {
-                                                                    const stillHasA1 = (newSignatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url) ||
+                                                                 const stillHasA1 = (newSignatures.prof && !!printConfigModal.entry.professional?.certificadoA1Url) ||
                                                                                        (newSignatures.company && !!empresaInfo.certificadoA1Url) ||
                                                                                        (newSignatures.technical && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url);
                                                                     if (!stillHasA1) {
                                                                         newSignatures.digitalA1 = false;
                                                                     }
                                                                 }
-                                                                setPrintConfigModal({ ...printConfigModal, signatures: newSignatures });
+                                                                
+                                                                // Lógica de auto-seleção do a1Choice (quem vai ser o assinante principal no selo do PDF)
+                                                                let newA1Choice = printConfigModal.a1Choice;
+                                                                if (opt.id === 'digitalA1' && checked) {
+                                                                    if (newSignatures.company && empresaInfo.certificadoA1Url) newA1Choice = 'company';
+                                                                    else if (newSignatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url) newA1Choice = 'technical';
+                                                                    else if (newSignatures.prof && printConfigModal.entry.professional?.certificadoA1Url) newA1Choice = 'prof';
+                                                                } else if (!newSignatures.digitalA1) {
+                                                                    newA1Choice = 'none';
+                                                                }
+
+                                                                setPrintConfigModal({ ...printConfigModal, signatures: newSignatures, a1Choice: newA1Choice });
                                                             }}
                                                         />
                                                         <span className={`font-bold text-sm ${isChecked ? 'text-teal-700 dark:text-teal-400' : 'text-gray-600 dark:text-gray-300'}`}>{opt.label}</span>
@@ -2419,6 +2502,32 @@ export default function ClientesPage() {
                                                 {technicalProfessionals.length === 0 && (
                                                     <p className="text-[10px] text-red-500 font-bold italic">Nenhum profissional marcado como Responsável Técnico na Equipe.</p>
                                                 )}
+                                            </div>
+                                        )}
+
+                                        {printConfigModal.signatures.digitalA1 && (
+                                            <div className="pl-8 space-y-2 animate-in slide-in-from-left-2 duration-300">
+                                                <label className="text-[9px] font-black text-blue-500 uppercase block tracking-widest">Assinante Digital (Principal)</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {printConfigModal.signatures.company && empresaInfo.certificadoA1Url && (
+                                                        <button 
+                                                            onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'company' })}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border-2 ${printConfigModal.a1Choice === 'company' ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-100 text-gray-400 hover:border-blue-200'}`}
+                                                        >Empresa</button>
+                                                    )}
+                                                    {printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url && (
+                                                        <button 
+                                                            onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'technical' })}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border-2 ${printConfigModal.a1Choice === 'technical' ? 'border-orange-500 bg-orange-500 text-white' : 'border-gray-100 text-gray-400 hover:border-orange-200'}`}
+                                                        >R. Técnico</button>
+                                                    )}
+                                                    {printConfigModal.signatures.prof && printConfigModal.entry.professional?.certificadoA1Url && (
+                                                        <button 
+                                                            onClick={() => setPrintConfigModal({ ...printConfigModal, a1Choice: 'prof' })}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border-2 ${printConfigModal.a1Choice === 'prof' ? 'border-teal-500 bg-teal-500 text-white' : 'border-gray-100 text-gray-400 hover:border-teal-200'}`}
+                                                        >Profissional</button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
 
@@ -2565,12 +2674,22 @@ export default function ClientesPage() {
                                     </div>
                                 </div>
 
-                                <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+                                <div className="p-6 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
                                     <button
                                         onClick={executarImpressaoDaFicha}
-                                        className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
+                                        disabled={signingPdf}
+                                        className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-teal-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
                                     >
-                                        <Printer size={18} /> Gerar PDF (Imprimir)
+                                        {signingPdf ? (
+                                            <>
+                                                <Loader2 size={18} className="animate-spin" />
+                                                Gerando Assinatura Real...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Printer size={18} /> Gerar PDF {(printConfigModal.signatures.digitalA1 && empresaInfo.hasDigitalSignatureModule) ? 'Assinado' : '(Imprimir)'}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>

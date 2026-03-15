@@ -121,6 +121,7 @@ export default function FichasTecnicasPage() {
         docNumber: string;
         customFooter: string;
     } | null>(null);
+    const [signingPdf, setSigningPdf] = useState(false);
 
     useEffect(() => {
         carregarEmpresa();
@@ -553,6 +554,69 @@ export default function FichasTecnicasPage() {
                 printWindow.print();
                 setPrintConfigModal(null);
             }, 600);
+            return;
+        }
+
+        // --- ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
+        if (useDigitalSignature && a1Choice && a1Choice !== 'none') {
+            setSigningPdf(true);
+            try {
+                // @ts-ignore
+                const html2pdf = (await import('html2pdf.js')).default;
+                
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                container.style.position = 'absolute';
+                container.style.left = '-9999px';
+                container.style.top = '0';
+                container.style.width = '800px';
+                document.body.appendChild(container);
+
+                const opt = {
+                    margin: 0,
+                    filename: `ficha_${docNumber}.pdf`,
+                    image: { type: 'jpeg' as const, quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                    jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+                };
+
+                const pdfBase64 = await html2pdf().set(opt).from(container).outputPdf('base64');
+                document.body.removeChild(container);
+
+                const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pdfBase64,
+                        choice: a1Choice,
+                        professionalId: selectedTechnicalId,
+                        entryId: entry.id
+                    })
+                });
+
+                if (!signRes.ok) {
+                    const error = await signRes.json();
+                    throw new Error(error.error || "Erro ao assinar PDF");
+                }
+
+                const blob = await signRes.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ficha_${docNumber}_assinada.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                toast.success("PDF assinado criptograficamente com sucesso!");
+                setPrintConfigModal(null);
+            } catch (err: any) {
+                console.error("Erro assinatura digital:", err);
+                toast.error("Erro ao gerar assinatura real: " + err.message);
+            } finally {
+                setSigningPdf(false);
+            }
         }
     }
 
@@ -1824,20 +1888,43 @@ export default function FichasTecnicasPage() {
                                         Este texto aparecerá acima da assinatura e da data automática.
                                     </p>
                                 </div>
+
+                                {printConfigModal.useDigitalSignature && printConfigModal.a1Choice && printConfigModal.a1Choice !== 'none' && (
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border-2 border-blue-500/20 rounded-2xl animate-in fade-in duration-300">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+                                                <ShieldCheck className="text-white" size={18} />
+                                            </div>
+                                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-tight">
+                                                Este documento será assinado criptograficamente (PFX/A1) usando o certificado selecionado.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30">
+                            <div className="p-8 border-t dark:border-gray-900 bg-gray-50/50 dark:bg-gray-900/50">
                                 <button
                                     onClick={executarImpressaoDaFicha}
-                                    className="w-full bg-teal-600 text-white p-4 rounded-xl font-black text-sm hover:bg-teal-700 transition-all flex justify-center items-center gap-2 shadow-lg hover:scale-[1.02] active:scale-95"
+                                    disabled={signingPdf}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] flex items-center justify-center gap-2"
                                 >
-                                    <Printer size={18} /> Gerar PDF (Imprimir)
+                                    {signingPdf ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Gerando Assinatura Real...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Printer size={18} /> Gerar PDF {(printConfigModal.useDigitalSignature && printConfigModal.a1Choice !== 'none') ? 'Assinado' : '(Imprimir)'}
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
                     </div>
                 </ModalPortal>
             )}
-        </div >
+        </div>
     );
 }
