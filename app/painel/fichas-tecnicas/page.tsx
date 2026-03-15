@@ -620,8 +620,14 @@ export default function FichasTecnicasPage() {
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                const pdfBase64 = await html2pdf().set(opt).from(container).outputPdf('base64');
+                const worker = html2pdf().set(opt).from(container);
+                const pdfDataUri = await worker.toPdf().output('datauristring');
+                const pdfBase64 = pdfDataUri.split(',')[1];
                 document.body.removeChild(container);
+
+                if (!pdfBase64) {
+                    throw new Error("Falha ao gerar PDF. Tente novamente.");
+                }
 
                 const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
                     method: 'POST',

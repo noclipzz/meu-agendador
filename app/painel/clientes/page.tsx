@@ -1124,9 +1124,15 @@ export default function ClientesPage() {
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                // Gerar PDF em base64
-                const pdfBase64 = await html2pdf().set(opt).from(container).outputPdf('base64');
+                // Gerar PDF em base64 usando a API correta do html2pdf.js
+                const worker = html2pdf().set(opt).from(container);
+                const pdfDataUri = await worker.toPdf().output('datauristring');
+                const pdfBase64 = pdfDataUri.split(',')[1]; // Remove o prefixo 'data:application/pdf;base64,'
                 document.body.removeChild(container);
+
+                if (!pdfBase64) {
+                    throw new Error("Falha ao gerar PDF. Tente novamente.");
+                }
 
                 // Enviar para o servidor assinar
                 const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {
