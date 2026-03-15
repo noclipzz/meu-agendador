@@ -1134,7 +1134,7 @@ export default function ClientesPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         pdfBase64,
-                        choice: a1Choice || (signatures.company ? 'company' : signatures.technical ? 'technical' : 'prof'),
+                        choice: (a1Choice && a1Choice !== 'none') ? a1Choice : (signatures.company ? 'company' : signatures.technical ? 'technical' : 'prof'),
                         professionalId: selectedTechnicalId,
                         entryId: entry.id
                     })

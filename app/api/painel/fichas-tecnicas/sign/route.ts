@@ -14,9 +14,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { pdfBase64, choice, professionalId, entryId } = body;
 
-    if (!pdfBase64 || !choice) {
-      return NextResponse.json({ error: "Dados insuficientes para assinatura" }, { status: 400 });
+    if (!pdfBase64 || !choice || choice === 'none') {
+      console.log("[SIGN_API] Dados recebidos - choice:", choice, "pdfBase64 length:", pdfBase64?.length, "professionalId:", professionalId, "entryId:", entryId);
+      return NextResponse.json({ error: "Dados insuficientes para assinatura. Selecione um assinante A1 válido." }, { status: 400 });
     }
+    
+    console.log("[SIGN_API] Assinando com choice:", choice, "professionalId:", professionalId);
 
     // 1. Buscar a empresa do usuário para pegar os certificados/senhas
     const empresa = await prisma.company.findFirst({
