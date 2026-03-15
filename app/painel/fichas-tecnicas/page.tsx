@@ -623,6 +623,7 @@ export default function FichasTecnicasPage() {
                     .header-date { font-size: 11px; font-weight: 700; color: #1e293b; }
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
                     .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 30px; margin-top: 40px; }
+                    .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 35px; margin-bottom: 15px; display: block; width: 100%; clear: both; line-height: 1.5; }
                     .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
                     .client-item { display: flex; flex-direction: column; }
                     .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
