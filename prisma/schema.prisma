@@ -123,6 +123,15 @@ model Company {
   mercadopagoAccessToken String?
   mercadopagoPublicKey   String?
 
+  // Asaas Integration
+  asaasApiKey           String?
+  asaasSubaccountId     String?
+  asaasWalletId         String?
+  asaasBankCode         String?
+  asaasBankAgency       String?
+  asaasBankAccount      String?
+  asaasBankAccountDigit String?
+
   vitrineSettings Json? @default("{}")
 }
 

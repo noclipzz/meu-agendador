@@ -56,12 +56,23 @@ export async function GET(req: Request) {
 
     const hasMercadoPagoModule = subscription?.hasMercadoPagoModule || empresa.ownerId === "user_39S9qNrKwwgObMZffifdZyNKUKm";
 
+    const acceptsAsaas = !!empresa.asaasSubaccountId;
+    const acceptsOnlinePayment = !!empresa.mercadopagoAccessToken || acceptsAsaas;
+
     return NextResponse.json({
       ...empresa,
-      // Nunca retornar o Access Token e Public Key privadas para o front-end público!
+      // Nunca retornar o Access Token e chaves privadas!
       mercadopagoAccessToken: undefined,
-      acceptsOnlinePayment: !!empresa.mercadopagoAccessToken,
-      mercadopagoPublicKey: empresa.mercadopagoPublicKey || null, // A chave pública pode ser enviada se necessário para o Brick, mas cuidado.
+      asaasApiKey: undefined,
+      asaasSubaccountId: undefined,
+      asaasWalletId: undefined,
+      asaasBankCode: undefined, // Também opcional esconder se quiser privacidade total
+      asaasBankAgency: undefined,
+      asaasBankAccount: undefined,
+      asaasBankAccountDigit: undefined,
+      acceptsAsaas,
+      acceptsOnlinePayment,
+      mercadopagoPublicKey: empresa.mercadopagoPublicKey || null, 
       hasMercadoPagoModule
     });
 

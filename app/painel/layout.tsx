@@ -10,7 +10,7 @@ import {
     Calendar, Settings, Users, PlusCircle, X, Loader2, User as UserIcon,
     Search, Check, MapPin, Trash2, BarChart3, Package, Briefcase, HelpCircle,
     LayoutDashboard, ClipboardList, Menu, ShieldCheck, AlertTriangle, Zap, Clock, Megaphone, MessageCircle, Bot,
-    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag, ExternalLink
+    ChevronDown, ChevronRight, TrendingUp, TrendingDown, Layers, BarChart4, Barcode, Settings2, FolderPlus, Truck, FileText, Wallet, Star, Save, Bell, Store, ShoppingBag, ExternalLink, CreditCard
 } from "lucide-react";
 import { useTheme } from "../../hooks/useTheme";
 import { AgendaProvider, useAgenda } from "../../contexts/AgendaContext";
@@ -391,6 +391,7 @@ function PainelConteudo({ children }: { children: React.ReactNode }) {
         { key: 'vitrine_view', name: "Ver Vitrine", path: companySlug ? `https://${companySlug}.nohud.com.br/vitrine` : "#", icon: <ExternalLink size={18} />, external: true },
         { key: 'vitrine_produtos', name: "Produtos", path: "/painel/vitrine", icon: <Store size={18} /> },
         { key: 'vitrine_pedidos', name: "Pedidos", path: "/painel/vitrine/pedidos", icon: <ShoppingBag size={18} /> },
+        { key: 'vitrine_payment', name: "Recebimento", path: "/painel/vitrine/pagamento", icon: <CreditCard size={18} /> },
         { key: 'vitrine_config', name: "Configurações", path: "/painel/vitrine/config", icon: <Settings2 size={18} /> },
     ];
 

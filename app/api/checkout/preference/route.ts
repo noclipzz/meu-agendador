@@ -273,7 +273,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ id: result.id });
+    return NextResponse.json({ id: result.id, orderId: order.id });
   } catch (error) {
     console.error("ERRO_MP_PREFERENCE:", error);
     return NextResponse.json({ error: "Erro ao gerar link de pagamento", debug: String(error) }, { status: 500 });

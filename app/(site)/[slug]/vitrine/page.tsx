@@ -4,14 +4,16 @@ import { useState, useEffect } from "react";
 import {
   Loader2, X, Phone, MapPin, ShoppingBag, Tag, Instagram, Facebook,
   Calendar as CalendarIcon, Store, ChevronRight, Plus, Minus,
-  Trash2, CheckCircle2, Truck, Package, CreditCard, Banknote
+  Trash2, CheckCircle2, Truck, Package, CreditCard, Banknote, ShieldCheck
 } from "lucide-react";
+import PaymentBrick from "./components/PaymentBrick";
+import { AsaasPayment } from "./components/AsaasPayment";
 import { formatarTelefone, formatarCEP } from "@/lib/validators";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-type Step = "VITRINE" | "CART" | "CHECKOUT" | "PAYMENT_MODE_SELECT" | "PAYMENT_DETAIL" | "SUCCESS";
+type Step = "VITRINE" | "CART" | "CHECKOUT" | "PAYMENT_MODE_SELECT" | "PAYMENT_DETAIL" | "PAYMENT_GATEWAY" | "SUCCESS";
 
 export default function VitrinePublica({ params }: { params: { slug: string } }) {
   const [empresa, setEmpresa] = useState<any>(null);
@@ -49,6 +51,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
   const [changeAmount, setChangeAmount] = useState("");
   
   const [isSubdomain, setIsSubdomain] = useState(false);
+  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -113,8 +116,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     } else if (payment === 'failure') {
       toast.error("Ocorreu um erro no seu pagamento.");
     } else if (payment === 'pending' && orderId) {
-      // PIX: O Mercado Pago redireciona com status 'pending'
-      // Fazemos polling para verificar quando o pagamento é confirmado
       toast.info("Aguardando confirmação do pagamento...");
       const interval = setInterval(async () => {
         try {
@@ -127,10 +128,8 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
             localStorage.removeItem(`nohud_cart_${params.slug}`);
             toast.success("Pagamento confirmado com sucesso!");
           }
-        } catch (e) {
-          // silencioso
-        }
-      }, 5000); // Verifica a cada 5 segundos
+        } catch (e) {}
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [searchParams, params.slug]);
@@ -165,13 +164,15 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
     const cartItemId = variationString ? `${product.id}-${variationString}` : product.id;
 
     const existing = cart.find(item => item.cartItemId === cartItemId);
+    const qtyToAdd = product.showStock ? Math.min(qty, Number(product.quantity || 0)) : qty;
+
     if (existing) {
-      setCart(cart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + qty } : item));
+      setCart(cart.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + qtyToAdd } : item));
     } else {
       setCart([...cart, {
         ...product,
         cartItemId,
-        quantity: qty,
+        quantity: qtyToAdd,
         selectedVariations: { ...selectedVariations },
         variationLabel: variationString
       }]);
@@ -198,7 +199,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   const cartSubtotal = cart.reduce((acc, item) => acc + (Number(item.price) * item.quantity), 0);
 
-  // FRETE: O valor do frete agora é somado se for entrega. Pegamos o frete do produto ou o maior se houver vários.
   const shippingCost = deliveryMethod === "DELIVERY"
     ? cart.reduce((max, item) => Math.max(max, Number(item.shippingCost || 0)), 0)
     : 0;
@@ -243,29 +243,20 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
     setCheckingOut(true);
     try {
-      // PERSISTÊNCIA: Salvar dados para a próxima compra
       localStorage.setItem('nohud_customer_info', JSON.stringify(customerInfo));
 
-      const res = await fetch('/api/checkout/preference', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/checkout/preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: cart,
           customerInfo,
           deliveryMethod,
-          shippingCost,
-          paymentMode,
-          addressInfo: {
-            cep: customerInfo.cep,
-            address: customerInfo.address,
-            number: customerInfo.number,
-            neighborhood: customerInfo.neighborhood,
-            city: customerInfo.city,
-            state: customerInfo.state,
-            complement: customerInfo.complement
-          },
           companyId: empresa.id,
           slug: params.slug,
+          addressInfo: customerInfo,
+          shippingCost,
+          paymentMode,
           deliveryPaymentDetails: paymentMode === "DELIVERY" ? {
             method: deliveryPaymentMethod,
             needsChange,
@@ -274,18 +265,25 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         })
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao gerar pagamento");
 
-      if (data.id) {
-        window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.id}`;
-      } else if (data.success) {
+      if (paymentMode === "DELIVERY") {
         setStep("SUCCESS");
-        toast.success("Pedido realizado com sucesso!");
+        setCart([]);
+        localStorage.removeItem(`nohud_cart_${params.slug}`);
       } else {
-        toast.error(data.error || "Erro ao gerar link de pagamento.");
+        // Checkout Transparente
+        if (empresa.mercadopagoPublicKey || empresa.acceptsAsaas) {
+            setActiveOrderId(data.orderId);
+            setStep("PAYMENT_GATEWAY");
+        } else {
+            // Fallback para redirect
+            window.location.href = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.id}`;
+        }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("Falha ao processar pagamento.");
+      toast.error(e.message || "Falha ao processar pagamento.");
     } finally {
       setCheckingOut(false);
     }
@@ -300,14 +298,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
   if (!empresa) return <div className="h-screen flex items-center justify-center text-red-500 font-bold">Empresa não encontrada.</div>;
 
-  // Categorias únicas
   const categories = ["Tudo", ...Array.from(new Set(vitrineProducts.map(p => p.category).filter(Boolean)))];
 
   const filteredProducts = selectedCategory === "Tudo"
     ? vitrineProducts
     : vitrineProducts.filter(p => p.category === selectedCategory);
 
-  // TELA DE SUCESSO
   if (step === "SUCCESS") {
     const hasProntaEntrega = cart.some(item => item.deliveryDeadline?.toLowerCase().includes("pronta entrega"));
     const isPayOnDelivery = paymentMode === "DELIVERY";
@@ -424,7 +420,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
           </div>
 
           <div className="w-full max-w-lg">
-            {/* FILTRO DE CATEGORIAS */}
             {categories.length > 1 && (
               <div className="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
                 {categories.map(cat => (
@@ -541,18 +536,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   </div>
                 )}
               </div>
-              <div className="space-y-1 border-b dark:border-gray-800 pb-2 mb-2">
-                <div className="flex justify-between items-center text-sm font-medium text-gray-500">
-                  <span>Subtotal</span>
-                  <span>R$ {cartSubtotal.toFixed(2)}</span>
-                </div>
-                {deliveryMethod === "DELIVERY" && (
-                  <div className="flex justify-between items-center text-sm font-medium text-gray-500">
-                    <span>Entrega</span>
-                    <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
-                  </div>
-                )}
-              </div>
               <div className="flex justify-between items-center text-gray-900 dark:text-white font-black text-xl pt-2">
                 <span>Total</span>
                 <span>R$ {cartTotal.toFixed(2)}</span>
@@ -634,7 +617,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               {deliveryMethod === "DELIVERY" && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-3">
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Endereço de Entrega</h3>
-
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       placeholder="CEP"
@@ -649,14 +631,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                       onChange={e => setCustomerInfo({ ...customerInfo, number: e.target.value })}
                     />
                   </div>
-
                   <input
-                    placeholder="Logradouro (Rua/Avenida)"
+                    placeholder="Logradouro"
                     className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
                     value={customerInfo.address}
                     onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })}
                   />
-
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       placeholder="Bairro"
@@ -665,13 +645,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                       onChange={e => setCustomerInfo({ ...customerInfo, neighborhood: e.target.value })}
                     />
                     <input
-                      placeholder="Complemento (Opcional)"
+                      placeholder="Complemento"
                       className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold"
                       value={customerInfo.complement}
                       onChange={e => setCustomerInfo({ ...customerInfo, complement: e.target.value })}
                     />
                   </div>
-
                   <div className="grid grid-cols-3 gap-3">
                     <input
                       placeholder="Cidade"
@@ -681,8 +660,8 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                     />
                     <input
                       placeholder="UF"
-                      maxLength={2}
                       className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-violet-200 focus:bg-white transition font-bold uppercase"
+                      maxLength={2}
                       value={customerInfo.state}
                       onChange={e => setCustomerInfo({ ...customerInfo, state: e.target.value.toUpperCase() })}
                     />
@@ -691,7 +670,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               )}
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
+            <div className="bg-gray-50 p-4 rounded-2xl space-y-2 border border-gray-100">
               <div className="flex justify-between text-xs font-bold text-gray-500">
                 <span>Produtos</span>
                 <span>R$ {cartSubtotal.toFixed(2)}</span>
@@ -702,12 +681,11 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
+              <div className="flex justify-between text-lg font-black text-gray-900 border-t pt-2">
                 <span>Total</span>
                 <span>R$ {cartTotal.toFixed(2)}</span>
               </div>
             </div>
-
 
             <div className="pt-4">
               <button
@@ -720,15 +698,15 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   }
                   
                   if (empresa.acceptsOnlinePayment && !empresa.vitrineSettings?.acceptDeliveryPayment) {
-                     setPaymentMode("ONLINE");
-                     handleProceedToPayment();
-                     return;
+                      setPaymentMode("ONLINE");
+                      handleProceedToPayment();
+                      return;
                   }
 
                   if (!empresa.acceptsOnlinePayment && empresa.vitrineSettings?.acceptDeliveryPayment) {
-                     setPaymentMode("DELIVERY");
-                     setStep("PAYMENT_DETAIL");
-                     return;
+                      setPaymentMode("DELIVERY");
+                      setStep("PAYMENT_DETAIL");
+                      return;
                   }
 
                   setStep("PAYMENT_MODE_SELECT");
@@ -759,13 +737,7 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   <CreditCard size={32} />
                   <div className="text-left">
                     <p className="font-black text-sm uppercase">Pagar Online</p>
-                    <p className="text-xs opacity-70">
-                      {empresa.vitrineSettings?.acceptedMethods?.length > 0 
-                        ? empresa.vitrineSettings.acceptedMethods
-                            .map((m: string) => m === 'pix' ? 'Pix' : m === 'credit_card' ? 'Cartão' : m === 'debit_card' ? 'Débito' : 'Boleto')
-                            .join(', ')
-                        : "Cartão, Pix ou Boleto"}
-                    </p>
+                    <p className="text-xs opacity-70">Cartão ou Pix</p>
                   </div>
                 </button>
               )}
@@ -781,23 +753,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                   </div>
                 </button>
               )}
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
-              <div className="flex justify-between text-xs font-bold text-gray-500">
-                <span>Produtos</span>
-                <span>R$ {cartSubtotal.toFixed(2)}</span>
-              </div>
-              {deliveryMethod === "DELIVERY" && (
-                <div className="flex justify-between text-xs font-bold text-gray-500">
-                  <span>Entrega</span>
-                  <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
-                <span>Total</span>
-                <span>R$ {cartTotal.toFixed(2)}</span>
-              </div>
             </div>
 
             <div className="pt-4">
@@ -824,12 +779,12 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
           <div className="flex items-center gap-4 mb-6">
             <button onClick={() => setStep("PAYMENT_MODE_SELECT")} className="p-2 bg-white rounded-xl shadow-sm"><ChevronRight className="rotate-180" size={20} /></button>
-            <h2 className="text-2xl font-black text-gray-900">Detalhes da Entrega</h2>
+            <h2 className="text-2xl font-black text-gray-900">Detalhes do Recebimento</h2>
           </div>
 
           <div className="bg-white p-8 rounded-3xl shadow-xl space-y-6">
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Selecione o método</h3>
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Método de pagamento na entrega</h3>
               <div className="grid grid-cols-1 gap-3">
                 {(empresa.vitrineSettings?.deliveryMethods || ["money", "credit", "debit"]).map((method: string) => {
                   const labels: Record<string, string> = { money: "Dinheiro", credit: "Cartão de Crédito", debit: "Cartão de Débito" };
@@ -851,50 +806,19 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Precisa de troco?</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setNeedsChange(true)}
-                    className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === true ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
-                  >
-                    Sim
-                  </button>
-                  <button
-                    onClick={() => { setNeedsChange(false); setChangeAmount(""); }}
-                    className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === false ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}
-                  >
-                    Não
-                  </button>
+                  <button onClick={() => setNeedsChange(true)} className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === true ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}>Sim</button>
+                  <button onClick={() => { setNeedsChange(false); setChangeAmount(""); }} className={`p-4 rounded-2xl border-2 transition-all font-black text-xs ${needsChange === false ? "border-emerald-600 bg-emerald-50 text-emerald-600" : "border-gray-50 bg-gray-50 text-gray-400"}`}>Não</button>
                 </div>
-
                 {needsChange && (
-                  <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase ml-2 mb-1 block">Troco para quanto?</label>
-                    <input
-                      placeholder="Ex: R$ 50,00"
-                      className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-emerald-200 focus:bg-white transition font-bold"
-                      value={changeAmount}
-                      onChange={e => setChangeAmount(e.target.value)}
-                    />
-                  </div>
+                  <input
+                    placeholder="Troco para quanto?"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 outline-none focus:border-emerald-200 focus:bg-white transition font-bold"
+                    value={changeAmount}
+                    onChange={e => setChangeAmount(e.target.value)}
+                  />
                 )}
               </div>
             )}
-
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl space-y-2 border border-gray-100 dark:border-gray-800">
-              <div className="flex justify-between text-xs font-bold text-gray-500">
-                <span>Produtos</span>
-                <span>R$ {cartSubtotal.toFixed(2)}</span>
-              </div>
-              {deliveryMethod === "DELIVERY" && (
-                <div className="flex justify-between text-xs font-bold text-gray-500">
-                  <span>Entrega</span>
-                  <span>{shippingCost > 0 ? `R$ ${shippingCost.toFixed(2)}` : 'Grátis'}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-lg font-black text-gray-900 dark:text-white border-t dark:border-gray-800 pt-2">
-                <span>Total</span>
-                <span>R$ {cartTotal.toFixed(2)}</span>
-              </div>
-            </div>
 
             <div className="pt-4">
               <button
@@ -909,7 +833,53 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         </div>
       )}
 
-      {/* FLOAT CART BUTTON */}
+      {step === "PAYMENT_GATEWAY" && (
+        <div className="w-full max-w-lg animate-in slide-in-from-right duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <button onClick={() => setStep("PAYMENT_MODE_SELECT")} className="p-2 bg-white rounded-xl shadow-sm"><ChevronRight className="rotate-180" size={20} /></button>
+            <div className="flex-1">
+                <h2 className="text-2xl font-black text-gray-900 leading-tight">Pagamento Seguro</h2>
+                <div className="flex items-center gap-1.5 text-emerald-600">
+                    <ShieldCheck size={14} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Ambiente Criptografado</span>
+                </div>
+              {empresa.acceptsAsaas ? (
+               <AsaasPayment 
+                orderId={activeOrderId!}
+                companyId={empresa.id}
+                onSuccess={() => {
+                    toast.success("Pagamento confirmado!");
+                    setStep("SUCCESS");
+                    setCart([]);
+                    localStorage.removeItem(`nohud_cart_${params.slug}`);
+                }}
+                onError={(err) => {
+                    toast.error(err);
+                }}
+             />
+             ) : (
+             <PaymentBrick 
+                publicKey={empresa.mercadopagoPublicKey}
+                amount={cartTotal}
+                orderId={activeOrderId!}
+                companyId={empresa.id}
+                customerEmail={customerInfo.email}
+                onSuccess={() => {
+                    toast.success("Pagamento confirmado!");
+                    setStep("SUCCESS");
+                    setCart([]);
+                    localStorage.removeItem(`nohud_cart_${params.slug}`);
+                }}
+                onError={(err) => {
+                    toast.error(err);
+                }}
+             />
+             )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {step === "VITRINE" && cart.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50">
           <button
@@ -925,17 +895,13 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
         </div>
       )}
 
-      {/* MODAL DETALHE DO PRODUTO */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
           <div
             className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-300 relative"
             onClick={e => e.stopPropagation()}
           >
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-gray-500 hover:text-red-500 transition"
-            >
+            <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-gray-500 hover:text-red-500 transition">
               <X size={20} />
             </button>
 
@@ -943,11 +909,6 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
               <div className="relative h-64 bg-gray-100">
                 <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
                 <div className="absolute bottom-4 left-4 flex flex-col items-start gap-2">
-                  {selectedProduct.unitValue > 1 && (
-                    <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-xl shadow-lg uppercase">
-                      {selectedProduct.unitValue} unidades
-                    </span>
-                  )}
                   <span className="bg-white/95 backdrop-blur-sm text-green-600 text-lg font-black px-4 py-2 rounded-2xl shadow-lg flex items-center gap-2">
                     <Tag size={16} /> R$ {Number(selectedProduct.price).toFixed(2)}
                   </span>
@@ -961,47 +922,24 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
 
             <div className="p-8">
               <h3 className="text-2xl font-black text-gray-900">{selectedProduct.name}</h3>
-
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedProduct.showStock && selectedProduct.quantity !== undefined && (
-                  <span className="bg-amber-100 text-amber-600 text-[10px] font-black px-2 py-1 rounded-lg uppercase">
-                    Estoque: {selectedProduct.quantity}
-                  </span>
-                )}
-                {selectedProduct.deliveryDeadline && (
-                  <span className="bg-gray-100 text-gray-500 text-[10px] font-black px-2 py-1 rounded-lg uppercase">
-                    {selectedProduct.deliveryDeadline}
-                  </span>
-                )}
-              </div>
-
-              {selectedProduct.description && (
-                <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
-              )}
+              <p className="text-gray-500 mt-4 leading-relaxed font-medium">{selectedProduct.description}</p>
 
               <div className="mt-8 space-y-4">
-                {/* VARIAÇÕES */}
                 {Array.isArray(selectedProduct.variations) && selectedProduct.variations.length > 0 && (
                   <div className="space-y-4 mb-6">
                     {selectedProduct.variations.map((v: any, i: number) => (
                       <div key={i}>
                         <label className="text-[10px] font-black text-gray-400 uppercase ml-2 block mb-2">{v.name}</label>
                         <div className="flex flex-wrap gap-2">
-                          {v.options.map((opt: string) => {
-                            const isActive = selectedVariations[v.name] === opt;
-                            return (
-                              <button
-                                key={opt}
-                                onClick={() => setSelectedVariations({ ...selectedVariations, [v.name]: opt })}
-                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${isActive
-                                  ? "border-violet-600 bg-violet-600 text-white shadow-lg"
-                                  : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200"
-                                  }`}
-                              >
-                                {opt}
-                              </button>
-                            );
-                          })}
+                          {v.options.map((opt: string) => (
+                            <button
+                              key={opt}
+                              onClick={() => setSelectedVariations({ ...selectedVariations, [v.name]: opt })}
+                              className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${selectedVariations[v.name] === opt ? "border-violet-600 bg-violet-600 text-white shadow-lg" : "border-gray-100 bg-gray-50 text-gray-500"}`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     ))}
@@ -1018,16 +956,8 @@ export default function VitrinePublica({ params }: { params: { slug: string } })
                 </div>
 
                 <div className="flex gap-4">
-                  <button
-                    onClick={() => setSelectedProduct(null)}
-                    className="flex-1 bg-gray-100 text-gray-600 font-black py-4 rounded-2xl transition active:scale-95"
-                  >
-                    Voltar
-                  </button>
-                  <button
-                    onClick={() => addToCart(selectedProduct, selectedQty)}
-                    className="flex-[2] bg-violet-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition active:scale-95 flex items-center justify-center gap-2"
-                  >
+                  <button onClick={() => setSelectedProduct(null)} className="flex-1 bg-gray-100 text-gray-600 font-black py-4 rounded-2xl transition">Voltar</button>
+                  <button onClick={() => addToCart(selectedProduct, selectedQty)} className="flex-[2] bg-violet-600 text-white font-black py-4 rounded-2xl shadow-xl hover:shadow-2xl transition flex items-center justify-center gap-2">
                     <ShoppingBag size={18} /> Adicionar
                   </button>
                 </div>
