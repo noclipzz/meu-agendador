@@ -1093,7 +1093,7 @@ export default function FichasTecnicasPage() {
                                         )}
                                     </div>
 
-                                    {campo.type !== "header" && campo.type !== "static" && campo.type !== "client_data" && campo.type !== "company_data" && (
+                                    {campo.type !== "header" && (
                                         <div className="flex flex-col gap-3 mt-3 sm:ml-2 border-l-2 border-blue-50 dark:border-gray-800 pl-4 py-2 opacity-90 transition-opacity">
                                             {/* Subtítulo / Ajuda */}
                                             <div>
