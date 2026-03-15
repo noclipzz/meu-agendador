@@ -1016,6 +1016,13 @@ export default function ClientesPage() {
             <h1 class="doc-title">${entry.template?.name}</h1>
 
             <div class="client-box">
+                <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
+                <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
+                <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
+                <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || empresaInfo?.city || '—'}</span></div>
+            </div>
+
+            <div class="client-box">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
@@ -1141,7 +1148,7 @@ export default function ClientesPage() {
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
                     .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 30px; margin-top: 40px; }
                     .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 35px; margin-bottom: 15px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 35px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
                     .client-item { display: flex; flex-direction: column; }
                     .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
                     .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
