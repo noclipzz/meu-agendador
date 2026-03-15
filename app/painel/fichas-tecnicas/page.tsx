@@ -1480,7 +1480,7 @@ export default function FichasTecnicasPage() {
                     </div>
 
                     {/* COLUNA DIREITA: LIVE PREVIEW OTIMIZADO */}
-                    <div className="w-full lg:w-[45%] xl:w-[40%] sticky top-8 order-first lg:order-last">
+                    <div className="w-full lg:w-[45%] xl:w-[40%] lg:sticky top-20 z-10 order-first lg:order-last h-fit mb-8">
                         <div className="bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-4 sm:p-6 overflow-hidden">
                             <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <FileText size={16} /> Visão em Tempo Real
