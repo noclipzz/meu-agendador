@@ -604,14 +604,6 @@ export default function FichasTecnicasPage() {
                 // @ts-ignore
                 const html2pdf = (await import('html2pdf.js')).default;
                 
-                const container = document.createElement('div');
-                container.innerHTML = html;
-                container.style.position = 'absolute';
-                container.style.left = '-9999px';
-                container.style.top = '0';
-                container.style.width = '800px';
-                document.body.appendChild(container);
-
                 const opt = {
                     margin: 0,
                     filename: `ficha_${docNumber}.pdf`,
@@ -620,13 +612,12 @@ export default function FichasTecnicasPage() {
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                const worker = html2pdf().set(opt).from(container);
-                const pdfDataUri = await worker.toPdf().output('datauristring');
+                // Gerar PDF em base64 passando o HTML diretamente
+                const pdfDataUri = await html2pdf().set(opt).from(html).output('datauristring');
                 const pdfBase64 = pdfDataUri.split(',')[1];
-                document.body.removeChild(container);
 
                 if (!pdfBase64) {
-                    throw new Error("Falha ao gerar PDF. Tente novamente.");
+                    throw new Error("Falha ao gerar o conteúdo do PDF. Tente novamente.");
                 }
 
                 const signRes = await fetch('/api/painel/fichas-tecnicas/sign', {

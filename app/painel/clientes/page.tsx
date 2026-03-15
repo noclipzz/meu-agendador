@@ -1107,15 +1107,6 @@ export default function ClientesPage() {
                 // @ts-ignore
                 const html2pdf = (await import('html2pdf.js')).default;
                 
-                // Criar container temporário oculto para o PDF
-                const container = document.createElement('div');
-                container.innerHTML = html;
-                container.style.position = 'absolute';
-                container.style.left = '-9999px';
-                container.style.top = '0';
-                container.style.width = '800px'; // Largura padrão para geração fiel ao Desktop
-                document.body.appendChild(container);
-
                 const opt = {
                     margin: 0,
                     filename: `ficha_${docNumber}.pdf`,
@@ -1124,14 +1115,12 @@ export default function ClientesPage() {
                     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
                 };
 
-                // Gerar PDF em base64 usando a API correta do html2pdf.js
-                const worker = html2pdf().set(opt).from(container);
-                const pdfDataUri = await worker.toPdf().output('datauristring');
-                const pdfBase64 = pdfDataUri.split(',')[1]; // Remove o prefixo 'data:application/pdf;base64,'
-                document.body.removeChild(container);
+                // Gerar PDF em base64 passando o HTML diretamente (gera em um iframe interno)
+                const pdfDataUri = await html2pdf().set(opt).from(html).output('datauristring');
+                const pdfBase64 = pdfDataUri.split(',')[1];
 
                 if (!pdfBase64) {
-                    throw new Error("Falha ao gerar PDF. Tente novamente.");
+                    throw new Error("Falha ao gerar o conteúdo do PDF. Tente novamente.");
                 }
 
                 // Enviar para o servidor assinar
