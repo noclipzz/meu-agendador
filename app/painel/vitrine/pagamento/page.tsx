@@ -70,7 +70,7 @@ export default function AsaasPaymentPage() {
       const data = await res.json();
       if (res.ok) {
         toast.success("Configurações salvas com sucesso!");
-        setCompany(prev => ({ ...prev, ...data }));
+        setCompany((prev: any) => ({ ...prev, ...data }));
         if (data.asaasSubaccountId) {
              toast.success("Conta de recebimento ativada no Asaas!");
         }
