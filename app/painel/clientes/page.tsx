@@ -974,11 +974,11 @@ export default function ClientesPage() {
             .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
             .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
 
-            .signature-a1 { border: 1px solid #0d9488; background: #fff; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 250px; flex: 1; position: relative; }
-            .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; width: 100%; }
-            .a1-name { font-size: 10px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.2; }
-            .a1-details { font-size: 8px; color: #334155; margin-top: 2px; font-weight: 600; line-height: 1.4; font-family: monospace; letter-spacing: -0.2px; width: 100%; }
-            .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; width: 100%; text-align: left; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+            .signature-a1 { border: 1.5px solid #0d9488; background: #fff; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 220px; flex: 1; position: relative; }
+            .a1-title { font-size: 7px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; width: 100%; }
+            .a1-name { font-size: 9px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.1; }
+            .a1-details { font-size: 7px; color: #334155; margin-top: 1px; font-weight: 600; line-height: 1.3; font-family: monospace; letter-spacing: -0.2px; width: 100%; }
+            .a1-footer { display: none; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
@@ -1055,17 +1055,16 @@ export default function ClientesPage() {
                 
                 ${signatures.prof ? `
                     ${(signatures.digitalA1 && entry.professional?.certificadoA1Url) ? `
-                        <div class="signature-a1">
-                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
-                            <div class="a1-name">${entry.professional?.name}</div>
-                            <div class="a1-details">
-                                CPF: ${entry.professional?.cpf || '—'}<br/>
-                                Assinatura: Profissional Preenchedor<br/>
-                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
-                                ID: ${entry.id.toUpperCase()}
-                            </div>
-                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
+                    <div class="signature-a1">
+                        <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                        <div class="a1-name">${entry.professional?.name}</div>
+                        <div class="a1-details">
+                            CPF: ${entry.professional?.cpf || '—'}<br/>
+                            Assinatura: Profissional Preenchedor<br/>
+                            Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                            ID: ${entry.id.toUpperCase()}
                         </div>
+                    </div>
                     ` : `
                         <div class="signature-block">
                             ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
@@ -1077,17 +1076,16 @@ export default function ClientesPage() {
 
                 ${signatures.company ? `
                     ${(signatures.digitalA1 && empresaInfo.certificadoA1Url) ? `
-                        <div class="signature-a1">
-                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
-                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
-                            <div class="a1-details">
-                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
-                                Assinatura: Entidade Jurídica (Empresa)<br/>
-                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
-                                ID: ${entry.id.toUpperCase()}
-                            </div>
-                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
+                    <div class="signature-a1">
+                        <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                        <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                        <div class="a1-details">
+                            CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                            Assinatura: Entidade Jurídica (Empresa)<br/>
+                            Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                            ID: ${entry.id.toUpperCase()}
                         </div>
+                    </div>
                     ` : `
                         <div class="signature-block">
                             ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
@@ -1101,17 +1099,16 @@ export default function ClientesPage() {
                     const tech = technicalProfessionals?.find(p => p.id === selectedTechnicalId);
                     return `
                         ${(signatures.digitalA1 && tech?.certificadoA1Url) ? `
-                            <div class="signature-a1">
-                                <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
-                                <div class="a1-name">${tech?.name}</div>
-                                <div class="a1-details">
-                                    CPF: ${tech?.cpf || '—'}<br/>
-                                    RT: ${tech?.councilName || ''} ${tech?.councilNumber || ''}<br/>
-                                    Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
-                                    ID: ${entry.id.toUpperCase()}
-                                </div>
-                                <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
+                            <div class="a1-name">${tech?.name}</div>
+                            <div class="a1-details">
+                                CPF: ${tech?.cpf || '—'}<br/>
+                                RT: ${tech?.councilName || ''} ${tech?.councilNumber || ''}<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
                             </div>
+                        </div>
                         ` : `
                         <div class="signature-block">
                             ${(useDigitalSignature && tech?.signatureUrl) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
@@ -1254,9 +1251,24 @@ export default function ClientesPage() {
 
                 const imgProps = pdf.getImageProperties(imgData);
                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
                 
-                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Adicionar a primeira página
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Se houver mais conteúdo, adicionar páginas subsequentes
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight; // Deslocamento negativo
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
                 const pdfBase64 = pdf.output('datauristring').split(',')[1];
                 
                 document.body.removeChild(container);

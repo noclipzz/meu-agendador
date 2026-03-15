@@ -563,7 +563,6 @@ export default function FichasTecnicasPage() {
                                 Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
                                 ID: ${entry.id.toUpperCase()}
                             </div>
-                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
                         </div>
                     ` : `
                         <div class="signature-block">
@@ -588,7 +587,6 @@ export default function FichasTecnicasPage() {
                                 Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
                                 ID: ${entry.id.toUpperCase()}
                             </div>
-                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
                         </div>
                     ` : `
                         <div class="signature-block">
@@ -612,7 +610,6 @@ export default function FichasTecnicasPage() {
                                     Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
                                     ID: ${entry.id.toUpperCase()}
                                 </div>
-                                <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
                             </div>
                         ` : `
                         <div class="signature-block">
@@ -670,11 +667,11 @@ export default function FichasTecnicasPage() {
                     .signature-image { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 250px; height: 120px; object-fit: contain; mix-blend-mode: multiply; }
                     .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
                     .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; }
-                    .signature-a1 { border: 1px solid #0d9488; background: #fff; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 250px; flex: 1; }
-                    .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-                    .a1-name { font-size: 10px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
-                    .a1-details { font-size: 8px; color: #334155; margin-top: 2px; font-weight: 600; font-family: monospace; }
-                    .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+                    .signature-a1 { border: 1.5px solid #0d9488; background: #fff; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 220px; flex: 1; }
+                    .a1-title { font-size: 7px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+                    .a1-name { font-size: 9px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.1; }
+                    .a1-details { font-size: 7px; color: #334155; margin-top: 1px; font-weight: 600; font-family: monospace; line-height: 1.3; }
+                    .a1-footer { display: none; }
                     .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
                     .back-button { display: none !important; }
@@ -754,9 +751,24 @@ export default function FichasTecnicasPage() {
 
                 const imgProps = pdf.getImageProperties(imgData);
                 const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
                 
-                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                // Adicionar a primeira página
+                pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                // Se houver mais conteúdo, adicionar páginas subsequentes
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight; // Deslocamento negativo
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
                 const pdfBase64 = pdf.output('datauristring').split(',')[1];
                 
                 document.body.removeChild(container);
