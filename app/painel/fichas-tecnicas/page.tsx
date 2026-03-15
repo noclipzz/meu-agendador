@@ -354,7 +354,14 @@ export default function FichasTecnicasPage() {
         if (includeQR) {
             try {
                 const verifyUrl = `${window.location.origin}/verificar/documento/${entry.id}`;
-                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200, color: { dark: '#0d9488', light: '#ffffff' } });
+                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { 
+                    margin: 1, 
+                    width: 200, 
+                    color: { 
+                        dark: (useDigitalSignature && a1Choice && a1Choice !== 'none') ? '#064e3b' : '#0d9488', 
+                        light: '#ffffff' 
+                    } 
+                });
             } catch (err) { console.error("Erro QR Code:", err); }
         }
 
@@ -470,9 +477,11 @@ export default function FichasTecnicasPage() {
                 </div>
                 
                 ${includeQR ? `
-                <div class="auth-badge">
+                <div class="auth-badge" style="${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? 'border: 2px solid #0d9488; background: #ecfdf5;' : ''}">
                     <div class="auth-text">
-                        <div class="auth-label">Autenticidade</div>
+                        <div class="auth-label" style="${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? 'color: #065f46; font-weight: 900;' : ''}">
+                            ${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? 'VALIDAR ASSINATURA A1' : 'AUTENTICIDADE'}
+                        </div>
                         <div class="auth-hash">${entry.id.slice(0, 10).toUpperCase()}</div>
                     </div>
                     <img src="${qrCodeDataUrl}" class="qr-code" />

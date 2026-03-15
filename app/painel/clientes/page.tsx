@@ -850,7 +850,14 @@ export default function ClientesPage() {
         if (includeQR) {
             try {
                 const verifyUrl = `${window.location.origin}/verificar/documento/${entry.id}`;
-                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200, color: { dark: '#0d9488', light: '#ffffff' } });
+                qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { 
+                    margin: 1, 
+                    width: 200, 
+                    color: { 
+                        dark: signatures.digitalA1 ? '#064e3b' : '#0d9488', 
+                        light: '#ffffff' 
+                    } 
+                });
             } catch (err) { console.error("Erro QR Code:", err); }
         }
 
@@ -976,9 +983,11 @@ export default function ClientesPage() {
                 </div>
                 
                 ${includeQR ? `
-                <div class="auth-badge">
+                <div class="auth-badge" style="${signatures.digitalA1 ? 'border: 2px solid #0d9488; background: #ecfdf5;' : ''}">
                     <div class="auth-text">
-                        <div class="auth-label">Autenticidade</div>
+                        <div class="auth-label" style="${signatures.digitalA1 ? 'color: #065f46; font-weight: 900;' : ''}">
+                            ${signatures.digitalA1 ? 'VALIDAR ASSINATURA A1' : 'AUTENTICIDADE'}
+                        </div>
                         <div class="auth-hash">${entry.id.slice(0, 10).toUpperCase()}</div>
                     </div>
                     <img src="${qrCodeDataUrl}" class="qr-code" />

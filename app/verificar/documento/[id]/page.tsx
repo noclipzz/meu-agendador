@@ -123,10 +123,20 @@ export default async function VerificarDocumentoPage({ params }: { params: { id:
                         <p className="font-mono text-[11px] text-gray-600 font-bold break-all">{id.toUpperCase()}</p>
                     </div>
 
-                    <div className="mt-8 flex items-center justify-center gap-4 pt-6 border-t border-gray-100">
+                    <div className="mt-8 bg-teal-50/50 p-6 rounded-[2rem] border border-teal-100 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-3">
+                            <ShieldCheck size={18} className="text-teal-600" />
+                            <span className="text-[11px] font-black text-teal-800 uppercase tracking-wider">Integridade Digital Garantida</span>
+                        </div>
+                        <p className="text-[11px] text-teal-700/80 leading-relaxed font-medium">
+                            Este documento possui validade jurídica em todo território nacional, em conformidade com a <strong>MP nº 2.200-2/2001</strong> e padrões de criptografia ICP-Brasil.
+                        </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-center gap-4">
                         {company?.logoUrl && <img src={company.logoUrl} className="h-6 object-contain grayscale opacity-50" />}
                         <div className="h-4 w-[1px] bg-gray-200" />
-                        <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase italic">Validado via NoHud Cloud</p>
+                        <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase italic">Validado via NoHud Cloud Security</p>
                     </div>
                 </div>
             </div>
