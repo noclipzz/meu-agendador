@@ -108,22 +108,46 @@ export async function POST(req: Request) {
         let entry;
 
         if (id) {
+            // Verifica se está bloqueado
+            const existing = await db.formEntry.findUnique({ where: { id } });
+            if (existing?.isLocked) {
+                return NextResponse.json({ error: "Este documento está finalizado e não pode ser alterado." }, { status: 403 });
+            }
+
             // Atualiza existente
+            const updateData: any = { data, filledBy: userId };
+            
+            // Se estivermos bloqueando agora
+            if (body.lock) {
+                updateData.isLocked = true;
+                updateData.lockedAt = new Date();
+                updateData.printSettings = body.printSettings || {};
+            }
+
             entry = await db.formEntry.update({
                 where: { id },
-                data: { data, filledBy: userId },
+                data: updateData,
                 include: { template: { select: { name: true, fields: true, requireSignature: true } } }
             });
         } else {
             // Cria novo
+            const createData: any = {
+                templateId,
+                clientId,
+                companyId: company.id,
+                data,
+                filledBy: userId
+            };
+
+            // Se criar já bloqueado (ex: preenchimento e impressão imediata)
+            if (body.lock) {
+                createData.isLocked = true;
+                createData.lockedAt = new Date();
+                createData.printSettings = body.printSettings || {};
+            }
+
             entry = await db.formEntry.create({
-                data: {
-                    templateId,
-                    clientId,
-                    companyId: company.id,
-                    data,
-                    filledBy: userId
-                },
+                data: createData,
                 include: { template: { select: { name: true, fields: true, requireSignature: true } } }
             });
         }

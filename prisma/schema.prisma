@@ -484,6 +484,9 @@ model FormEntry {
   signatureUrl    String?
   signedAt        DateTime?
   status          String       @default("PENDENTE")
+  isLocked        Boolean      @default(false)
+  lockedAt        DateTime?
+  printSettings   Json?        @default("{}")
   client          Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 }

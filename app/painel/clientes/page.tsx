@@ -672,11 +672,32 @@ export default function ClientesPage() {
     }
 
     function imprimirFicha(entry: any) {
+        if (!entry) return;
+
+        // Se já estiver bloqueado, usa as configurações que foram salvas no momento da tranca
+        if (entry.isLocked) {
+            const savedSettings = typeof entry.printSettings === 'string' 
+                ? JSON.parse(entry.printSettings) 
+                : entry.printSettings;
+            
+            setPrintConfigModal({
+                entry,
+                docNumber: savedSettings.docNumber || entry.id.slice(-6).toUpperCase(),
+                customFooter: savedSettings.customFooter || "",
+                dateVisible: savedSettings.dateVisible ?? true,
+                twoColumns: savedSettings.twoColumns ?? false,
+                signatures: savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
+                useDigitalSignature: savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
+                includeQR: savedSettings.includeQR ?? true
+            });
+            return;
+        }
+
         const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
         let initialPrefs = {
             dateVisible: true,
             twoColumns: false,
-            signatures: { client: true, prof: true, company: false },
+            signatures: { client: true, prof: true, company: false, technical: false },
             useDigitalSignature: !!empresaInfo?.hasDigitalSignatureModule,
             includeQR: true
         };
@@ -698,6 +719,31 @@ export default function ClientesPage() {
     async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
         const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
+
+        // --- BLOQUEIO PERMANENTE NA PRIMEIRA IMPRESSÃO ---
+        if (!entry.isLocked) {
+            try {
+                const lockRes = await fetch('/api/painel/fichas-tecnicas/entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: entry.id,
+                        templateId: entry.templateId,
+                        clientId: entry.clientId,
+                        data: entry.data,
+                        lock: true,
+                        printSettings: { dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter }
+                    })
+                });
+                
+                if (lockRes.ok) {
+                    const updatedEntry = await lockRes.json();
+                    setFichaEntries(prev => prev.map(h => h.id === entry.id ? { ...h, ...updatedEntry } : h));
+                    if (fichaVisualizando?.id === entry.id) setFichaVisualizando({ ...fichaVisualizando, ...updatedEntry });
+                    toast.success("Documento finalizado e autenticado!");
+                }
+            } catch (err) { console.error(err); }
+        }
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
@@ -1513,8 +1559,20 @@ export default function ClientesPage() {
                                                     <button onClick={() => imprimirFicha(fichaVisualizando)} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-teal-700 transition"><Printer size={14} /> Imprimir</button>
                                                 </div>
                                                 <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-8">
-                                                    <h3 className="text-xl font-black dark:text-white mb-1">{fichaVisualizando.template?.name}</h3>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(fichaVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <div>
+                                                            <h3 className="text-xl font-black dark:text-white mb-1">{fichaVisualizando.template?.name}</h3>
+                                                            <p className="text-[10px] text-gray-400 font-bold uppercase mb-6">Preenchido em {format(new Date(fichaVisualizando.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                        </div>
+                                                        {fichaVisualizando.isLocked && (
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest pulse-fast">
+                                                                    <ShieldCheck size={14} /> Registro Finalizado
+                                                                </span>
+                                                                <p className="text-[8px] text-gray-400 font-bold mt-1 uppercase">Imutável e Autenticado</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <div className="space-y-4">
                                                         {(fichaVisualizando.template?.fields as any[])?.map((field: any) => {
                                                             const valor = (fichaVisualizando.data as any)?.[field.id];
@@ -1615,7 +1673,14 @@ export default function ClientesPage() {
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="text-[10px] text-gray-400 font-bold">{format(new Date(entry.createdAt), "dd/MM/yyyy 'às' HH:mm")}</p>
+                                                                        {entry.isLocked && (
+                                                                            <span className="flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter">
+                                                                                <ShieldCheck size={10} /> Finalizado
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             <div className="flex flex-wrap gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition justify-end">
@@ -1643,7 +1708,9 @@ export default function ClientesPage() {
                                                                     </a>
                                                                 )}
 
-                                                                <button onClick={() => { setFichaTemplateSelecionado(entry.templateId); setFichaFormData(entry.data as any); setFichaEditId(entry.id); setModalFichaAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar Valores"><Pencil size={14} /></button>
+                                                                {!entry.isLocked && (
+                                                                    <button onClick={() => { setFichaTemplateSelecionado(entry.templateId); setFichaFormData(entry.data as any); setFichaEditId(entry.id); setModalFichaAberto(true); }} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-blue-600 transition" title="Editar Valores"><Pencil size={14} /></button>
+                                                                )}
                                                                 <button onClick={() => imprimirFicha(entry)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-indigo-600 transition" title="Imprimir PDF"><Printer size={14} /></button>
                                                                 {userRole === "ADMIN" && (
                                                                     <button onClick={() => excluirFicha(entry.id)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:text-red-500 transition" title="Excluir"><Trash2 size={14} /></button>

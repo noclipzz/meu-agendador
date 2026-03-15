@@ -199,6 +199,26 @@ export default function FichasTecnicasPage() {
 
     function imprimirFicha() {
         if (!entryVisualizando) return;
+
+        // Se já estiver bloqueado, usa as configurações que foram salvas no momento da tranca
+        if (entryVisualizando.isLocked) {
+            const savedSettings = typeof entryVisualizando.printSettings === 'string' 
+                ? JSON.parse(entryVisualizando.printSettings) 
+                : entryVisualizando.printSettings;
+            
+            setPrintConfigModal({
+                entry: entryVisualizando,
+                docNumber: savedSettings.docNumber || entryVisualizando.id.slice(-6).toUpperCase(),
+                customFooter: savedSettings.customFooter || "",
+                dateVisible: savedSettings.dateVisible ?? true,
+                twoColumns: savedSettings.twoColumns ?? false,
+                signatures: savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
+                useDigitalSignature: savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
+                includeQR: savedSettings.includeQR ?? true
+            });
+            return;
+        }
+
         const savedPrintPrefs = localStorage.getItem('nohud_print_prefs');
         let initialPrefs = {
             dateVisible: true,
@@ -225,6 +245,36 @@ export default function FichasTecnicasPage() {
     async function executarImpressaoDaFicha() {
         if (!printConfigModal?.entry) return;
         const { entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter } = printConfigModal;
+
+        // --- BLOQUEIO PERMANENTE NA PRIMEIRA IMPRESSÃO ---
+        if (!entry.isLocked) {
+            try {
+                const lockRes = await fetch('/api/painel/fichas-tecnicas/entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: entry.id,
+                        templateId: entry.templateId,
+                        clientId: entry.clientId,
+                        data: entry.data,
+                        lock: true,
+                        printSettings: { dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter }
+                    })
+                });
+                
+                if (lockRes.ok) {
+                    const updatedEntry = await lockRes.json();
+                    // Atualiza na lista de histórico
+                    setHistory(prev => prev.map(h => h.id === entry.id ? { ...h, ...updatedEntry } : h));
+                    // Atualiza visualização atual
+                    setEntryVisualizando({ ...entryVisualizando, ...updatedEntry });
+                    toast.success("Documento finalizado e autenticado com sucesso!");
+                }
+            } catch (err) {
+                console.error("Erro ao bloquear documento:", err);
+            }
+        }
+
         const clienteSelecionado = entry.client;
 
         const fields = entry.template?.fields as any[] || [];
@@ -1255,6 +1305,11 @@ export default function FichasTecnicasPage() {
                                                 <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(entry.createdAt).toLocaleDateString('pt-BR')}</span>
                                                 <span className="flex items-center gap-1.5"><Clock size={12} /> {new Date(entry.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                                                 <span className="flex items-center gap-1.5"><Pencil size={12} /> {entry.professional?.name || "Sistema"}</span>
+                                                {entry.isLocked && (
+                                                    <span className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest animate-pulse">
+                                                        <ShieldCheck size={10} /> Finalizado
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -1434,12 +1489,24 @@ export default function FichasTecnicasPage() {
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-8 pt-4 custom-scrollbar space-y-6">
+                                {printConfigModal.entry.isLocked && (
+                                    <div className="bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-500/20 p-4 rounded-3xl flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                                            <ShieldCheck size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-emerald-800 dark:text-emerald-300 font-black text-xs uppercase tracking-widest">Documento Finalizado</p>
+                                            <p className="text-[10px] text-emerald-600/70 font-bold leading-tight">Este registro já foi impresso e autenticado. As configurações abaixo são permanentes.</p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Assinaturas */}
                                 <div className="space-y-3">
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <Pencil size={14} /> Campos de Assinatura
                                     </label>
-                                    <div className="grid grid-cols-1 gap-2">
+                                    <div className={`grid grid-cols-1 gap-2 ${printConfigModal.entry.isLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                                         <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.signatures.client ? 'border-teal-500 bg-teal-50/30 dark:bg-teal-900/10' : 'border-gray-100 dark:border-gray-800'}`}>
                                             <input
                                                 type="checkbox"
@@ -1496,7 +1563,7 @@ export default function FichasTecnicasPage() {
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <Calendar size={14} /> Exibição da Data
                                     </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                    <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all ${printConfigModal.entry.isLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                                         <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
                                             <input
                                                 type="checkbox"
@@ -1516,7 +1583,7 @@ export default function FichasTecnicasPage() {
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <ShieldCheck size={14} /> Autenticação Digital
                                     </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                    <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all ${printConfigModal.entry.isLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                                         <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
                                             <input
                                                 type="checkbox"
@@ -1539,7 +1606,7 @@ export default function FichasTecnicasPage() {
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                         <FileText size={14} /> Layout da Ficha
                                     </label>
-                                    <label className="flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all">
+                                    <label className={`flex items-center gap-3 p-3.5 rounded-xl border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 cursor-pointer hover:border-teal-500 transition-all ${printConfigModal.entry.isLocked ? 'opacity-60 pointer-events-none' : ''}`}>
                                         <div className="relative flex items-center w-12 h-6 rounded-full bg-gray-200 dark:bg-gray-700">
                                             <input
                                                 type="checkbox"
@@ -1564,7 +1631,8 @@ export default function FichasTecnicasPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase"
+                                        readOnly={printConfigModal.entry.isLocked}
+                                        className={`w-full border-2 dark:border-gray-700 p-3.5 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all uppercase ${printConfigModal.entry.isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         placeholder={`Ex: ${printConfigModal.entry?.id.slice(-6).toUpperCase()}`}
                                         value={printConfigModal.docNumber}
                                         onChange={(e) => setPrintConfigModal({ ...printConfigModal, docNumber: e.target.value.toUpperCase() })}
@@ -1580,7 +1648,8 @@ export default function FichasTecnicasPage() {
                                         <Plus size={14} /> Informações Adicionais no Rodapé
                                     </label>
                                     <textarea
-                                        className="w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none"
+                                        readOnly={printConfigModal.entry.isLocked}
+                                        className={`w-full border-2 dark:border-gray-700 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 text-sm font-bold dark:text-white outline-none focus:border-teal-500 transition-all resize-none ${printConfigModal.entry.isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         rows={3}
                                         placeholder="Insira observações gerais, termos de garantia, dados adicionais..."
                                         value={printConfigModal.customFooter}
