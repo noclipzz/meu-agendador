@@ -1069,10 +1069,10 @@ export default function ClientesPage() {
                         ${(signatures.digitalA1 && tech?.certificadoA1Url) ? `
                             <div class="signature-a1">
                                 <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
-                                <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                                <div class="a1-name">${tech?.name}</div>
                                 <div class="a1-details">
-                                    CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
-                                    RT: ${tech?.name || 'Responsável Técnico'}<br/>
+                                    CPF: ${tech?.cpf || '—'}<br/>
+                                    RT: ${tech?.councilName || ''} ${tech?.councilNumber || ''}<br/>
                                     Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
                                     ID: ${entry.id.toUpperCase()}
                                 </div>
@@ -1099,18 +1099,8 @@ export default function ClientesPage() {
         </div>
         </body></html>`;
 
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(html);
-            printWindow.document.close();
-            setTimeout(() => {
-                printWindow.print();
-                setPrintConfigModal(null);
-            }, 600);
-            return;
-        }
-
-        // --- NOVO: ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
+        // --- ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
+        // Se a assinatura digital está ativada, gerar PDF assinado e NÃO abrir janela de impressão
         if (signatures.digitalA1) {
             setSigningPdf(true);
             try {
@@ -1176,6 +1166,18 @@ export default function ClientesPage() {
             } finally {
                 setSigningPdf(false);
             }
+            return;
+        }
+
+        // --- FALLBACK: Impressão normal (sem assinatura digital) ---
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                setPrintConfigModal(null);
+            }, 600);
         }
     }
 

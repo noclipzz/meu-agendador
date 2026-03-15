@@ -432,6 +432,12 @@ export default function FichasTecnicasPage() {
             .signature-image { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 220px; height: 80px; object-fit: cover; object-position: center bottom; mix-blend-mode: multiply; z-index: 0; pointer-events: none; }
             .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
             .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
+            
+            .signature-a1 { border: 1px solid #0d9488; background: #fff; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 250px; flex: 1; position: relative; }
+            .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; width: 100%; }
+            .a1-name { font-size: 10px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.2; }
+            .a1-details { font-size: 8px; color: #334155; margin-top: 2px; font-weight: 600; line-height: 1.4; font-family: monospace; letter-spacing: -0.2px; width: 100%; }
+            .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; width: 100%; text-align: left; border-top: 1px solid #e2e8f0; padding-top: 4px; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
@@ -502,39 +508,83 @@ export default function FichasTecnicasPage() {
             <div class="signatures-container">
                 ${signatures.client ? `
                     <div class="signature-block">
-                        ${(useDigitalSignature && entry.client?.signatureUrl) ? `<img src="${entry.client.signatureUrl}" class="signature-image" />` : ''}
+                        ${(entry.client?.signatureUrl) ? `<img src="${entry.client.signatureUrl}" class="signature-image" />` : ''}
                         <div class="signature-line"></div>
                         <div class="signature-label">${entry.client?.name || 'Assinatura do Cliente'}</div>
                     </div>` : ''}
                 
                 ${signatures.prof ? `
-                    <div class="signature-block">
-                        ${(useDigitalSignature && entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
-                        <div class="signature-line"></div>
-                        <div class="signature-label">
-                            <div style="font-weight: 900;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
-                            ${entry.professional?.isTechnicalResponsible ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${entry.professional.councilName} ${entry.professional.councilNumber}</div>` : ''}
+                    ${(useDigitalSignature && entry.professional?.certificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                            <div class="a1-name">${entry.professional?.name}</div>
+                            <div class="a1-details">
+                                CPF: ${entry.professional?.cpf || '—'}<br/>
+                                Assinatura: Profissional Preenchedor<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
                         </div>
-                    </div>` : ''}
+                    ` : `
+                        <div class="signature-block">
+                            ${(entry.professional?.signatureUrl) ? `<img src="${entry.professional.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">
+                                <div style="font-weight: 900;">${entry.professional?.name || 'Assinatura do Profissional'}</div>
+                                ${entry.professional?.isTechnicalResponsible ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${entry.professional.councilName} ${entry.professional.councilNumber}</div>` : ''}
+                            </div>
+                        </div>
+                    `}
+                ` : ''}
 
                 ${signatures.company ? `
-                    <div class="signature-block">
-                        ${(useDigitalSignature && empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
-                        <div class="signature-line"></div>
-                        <div class="signature-label">${empresaInfo?.legalRepresentative || empresaInfo?.corporateName || empresaInfo?.name || 'Responsável Legal'}</div>
-                    </div>` : ''}
+                    ${(useDigitalSignature && empresaInfo.certificadoA1Url) ? `
+                        <div class="signature-a1">
+                            <div class="a1-title">🛡️ Documento Assinado Digitalmente</div>
+                            <div class="a1-name">${empresaInfo?.corporateName || empresaInfo?.name}</div>
+                            <div class="a1-details">
+                                CNPJ: ${empresaInfo?.cnpj || '—'}<br/>
+                                Assinatura: Entidade Jurídica (Empresa)<br/>
+                                Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                ID: ${entry.id.toUpperCase()}
+                            </div>
+                            <div class="a1-footer">Assinado em conformidade com a MP nº 2.200-2/2001</div>
+                        </div>
+                    ` : `
+                        <div class="signature-block">
+                            ${(empresaInfo.signatureUrl) ? `<img src="${empresaInfo.signatureUrl}" class="signature-image" />` : ''}
+                            <div class="signature-line"></div>
+                            <div class="signature-label">${empresaInfo?.legalRepresentative || empresaInfo?.corporateName || empresaInfo?.name || 'Responsável Legal'}</div>
+                        </div>
+                    `}
+                ` : ''}
 
                 ${signatures.technical ? (function () {
                     const tech = technicalProfessionals.find(p => p.id === selectedTechnicalId);
                     return `
+                        ${(useDigitalSignature && tech?.certificadoA1Url) ? `
+                            <div class="signature-a1">
+                                <div class="a1-title">🛡️ Assinado por Responsável Técnico</div>
+                                <div class="a1-name">${tech?.name}</div>
+                                <div class="a1-details">
+                                    CPF: ${tech?.cpf || '—'}<br/>
+                                    RT: ${tech?.councilName || ''} ${tech?.councilNumber || ''}<br/>
+                                    Emissão: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}<br/>
+                                    ID: ${entry.id.toUpperCase()}
+                                </div>
+                                <div class="a1-footer">Certificado A1 do Responsável Técnico</div>
+                            </div>
+                        ` : `
                         <div class="signature-block">
-                            ${(useDigitalSignature && tech?.signatureUrl) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
+                            ${(tech?.signatureUrl) ? `<img src="${tech.signatureUrl}" class="signature-image" />` : ''}
                             <div class="signature-line"></div>
                             <div class="signature-label">
                                 <div style="font-weight: 900;">${tech?.name || 'Assinatura do Responsável Técnico'}</div>
                                 ${tech?.councilName ? `<div style="font-size: 8px; font-weight: 700; color: #64748b; margin-top: 2px;">${tech.councilName} ${tech.councilNumber || ''}</div>` : ''}
                             </div>
-                        </div>`;
+                        </div>`}
+                    `;
                 })() : ''}
             </div>
 
@@ -546,18 +596,8 @@ export default function FichasTecnicasPage() {
         </div>
         </body></html>`;
 
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-            printWindow.document.write(html);
-            printWindow.document.close();
-            setTimeout(() => {
-                printWindow.print();
-                setPrintConfigModal(null);
-            }, 600);
-            return;
-        }
-
         // --- ASSINATURA DIGITAL CRIPTOGRÁFICA (PFX/A1 REAL) ---
+        // Se a assinatura digital está ativada, gerar PDF assinado e NÃO abrir janela de impressão
         if (useDigitalSignature && a1Choice && a1Choice !== 'none') {
             setSigningPdf(true);
             try {
@@ -609,7 +649,9 @@ export default function FichasTecnicasPage() {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 
-                toast.success("PDF assinado criptograficamente com sucesso!");
+                toast.success("PDF assinado criptograficamente com sucesso!", {
+                    description: "O arquivo foi baixado e já contém os metadados de autenticidade ICP-Brasil."
+                });
                 setPrintConfigModal(null);
             } catch (err: any) {
                 console.error("Erro assinatura digital:", err);
@@ -617,6 +659,18 @@ export default function FichasTecnicasPage() {
             } finally {
                 setSigningPdf(false);
             }
+            return;
+        }
+
+        // --- FALLBACK: Impressão normal (sem assinatura digital) ---
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+            setTimeout(() => {
+                printWindow.print();
+                setPrintConfigModal(null);
+            }, 600);
         }
     }
 
