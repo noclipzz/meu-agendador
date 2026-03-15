@@ -704,10 +704,23 @@ export default function FichasTecnicasPage() {
                 container.style.left = '-5000px';
                 container.style.top = '0';
                 container.style.width = '800px';
+                container.style.height = 'auto';
+                container.style.minHeight = 'auto';
+                container.style.maxHeight = 'none';
+                container.style.overflow = 'visible';
                 container.style.background = 'white';
                 container.style.opacity = '1';
                 container.style.visibility = 'visible';
                 document.body.appendChild(container);
+
+                // Remover restrições de altura de elementos internos
+                const pageElFT = container.querySelector('.page') as HTMLElement;
+                if (pageElFT) {
+                    pageElFT.style.height = 'auto';
+                    pageElFT.style.minHeight = 'auto';
+                    pageElFT.style.maxHeight = 'none';
+                    pageElFT.style.flex = 'none';
+                }
 
                 // Garantir o carregamento de todos os ativos (imagens/logos)
                 const imgs = container.querySelectorAll('img');
@@ -729,17 +742,14 @@ export default function FichasTecnicasPage() {
                 const { jsPDF } = await import('jspdf');
 
                 const canvas = await html2canvas(container, {
-                    scale: 3, // Aumentar escala para nitidez máxima
+                    scale: 2,
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                     width: 800,
-                    windowWidth: 1024, // Simular tela maior para layout desktop fixo
-                    height: container.scrollHeight,
-                    scrollY: 0,
-                    x: 0,
-                    y: 0
+                    windowWidth: 1024,
+                    windowHeight: container.offsetHeight || container.scrollHeight || 15000,
                 });
 
                 const pdf = new jsPDF({
