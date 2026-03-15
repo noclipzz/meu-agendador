@@ -447,10 +447,11 @@ export default function FichasTecnicasPage() {
             <a href="javascript:window.close()" class="back-button">← Voltar para a Ficha</a>
 
             ${(useDigitalSignature && a1Choice && a1Choice !== 'none') ? `
-            <div style="position: absolute; top: 80px; right: 20px; border: 3px double #0d9488; background: rgba(13, 148, 136, 0.05); padding: 12px; border-radius: 50%; width: 120px; height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; line-height: 1.1; color: #0d9488; text-align: center; pointer-events: none; z-index: 100;">
-                <span style="font-size: 8px; text-transform: uppercase; margin-bottom: 2px;">Autenticado por</span>
-                <span style="font-size: 11px; text-transform: uppercase;">Certificado<br/>Digital A1</span>
-                <span style="font-size: 7px; margin-top: 4px; opacity: 0.8;">Padrão ICP-Brasil</span>
+            <div style="position: absolute; top: 120px; right: 30px; border: 4px double #0d9488; background: rgba(255, 255, 255, 0.95); padding: 15px; border-radius: 50%; width: 140px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-15deg); font-weight: 900; line-height: 1.1; color: #0d9488; text-align: center; pointer-events: none; z-index: 1000; box-shadow: 0 0 0 2px #0d9488;">
+                <span style="font-size: 9px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">Documento</span>
+                <span style="font-size: 14px; text-transform: uppercase; border-top: 1px solid #0d9488; border-bottom: 1px solid #0d9488; padding: 2px 0; margin: 2px 0;">Assinado</span>
+                <span style="font-size: 10px; text-transform: uppercase;">Digitalmente</span>
+                <span style="font-size: 7px; margin-top: 5px; opacity: 0.8; font-family: sans-serif;">Padrão A1 ICP-Brasil</span>
             </div>
             ` : ''}
             
@@ -1547,7 +1548,10 @@ export default function FichasTecnicasPage() {
                                                 type="checkbox"
                                                 className="hidden"
                                                 checked={printConfigModal.signatures.client}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, client: e.target.checked } })}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, client: isChecked } });
+                                                }}
                                             />
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.client ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
                                                 {printConfigModal.signatures.client && <X size={12} className="text-white" />}
@@ -1559,7 +1563,17 @@ export default function FichasTecnicasPage() {
                                                 type="checkbox"
                                                 className="hidden"
                                                 checked={printConfigModal.signatures.prof}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, prof: e.target.checked } })}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    let newChoice = printConfigModal.a1Choice;
+                                                    if (!isChecked && newChoice === 'prof') newChoice = 'none';
+                                                    if (isChecked && printConfigModal.useDigitalSignature && newChoice === 'none' && printConfigModal.entry.professional?.certificadoA1Url) newChoice = 'prof';
+                                                    setPrintConfigModal({ 
+                                                        ...printConfigModal, 
+                                                        signatures: { ...printConfigModal.signatures, prof: isChecked },
+                                                        a1Choice: newChoice
+                                                    });
+                                                }}
                                             />
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.prof ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
                                                 {printConfigModal.signatures.prof && <X size={12} className="text-white" />}
@@ -1571,7 +1585,17 @@ export default function FichasTecnicasPage() {
                                                 type="checkbox"
                                                 className="hidden"
                                                 checked={printConfigModal.signatures.company}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, company: e.target.checked } })}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    let newChoice = printConfigModal.a1Choice;
+                                                    if (!isChecked && newChoice === 'company') newChoice = 'none';
+                                                    if (isChecked && printConfigModal.useDigitalSignature && newChoice === 'none' && empresaInfo.certificadoA1Url) newChoice = 'company';
+                                                    setPrintConfigModal({ 
+                                                        ...printConfigModal, 
+                                                        signatures: { ...printConfigModal.signatures, company: isChecked },
+                                                        a1Choice: newChoice
+                                                    });
+                                                }}
                                             />
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.company ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
                                                 {printConfigModal.signatures.company && <X size={12} className="text-white" />}
@@ -1583,7 +1607,17 @@ export default function FichasTecnicasPage() {
                                                 type="checkbox"
                                                 className="hidden"
                                                 checked={printConfigModal.signatures.technical}
-                                                onChange={(e) => setPrintConfigModal({ ...printConfigModal, signatures: { ...printConfigModal.signatures, technical: e.target.checked } })}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    let newChoice = printConfigModal.a1Choice;
+                                                    if (!isChecked && newChoice === 'technical') newChoice = 'none';
+                                                    if (isChecked && printConfigModal.useDigitalSignature && newChoice === 'none' && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url) newChoice = 'technical';
+                                                    setPrintConfigModal({ 
+                                                        ...printConfigModal, 
+                                                        signatures: { ...printConfigModal.signatures, technical: isChecked },
+                                                        a1Choice: newChoice
+                                                    });
+                                                }}
                                             />
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${printConfigModal.signatures.technical ? 'bg-orange-500 border-orange-500' : 'border-gray-300 dark:border-gray-600'}`}>
                                                 {printConfigModal.signatures.technical && <X size={12} className="text-white" />}
@@ -1610,9 +1644,13 @@ export default function FichasTecnicasPage() {
                                             </div>
                                         )}
 
-                                        {((printConfigModal.signatures.prof && printConfigModal.entry.professional?.certificadoA1Url) ||
-                                          (printConfigModal.signatures.company && empresaInfo.certificadoA1Url) ||
-                                          (printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url)) && (
+                                        {Object.entries(printConfigModal.signatures).some(([key, val]) => 
+                                            val && (
+                                                (key === 'prof' && !!printConfigModal.entry.professional?.certificadoA1Url) ||
+                                                (key === 'company' && !!empresaInfo.certificadoA1Url) ||
+                                                (key === 'technical' && !!technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url)
+                                            )
+                                        ) && (
                                             <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${printConfigModal.useDigitalSignature ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10' : 'border-gray-100 dark:border-gray-800'} animate-in zoom-in-95`}>
                                                 <input
                                                     type="checkbox"
@@ -1623,7 +1661,7 @@ export default function FichasTecnicasPage() {
                                                         let newChoice = printConfigModal.a1Choice;
 
                                                         if (isChecked && newChoice === 'none') {
-                                                            // Auto-seleciona a melhor opção
+                                                            // Auto-seleciona a melhor opção baseada no que está marcado
                                                             if (printConfigModal.signatures.company && empresaInfo.certificadoA1Url) newChoice = 'company';
                                                             else if (printConfigModal.signatures.technical && technicalProfessionals.find(p => p.id === printConfigModal.selectedTechnicalId)?.certificadoA1Url) newChoice = 'technical';
                                                             else if (printConfigModal.signatures.prof && printConfigModal.entry.professional?.certificadoA1Url) newChoice = 'prof';
