@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { name, description, fields, requireSignature } = body;
+        const { name, description, fields, requireSignature, accentColor, fieldsLayout } = body;
 
         if (!name || !fields || !Array.isArray(fields)) {
             return NextResponse.json({ error: "Nome e campos são obrigatórios" }, { status: 400 });
@@ -70,6 +70,8 @@ export async function POST(req: Request) {
                 description: description || null,
                 fields,
                 requireSignature: !!requireSignature,
+                accentColor: accentColor || "#f8fafc",
+                fieldsLayout: fieldsLayout || "stacked",
                 companyId: company.id
             }
         });

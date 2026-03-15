@@ -613,14 +613,14 @@ export default function FichasTecnicasPage() {
 
             <h1 class="doc-title">${entry.template?.name}</h1>
 
-            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px; background-color: ${accentColor} !important;">
+            <div class="client-box" style="margin-bottom: 10px; padding: 12px 20px; background-color: ${accentColor} !important; break-inside: avoid; page-break-inside: avoid;">
                 <div class="client-item"><label>Empresa</label><span>${nomeEmpresa}</span></div>
                 <div class="client-item"><label>CNPJ</label><span>${empresaInfo?.cnpj || '—'}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${empresaInfo?.phone || '—'}</span></div>
                 <div class="client-item full"><label>Endereço Completo</label><span>${empresaInfo?.address || ''}${empresaInfo?.number ? ', ' + empresaInfo.number : ''}${empresaInfo?.complement ? ' ' + empresaInfo.complement : ''}${empresaInfo?.neighborhood ? ' - ' + empresaInfo.neighborhood : ''}${empresaInfo?.city ? ' - ' + empresaInfo.city : ''}${empresaInfo?.state ? '/' + empresaInfo.state : ''}</span></div>
             </div>
 
-            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px; background-color: ${accentColor} !important;">
+            <div class="client-box" style="margin-bottom: 25px; padding: 12px 20px; background-color: ${accentColor} !important; break-inside: avoid; page-break-inside: avoid;">
                 <div class="client-item"><label>Cliente</label><span>${clienteSelecionado?.name || '—'}</span></div>
                 <div class="client-item"><label>${clienteSelecionado?.clientType === 'JURIDICA' ? 'CNPJ' : 'CPF'}</label><span>${clienteSelecionado?.clientType === 'JURIDICA' ? (clienteSelecionado?.cnpj || '—') : (clienteSelecionado?.cpf || '—')}</span></div>
                 <div class="client-item"><label>Telefone</label><span>${clienteSelecionado?.phone || '—'}</span></div>
@@ -773,6 +773,8 @@ export default function FichasTecnicasPage() {
                     .footer-line { border-top: 1px solid #e2e8f0; margin-top: 40px; padding-top: 15px; text-align: center; }
                     .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
                     .back-button { display: none !important; }
+                    /* Prevenir quebra de página no PDF */
+                    .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1, .header { page-break-inside: avoid !important; break-inside: avoid !important; }
                 </style>
                 ${
                    // Remover o botão 'Voltar' e qualquer cabeçalho indesejado do HTML injetado
@@ -840,13 +842,27 @@ export default function FichasTecnicasPage() {
                 const { jsPDF } = await import('jspdf');
 
                 const canvas = await html2canvas(container, {
-                    scale: 2,
+                    scale: 3, // Aumentar escala para nitidez máxima
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                     width: 800,
                     windowWidth: 1024,
+                    onclone: (clonedDoc) => {
+                        // Forçar estilos de quebra de página no clone antes da captura
+                        const style = clonedDoc.createElement('style');
+                        style.innerHTML = `
+                            .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1, .header { 
+                                break-inside: avoid !important; 
+                                page-break-inside: avoid !important; 
+                                -webkit-column-break-inside: avoid !important;
+                                position: relative !important;
+                                display: block !important;
+                            }
+                        `;
+                        clonedDoc.head.appendChild(style);
+                    },
                     windowHeight: container.offsetHeight || container.scrollHeight || 15000,
                 });
 
@@ -1593,7 +1609,7 @@ export default function FichasTecnicasPage() {
                             </h3>
 
                             {/* CAIXA DO PREVIEW - MOCKUP DO FORMULÁRIO */}
-                            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 sm:p-7 max-h-[70vh] overflow-y-auto custom-scrollbar relative" style={{ backgroundColor: accentColor }}>
+                            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 sm:p-7 max-h-[70vh] overflow-y-auto custom-scrollbar relative">
                                 <div className={`border-b dark:border-gray-800 pb-4 mb-5 ${accentColor !== '#f8fafc' ? 'border-gray-900/10' : ''}`}>
                                     <h2 className="font-black text-2xl dark:text-white leading-tight">{nome || "Nome da Ficha"}</h2>
                                     <p className="text-sm text-gray-500 mt-1.5">{descricao || "A descrição explicativa do seu formulário aparecerá aqui."}</p>
@@ -1630,7 +1646,7 @@ export default function FichasTecnicasPage() {
                                                                 <div className={`text-sm font-black leading-relaxed formatted-preview ${campo.highlight ? 'text-blue-800 dark:text-blue-300' : 'text-black dark:text-white'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
                                                             </div>
                                                         ) : campo.type === 'client_data' ? (
-                                                            <div className="w-full bg-black/5 dark:bg-white/10 p-4 rounded-xl border border-black/10 dark:border-white/10 mt-2" style={{ backgroundColor: accentColor !== '#f8fafc' ? 'rgba(0,0,0,0.02)' : undefined }}>
+                                                            <div className="w-full p-4 rounded-xl border mt-2 transition-all duration-300" style={{ backgroundColor: accentColor, borderColor: accentColor === '#f8fafc' ? 'rgba(0,0,0,0.1)' : 'transparent' }}>
                                                                 <div className="text-[9px] font-black text-gray-500 uppercase mb-2">Simulação: Dados do Cliente</div>
                                                                 <div className="grid grid-cols-2 gap-2 text-[10px] font-black text-gray-800 dark:text-gray-200">
                                                                     <div>NOME: <span className="text-gray-400 italic font-medium">Ex: Yan Kairon</span></div>
@@ -1638,7 +1654,7 @@ export default function FichasTecnicasPage() {
                                                                 </div>
                                                             </div>
                                                         ) : campo.type === 'company_data' ? (
-                                                            <div className="w-full bg-black/5 dark:bg-white/10 p-4 rounded-xl border border-black/10 dark:border-white/10 mt-2" style={{ backgroundColor: accentColor !== '#f8fafc' ? 'rgba(0,0,0,0.02)' : undefined }}>
+                                                            <div className="w-full p-4 rounded-xl border mt-2 transition-all duration-300" style={{ backgroundColor: accentColor, borderColor: accentColor === '#f8fafc' ? 'rgba(0,0,0,0.1)' : 'transparent' }}>
                                                                 <div className="text-[9px] font-black text-gray-500 uppercase mb-2">Simulação: Dados da Empresa</div>
                                                                 <div className="grid grid-cols-2 gap-2 text-[10px] font-black text-gray-800 dark:text-gray-200">
                                                                     <div>EMPRESA: <span className="text-gray-400 italic font-medium">{empresaInfo.name}</span></div>
