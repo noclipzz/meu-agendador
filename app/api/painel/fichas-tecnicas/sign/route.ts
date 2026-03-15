@@ -14,12 +14,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { pdfBase64, choice, professionalId, entryId } = body;
 
-    if (!pdfBase64 || !choice || choice === 'none') {
-      console.log("[SIGN_API] Dados recebidos - choice:", choice, "pdfBase64 length:", pdfBase64?.length, "professionalId:", professionalId, "entryId:", entryId);
-      return NextResponse.json({ error: "Dados insuficientes para assinatura. Selecione um assinante A1 válido." }, { status: 400 });
+    if (!pdfBase64) {
+      return NextResponse.json({ error: "PDF não recebido para assinatura." }, { status: 400 });
     }
-    
-    console.log("[SIGN_API] Assinando com choice:", choice, "professionalId:", professionalId);
+
+    console.log("[SIGN_API] Recebido - choice:", choice, "professionalId:", professionalId, "entryId:", entryId);
 
     // 1. Buscar a empresa do usuário para pegar os certificados/senhas
     const empresa = await prisma.company.findFirst({
@@ -36,43 +35,73 @@ export async function POST(req: Request) {
     let p12Password = "";
     let signerName = "";
 
-    // 2. Definir qual certificado usar
-    if (choice === "company") {
-      p12Url = empresa.certificadoA1Url || "";
-      p12Password = empresa.certificadoSenha || "";
+    // 2. Definir qual certificado usar (com auto-detecção se choice for 'none' ou vazio)
+    let effectiveChoice = choice;
+
+    // Se o choice é 'none', vazio ou inválido, auto-detectar
+    if (!effectiveChoice || effectiveChoice === 'none') {
+      console.log("[SIGN_API] Choice vazio/none, auto-detectando certificado...");
+      
+      // Tentar empresa primeiro
+      if ((empresa as any).certificadoA1Url) {
+        effectiveChoice = 'company';
+      }
+      // Tentar profissional técnico
+      else if (professionalId) {
+        const techProf = await prisma.professional.findUnique({ where: { id: professionalId } });
+        if ((techProf as any)?.certificadoA1Url) {
+          effectiveChoice = 'technical';
+        }
+      }
+      // Tentar profissional preenchedor
+      else if (entryId) {
+        const entry = await prisma.formEntry.findUnique({ where: { id: entryId } });
+        if (entry?.filledBy) {
+          const prof = await prisma.professional.findFirst({ where: { userId: entry.filledBy } });
+          if ((prof as any)?.certificadoA1Url) {
+            effectiveChoice = 'prof';
+          }
+        }
+      }
+
+      if (!effectiveChoice || effectiveChoice === 'none') {
+        return NextResponse.json({ error: "Nenhum certificado A1 encontrado. Cadastre um certificado nas configurações." }, { status: 400 });
+      }
+      
+      console.log("[SIGN_API] Auto-detectado choice:", effectiveChoice);
+    }
+
+    console.log("[SIGN_API] Assinando com choice:", effectiveChoice);
+
+    if (effectiveChoice === "company") {
+      p12Url = (empresa as any).certificadoA1Url || "";
+      p12Password = (empresa as any).certificadoSenha || "";
       signerName = empresa.corporateName || empresa.name;
-    } else if (choice === "technical" && professionalId) {
+    } else if (effectiveChoice === "technical" && professionalId) {
       const techProf = await prisma.professional.findUnique({
         where: { id: professionalId },
       });
-      p12Url = techProf?.certificadoA1Url || "";
-      p12Password = techProf?.certificadoSenha || ""; // Supondo que adicionamos senha no profissional também
+      p12Url = (techProf as any)?.certificadoA1Url || "";
+      p12Password = (techProf as any)?.certificadoSenha || "";
       signerName = techProf?.name || "";
-    } else if (choice === "prof") {
-       // Pega o profissional que preencheu a ficha
+    } else if (effectiveChoice === "prof") {
        const entry = await prisma.formEntry.findUnique({
            where: { id: entryId },
            include: { template: true }
        });
        
-       // Note: FormEntry doesn't have a direct professional relation in schema, 
-       // but it has a clientId. Let's assume the user who filled it (filledBy) 
-       // is the one we want to check, but since we don't have a direct link 
-       // to Professional by clerkId easily here without more queries, 
-       // I'll stick to technical and company for now or fetch by filledBy.
-       
        if (entry?.filledBy) {
            const prof = await prisma.professional.findFirst({
                where: { userId: entry.filledBy }
            });
-           p12Url = prof?.certificadoA1Url || "";
-           p12Password = prof?.certificadoSenha || "";
+           p12Url = (prof as any)?.certificadoA1Url || "";
+           p12Password = (prof as any)?.certificadoSenha || "";
            signerName = prof?.name || "";
        }
     }
 
     if (!p12Url) {
-      return NextResponse.json({ error: "Certificado A1 não encontrado para o assinante selecionado" }, { status: 400 });
+      return NextResponse.json({ error: "Certificado A1 não encontrado para o assinante selecionado (" + effectiveChoice + ")" }, { status: 400 });
     }
 
     // 3. Baixar o certificado
@@ -85,7 +114,6 @@ export async function POST(req: Request) {
     // 4. Preparar o PDF para assinatura (Adicionar placeholder)
     const pdfBuffer = Buffer.from(pdfBase64, "base64");
     
-    // node-signpdf plainAddPlaceholder adiciona o espaço necessário para a assinatura PKCS7
     let pdfWithPlaceholder;
     try {
         pdfWithPlaceholder = plainAddPlaceholder({
