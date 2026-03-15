@@ -630,8 +630,8 @@ export default function FichasTecnicasPage() {
                     .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .fields-grid { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
-                    .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
+                    .fields-grid { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
+                    .field-item { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
                     .field-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
                     .field-value { font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
                     .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.3333%; } .w-25 { width: 25%; } .w-66 { width: 66.6666%; } .w-75 { width: 75%; }
