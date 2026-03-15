@@ -1022,8 +1022,8 @@ export default function ClientesPage() {
                 body { padding:0; }
                 .page { padding: 40px; max-width: 100%; border: none; }
                 .back-button { display:none !important; }
+                .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1 { break-inside: avoid; page-break-inside: avoid; }
                 .fields-grid { break-inside: auto; }
-                .field-item { break-inside: avoid; }
             }
         </style></head><body>
         <div class="page">

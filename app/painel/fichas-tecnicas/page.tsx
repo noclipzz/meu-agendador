@@ -67,6 +67,8 @@ interface Template {
     description: string | null;
     fields: FormField[];
     requireSignature?: boolean;
+    accentColor?: string;
+    fieldsLayout?: 'stacked' | 'inline';
     _count?: { entries: number };
     createdAt: string;
 }
@@ -117,6 +119,8 @@ export default function FichasTecnicasPage() {
     const [nome, setNome] = useState("");
     const [descricao, setDescricao] = useState("");
     const [requireSignature, setRequireSignature] = useState(false);
+    const [accentColor, setAccentColor] = useState("#f8fafc");
+    const [fieldsLayout, setFieldsLayout] = useState<'stacked' | 'inline'>('stacked');
     const [campos, setCampos] = useState<FormField[]>([]);
     const [salvando, setSalvando] = useState(false);
     const [templateParaExcluir, setTemplateParaExcluir] = useState<string | null>(null);
@@ -426,6 +430,9 @@ export default function FichasTecnicasPage() {
             } catch (err) { console.error("Erro QR Code:", err); }
         }
 
+        const accentColor = entry.template?.accentColor || "#f8fafc";
+        const fLayout = entry.template?.fieldsLayout || "stacked";
+
         // Gerar HTML dos campos em duas colunas (COM SUPORTE MOBILE)
         let camposHtml = '';
         sections.forEach(section => {
@@ -446,7 +453,8 @@ export default function FichasTecnicasPage() {
                 if (isStatic) {
                     const h = (item as any).highlight;
                     const style = h ? `background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;` : `border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px;`;
-                    const valueStyle = h ? `color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #475569; font-weight: 500; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
+                    // Máxima visibilidade: Cor preta (#000) e peso Black (900)
+                    const valueStyle = h ? `color: #1e3a8a; font-weight: 900; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #000000; font-weight: 900; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
                     
                     camposHtml += `<div class="field-item w-100" style="${style}">
                         <div class="field-value" style="${valueStyle}">${renderMarkdown(item.value)}</div>
@@ -466,8 +474,11 @@ export default function FichasTecnicasPage() {
                 if (twoColumns && !isLong) widthClass = 'w-50';
                 if (isLong) widthClass = 'w-100';
 
-                camposHtml += `<div class="field-item ${widthClass}">
-                    <div class="field-label">${renderMarkdown(item.label)}</div>
+                const isInline = fLayout === 'inline' && !isLong;
+                const layoutClass = isInline ? 'layout-inline' : '';
+
+                camposHtml += `<div class="field-item ${widthClass} ${layoutClass}" style="min-height: ${isInline ? '30px' : '48px'};">
+                    <div class="field-label">${renderMarkdown(item.label)}${isInline ? ':' : ''}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
             });
@@ -506,19 +517,22 @@ export default function FichasTecnicasPage() {
 
             .doc-title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 10px; }
             
-            .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 30px; }
+            .client-box { background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
             .client-item { display: flex; flex-direction: column; }
-            .client-item label { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px; }
-            .client-item span { font-size: 12px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+            .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+            .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
             .client-item.full { grid-column: span 2; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
             .section-header { font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; background: #eff6ff; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-left: 4px solid #3b82f6; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
             
             .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
-            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
+            .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 15px; min-height: 30px; }
+            .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
+            .field-item.layout-inline .field-value { margin-top: 0; }
             .field-item:last-child { border-bottom: none; }
-            .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; }
+            .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; margin-bottom: 1px; }
             .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
             .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; }
             
@@ -544,8 +558,8 @@ export default function FichasTecnicasPage() {
                 body { padding:0; }
                 .page { padding: 40px; max-width: 100%; border: none; }
                 .back-button { display:none !important; }
+                .client-box, .section-header, .field-item, .signatures-container, .signature-block, .signature-a1 { break-inside: avoid; page-break-inside: avoid; }
                 .fields-grid { break-inside: auto; }
-                .field-item { break-inside: avoid; }
             }
         </style></head><body>
         <div class="page">
@@ -718,7 +732,7 @@ export default function FichasTecnicasPage() {
                     .header-doc { font-size: 9px; font-weight: 600; color: #64748b; margin-top: 2px; }
                     .doc-title { font-size: 22px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 25px; margin-top: 20px; }
                     .section-title { font-size: 14px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 30px; margin-bottom: 12px; display: block; width: 100%; clear: both; line-height: 1.5; }
-                    .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
+                    .client-box { background: ${accentColor}; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 20px; margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 30px; }
                     .client-item { display: flex; flex-direction: column; }
                     .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
                     .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
@@ -726,6 +740,9 @@ export default function FichasTecnicasPage() {
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; }
                     .fields-grid { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
                     .field-item { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
+                    .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 12px; min-height: 30px; }
+                    .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
+                    .field-item.layout-inline .field-value { margin-top: 0; }
                     .field-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
                     .field-value { font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
                     .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.3333%; } .w-25 { width: 25%; } .w-66 { width: 66.6666%; } .w-75 { width: 75%; }
@@ -938,6 +955,8 @@ export default function FichasTecnicasPage() {
         setNome("");
         setDescricao("");
         setRequireSignature(false);
+        setAccentColor("#f8fafc");
+        setFieldsLayout('stacked');
         setCampos([]);
         setEditando(true);
     }
@@ -947,6 +966,8 @@ export default function FichasTecnicasPage() {
         setNome(t.name);
         setDescricao(t.description || "");
         setRequireSignature(!!t.requireSignature);
+        setAccentColor(t.accentColor || "#f8fafc");
+        setFieldsLayout(t.fieldsLayout || 'stacked');
         setCampos(t.fields || []);
         setEditando(true);
     }
@@ -1029,7 +1050,14 @@ export default function FichasTecnicasPage() {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: nome, description: descricao, fields: campos, requireSignature })
+                body: JSON.stringify({ 
+                    name: nome, 
+                    description: descricao, 
+                    fields: campos, 
+                    requireSignature,
+                    accentColor,
+                    fieldsLayout
+                })
             });
 
             if (res.ok) {
@@ -1055,7 +1083,7 @@ export default function FichasTecnicasPage() {
     // --- EDITOR DE TEMPLATE ---
     if (editando) {
         return (
-            <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
+            <div className="space-y-6 pb-20 p-2 font-sans">
                 {/* HEADER */}
                 <div className="flex justify-between items-center">
                     <div>
@@ -1092,24 +1120,63 @@ export default function FichasTecnicasPage() {
                 </div>
 
                 {/* OPÇÕES ADICIONAIS DO TEMPLATE */}
-                <div className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-5 mb-4 border-dashed border-gray-200">
-                    <label className="flex items-start sm:items-center gap-3 cursor-pointer group">
-                        <input
-                            type="checkbox"
-                            checked={requireSignature}
-                            onChange={e => setRequireSignature(e.target.checked)}
-                            className="w-5 h-5 accent-blue-600 mt-0.5 sm:mt-0"
-                            disabled={!empresaInfo.hasDigitalSignatureModule}
-                        />
+                <div className="bg-white dark:bg-gray-900 border-2 dark:border-gray-800 rounded-2xl p-6 mb-4 border-dashed border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* Assinatura */}
                         <div>
-                            <p className={`font-black text-sm uppercase ${empresaInfo.hasDigitalSignatureModule ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'}`}>Exigir Assinatura Eletrônica do Cliente</p>
-                            <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
-                                {empresaInfo.hasDigitalSignatureModule
-                                    ? "Sempre que esta ficha for preenchida, o sistema vai gerar um link para o cliente ler e assinar pelo celular."
-                                    : "Para usar a assinatura eletrônica, você precisa ter o Módulo Ativo na sua assinatura."}
-                            </p>
+                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Assinatura</label>
+                            <label className={`flex items-start gap-3 cursor-pointer group ${!empresaInfo.hasDigitalSignatureModule ? 'opacity-60 grayscale' : ''}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={requireSignature}
+                                    onChange={e => setRequireSignature(e.target.checked)}
+                                    className="w-5 h-5 accent-blue-600 mt-0.5"
+                                    disabled={!empresaInfo.hasDigitalSignatureModule}
+                                />
+                                <div>
+                                    <p className="font-black text-sm uppercase text-gray-700 dark:text-gray-300">Assinatura Eletrônica</p>
+                                    {!empresaInfo.hasDigitalSignatureModule && (
+                                        <span className="text-[8px] text-amber-600 font-bold uppercase tracking-tight">MÓDULO DESATIVADO</span>
+                                    )}
+                                </div>
+                            </label>
                         </div>
-                    </label>
+
+                        {/* Layout dos Campos */}
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Layout das Informações</label>
+                            <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl h-10">
+                                <button
+                                    onClick={() => setFieldsLayout('stacked')}
+                                    className={`flex-1 flex items-center justify-center text-[10px] font-black rounded-lg transition ${fieldsLayout === 'stacked' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600' : 'text-gray-500'}`}
+                                >
+                                    EMPILHADO
+                                </button>
+                                <button
+                                    onClick={() => setFieldsLayout('inline')}
+                                    className={`flex-1 flex items-center justify-center text-[10px] font-black rounded-lg transition ${fieldsLayout === 'inline' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600' : 'text-gray-500'}`}
+                                >
+                                    EM LINHA
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Cor de Destaque */}
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase mb-2 block">Cor de Destaque (Fundo)</label>
+                            <div className="flex gap-2 items-center h-10">
+                                {["#f8fafc", "#eff6ff", "#f0fdf4", "#fefce8", "#fef2f2", "#fffbeb"].map(color => (
+                                    <button
+                                        key={color}
+                                        onClick={() => setAccentColor(color)}
+                                        className={`w-7 h-7 rounded-full border-2 transition ${accentColor === color ? 'border-blue-600 scale-110 shadow-md' : 'border-gray-200 dark:border-gray-700 hover:scale-105'}`}
+                                        style={{ backgroundColor: color }}
+                                        title={color}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* FORMULÁRIO E LIVE PREVIEW EM DUAS COLUNAS */}
@@ -1480,15 +1547,15 @@ export default function FichasTecnicasPage() {
                     </div>
 
                     {/* COLUNA DIREITA: LIVE PREVIEW OTIMIZADO */}
-                    <div className="w-full lg:w-[45%] xl:w-[40%] lg:sticky top-20 z-10 order-first lg:order-last h-fit mb-8">
+                    <div className="w-full lg:w-[45%] xl:w-[40%] sticky top-6 z-10 order-first lg:order-last h-fit mb-8 self-start">
                         <div className="bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-4 sm:p-6 overflow-hidden">
                             <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                                 <FileText size={16} /> Visão em Tempo Real
                             </h3>
 
                             {/* CAIXA DO PREVIEW - MOCKUP DO FORMULÁRIO */}
-                            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 sm:p-7 max-h-[70vh] overflow-y-auto custom-scrollbar relative">
-                                <div className="border-b dark:border-gray-800 pb-4 mb-5">
+                            <div className="bg-white dark:bg-gray-950 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 sm:p-7 max-h-[70vh] overflow-y-auto custom-scrollbar relative" style={{ backgroundColor: accentColor }}>
+                                <div className={`border-b dark:border-gray-800 pb-4 mb-5 ${accentColor !== '#f8fafc' ? 'border-gray-900/10' : ''}`}>
                                     <h2 className="font-black text-2xl dark:text-white leading-tight">{nome || "Nome da Ficha"}</h2>
                                     <p className="text-sm text-gray-500 mt-1.5">{descricao || "A descrição explicativa do seu formulário aparecerá aqui."}</p>
                                 </div>
@@ -1504,6 +1571,8 @@ export default function FichasTecnicasPage() {
                                             const w = campo.width || "100%";
                                             const widthClass = w === "100%" ? "w-full" : w === "50%" ? "w-1/2" : w === "33%" ? "w-1/3" : w === "25%" ? "w-1/4" : w === "66%" ? "w-2/3" : "w-3/4";
 
+                                            const isInline = fieldsLayout === 'inline' && !['header', 'static', 'textarea', 'image', 'table', 'client_data', 'company_data'].includes(campo.type);
+
                                             return (
                                                 <div key={i} className={`p-2 animate-in fade-in duration-300 ${widthClass} relative`}>
                                                     {campo.conditional && (
@@ -1511,121 +1580,140 @@ export default function FichasTecnicasPage() {
                                                             👁️ Oculto por lógica
                                                         </div>
                                                     )}
-                                                    <div className={`${campo.conditional ? 'opacity-40' : ''}`}>
+                                                    <div className={`${campo.conditional ? 'opacity-40' : ''} ${isInline ? 'flex items-baseline gap-2' : ''}`}>
                                                         {campo.type === 'header' ? (
-                                                            <div className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-4 mb-2 flex flex-col gap-1">
+                                                            <div className="font-black text-gray-800 dark:text-gray-200 text-lg border-b-2 border-gray-100 dark:border-gray-800 pb-2 mt-4 mb-2 flex flex-col gap-1 w-full">
                                                                 <div dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "Título de seção...") }} />
                                                                 {campo.helpText && <p className="text-xs text-gray-400 font-medium normal-case">{campo.helpText}</p>}
                                                             </div>
                                                         ) : campo.type === 'static' ? (
-                                                            <div className={`p-4 rounded-xl border mt-2 transition-colors duration-200 ${campo.highlight ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50/30 dark:bg-gray-900/10 border-gray-100 dark:border-gray-800'}`}>
-                                                                <div className={`text-sm font-medium leading-relaxed formatted-preview ${campo.highlight ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
+                                                            <div className={`p-4 rounded-xl border mt-2 transition-colors duration-200 w-full ${campo.highlight ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-gray-50/30 dark:bg-gray-900/10 border-gray-100 dark:border-gray-800'}`}>
+                                                                <div className={`text-sm font-black leading-relaxed formatted-preview ${campo.highlight ? 'text-blue-800 dark:text-blue-300' : 'text-black dark:text-white'}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "O conteúdo fixo aparecerá aqui...") }} />
+                                                            </div>
+                                                        ) : campo.type === 'client_data' ? (
+                                                            <div className="w-full bg-black/5 dark:bg-white/10 p-4 rounded-xl border border-black/10 dark:border-white/10 mt-2" style={{ backgroundColor: accentColor !== '#f8fafc' ? 'rgba(0,0,0,0.02)' : undefined }}>
+                                                                <div className="text-[9px] font-black text-gray-500 uppercase mb-2">Simulação: Dados do Cliente</div>
+                                                                <div className="grid grid-cols-2 gap-2 text-[10px] font-black text-gray-800 dark:text-gray-200">
+                                                                    <div>NOME: <span className="text-gray-400 italic font-medium">Ex: Yan Kairon</span></div>
+                                                                    <div>CPF: <span className="text-gray-400 italic font-medium">000.000...</span></div>
+                                                                </div>
+                                                            </div>
+                                                        ) : campo.type === 'company_data' ? (
+                                                            <div className="w-full bg-black/5 dark:bg-white/10 p-4 rounded-xl border border-black/10 dark:border-white/10 mt-2" style={{ backgroundColor: accentColor !== '#f8fafc' ? 'rgba(0,0,0,0.02)' : undefined }}>
+                                                                <div className="text-[9px] font-black text-gray-500 uppercase mb-2">Simulação: Dados da Empresa</div>
+                                                                <div className="grid grid-cols-2 gap-2 text-[10px] font-black text-gray-800 dark:text-gray-200">
+                                                                    <div>EMPRESA: <span className="text-gray-400 italic font-medium">{empresaInfo.name}</span></div>
+                                                                    <div>CNPJ: <span className="text-gray-400 italic font-medium">00.000...</span></div>
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <div>
-                                                                <label className="text-[10px] font-black text-gray-400 uppercase ml-1 block mb-1.5 leading-tight flex items-center gap-1">
+                                                            <>
+                                                                <label className={`text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase ml-1 block ${isInline ? 'mb-0 min-w-fit flex-shrink-0' : 'mb-1.5'} leading-tight flex items-center gap-1`}>
                                                                     <div dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label || "Escreva a sua pergunta...") }} />
                                                                     {campo.required && <span className="text-red-500">*</span>}
+                                                                    {isInline && ':'}
                                                                 </label>
-                                                                {campo.helpText && <p className="text-[9px] text-gray-400 font-medium ml-1 mb-2 leading-tight italic">{campo.helpText}</p>}
+                                                                <div className="flex-1">
+                                                                    {campo.helpText && !isInline && <p className="text-[9px] text-gray-400 font-medium ml-1 mb-2 leading-tight italic">{campo.helpText}</p>}
 
-                                                                {campo.type === 'text' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">Resposta curta...</div>
-                                                                )}
-                                                                {campo.type === 'textarea' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium h-24">Resposta longa descritiva...</div>
-                                                                )}
-                                                                {campo.type === 'number' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium">123...</div>
-                                                                )}
-                                                                {campo.type === 'currency' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-sm font-medium flex items-center gap-2">
-                                                                        <DollarSign size={16} /> R$ 0,00
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'date' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">dd/mm/aaaa</span>
-                                                                        <Calendar size={16} className="text-gray-300 dark:text-gray-600" />
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'time' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">00:00</span>
-                                                                        <Clock size={16} className="text-gray-300 dark:text-gray-600" />
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'image' && (
-                                                                    <div className="w-full border-2 border-dashed border-gray-200 dark:border-gray-800 p-6 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col justify-center items-center gap-2">
-                                                                        <ImageIcon size={24} className="text-gray-300 dark:text-gray-600" />
-                                                                        <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Clique para Anexar</span>
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'slider' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col items-center">
-                                                                        <div className="w-full h-2 bg-gray-200 rounded-full mb-3 flex items-center relative"><div className="w-1/2 h-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-full rounded-r-none" /><div className="w-4 h-4 bg-white border-2 border-blue-600 rounded-full absolute left-1/2 -ml-2 shadow-md" /></div>
-                                                                        <div className="flex justify-between w-full text-[10px] font-black text-gray-400">
-                                                                            <span>{campo.sliderConfig?.min ?? 0}</span>
-                                                                            <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">={(campo.sliderConfig?.min ?? 0) + (((campo.sliderConfig?.max ?? 10) - (campo.sliderConfig?.min ?? 0)) / 2)}</span>
-                                                                            <span>{campo.sliderConfig?.max ?? 10}</span>
+                                                                    {campo.type === 'text' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-[11px] font-medium">Resposta curta...</div>
+                                                                    )}
+                                                                    {campo.type === 'textarea' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-[11px] font-medium h-24">Resposta longa descritiva...</div>
+                                                                    )}
+                                                                    {campo.type === 'number' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-[11px] font-medium">123...</div>
+                                                                    )}
+                                                                    {campo.type === 'currency' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-[11px] font-medium flex items-center gap-2">
+                                                                            <DollarSign size={14} /> R$ 0,00
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'select' && (
-                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
-                                                                        <span className="text-gray-300 dark:text-gray-600 text-sm font-medium">Selecione uma opção...</span>
-                                                                        <ChevronDown size={16} className="text-gray-300 dark:text-gray-600" />
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'checkbox' && (
-                                                                    <div className="flex flex-col gap-2.5 mt-2">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <div className="w-5 h-5 rounded border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"></div>
-                                                                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Sim, confirmo</span>
+                                                                    )}
+                                                                    {campo.type === 'date' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                            <span className="text-gray-300 dark:text-gray-600 text-[11px] font-medium">dd/mm/aaaa</span>
+                                                                            <Calendar size={14} className="text-gray-300 dark:text-gray-600" />
                                                                         </div>
-                                                                        {campo.allowsDetails && (
-                                                                            <div className="pl-6 mt-1 border-l-2 border-gray-100 dark:border-gray-800 ml-2.5">
-                                                                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1.5 block">↳ {campo.detailsLabel || 'Justificativa...'}</label>
-                                                                                <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2 rounded-lg bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-xs font-medium">Detalhes aqui...</div>
+                                                                    )}
+                                                                    {campo.type === 'time' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                            <span className="text-gray-300 dark:text-gray-600 text-[11px] font-medium">00:00</span>
+                                                                            <Clock size={14} className="text-gray-300 dark:text-gray-600" />
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'image' && (
+                                                                        <div className="w-full border-2 border-dashed border-gray-200 dark:border-gray-800 p-6 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col justify-center items-center gap-2">
+                                                                            <ImageIcon size={20} className="text-gray-300 dark:text-gray-600" />
+                                                                            <span className="text-[10px] uppercase font-black tracking-widest text-gray-400">Clique para Anexar</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'slider' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-4 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex flex-col items-center">
+                                                                            <div className="w-full h-2 bg-gray-200 rounded-full mb-3 flex items-center relative"><div className="w-1/2 h-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-full rounded-r-none" /><div className="w-4 h-4 bg-white border-2 border-blue-600 rounded-full absolute left-1/2 -ml-2 shadow-md" /></div>
+                                                                            <div className="flex justify-between w-full text-[10px] font-black text-gray-400">
+                                                                                <span>{campo.sliderConfig?.min ?? 0}</span>
+                                                                                <span className="text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">={(campo.sliderConfig?.min ?? 0) + (((campo.sliderConfig?.max ?? 10) - (campo.sliderConfig?.min ?? 0)) / 2)}</span>
+                                                                                <span>{campo.sliderConfig?.max ?? 10}</span>
                                                                             </div>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'checkboxGroup' && (
-                                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                                        {campo.options?.filter(o => o.trim()).length ? campo.options.filter(o => o.trim()).map((opt, v) => (
-                                                                            <div key={v} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 rounded-lg border-2 border-gray-100 dark:border-gray-800">
-                                                                                <div className="w-4 h-4 rounded border-2 border-gray-200 dark:border-gray-700"></div>
-                                                                                <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{opt || `Item ${v + 1}`}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'select' && (
+                                                                        <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2.5 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 flex justify-between items-center">
+                                                                            <span className="text-gray-300 dark:text-gray-600 text-[11px] font-medium">Selecione uma opção...</span>
+                                                                            <ChevronDown size={14} className="text-gray-300 dark:text-gray-600" />
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'checkbox' && (
+                                                                        <div className="flex flex-col gap-2.5 mt-2">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-5 h-5 rounded border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"></div>
+                                                                                <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Sim, confirmo</span>
                                                                             </div>
-                                                                        )) : (
-                                                                            <span className="text-xs text-gray-300 dark:text-gray-600 italic">Nenhuma opção adicionada</span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                                {campo.type === 'table' && (
-                                                                    <div className="overflow-x-auto border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-900/50 mt-1">
-                                                                        <table className="w-full text-left text-xs">
-                                                                            <thead>
-                                                                                <tr className="border-b-2 border-gray-100 dark:border-gray-800">
-                                                                                    {campo.options?.length ? campo.options.map((col, c) => (
-                                                                                        <th key={c} className="p-2.5 font-bold text-gray-400 uppercase whitespace-nowrap">{col || `Coluna ${c + 1}`}</th>
-                                                                                    )) : <th className="p-2.5 text-gray-300">Sem colunas</th>}
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                <tr>
-                                                                                    {campo.options?.length ? campo.options.map((_, c) => (
-                                                                                        <td key={c} className="p-2.5 border-r border-gray-100 dark:border-gray-800 last:border-0 min-w-[80px]">
-                                                                                            <div className="h-6 w-full bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"></div>
-                                                                                        </td>
-                                                                                    )) : <td></td>}
-                                                                                </tr>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                                            {campo.allowsDetails && (
+                                                                                <div className="pl-6 mt-1 border-l-2 border-gray-100 dark:border-gray-800 ml-2.5">
+                                                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1.5 block">↳ {campo.detailsLabel || 'Justificativa...'}</label>
+                                                                                    <div className="w-full border-2 border-gray-100 dark:border-gray-800 p-2 rounded-lg bg-gray-50/50 dark:bg-gray-900/50 text-gray-300 dark:text-gray-600 text-xs font-medium">Detalhes aqui...</div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'checkboxGroup' && (
+                                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                                            {campo.options?.filter(o => o.trim()).length ? campo.options.filter(o => o.trim()).map((opt, v) => (
+                                                                                <div key={v} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 rounded-lg border-2 border-gray-100 dark:border-gray-800">
+                                                                                    <div className="w-4 h-4 rounded border-2 border-gray-200 dark:border-gray-700"></div>
+                                                                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{opt || `Item ${v + 1}`}</span>
+                                                                                </div>
+                                                                            )) : (
+                                                                                <span className="text-xs text-gray-300 dark:text-gray-600 italic">Nenhuma opção adicionada</span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                    {campo.type === 'table' && (
+                                                                        <div className="overflow-x-auto border-2 border-gray-100 dark:border-gray-800 rounded-xl bg-gray-50 dark:bg-gray-900/50 mt-1">
+                                                                            <table className="w-full text-left text-xs">
+                                                                                <thead>
+                                                                                    <tr className="border-b-2 border-gray-100 dark:border-gray-800">
+                                                                                        {campo.options?.length ? campo.options.map((col, c) => (
+                                                                                            <th key={c} className="p-2.5 font-bold text-gray-400 uppercase whitespace-nowrap">{col || `Coluna ${c + 1}`}</th>
+                                                                                        )) : <th className="p-2.5 text-gray-300">Sem colunas</th>}
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    <tr>
+                                                                                        {campo.options?.length ? campo.options.map((_, c) => (
+                                                                                            <td key={c} className="p-2.5 border-r border-gray-100 dark:border-gray-800 last:border-0 min-w-[80px]">
+                                                                                                <div className="h-6 w-full bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700"></div>
+                                                                                            </td>
+                                                                                        )) : <td></td>}
+                                                                                    </tr>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -1653,7 +1741,7 @@ export default function FichasTecnicasPage() {
 
     // --- LISTAGEM E HISTÓRICO ---
     return (
-        <div className="space-y-6 pb-20 p-2 font-sans overflow-x-hidden">
+        <div className="space-y-6 pb-20 p-2 font-sans">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-gray-800 dark:text-white">Fichas Técnicas</h1>
