@@ -6,7 +6,8 @@ import {
     Type, AlignLeft, ListOrdered, CheckSquare, Calendar, Hash,
     Heading, Loader2, Pencil, Copy, ClipboardList, LayoutGrid,
     Search, Clock, Filter, ArrowRight, History as HistoryIcon, Printer, Trash,
-    ShieldCheck, Eye, Image as ImageIcon, SlidersHorizontal, DollarSign, User, Building2
+    ShieldCheck, Eye, Image as ImageIcon, SlidersHorizontal, DollarSign, User, Building2,
+    Bold, Italic, Underline
 } from "lucide-react";
 import QRCode from "qrcode";
 import { createPortal } from "react-dom";
@@ -25,6 +26,15 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
 }
 
 type FieldType = "header" | "text" | "textarea" | "select" | "checkbox" | "checkboxGroup" | "date" | "time" | "number" | "currency" | "slider" | "image" | "table" | "static" | "client_data" | "company_data";
+
+function renderMarkdown(text: string) {
+    if (!text) return "";
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\n/g, '<br/>');
+}
 
 type FieldWidth = "100%" | "50%" | "33%" | "25%" | "66%" | "75%";
 
@@ -909,6 +919,18 @@ export default function FichasTecnicasPage() {
         setCampos(campos.filter(c => c.id !== id));
     }
 
+    function duplicarCampo(index: number) {
+        const campoParaCopiar = campos[index];
+        const novoCampo = {
+            ...JSON.parse(JSON.stringify(campoParaCopiar)),
+            id: crypto.randomUUID()
+        };
+        const novosCampos = [...campos];
+        novosCampos.splice(index + 1, 0, novoCampo);
+        setCampos(novosCampos);
+        toast.success("Campo duplicado com sucesso!");
+    }
+
     function moverCampo(index: number, direction: -1 | 1) {
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= campos.length) return;
@@ -1050,9 +1072,14 @@ export default function FichasTecnicasPage() {
                                     <GripVertical size={16} className="text-gray-300 hidden md:block" />
                                     <button onClick={() => moverCampo(index, 1)} className="text-gray-300 hover:text-blue-500 transition p-1" disabled={index === campos.length - 1}>▼</button>
                                     <div className="flex-1 md:hidden"></div>
-                                    <button onClick={() => removerCampo(campo.id)} className="p-2 text-red-400 md:hidden">
-                                        <Trash2 size={18} />
-                                    </button>
+                                    <div className="flex md:flex-col gap-1 items-center">
+                                        <button onClick={() => duplicarCampo(index)} className="p-2 text-gray-400 hover:text-blue-500 transition" title="Duplicar campo">
+                                            <Copy size={16} />
+                                        </button>
+                                        <button onClick={() => removerCampo(campo.id)} className="p-2 text-red-400 hover:text-red-600 transition" title="Remover campo">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* CONTEÚDO DO CAMPO */}
@@ -1062,12 +1089,70 @@ export default function FichasTecnicasPage() {
                                             {FIELD_TYPES.find(f => f.type === campo.type)?.label}
                                         </span>
                                         {campo.type === "static" ? (
-                                            <textarea
-                                                className="flex-1 border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500 min-h-[80px]"
-                                                placeholder="Insira aqui as orientações fixas para este documento..."
-                                                value={campo.label}
-                                                onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
-                                            />
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                <div className="flex gap-1 border-b dark:border-gray-800 pb-2">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const textarea = document.getElementById(`textarea-${campo.id}`) as HTMLTextAreaElement;
+                                                            if (!textarea) return;
+                                                            const start = textarea.selectionStart;
+                                                            const end = textarea.selectionEnd;
+                                                            const text = campo.label;
+                                                            const before = text.substring(0, start);
+                                                            const selection = text.substring(start, end);
+                                                            const after = text.substring(end);
+                                                            atualizarCampo(campo.id, { label: `${before}**${selection || 'texto'}**${after}` });
+                                                        }}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition text-gray-500 hover:text-blue-600" title="Negrito">
+                                                        <Bold size={14} />
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const textarea = document.getElementById(`textarea-${campo.id}`) as HTMLTextAreaElement;
+                                                            if (!textarea) return;
+                                                            const start = textarea.selectionStart;
+                                                            const end = textarea.selectionEnd;
+                                                            const text = campo.label;
+                                                            const before = text.substring(0, start);
+                                                            const selection = text.substring(start, end);
+                                                            const after = text.substring(end);
+                                                            atualizarCampo(campo.id, { label: `${before}*${selection || 'texto'}*${after}` });
+                                                        }}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition text-gray-500 hover:text-blue-600" title="Itálico">
+                                                        <Italic size={14} />
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const textarea = document.getElementById(`textarea-${campo.id}`) as HTMLTextAreaElement;
+                                                            if (!textarea) return;
+                                                            const start = textarea.selectionStart;
+                                                            const end = textarea.selectionEnd;
+                                                            const text = campo.label;
+                                                            const before = text.substring(0, start);
+                                                            const selection = text.substring(start, end);
+                                                            const after = text.substring(end);
+                                                            atualizarCampo(campo.id, { label: `${before}__${selection || 'texto'}__${after}` });
+                                                        }}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition text-gray-500 hover:text-blue-600" title="Sublinhado">
+                                                        <Underline size={14} />
+                                                    </button>
+                                                    <span className="text-[10px] text-gray-400 ml-auto self-center">Formatar seleção</span>
+                                                </div>
+                                                <textarea
+                                                    id={`textarea-${campo.id}`}
+                                                    className="w-full border dark:border-gray-700 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 outline-none text-sm font-bold dark:text-white focus:border-blue-500 min-h-[100px]"
+                                                    placeholder="Insira aqui as orientações fixas para este documento..."
+                                                    value={campo.label}
+                                                    onChange={e => atualizarCampo(campo.id, { label: e.target.value })}
+                                                />
+                                                <div className="p-3 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/20">
+                                                    <p className="text-[9px] font-black text-blue-400 uppercase mb-2">Pré-visualização:</p>
+                                                    <div className="text-sm dark:text-gray-300 formatted-preview" dangerouslySetInnerHTML={{ __html: renderMarkdown(campo.label) }} />
+                                                </div>
+                                            </div>
                                         ) : campo.type === "client_data" || campo.type === "company_data" ? (
                                             <div className="flex-1 p-2.5 bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">
                                                 Este bloco carregará automaticamente os dados {campo.type === "client_data" ? "do cliente" : "da empresa"} na impressão.

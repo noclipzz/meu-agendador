@@ -31,6 +31,15 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
     return createPortal(children, target);
 }
 
+function renderMarkdown(text: string) {
+    if (!text) return "";
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/\n/g, '<br/>');
+}
+
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<any[]>([]);
     const [busca, setBusca] = useState("");
@@ -908,7 +917,7 @@ export default function ClientesPage() {
 
                 if (isStatic) {
                     camposHtml += `<div class="field-item w-100" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;">
-                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${item.value}</div>
+                        <div class="field-value" style="color: #1e40af; font-weight: 700; text-transform: none; font-size: 11px; padding: 4px 0;">${renderMarkdown(item.value)}</div>
                     </div>`;
                     return;
                 }
@@ -925,7 +934,7 @@ export default function ClientesPage() {
                 if (isLong) widthClass = 'w-100'; // Override if too long
 
                 camposHtml += `<div class="field-item ${widthClass}">
-                    <div class="field-label">${item.label}</div>
+                    <div class="field-label">${renderMarkdown(item.label)}</div>
                     <div class="field-value">${item.value}</div>
                 </div>`;
             });
@@ -1945,9 +1954,7 @@ export default function ClientesPage() {
                                                             if (field.type === 'header') return <h4 key={field.id} className="text-sm font-black text-teal-600 uppercase tracking-widest pt-4 border-t dark:border-gray-800">{field.label}</h4>;
                                                             if (field.type === 'static') return (
                                                                 <div key={field.id} className="col-span-1 sm:col-span-3 bg-blue-50/30 dark:bg-blue-900/10 p-5 rounded-2xl border-2 border-blue-100 dark:border-blue-900/20 my-2">
-                                                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-bold whitespace-pre-wrap leading-relaxed">
-                                                                        {field.label}
-                                                                    </p>
+                                                                    <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(field.label) }} />
                                                                 </div>
                                                             );
                                                             if (field.type === 'client_data' || field.type === 'company_data') return (
@@ -2444,9 +2451,7 @@ export default function ClientesPage() {
                                                             )}
                                                             {field.type === 'static' && (
                                                                 <div className="bg-blue-50/30 dark:bg-blue-900/10 p-5 rounded-3xl border-2 border-blue-100 dark:border-blue-900/20 my-2">
-                                                                    <p className="text-gray-700 dark:text-gray-300 text-sm font-bold whitespace-pre-wrap leading-relaxed">
-                                                                        {field.label}
-                                                                    </p>
+                                                                    <div className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(field.label) }} />
                                                                 </div>
                                                             )}
                                                             {(field.type === 'client_data' || field.type === 'company_data') && (
