@@ -66,6 +66,7 @@ model Company {
   coraCertUrl                   String?
   coraKeyUrl                    String?
   signatureUrl                  String?                @default("")
+  technicalSignatureUrl         String?                @default("")
   legalRepresentative           String?
   notificationSettings          Json?                  @default("{}")
   cnae                          String?

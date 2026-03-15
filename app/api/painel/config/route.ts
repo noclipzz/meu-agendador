@@ -154,7 +154,7 @@ export async function POST(req: Request) {
     const stringFields = [
       "name", "notificationEmail", "instagramUrl", "facebookUrl",
       "openTime", "closeTime", "lunchStart", "lunchEnd", "logoUrl",
-      "signatureUrl", "legalRepresentative", "workDays", "corporateName",
+      "signatureUrl", "technicalSignatureUrl", "legalRepresentative", "workDays", "corporateName",
       "cnpj", "phone", "cep", "address", "number", "complement", "neighborhood",
       "city", "state", "inscricaoMunicipal", "codigoServico", "certificadoA1Url",
       "certificadoSenha", "coraClientId", "coraCertUrl", "coraKeyUrl",

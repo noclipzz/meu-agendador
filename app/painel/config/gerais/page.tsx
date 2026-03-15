@@ -22,6 +22,7 @@ export default function ConfigGerais() {
     const [isUploading, setIsUploading] = useState(false);
     const inputFileRef = useRef<HTMLInputElement>(null);
     const inputSignatureRef = useRef<HTMLInputElement>(null);
+    const inputTechSignatureRef = useRef<HTMLInputElement>(null);
 
     // --- CAMPOS GERAIS ---
     const [name, setName] = useState("");
@@ -31,6 +32,7 @@ export default function ConfigGerais() {
     const [facebookUrl, setFacebookUrl] = useState("");
     const [logoUrl, setLogoUrl] = useState("");
     const [signatureUrl, setSignatureUrl] = useState("");
+    const [technicalSignatureUrl, setTechnicalSignatureUrl] = useState("");
     const [legalRepresentative, setLegalRepresentative] = useState("");
     const [openTime, setOpenTime] = useState("09:00");
     const [closeTime, setCloseTime] = useState("18:00");
@@ -89,6 +91,7 @@ export default function ConfigGerais() {
                 setFacebookUrl(dataConfig.facebookUrl || "");
                 setLogoUrl(dataConfig.logoUrl || "");
                 setSignatureUrl(dataConfig.signatureUrl || "");
+                setTechnicalSignatureUrl(dataConfig.technicalSignatureUrl || "");
                 setLegalRepresentative(dataConfig.legalRepresentative || "");
                 setOpenTime(dataConfig.openTime || "09:00");
                 setCloseTime(dataConfig.closeTime || "18:00");
@@ -223,12 +226,30 @@ export default function ConfigGerais() {
         finally { setIsUploading(false); }
     }
 
+    async function handleTechSignatureUpload() {
+        if (!inputTechSignatureRef.current?.files?.[0]) return;
+        const file = inputTechSignatureRef.current.files[0];
+        setIsUploading(true);
+        try {
+            const newBlob = await upload(`signature-technical.png`, file, {
+                access: 'public',
+                handleUploadUrl: '/api/upload/token',
+            });
+            setTechnicalSignatureUrl(newBlob.url);
+            toast.success("Assinatura do responsável técnico carregada!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Falha no upload da assinatura técnica.");
+        }
+        finally { setIsUploading(false); }
+    }
+
     async function salvarConfig() {
         try {
             const res = await fetch('/api/painel/config', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, legalRepresentative,
+                    name, corporateName, notificationEmail, instagramUrl, facebookUrl, openTime, closeTime, lunchStart, lunchEnd, logoUrl, signatureUrl, technicalSignatureUrl, legalRepresentative,
                     monthlyGoal: parseFloat(monthlyGoal), workDays: workDays.join(','), interval: Number(interval), customSchedule,
                     cnpj, phone, cep, address, number, complement, neighborhood, city, state, slug,
                 })
@@ -490,6 +511,22 @@ export default function ConfigGerais() {
                                             {isUploading ? <Loader2 className="animate-spin" /> : <PenTool size={16} />} Carregar Assinatura
                                         </button>
                                         <p className="text-[9px] text-gray-400 mt-2">Use um arquivo PNG transparente.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-3 block dark:text-gray-400">Assinatura do Responsável Técnico</label>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-48 h-24 bg-white dark:bg-gray-950 rounded-3xl border-2 border-dashed border-orange-300 dark:border-orange-800 flex items-center justify-center overflow-hidden">
+                                        {technicalSignatureUrl ? <img src={technicalSignatureUrl} alt="Assinatura Técnica" className="h-full object-contain mix-blend-multiply" /> : <PenTool className="text-orange-300" size={32} />}
+                                    </div>
+                                    <div>
+                                        <input type="file" accept="image/*" ref={inputTechSignatureRef} onChange={handleTechSignatureUpload} className="hidden" />
+                                        <button onClick={() => inputTechSignatureRef.current?.click()} disabled={isUploading} className="bg-orange-500 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-orange-600 transition text-sm">
+                                            {isUploading ? <Loader2 className="animate-spin" /> : <PenTool size={16} />} Carregar Assinatura
+                                        </button>
+                                        <p className="text-[9px] text-gray-400 mt-2">Assinatura do profissional técnico (PNG transparente).</p>
                                     </div>
                                 </div>
                             </div>
