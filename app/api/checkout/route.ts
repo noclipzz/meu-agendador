@@ -195,8 +195,24 @@ export async function GET() {
         if (SUPER_ADMINS.includes(userId)) {
             console.log("👑 [CHECKOUT] SUPER ADMIN DETECTADO - LIBERANDO ACESSO TOTAL");
 
-            // Busca apenas a empresa para ter o ID correto no painel
-            const myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
+            // Busca a empresa: primeiro como dono, depois como profissional
+            let myCompany = await prisma.company.findFirst({ where: { ownerId: userId } });
+            
+            // Se não é dono, busca pela associação como profissional
+            if (!myCompany) {
+                const prof = await prisma.professional.findUnique({
+                    where: { userId },
+                    include: { company: true }
+                });
+                if (prof) {
+                    myCompany = prof.company;
+                }
+            }
+
+            // Último fallback: busca pela empresa principal NOHUD
+            if (!myCompany) {
+                myCompany = await prisma.company.findFirst({ where: { ownerId: "user_39S9qNrKwwgObMZffifdZyNKUKm" } });
+            }
 
             if (myCompany && (!myCompany.evolutionServerUrl || !myCompany.evolutionApiKey)) {
                 try {
@@ -215,8 +231,8 @@ export async function GET() {
             }
 
             return NextResponse.json({
-                active: true, // Sempre ATIVO
-                plan: "MASTER", // Sempre MASTER
+                active: true,
+                plan: "MASTER",
                 role: "ADMIN",
                 permissions: {
                     dashboard: true, agenda: true, clientes: true,
@@ -224,12 +240,12 @@ export async function GET() {
                     servicos: true, profissionais: true, config: true, rastreamento: true,
                     vitrine: true
                 },
-                companyId: myCompany?.id, // ID da sua empresa
+                companyId: myCompany?.id,
                 companyName: myCompany?.name,
-                slug: myCompany?.slug, // ✅ Adicionado slug
-                isOwner: true, // ✅ Flag de dono absoluto
-                isTrial: false, // Super Admin nunca é trial
-                hasTrackingModule: true, // Super Admin tem tudo
+                slug: myCompany?.slug,
+                isOwner: true,
+                isTrial: false,
+                hasTrackingModule: true,
                 hasMercadoPagoModule: true,
                 onboardingCompleted: myCompany?.onboardingCompleted ?? true
             });
