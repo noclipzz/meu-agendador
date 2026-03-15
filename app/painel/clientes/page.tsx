@@ -933,12 +933,11 @@ export default function ClientesPage() {
             .signature-line { width: 100%; border-top: 1.5px solid #0f172a; position: relative; z-index: 1; }
             .signature-label { font-size: 10px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 8px; width: 100%; }
 
-            .signature-a1 { border: 2px double #0d9488; background: #f0fdfa; border-radius: 4px; padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 260px; max-width: 300px; flex: 1; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(13,148,136,0.2); }
-            .signature-a1::before { content: "CERTIFICADO DIGITAL"; position: absolute; top: 12px; right: -30px; background: #0d9488; color: white; font-size: 8px; font-weight: 900; padding: 4px 40px; transform: rotate(45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .a1-title { font-size: 9px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; border-bottom: 1px dashed #99f6e4; padding-bottom: 4px; width: 100%; justify-content: center; }
-            .a1-name { font-size: 12px; font-weight: 900; color: #0f172a; text-align: center; text-transform: uppercase; line-height: 1.2; }
-            .a1-details { font-size: 9px; color: #334155; margin-top: 8px; font-weight: 700; text-align: center; line-height: 1.5; font-family: monospace; letter-spacing: -0.2px; background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #ccfbf1; width: 100%; }
-            .a1-footer { font-size: 7px; color: #64748b; margin-top: 8px; text-transform: uppercase; font-weight: 800; width: 100%; text-align: center; }
+            .signature-a1 { border: 1px solid #0d9488; background: #fff; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 250px; flex: 1; position: relative; }
+            .a1-title { font-size: 8px; font-weight: 900; color: #0d9488; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; width: 100%; }
+            .a1-name { font-size: 10px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.2; }
+            .a1-details { font-size: 8px; color: #334155; margin-top: 2px; font-weight: 600; line-height: 1.4; font-family: monospace; letter-spacing: -0.2px; width: 100%; }
+            .a1-footer { font-size: 6px; color: #64748b; margin-top: 6px; text-transform: uppercase; font-weight: 700; width: 100%; text-align: left; border-top: 1px solid #e2e8f0; padding-top: 4px; }
 
             .footer-line { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 15px; text-align: center; }
             .footer-text { font-size: 10px; font-weight: 600; color: #64748b; }
