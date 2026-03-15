@@ -689,16 +689,16 @@ export default function ClientesPage() {
                 ? JSON.parse(entry.printSettings) 
                 : entry.printSettings;
             
-            setPrintConfigModal({
+            executarImpressaoDaFichaDirect(
                 entry,
-                docNumber: savedSettings.docNumber || entry.id.slice(-6).toUpperCase(),
-                customFooter: savedSettings.customFooter || "",
-                dateVisible: savedSettings.dateVisible ?? true,
-                twoColumns: savedSettings.twoColumns ?? false,
-                signatures: savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
-                useDigitalSignature: savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
-                includeQR: savedSettings.includeQR ?? true
-            });
+                savedSettings.dateVisible ?? true,
+                savedSettings.signatures || { client: true, prof: true, company: false, technical: false },
+                savedSettings.useDigitalSignature ?? !!empresaInfo?.hasDigitalSignatureModule,
+                savedSettings.includeQR ?? true,
+                savedSettings.twoColumns ?? false,
+                savedSettings.docNumber || entry.id.slice(-6).toUpperCase(),
+                savedSettings.customFooter || ""
+            );
             return;
         }
 
@@ -753,6 +753,11 @@ export default function ClientesPage() {
                 }
             } catch (err) { console.error(err); }
         }
+
+        executarImpressaoDaFichaDirect(entry, dateVisible, signatures, useDigitalSignature, includeQR, twoColumns, docNumber, customFooter);
+    }
+
+    async function executarImpressaoDaFichaDirect(entry: any, dateVisible: boolean, signatures: any, useDigitalSignature: boolean, includeQR: boolean, twoColumns: boolean, docNumber: string, customFooter: string) {
 
         const fields = entry.template?.fields as any[] || [];
         const data = entry.data as Record<string, any> || {};
