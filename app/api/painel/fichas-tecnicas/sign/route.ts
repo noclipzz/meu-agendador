@@ -127,7 +127,7 @@ export async function POST(req: Request) {
         console.log("[SIGN_API] PDF assinado com sucesso! Size:", signedPdf.length);
 
         // 6. Retornar o arquivo assinado
-        return new NextResponse(signedPdf, {
+        return new NextResponse(new Uint8Array(signedPdf), {
           headers: {
             "Content-Type": "application/pdf",
             "Content-Disposition": `attachment; filename="ficha_assinada_${Date.now()}.pdf"`,
