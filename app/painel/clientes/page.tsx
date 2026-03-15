@@ -776,8 +776,8 @@ export default function ClientesPage() {
         const data = entry.data as Record<string, any> || {};
 
         // Separar headers e campos normais
-        const sections: { header: string; items: { label: string; value: string; width: string }[] }[] = [];
-        let currentSection: { header: string; items: { label: string; value: string; width: string }[] } = { header: '', items: [] };
+        const sections: { header: string; items: { label: string; value: string; width: string; type?: string }[] }[] = [];
+        let currentSection: { header: string; items: { label: string; value: string; width: string; type?: string }[] } = { header: '', items: [] };
 
         fields.forEach((field: any) => {
             if (field.conditional) {
@@ -805,7 +805,7 @@ export default function ClientesPage() {
                 if (field.type === 'header') {
                     currentSection = { header: field.label, items: [] };
                 } else {
-                    currentSection.items.push({ label: '', value: field.label, width: '100%' });
+                    currentSection.items.push({ label: '', value: field.label, width: '100%', type: field.type });
                 }
                 return;
             }
