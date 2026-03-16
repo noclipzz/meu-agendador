@@ -460,8 +460,8 @@ export default function FichasTecnicasPage() {
                 if (isStatic) {
                     const h = (item as any).highlight;
                     const style = h ? `background: #eff6ff; border-left: 4px solid #3b82f6; border-right: 1.5px solid #e2e8f0; border-bottom: 1.5px solid #e2e8f0; margin: 5px 0;` : `border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 10px 15px;`;
-                    // Máxima visibilidade: Cor preta (#000) e peso Black (900)
-                    const valueStyle = h ? `color: #1e3a8a; font-weight: 900; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #000000; font-weight: 900; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
+                    // Texto base leve (500), negrito só via markdown **bold**
+                    const valueStyle = h ? `color: #1e3a8a; font-weight: 500; text-transform: none; font-size: 11px; padding: 4px 0;` : `color: #000000; font-weight: 500; text-transform: none; font-size: 11px; padding: 2px 0; line-height: 1.6;`;
                     
                     camposHtml += `<div class="field-item w-100" style="${style}">
                         <div class="field-value" style="${valueStyle}">${renderMarkdown(item.value)}</div>
