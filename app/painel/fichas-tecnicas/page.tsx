@@ -533,20 +533,21 @@ export default function FichasTecnicasPage() {
             .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '2px'}; }
             .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
             .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
-            .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+            .client-item span { font-size: 11px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
             .client-item.full { grid-column: span 2; }
 
             .section-title { font-size: 12px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; margin-bottom: 10px; }
             .section-header { font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; background: #eff6ff; padding: 8px 15px; border: 1.5px solid #e2e8f0; border-left: 4px solid #3b82f6; border-bottom: none; clear: both; display: block; width: 100%; margin-top: 10px; }
             
             .fields-grid { border: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; border-bottom: none; border-right: none; }
-            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
-            .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 15px; min-height: 30px; }
+            .field-item { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; padding: 6px 15px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 40px; }
+            .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 15px; min-height: 28px; }
             .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
             .field-item.layout-inline .field-value { margin-top: 0; }
             .field-item:last-child { border-bottom: none; }
-            .field-label { font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; margin-bottom: 1px; }
-            .field-value { font-size: 13px; font-weight: 900; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+            .field-label { font-size: 9px; font-weight: 900; color: #64748b; text-transform: uppercase; margin-bottom: 1px; }
+            .field-value { font-size: 11px; font-weight: 500; color: #0f172a; text-transform: uppercase; line-height: 1.4; word-break: break-word; }
+            .field-value strong, .field-value b { font-weight: 900; }
             .field-item.full-width { border-bottom: 1.5px solid #e2e8f0; padding: 6px 15px; }
             
             .date-row { margin-top: 40px; text-align: right; font-size: 13px; font-weight: 700; color: #1e293b; }
@@ -749,16 +750,17 @@ export default function FichasTecnicasPage() {
                     .client-item { display: flex; flex-direction: ${fLayout === 'inline' ? 'row' : 'column'}; align-items: ${fLayout === 'inline' ? 'baseline' : 'stretch'}; gap: ${fLayout === 'inline' ? '10px' : '2px'}; }
                     .client-item label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; min-width: ${fLayout === 'inline' ? 'fit-content' : 'auto'}; }
                     .client-item label::after { content: '${fLayout === 'inline' ? ':' : ''}'; }
-                    .client-item span { font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; }
+                    .client-item span { font-size: 11px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
                     .client-item.full { grid-column: span 2; }
                     .section-header { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; background: #f1f5f9; padding: 12px 15px; border: 1.5px solid #e2e8f0; border-bottom: none; margin-top: 40px; display: block; width: 100%; clear: both; line-height: 1.5; }
                     .fields-grid { border-bottom: 1.5px solid #e2e8f0; border-right: 1.5px solid #e2e8f0; border-radius: 0; display: flex; flex-wrap: wrap; flex-direction: row; background: white; margin-bottom: 30px; width: 100%; box-sizing: border-box; }
-                    .field-item { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 48px; }
-                    .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 12px; min-height: 30px; }
+                    .field-item { border-top: 1.5px solid #e2e8f0; border-left: 1.5px solid #e2e8f0; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; min-height: 40px; }
+                    .field-item.layout-inline { flex-direction: row; align-items: baseline; gap: 10px; padding: 4px 12px; min-height: 28px; }
                     .field-item.layout-inline .field-label { margin-bottom: 0; min-width: fit-content; flex-shrink: 0; color: #475569; }
                     .field-item.layout-inline .field-value { margin-top: 0; }
                     .field-label { font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .field-value { font-size: 13px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
+                    .field-value { font-size: 11px; font-weight: 500; color: #0f172a; text-transform: uppercase; line-height: 1.2; word-break: break-word; }
+                    .field-value strong, .field-value b { font-weight: 900; }
                     .w-100 { width: 100%; } .w-50 { width: 50%; } .w-33 { width: 33.3333%; } .w-25 { width: 25%; } .w-66 { width: 66.6666%; } .w-75 { width: 75%; }
                     .signatures-container { margin-top: 60px; display: flex; justify-content: space-around; align-items: flex-end; gap: 40px; }
                     .signature-block { flex: 1; text-align: center; max-width: 250px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; min-height: 90px; }
